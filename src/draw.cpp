@@ -72,11 +72,18 @@ void DISPLAY_TILES(TITUS_level *level) {
     dest.w = src.w;
     dest.h = src.h;
 
-    for (int x = 0; x < 20; x++) {
+    for (int x = -1; x < 21; x++) {
+        int tileX = BITMAP_X + x;
+        if(tileX < 0) {
+            continue;
+        }
+        if(tileX >= level->width) {
+            continue;
+        }
         for (int y = 0; y < 12; y++) {
-            dest.x = x * 16;
+            dest.x = 16 + x * 16;
             dest.y = y * 16;
-            auto tile = level->tilemap[BITMAP_Y + y][BITMAP_X + x];
+            auto tile = level->tilemap[BITMAP_Y + y][tileX];
             SDL_BlitSurface(level->tile[level->tile[tile].animation[tile_anim]].tiledata, &src, Window::screen, &dest);
         }
     }
@@ -167,6 +174,8 @@ void display_sprite(TITUS_level *level, TITUS_sprite *spr) {
     if (dest.y + src.h > screen_height * 16) {
         src.h = screen_height * 16 - dest.y;
     }
+
+    dest.x += 16;
 
     SDL_BlitSurface(image, &src, Window::screen, &dest);
 
@@ -342,7 +351,7 @@ void INIT_SCREENM(TITUS_level *level) {
     BITMAP_Y = 0;
     do {
         scroll(level);
-    } while (YSCROLL_CENTER || XSCROLL_CENTER);
+    } while (g_scroll_y || g_scroll_x);
     OPEN_SCREEN(level);
 }
 

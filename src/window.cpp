@@ -1,6 +1,7 @@
 #include "window.h"
 #include "settings.h"
 #include "tituserror.h"
+#include "globals.h"
 
 namespace Window {
 
@@ -71,7 +72,7 @@ int init() {
     }
 
     // screen = SDL_GetWindowSurface(window);
-    screen = SDL_CreateRGBSurfaceWithFormat(0, 320, 200, 32, SDL_GetWindowPixelFormat(window));
+    screen = SDL_CreateRGBSurfaceWithFormat(0, 352, 200, 32, SDL_GetWindowPixelFormat(window));
     black = SDL_MapRGB(screen->format, 0, 0, 0);
 
     SDL_RenderSetLogicalSize(renderer, 320, 200);
@@ -89,7 +90,14 @@ void render() {
     }
     SDL_Texture *frame = SDL_CreateTextureFromSurface(renderer, screen);
     SDL_RenderClear(renderer);
-    SDL_RenderCopy(renderer, frame, NULL, NULL);
+    SDL_Rect src;
+    src.x = 16 - g_scroll_px_offset;
+    src.y = 0;
+    src.w = 320;
+    src.h = 200;
+    SDL_Rect dst = src;
+    dst.x = 0;
+    SDL_RenderCopy(renderer, frame, &src, &dst);
     SDL_RenderPresent(renderer);
     SDL_DestroyTexture(frame);
 }

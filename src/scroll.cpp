@@ -57,99 +57,90 @@ static uint8 BARRYCENTRE(TITUS_level *level) {
 }
 
 static void X_ADJUST(TITUS_level *level) {
-    bool block;
+    bool block = true;
     TITUS_player *player = &(level->player);
-    int16 pstileX = (player->sprite.x >> 4) - BITMAP_X; //Player screen tile X (0 to 19)
-    if (!XSCROLL_CENTER) { //if not scrolling, check if it should scroll
-        //If scroll timer isn't activated, scroll if the player is close to the screen edge
-        if (ACTION_TIMER < LIMIT_TIMER) { //LIMIT_TIMER = 22
-            //Scroll timer is not reached yet
-            if ((!XSCROLL_CENTER) &&
-              ((pstileX > screen_width - ALERT_X / 16) || //Player is on the right screen edge
-              (pstileX < ALERT_X/16))) { //Player is on the left screen edge
-                XLIMIT_SCROLL = screen_width / 2; //Scroll until player is in center
-                XSCROLL_CENTER = true; //start scrolling
-            }
-        } else if ((LAST_ORDER & 0x0F) == 1) { //Walking, scroll timer is activated
-            //Is the player at max speed?
-            if (abs(player->sprite.speedX) != MAX_X*16) {
-                //No! (walking against a wall?)
-                if (!player->sprite.flipped) { //Player is in right direction
-                    XLIMIT_SCROLL = 2; //Scroll until player is in 2nd screen tile
-                    XSCROLL_CENTER = true; //start scrolling
-                } else { //Player is in left direction
-                    XLIMIT_SCROLL = screen_width - 2; //Scroll until player is in 18th screen tile
-                    XSCROLL_CENTER = true; //start scrolling
-                }
-            } else { //Walking at full speed
-                if (player->sprite.speedX < 0) { //Walking left
-                    if (pstileX <= screen_width / 2 - 3) { //Center tile - 3
-                        XLIMIT_SCROLL = screen_width - 2; //Scroll until player is in 18th screen tile
-                        XSCROLL_CENTER = true; //start scrolling
-                    }
-                } else if (pstileX >= screen_width / 2 + 3) { //Center tile + 3
-                    XLIMIT_SCROLL = 2; //Scroll until player is in 2nd screen tile
-                    XSCROLL_CENTER = true; //start scrolling
-                }
-            }
-        } else { //Not walking
-            if ((player->sprite.speedX == 0) &&
-              (player->sprite.speedY == 0) &&
-              (ACTION_TIMER == (LIMIT_TIMER * 3 / 2))) { //X * 2 seconds?
-                XLIMIT_SCROLL = BARRYCENTRE(level); //Center if visible enemy behind, if not, scroll until 3rd tile 
-                XSCROLL_CENTER = true;
-            } else {
-                //Scroll until player is in center
-                if ((!XSCROLL_CENTER) &&
-                  ((pstileX > screen_width - ALERT_X / 16) ||
-                  (pstileX < ALERT_X / 16))) {
-                    XLIMIT_SCROLL = screen_width / 2; //Place the player in the center
-                    XSCROLL_CENTER = true;
-                }
-            }
+
+    /*
+    int16 player_screen_tileX = (player->sprite.x / 16) - BITMAP_X;
+
+    int16 scroll_x_target = screen_width / 2;
+
+    g_scroll_x = true;
+    if (scroll_x_target == player_screen_tileX) {
+        g_scroll_x = false; //Stop scrolling
+    } else if (scroll_x_target > player_screen_tileX) {
+        block = L_SCROLL(level);
+        if (block) { //Carry flag
+            g_scroll_x = false; //Stop scrolling
+        }
+    } else {
+        block = R_SCROLL(level);
+        if (block) { //Carry flag
+            g_scroll_x = false; //Stop scrolling
         }
     }
+    */
 
-    if (XSCROLL_CENTER) {
-        if (XLIMIT_SCROLL == pstileX) {
-            XSCROLL_CENTER = false; //Stop scrolling
-        } else if (XLIMIT_SCROLL > pstileX) {
-            block = L_SCROLL(level);
-            if (block) { //Carry flag
-                XSCROLL_CENTER = false; //Stop scrolling
-            }
-        } else {
-            block = R_SCROLL(level);
-            if (block) { //Carry flag
-                XSCROLL_CENTER = false; //Stop scrolling
-            }
-        }
+    g_scroll_x = true;
+    // clamp player position to level bounds
+    int16 player_position = player->sprite.x;
+    if(player_position < 160) {
+        player_position = 160;
+    }
+    int16 rlimit;
+    if(player_position > XLIMIT * 16) {
+        rlimit = (level->width * 16 - 160);
+    }
+    else {
+        rlimit = (XLIMIT * 16 - 160);
+    }
+    if(player_position > rlimit) {
+        player_position = rlimit;
+    }
+
+    int16 player_screen_px = player_position - BITMAP_X * 16;
+    int16 scroll_px_target = 160;
+    int16 scroll_offset_x = scroll_px_target - player_screen_px;
+    int16 tile_offset_x = scroll_offset_x / 16;
+    if(tile_offset_x < 0) {
+        BITMAP_X ++;
+        g_scroll_px_offset = 0;
+        g_scroll_x = true;
+    }
+    else if (tile_offset_x > 0) {
+        BITMAP_X --;
+        g_scroll_px_offset = 0;
+        g_scroll_x = true;
+    }
+    else {
+        g_scroll_px_offset = scroll_offset_x;
+        g_scroll_x = false;
     }
 }
 
 static void Y_ADJUST(TITUS_level *level) {
     TITUS_player *player = &(level->player);
     if (player->sprite.speedY == 0) {
-        YSCROLL_CENTER = false;
+        g_scroll_y = false;
     }
     int16 pstileY = (player->sprite.y >> 4) - BITMAP_Y; //Player screen tile Y (0 to 11)
-    if (!YSCROLL_CENTER) {
+    if (!g_scroll_y) {
         if ((player->sprite.speedY == 0) &&
           (LADDER_FLAG == 0)) {
             if (pstileY >= screen_height - 1) {
-                YLIMIT_SCROLL = screen_height - 2;
-                YSCROLL_CENTER = true;
+                g_scroll_y_target = screen_height - 2;
+                g_scroll_y = true;
             } else if (pstileY <= 2) {
-                YLIMIT_SCROLL = screen_height - 3;
-                YSCROLL_CENTER = true;
+                g_scroll_y_target = screen_height - 3;
+                g_scroll_y = true;
             }
         } else {
             if (pstileY >= screen_height - 2) { //The player is at the bottom of the screen, scroll down!
-                YLIMIT_SCROLL = 3;
-                YSCROLL_CENTER = true;
+                g_scroll_y_target = 3;
+                g_scroll_y = true;
             } else if (pstileY <= 2) { //The player is at the top of the screen, scroll up!
-                YLIMIT_SCROLL = screen_height - 3;
-                YSCROLL_CENTER = true;
+                g_scroll_y_target = screen_height - 3;
+                g_scroll_y = true;
             }
         }
     }
@@ -157,27 +148,27 @@ static void Y_ADJUST(TITUS_level *level) {
     if ((player->sprite.y <= ((ALTITUDE_ZERO + screen_height) << 4)) && //If the player is above the horizontal limit
       (BITMAP_Y > ALTITUDE_ZERO + 1)) { //... and the screen have scrolled below the the horizontal limit
         if (U_SCROLL(level)) { //Scroll up
-            YSCROLL_CENTER = false;
+            g_scroll_y = false;
         }
     } else if ((BITMAP_Y > ALTITUDE_ZERO - 5) && //If the screen is less than 5 tiles above the horizontal limit
       (BITMAP_Y <= ALTITUDE_ZERO) && //... and still above the horizontal limit
       (player->sprite.y + (7 * 16) > ((ALTITUDE_ZERO + screen_height) << 4))) {
         if (D_SCROLL(level)) { //Scroll down
-            YSCROLL_CENTER = false;
+            g_scroll_y = false;
         }
-    } else if (YSCROLL_CENTER) {
-        if (YLIMIT_SCROLL == pstileY) {
-            YSCROLL_CENTER = false;
-        } else if (YLIMIT_SCROLL > pstileY) {
+    } else if (g_scroll_y) {
+        if (g_scroll_y_target == pstileY) {
+            g_scroll_y = false;
+        } else if (g_scroll_y_target > pstileY) {
             if (U_SCROLL(level)) {
-                YSCROLL_CENTER = false;
+                g_scroll_y = false;
             }
         } else if ((player->sprite.y <= ((ALTITUDE_ZERO + screen_height) << 4)) && //If the player is above the horizontal limit
           (BITMAP_Y > ALTITUDE_ZERO)) { //... and the screen is below the horizontal limit
-            YSCROLL_CENTER = false; //Stop scrolling
+            g_scroll_y = false; //Stop scrolling
         } else {
             if (D_SCROLL(level)) { //Scroll down
-                YSCROLL_CENTER = false;
+                g_scroll_y = false;
             }
         }
     }

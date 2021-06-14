@@ -245,10 +245,11 @@ void CLEAR_DATA(TITUS_level *level) {
     POCKET_FLAG = 0;
     SAUT_COUNT = 0;
     ACTION_TIMER = 0;
-    XSCROLL_CENTER = 0;
-    YSCROLL_CENTER = 0;
-    XLIMIT_SCROLL = 0;
-    YLIMIT_SCROLL = 0;
+    g_scroll_x = 0;
+    g_scroll_y = 0;
+    g_scroll_x_target = 0;
+    g_scroll_y_target = 0;
+    g_scroll_px_offset = 0;
     YFALL = 0;
 
     TAPISFLY_FLAG = 0;

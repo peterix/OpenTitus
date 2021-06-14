@@ -151,11 +151,12 @@ extern uint8 BITMAP_X; //Screen offset (X) in tiles
 // extern uint8 BITMAP_XM; //Point to the left tile in the tile screen (0 to 19)
 extern uint8 BITMAP_Y; //Screen offset (Y) in tiles
 // extern uint8 BITMAP_YM; //Point to the top tile in the tile screen (0 to 11)
-extern bool XSCROLL_CENTER; //If true, the screen will scroll in X
-extern int16 XLIMIT_SCROLL; //If scrolling: scroll until player is in this tile (X)
+extern bool g_scroll_x; //If true, the screen will scroll in X
+extern int16 g_scroll_x_target; //If scrolling: scroll until player is in this tile (X)
+extern int16 g_scroll_px_offset;
 extern int16 XLIMIT; //The engine will not scroll past this tile before the player have crossed the line (X)
-extern bool YSCROLL_CENTER; //If true, the screen will scroll in Y
-extern uint8 YLIMIT_SCROLL; //If scrolling: scroll until player is in this tile (Y)
+extern bool g_scroll_y; //If true, the screen will scroll in Y
+extern uint8 g_scroll_y_target; //If scrolling: scroll until player is in this tile (Y)
 extern uint8 ALTITUDE_ZERO; //The engine will not scroll below this tile before the player have gone below (Y)
 extern int LAST_CLOCK; //Used for fixed framerate
 extern uint16 IMAGE_COUNTER; //Increased every loop in game loop (0 to 0x0FFF)

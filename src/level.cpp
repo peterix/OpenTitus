@@ -330,6 +330,8 @@ int loadlevel(TITUS_level *level, unsigned char *leveldata, int leveldatasize, T
     ALTITUDE_ZERO = loadint16(leveldata[offset + 1], leveldata[offset + 0]); // + 12;
     offset = level->height * level->width + 35482;
     XLIMIT = loadint16(leveldata[offset + 1], leveldata[offset + 0]); // + 20;
+    printf("XLIMIT %d\n", XLIMIT);
+    printf("WIDTH %d\n", level->width);
     for (i = 0; i < SPRITECOUNT; i++) {
         copypixelformat(level->spritedata[i]->data->format, level->pixelformat);
     }
