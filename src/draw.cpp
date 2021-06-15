@@ -138,13 +138,15 @@ void display_sprite(TITUS_level *level, TITUS_sprite *spr) {
     //At this point, the buffer should be the correct size
 
     if (!spr->flipped) {
-        dest.x = spr->x - spr->spritedata->refwidth - (BITMAP_X << 4);
+        dest.x = spr->x - spr->spritedata->refwidth - (BITMAP_X << 4) + 16;
     } else {
-        dest.x = spr->x + spr->spritedata->refwidth - spr->spritedata->data->w - (BITMAP_X << 4);
+        dest.x = spr->x + spr->spritedata->refwidth - spr->spritedata->data->w - (BITMAP_X << 4) + 16;
     }
     dest.y = spr->y + spr->spritedata->refheight - spr->spritedata->data->h + 1 - (BITMAP_Y << 4);
 
-    if ((dest.x >= screen_width * 16) || //Right for the screen
+    auto screen_limit = screen_width + 2;
+
+    if ((dest.x >= screen_limit * 16) || //Right for the screen
       (dest.x + spr->spritedata->data->w < 0) || //Left for the screen
       (dest.y + spr->spritedata->data->h < 0) || //Above the screen
       (dest.y >= screen_height * 16)) { //Below the screen
@@ -168,14 +170,12 @@ void display_sprite(TITUS_level *level, TITUS_sprite *spr) {
         src.h -= src.y;
         dest.y = 0;
     }
-    if (dest.x + src.w > screen_width * 16) {
-        src.w = screen_width * 16 - dest.x;
+    if (dest.x + src.w > screen_limit * 16) {
+        src.w = screen_limit * 16 - dest.x;
     }
     if (dest.y + src.h > screen_height * 16) {
         src.h = screen_height * 16 - dest.y;
     }
-
-    dest.x += 16;
 
     SDL_BlitSurface(image, &src, Window::screen, &dest);
 
@@ -360,7 +360,7 @@ void draw_health_bars(TITUS_level *level) {
     if(BAR_FLAG <= 0) {
         return;
     }
-    uint8 offset = 96;
+    uint8 offset = 96 + 16 - g_scroll_px_offset;
     uint8 i;
     SDL_Rect dest;
     for (i = 0; i < level->player.hp; i++) { //Draw big bars (4px*16px, spacing 4px)
@@ -457,6 +457,8 @@ int view_password(TITUS_level *level, uint8 level_index) {
     CLOSE_SCREEN();
     Window::clear();
     Window::render();
+    auto saved_value = g_scroll_px_offset;
+    g_scroll_px_offset = 0;
 
     if (game == GameType::Titus) {
         SDL_Print_Text("LEVEL", 13 * 8, 13 * 8);
@@ -471,6 +473,7 @@ int view_password(TITUS_level *level, uint8 level_index) {
 
     Window::render();
     retval = waitforbutton();
+    g_scroll_px_offset = saved_value;
     if (retval < 0)
         return retval;
 

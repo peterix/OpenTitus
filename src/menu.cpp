@@ -59,7 +59,6 @@ int viewmenu(char * menufile, int menuformat) {
     unsigned int image_alpha = 0;
 
     SDL_Rect src, dest;
-    SDL_Rect sel[2];
 
     retval = unSQZ(menufile, &menudata);
 
@@ -106,10 +105,13 @@ int viewmenu(char * menufile, int menuformat) {
     src.w = image->w;
     src.h = image->h;
 
-    dest.x = 0;
+    dest.x = 16;
     dest.y = 0;
     dest.w = image->w;
     dest.h = image->h;
+
+    SDL_Rect sel[2];
+    SDL_Rect sel_dest[2];
 
     if (game == GameType::Titus) {
 
@@ -134,8 +136,11 @@ int viewmenu(char * menufile, int menuformat) {
         sel[1].y = 180;
         sel[1].w = 8;
         sel[1].h = 8;
-
     }
+    sel_dest[0] = sel[0];
+    sel_dest[0].x += 16;
+    sel_dest[1] = sel[1];
+    sel_dest[1].x += 16;
 
     tick_start = SDL_GetTicks();
 
@@ -175,8 +180,8 @@ int viewmenu(char * menufile, int menuformat) {
         SDL_SetSurfaceBlendMode(image, SDL_BLENDMODE_BLEND);
         SDL_SetSurfaceAlphaMod(image, image_alpha);
         SDL_BlitSurface(image, &src, Window::screen, &dest);
-        SDL_BlitSurface(image, &sel[1], Window::screen, &sel[0]);
-        SDL_BlitSurface(image, &sel[0], Window::screen, &sel[selection]);
+        SDL_BlitSurface(image, &sel[1], Window::screen, &sel_dest[0]);
+        SDL_BlitSurface(image, &sel[0], Window::screen, &sel_dest[selection]);
         Window::render();
         titus_sleep();
 
@@ -219,8 +224,8 @@ int viewmenu(char * menufile, int menuformat) {
 
         Window::clear();
         SDL_BlitSurface(image, &src, Window::screen, &dest);
-        SDL_BlitSurface(image, &sel[1], Window::screen, &sel[0]);
-        SDL_BlitSurface(image, &sel[0], Window::screen, &sel[selection]);
+        SDL_BlitSurface(image, &sel[1], Window::screen, &sel_dest[0]);
+        SDL_BlitSurface(image, &sel[0], Window::screen, &sel_dest[selection]);
         Window::render();
         titus_sleep();
     }
@@ -288,8 +293,8 @@ int viewmenu(char * menufile, int menuformat) {
         SDL_SetSurfaceBlendMode(image, SDL_BLENDMODE_BLEND);
         SDL_SetSurfaceAlphaMod(image, 255 - image_alpha);
         SDL_BlitSurface(image, &src, Window::screen, &dest);
-        SDL_FillRect(Window::screen, &sel[0], 0); //SDL_MapRGB(surface->format, 0, 0, 0));
-        SDL_BlitSurface(image, &sel[0], Window::screen, &sel[selection]);
+        SDL_FillRect(Window::screen, &sel_dest[0], 0); //SDL_MapRGB(surface->format, 0, 0, 0));
+        SDL_BlitSurface(image, &sel[0], Window::screen, &sel_dest[selection]);
         Window::render();
         titus_sleep();
     }

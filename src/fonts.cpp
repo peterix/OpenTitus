@@ -224,7 +224,7 @@ int SDL_Print_Text(const char *text, int x, int y){
 
     src.x = 0;
     src.y = 0;
-    dest.x = x;
+    dest.x = x + 16;
     dest.y = y;
 
     for (i = 0; i < strlen(text); i++) {
