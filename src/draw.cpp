@@ -54,6 +54,7 @@
 
 static SDL_Surface *sprite_from_cache(TITUS_level *level, TITUS_sprite *spr);
 static void display_sprite(TITUS_level *level, TITUS_sprite *spr);
+static void display_sprite_xx(TITUS_level *level, TITUS_sprite *spr, const char * thing);
 
 void DISPLAY_TILES(TITUS_level *level) {
     //First of all: make the screen black, at least the lower part of the screen
@@ -115,7 +116,8 @@ void DISPLAY_SPRITES(TITUS_level *level) {
 
     display_sprite(level, &(level->player.sprite3));
     display_sprite(level, &(level->player.sprite2));
-    display_sprite(level, &(level->player.sprite));
+    //display_sprite_xx(level, &(level->player.sprite2), "HELD");
+    display_sprite_xx(level, &(level->player.sprite), "FOX");
 
     if (GODMODE) {
         SDL_Print_Text("GODMODE", 30 * 8, 0 * 12);
@@ -123,6 +125,75 @@ void DISPLAY_SPRITES(TITUS_level *level) {
     if (NOCLIP) {
         SDL_Print_Text("NOCLIP", 30 * 8, 1 * 12);
     }
+}
+
+void set_pixel(SDL_Surface *surface, int x, int y, Uint32 pixel)
+{
+    Uint32 * const target_pixel = (Uint32 *) ((Uint8 *) surface->pixels + y * surface->pitch + x * surface->format->BytesPerPixel);
+    *target_pixel = pixel;
+}
+
+void display_sprite_xx(TITUS_level *level, TITUS_sprite *spr, const char * thing) {
+    SDL_Surface *image;
+    SDL_Rect src, dest;
+    if (!spr->enabled) {
+        return;
+    }
+    if (spr->invisible) {
+        return;
+    }
+    spr->visible = false;
+    //At this point, the buffer should be the correct size
+
+    printf("%s %d %d\n", thing, spr->x, spr->spritedata->refwidth);
+    fflush(stdout);
+
+    if (!spr->flipped) {
+        dest.x = spr->x - spr->spritedata->refwidth - (BITMAP_X << 4) + 16;
+    } else {
+        dest.x = spr->x + spr->spritedata->refwidth - spr->spritedata->data->w - (BITMAP_X << 4) + 16;
+    }
+    dest.y = spr->y + spr->spritedata->refheight - spr->spritedata->data->h + 1 - (BITMAP_Y << 4);
+
+    auto screen_limit = screen_width + 2;
+
+    if ((dest.x >= screen_limit * 16) || //Right for the screen
+      (dest.x + spr->spritedata->data->w < 0) || //Left for the screen
+      (dest.y + spr->spritedata->data->h < 0) || //Above the screen
+      (dest.y >= screen_height * 16)) { //Below the screen
+        return;
+    }
+
+    image = sprite_from_cache(level, spr);
+
+    src.x = 0;
+    src.y = 0;
+    src.w = image->w;
+    src.h = image->h;
+
+    if (dest.x < 0) {
+        src.x = 0 - dest.x;
+        src.w -= src.x;
+        dest.x = 0;
+    }
+    if (dest.y < 0) {
+        src.y = 0 - dest.y;
+        src.h -= src.y;
+        dest.y = 0;
+    }
+    if (dest.x + src.w > screen_limit * 16) {
+        src.w = screen_limit * 16 - dest.x;
+    }
+    if (dest.y + src.h > screen_height * 16) {
+        src.h = screen_height * 16 - dest.y;
+    }
+
+    SDL_BlitSurface(image, &src, Window::screen, &dest);
+    set_pixel(Window::screen, dest.x, dest.y, 0);
+
+    spr->visible = true;
+    spr->flash = false;
+
 }
 
 void display_sprite(TITUS_level *level, TITUS_sprite *spr) {
@@ -234,52 +305,15 @@ SDL_Surface *sprite_from_cache(TITUS_level *level, TITUS_sprite *spr) {
     }
 }
 
-void NO_FAST_CPU(bool slow) {
-    int tick, duration, delay, tick2;
-    tick = SDL_GetTicks();
-    if (slow) {
-        delay = 29; //28.53612, fps: 70.09Hz/2
-    } else {
-        delay = 10;
-    }
-    LOOPTIME = (tick - LAST_CLOCK);
-    delay = delay - (tick - LAST_CLOCK) - LAST_CLOCK_CORR;
-    LAST_CLOCK_CORR = 0;
-    if (delay > 40) {
-        delay = 1;
-    } else if (delay < 0) {
-        LAST_CLOCK_CORR = (0 - delay) / 2; // To reduce LAST_CLOCK_CORR
-        delay = 0;
-    }
-
-    tick2 = SDL_GetTicks();
-    duration = abs(tick - tick2);
-    while (duration < delay) {
-        titus_sleep();
-        //SDL_Delay(1);
-        tick2 = SDL_GetTicks();
-        duration = abs(tick - tick2);
-    }
-
-    tick2 = SDL_GetTicks();
-    if ((tick2 / 1000) != (LAST_CLOCK / 1000)) {
-        FPS_LAST = FPS;
-        FPS = 0;
-    }
-    FPS++;
-
-
-    LAST_CLOCK_CORR += tick2 - tick - delay;
-        if (LAST_CLOCK_CORR > 25) {
-            LAST_CLOCK_CORR = 25;
-        }
-
-    LAST_CLOCK = tick2;
-}
-
-void flip_screen(bool slow) {
+void flip_screen(ScreenContext & context, bool slow) {
     Window::render();
-    NO_FAST_CPU(slow);
+    if(slow) {
+        context.advance_29();
+    }
+    else {
+        SDL_Delay(10);
+        context.reset();
+    }
 }
 
 int viewstatus(TITUS_level *level, bool countbonus){
@@ -321,17 +355,15 @@ int viewstatus(TITUS_level *level, bool countbonus){
                 sprintf(tmpchars, "%2d", level->extrabonus);
                 SDL_Print_Text(tmpchars, 28 * 8 - strlen(tmpchars) * 8, 10 * 12);
                 Window::render();
-                for (j = 0; j < 15; j++) {
-                    NO_FAST_CPU(false);
-                }
+                // 150 ms
+                titus_sleep(150);
             }
             level->lives++;
             sprintf(tmpchars, "%d", level->lives);
             SDL_Print_Text(tmpchars, 28 * 8 - strlen(tmpchars) * 8, 11 * 12);
             Window::render();
-            for (j = 0; j < 10; j++) {
-                NO_FAST_CPU(false);
-            }
+            // 100 ms
+            titus_sleep(100);
         }
     }
 
@@ -345,14 +377,14 @@ int viewstatus(TITUS_level *level, bool countbonus){
     return (0);
 }
 
-void INIT_SCREENM(TITUS_level *level) {
-    CLOSE_SCREEN();
+void INIT_SCREENM(ScreenContext &context, TITUS_level *level) {
+    CLOSE_SCREEN(context);
     BITMAP_X = 0;
     BITMAP_Y = 0;
     do {
         scroll(level);
     } while (g_scroll_y || g_scroll_x);
-    OPEN_SCREEN(level);
+    OPEN_SCREEN(context, level);
 }
 
 void draw_health_bars(TITUS_level *level) {
@@ -434,8 +466,9 @@ void fadeout() {
 
         image_alpha = (SDL_GetTicks() - tick_start) * 256 / fade_time;
 
-        if (image_alpha > 255)
+        if (image_alpha > 255) {
             image_alpha = 255;
+        }
 
         SDL_SetSurfaceAlphaMod(image, 255 - image_alpha);
         SDL_SetSurfaceBlendMode(image, SDL_BLENDMODE_BLEND);
@@ -443,18 +476,18 @@ void fadeout() {
         SDL_BlitSurface(image, &src, Window::screen, &dest);
         Window::render();
 
-        titus_sleep();
+        titus_sleep(1);
     }
     SDL_FreeSurface(image);
 
 }
 
-int view_password(TITUS_level *level, uint8 level_index) {
+int view_password(ScreenContext &context, TITUS_level *level, uint8 level_index) {
     //Display the password !
     char tmpchars[10];
     int retval;
 
-    CLOSE_SCREEN();
+    CLOSE_SCREEN(context);
     Window::clear();
     Window::render();
     auto saved_value = g_scroll_px_offset;
@@ -478,7 +511,7 @@ int view_password(TITUS_level *level, uint8 level_index) {
         return retval;
 
     //Window::paint();
-    OPEN_SCREEN(level);
+    OPEN_SCREEN(context, level);
     return (0);
 }
 

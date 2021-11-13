@@ -38,7 +38,7 @@
 #include "scroll.h"
 #include "draw.h"
 
-static void check_finish(TITUS_level *level) {
+static void check_finish(ScreenContext &context, TITUS_level *level) {
     TITUS_player *player = &(level->player);
     if (boss_alive) { //There is still a boss that needs to be killed!
         return;
@@ -59,11 +59,11 @@ static void check_finish(TITUS_level *level) {
     }
     SELECT_MUSIC(4);
     WAIT_SONG();
-    CLOSE_SCREEN();
+    CLOSE_SCREEN(context);
     NEWLEVEL_FLAG = true;
 }
 
-static void check_gates(TITUS_level *level) {
+static void check_gates(ScreenContext &context, TITUS_level *level) {
     TITUS_player *player = &(level->player);
     uint8 i;
     if ((CROSS_FLAG == 0) || //not kneestanding
@@ -82,7 +82,7 @@ static void check_gates(TITUS_level *level) {
     }
     player->sprite.speedX = 0;
     player->sprite.speedY = 0;
-    CLOSE_SCREEN();
+    CLOSE_SCREEN(context);
     uint8 orig_xlimit = XLIMIT;
     XLIMIT = level->width - screen_width;
     player->sprite.x = level->gate[i].exitX << 4;
@@ -101,15 +101,15 @@ static void check_gates(TITUS_level *level) {
     }
     XLIMIT = orig_xlimit;
     NOSCROLL_FLAG = level->gate[i].noscroll;
-    OPEN_SCREEN(level);
+    OPEN_SCREEN(context, level);
 }
 
-void CROSSING_GATE(TITUS_level *level) { //Check and handle level completion, and if the player does a kneestand on a secret entrance
-    check_finish(level);
-    check_gates(level);
+void CROSSING_GATE(ScreenContext &context, TITUS_level *level) { //Check and handle level completion, and if the player does a kneestand on a secret entrance
+    check_finish(context, level);
+    check_gates(context, level);
 }
 
-void CLOSE_SCREEN() {
+void CLOSE_SCREEN(ScreenContext &context) {
     SDL_Rect dest;
     uint8 step_count = 10;
     uint16 rwidth = 320; //TODO: make this global
@@ -118,7 +118,7 @@ void CLOSE_SCREEN() {
     uint16 incY = rheight / (step_count * 2); //10
     uint8 i;
     for (i = 0; i < step_count; i++) {
-        flip_screen(false); //quick flip TODO: move to other end of loop?
+        flip_screen(context, false); //quick flip TODO: move to other end of loop?
 
         //Clear top
         dest.x = 0;
@@ -151,7 +151,7 @@ void CLOSE_SCREEN() {
 }
 
 
-void OPEN_SCREEN(TITUS_level *level) {
+void OPEN_SCREEN(ScreenContext &context, TITUS_level *level) {
     SDL_Rect dest;
     int8 step_count = 10;
     uint16 rwidth = 320; //TODO: make this global
@@ -160,7 +160,7 @@ void OPEN_SCREEN(TITUS_level *level) {
     uint16 incY = rheight / (step_count * 2); //10
     uint8 i;
     for (i = step_count - 1; i >= 2; i -= 2) {
-        flip_screen(false); //quick flip TODO: move to other end of loop?
+        flip_screen(context, false); //quick flip TODO: move to other end of loop?
 
         // draw all tiles
         DISPLAY_TILES(level);

@@ -72,87 +72,91 @@ void MOVE_NMI(TITUS_level *level) {
     TITUS_sprite *bullet;
     int i, j;
     uint8 hflag;
-    for (i = 0; i < level->enemycount; i++) {
+    for (int i = 0; i < level->enemycount; i++) {
 
-        if (!(level->enemy[i].sprite.enabled)) continue; //Skip unused enemies
+        auto &enemy = level->enemy[i];
+        auto &enemySprite = enemy.sprite;
+        if (!(enemySprite.enabled)) continue; //Skip unused enemies
+        auto &enemyType = enemy.type;
 
-        switch (level->enemy[i].type) {
+
+        switch (enemyType) {
         case 0:
         case 1:
             //Noclip walk
-            if (level->enemy[i].dying != 0) { //If not 0, the enemy is dying or dead, and have special movement
-                DEAD1(level, &(level->enemy[i]));
+            if (enemy.dying != 0) { //If not 0, the enemy is dying or dead, and have special movement
+                DEAD1(level, &(enemy));
                 continue;
             }
-            level->enemy[i].sprite.x -= level->enemy[i].sprite.speedX; //Move the enemy
-            if (abs(level->enemy[i].sprite.x - level->enemy[i].centerX) > level->enemy[i].rangeX) { //If the enemy is rangeX from center, turn direction
-                if (level->enemy[i].sprite.x >= level->enemy[i].centerX) { //The enemy is at rightmost edge
-                    level->enemy[i].sprite.speedX = abs(level->enemy[i].sprite.speedX);
+            enemySprite.x -= enemySprite.speedX; //Move the enemy
+            if (abs(enemySprite.x - enemy.centerX) > enemy.rangeX) { //If the enemy is rangeX from center, turn direction
+                if (enemySprite.x >= enemy.centerX) { //The enemy is at rightmost edge
+                    enemySprite.speedX = abs(enemySprite.speedX);
                 } else { //The enemy is at leftmost edge
-                    level->enemy[i].sprite.speedX = 0 - abs(level->enemy[i].sprite.speedX);
+                    enemySprite.speedX = 0 - abs(enemySprite.speedX);
                 }
             }
             break;
 
         case 2:
             //Shoot
-            if (level->enemy[i].dying != 0) { //If not 0, the enemy is dying or dead, and have special movement
-                DEAD1(level, &(level->enemy[i]));
+            if (enemy.dying != 0) { //If not 0, the enemy is dying or dead, and have special movement
+                DEAD1(level, &(enemy));
                 continue;
             }
-            if (!level->enemy[i].visible) { //Skip if not on screen
+            if (!enemy.visible) { //Skip if not on screen
                 continue;
             }
             //Give directions!
-            if (level->enemy[i].direction == 0) { //Both ways
-                level->enemy[i].sprite.speedX = 0;
-                if (level->enemy[i].sprite.x < level->player.sprite.x) {
-                    level->enemy[i].sprite.speedX = -1;
+            if (enemy.direction == 0) { //Both ways
+                enemySprite.speedX = 0;
+                if (enemySprite.x < level->player.sprite.x) {
+                    enemySprite.speedX = -1;
                 }
-            } else if (level->enemy[i].direction == 2) { //Right only
-                level->enemy[i].sprite.speedX = -1; //Flip the sprite
+            } else if (enemy.direction == 2) { //Right only
+                enemySprite.speedX = -1; //Flip the sprite
             } else { //Left only
-                level->enemy[i].sprite.speedX = 0; //Not flipped (facing left)
+                enemySprite.speedX = 0; //Not flipped (facing left)
             }
-            switch (level->enemy[i].phase) { //State dependent actions
+            switch (enemy.phase) { //State dependent actions
             case 0:
                 //Scans the horizon!
-                subto0(&(level->enemy[i].counter));
-                if (level->enemy[i].counter != 0) { //Decrease delay timer
+                subto0(&(enemy.counter));
+                if (enemy.counter != 0) { //Decrease delay timer
                     continue;
                 }
-                if (abs(level->player.sprite.y - level->enemy[i].sprite.y) > 24) {
+                if (abs(level->player.sprite.y - enemySprite.y) > 24) {
                     continue;
                 }
-                if (level->enemy[i].rangeX < abs(level->player.sprite.x - level->enemy[i].sprite.x)) { //if too far apart
+                if (enemy.rangeX < abs(level->player.sprite.x - enemySprite.x)) { //if too far apart
                     continue;
                 }
-                if (level->enemy[i].direction != 0) {
-                    if (level->enemy[i].direction == 2) { //Right only
-                        if (level->enemy[i].sprite.x > level->player.sprite.x) { //Skip shooting if player is in opposite direction
+                if (enemy.direction != 0) {
+                    if (enemy.direction == 2) { //Right only
+                        if (enemySprite.x > level->player.sprite.x) { //Skip shooting if player is in opposite direction
                             continue;
                         }
                     } else {
-                        if (level->player.sprite.x > level->enemy[i].sprite.x) { //Skip shooting if player is in opposite direction
+                        if (level->player.sprite.x > enemySprite.x) { //Skip shooting if player is in opposite direction
                             continue;
                         }
                     }
                 }
-                level->enemy[i].phase = 30; //change state
-                UP_ANIMATION(&(level->enemy[i].sprite));
+                enemy.phase = 30; //change state
+                UP_ANIMATION(&(enemySprite));
                 break;
             default:
-                level->enemy[i].phase--;
-                if (!level->enemy[i].trigger) {
+                enemy.phase--;
+                if (!enemy.trigger) {
                     continue;
                 }
-                level->enemy[i].sprite.animation += 2;
+                enemySprite.animation += 2;
                 if (FIND_TRASH(level, &(bullet))) {
-                    PUT_BULLET(level, &(level->enemy[i]), bullet);
-                    //level->enemy[i].counter = NMI_FREQ; //set delay timer
-                    level->enemy[i].counter = level->enemy[i].delay; //set delay timer
+                    PUT_BULLET(level, &(enemy), bullet);
+                    //enemy.counter = NMI_FREQ; //set delay timer
+                    enemy.counter = enemy.delay; //set delay timer
                 }
-                level->enemy[i].phase = 0;
+                enemy.phase = 0;
                 break;
             }
             break;
@@ -160,94 +164,94 @@ void MOVE_NMI(TITUS_level *level) {
         case 3:
         case 4:
             //Noclip walk, jump to player (fish)
-            if (level->enemy[i].dying != 0) { //If not 0, the enemy is dying or dead, and have special movement
-                DEAD1(level, &(level->enemy[i]));
+            if (enemy.dying != 0) { //If not 0, the enemy is dying or dead, and have special movement
+                DEAD1(level, &(enemy));
                 continue;
             }
-            switch (level->enemy[i].phase) { //State dependent actions
+            switch (enemy.phase) { //State dependent actions
             case 0:
-                level->enemy[i].sprite.x -= level->enemy[i].sprite.speedX; //Move the enemy
-                if (abs(level->enemy[i].sprite.x - level->enemy[i].centerX) > level->enemy[i].rangeX) { //If the enemy is rangeX from center, turn direction
-                    if (level->enemy[i].sprite.x >= level->enemy[i].centerX) { //The enemy is at rightmost edge
-                        level->enemy[i].sprite.speedX = abs(level->enemy[i].sprite.speedX);
+                enemySprite.x -= enemySprite.speedX; //Move the enemy
+                if (abs(enemySprite.x - enemy.centerX) > enemy.rangeX) { //If the enemy is rangeX from center, turn direction
+                    if (enemySprite.x >= enemy.centerX) { //The enemy is at rightmost edge
+                        enemySprite.speedX = abs(enemySprite.speedX);
                     } else { //The enemy is at leftmost edge
-                        level->enemy[i].sprite.speedX = 0 - abs(level->enemy[i].sprite.speedX);
+                        enemySprite.speedX = 0 - abs(enemySprite.speedX);
                     }
                 }
-                if (!level->enemy[i].visible) { //Is the enemy on the screen?
+                if (!enemy.visible) { //Is the enemy on the screen?
                     continue;
                 }
-                if ((level->enemy[i].sprite.y < level->player.sprite.y) || (level->enemy[i].sprite.y >= (level->player.sprite.y + 256))) { //Skip if player is below or >= 256 pixels above
+                if ((enemySprite.y < level->player.sprite.y) || (enemySprite.y >= (level->player.sprite.y + 256))) { //Skip if player is below or >= 256 pixels above
                     continue;
                 }
-                if (level->enemy[i].rangeY < (level->enemy[i].sprite.y - level->player.sprite.y)) { //Skip if player is above jump limit
+                if (enemy.rangeY < (enemySprite.y - level->player.sprite.y)) { //Skip if player is above jump limit
                     continue;
                 }
                 //see if the hero is in the direction of movement of fish
-                if (level->enemy[i].sprite.x > level->player.sprite.x) { //The enemy is right for the player
-                    if (level->enemy[i].sprite.flipped == true) { //The enemy looks right, skip
+                if (enemySprite.x > level->player.sprite.x) { //The enemy is right for the player
+                    if (enemySprite.flipped == true) { //The enemy looks right, skip
                         continue;
                     }
                 } else { //The enemy is left for the player
-                    if (level->enemy[i].sprite.flipped == false) { //The enemy looks left, skip
+                    if (enemySprite.flipped == false) { //The enemy looks left, skip
                         continue;
                     }
                 }
-                if (abs(level->enemy[i].sprite.x - level->player.sprite.x) >= 48) { //Fast calculation
+                if (abs(enemySprite.x - level->player.sprite.x) >= 48) { //Fast calculation
                     continue;
                 }
                 //See if the hero is above the area of fish
-                if (abs(level->player.sprite.x - level->enemy[i].centerX) > level->enemy[i].rangeX) {
+                if (abs(level->player.sprite.x - enemy.centerX) > enemy.rangeX) {
                     continue;
                 }
-                level->enemy[i].phase = 1; //Change state
+                enemy.phase = 1; //Change state
                 //Calculation speed to the desired height
-                level->enemy[i].sprite.speedY = 0;
+                enemySprite.speedY = 0;
                 j = 0;
                 do {
-                    level->enemy[i].sprite.speedY++; //Set init jump speed
-                    j += level->enemy[i].sprite.speedY;
-                } while ((level->enemy[i].sprite.y - level->player.sprite.y) > j); //Make sure the enemy will jump high enough to hit the player
-                level->enemy[i].sprite.speedY = 0 - level->enemy[i].sprite.speedY; //Init speed must be negative
-                level->enemy[i].delay = level->enemy[i].sprite.y; //Delay: Last Y position, reuse of the delay variable
-                UP_ANIMATION(&(level->enemy[i].sprite));
+                    enemySprite.speedY++; //Set init jump speed
+                    j += enemySprite.speedY;
+                } while ((enemySprite.y - level->player.sprite.y) > j); //Make sure the enemy will jump high enough to hit the player
+                enemySprite.speedY = 0 - enemySprite.speedY; //Init speed must be negative
+                enemy.delay = enemySprite.y; //Delay: Last Y position, reuse of the delay variable
+                UP_ANIMATION(&(enemySprite));
                 break;
             case 1:
-                if (!level->enemy[i].visible) { //Is the enemy on the screen?
+                if (!enemy.visible) { //Is the enemy on the screen?
                     continue;
                 }
-                level->enemy[i].sprite.x -= level->enemy[i].sprite.speedX << 2;
-                level->enemy[i].sprite.y += level->enemy[i].sprite.speedY;
-                if (level->enemy[i].sprite.speedY + 1 < 0) {
-                    level->enemy[i].sprite.speedY++;
-                    if (level->enemy[i].sprite.y > (level->enemy[i].delay - level->enemy[i].rangeY)) { //Delay: Last Y position, reuse of the delay variable
+                enemySprite.x -= enemySprite.speedX << 2;
+                enemySprite.y += enemySprite.speedY;
+                if (enemySprite.speedY + 1 < 0) {
+                    enemySprite.speedY++;
+                    if (enemySprite.y > (enemy.delay - enemy.rangeY)) { //Delay: Last Y position, reuse of the delay variable
                         continue;
                     }
                 }
-                UP_ANIMATION(&(level->enemy[i].sprite));
-                level->enemy[i].phase = 2;
-                level->enemy[i].sprite.speedY = 0;
-                if (level->enemy[i].sprite.x <= level->enemy[i].centerX) {
-                    level->enemy[i].sprite.speedX = abs(level->enemy[i].sprite.speedX);
+                UP_ANIMATION(&(enemySprite));
+                enemy.phase = 2;
+                enemySprite.speedY = 0;
+                if (enemySprite.x <= enemy.centerX) {
+                    enemySprite.speedX = abs(enemySprite.speedX);
                 } else {
-                    level->enemy[i].sprite.speedX = 0 - abs(level->enemy[i].sprite.speedX);
+                    enemySprite.speedX = 0 - abs(enemySprite.speedX);
                 }
                 break;
             case 2:
-                if (!level->enemy[i].visible) { //Is the enemy on the screen?
+                if (!enemy.visible) { //Is the enemy on the screen?
                     continue;
                 }
-                level->enemy[i].sprite.x -= level->enemy[i].sprite.speedX;
-                level->enemy[i].sprite.y += level->enemy[i].sprite.speedY; //2: fall!
-                level->enemy[i].sprite.speedY++;
-                if (level->enemy[i].sprite.y < level->enemy[i].delay) { //3: we hit bottom? //Delay: Last Y position, reuse of the delay variable
+                enemySprite.x -= enemySprite.speedX;
+                enemySprite.y += enemySprite.speedY; //2: fall!
+                enemySprite.speedY++;
+                if (enemySprite.y < enemy.delay) { //3: we hit bottom? //Delay: Last Y position, reuse of the delay variable
                     continue;
                 }
-                level->enemy[i].sprite.y = level->enemy[i].delay; //Delay: Last Y position, reuse of the delay variable
-                level->enemy[i].sprite.x -= level->enemy[i].sprite.speedX;
-                level->enemy[i].phase = 0;
-                DOWN_ANIMATION(&(level->enemy[i].sprite));
-                DOWN_ANIMATION(&(level->enemy[i].sprite));
+                enemySprite.y = enemy.delay; //Delay: Last Y position, reuse of the delay variable
+                enemySprite.x -= enemySprite.speedX;
+                enemy.phase = 0;
+                DOWN_ANIMATION(&(enemySprite));
+                DOWN_ANIMATION(&(enemySprite));
                 break;
             }
             break;
@@ -255,197 +259,197 @@ void MOVE_NMI(TITUS_level *level) {
         case 5:
         case 6:
             //Noclip walk, move to player (fly)
-            if (level->enemy[i].dying != 0) { //If not 0, the enemy is dying or dead, and have special movement
-                DEAD1(level, &(level->enemy[i]));
+            if (enemy.dying != 0) { //If not 0, the enemy is dying or dead, and have special movement
+                DEAD1(level, &(enemy));
                 continue;
             }
-            level->enemy[i].sprite.x -= level->enemy[i].sprite.speedX; //Move the enemy
-            if (abs(level->enemy[i].sprite.x - level->enemy[i].centerX) > level->enemy[i].rangeX) { //If the enemy is rangeX from center, turn direction
-                if (level->enemy[i].sprite.x >= level->enemy[i].centerX) { //The enemy is at rightmost edge
-                    level->enemy[i].sprite.speedX = abs(level->enemy[i].sprite.speedX);
+            enemySprite.x -= enemySprite.speedX; //Move the enemy
+            if (abs(enemySprite.x - enemy.centerX) > enemy.rangeX) { //If the enemy is rangeX from center, turn direction
+                if (enemySprite.x >= enemy.centerX) { //The enemy is at rightmost edge
+                    enemySprite.speedX = abs(enemySprite.speedX);
                 } else { //The enemy is at leftmost edge
-                    level->enemy[i].sprite.speedX = 0 - abs(level->enemy[i].sprite.speedX);
+                    enemySprite.speedX = 0 - abs(enemySprite.speedX);
                 }
             }
-            if (!level->enemy[i].visible) { //Is the enemy on the screen?
+            if (!enemy.visible) { //Is the enemy on the screen?
                 continue;
             }
-            switch (level->enemy[i].phase) { //State dependent actions
+            switch (enemy.phase) { //State dependent actions
             case 0:
                 //Forward
-                if (abs(level->enemy[i].sprite.y - level->player.sprite.y) > level->enemy[i].rangeY) { //Too far away
+                if (abs(enemySprite.y - level->player.sprite.y) > enemy.rangeY) { //Too far away
                     continue;
                 }
-                if (abs(level->enemy[i].sprite.x - level->player.sprite.x) > 40) { //Too far away
+                if (abs(enemySprite.x - level->player.sprite.x) > 40) { //Too far away
                     continue;
                 }
-                level->enemy[i].delay = level->enemy[i].sprite.y; //Delay: Last Y position, reuse of the delay variable
-                if (level->enemy[i].sprite.y < level->player.sprite.y) { //Player is below the enemy
-                    level->enemy[i].sprite.speedY = 2;
+                enemy.delay = enemySprite.y; //Delay: Last Y position, reuse of the delay variable
+                if (enemySprite.y < level->player.sprite.y) { //Player is below the enemy
+                    enemySprite.speedY = 2;
                 } else { //Player is above the enemy
-                    level->enemy[i].sprite.speedY = -2;
+                    enemySprite.speedY = -2;
                 }
-                level->enemy[i].phase = 1; //Change state
-                UP_ANIMATION(&(level->enemy[i].sprite));
+                enemy.phase = 1; //Change state
+                UP_ANIMATION(&(enemySprite));
                 break;
             case 1:
                 //Attack
-                level->enemy[i].sprite.y += level->enemy[i].sprite.speedY;
-                if (abs(long(level->enemy[i].sprite.y) - long(level->enemy[i].delay)) < level->enemy[i].rangeY) { //Delay: Last Y position, reuse of the delay variable
+                enemySprite.y += enemySprite.speedY;
+                if (abs(long(enemySprite.y) - long(enemy.delay)) < enemy.rangeY) { //Delay: Last Y position, reuse of the delay variable
                     continue;
                 }
-                level->enemy[i].sprite.speedY = 0 - level->enemy[i].sprite.speedY;
-                UP_ANIMATION(&(level->enemy[i].sprite));
-                level->enemy[i].phase = 2;
+                enemySprite.speedY = 0 - enemySprite.speedY;
+                UP_ANIMATION(&(enemySprite));
+                enemy.phase = 2;
                 break;
             case 2:
                 //Back up!
-                level->enemy[i].sprite.y += level->enemy[i].sprite.speedY;
-                if (level->enemy[i].sprite.y != level->enemy[i].delay) { //Delay: Last Y position, reuse of the delay variable
+                enemySprite.y += enemySprite.speedY;
+                if (enemySprite.y != enemy.delay) { //Delay: Last Y position, reuse of the delay variable
                     continue;
                 }
-                DOWN_ANIMATION(&(level->enemy[i].sprite));
-                DOWN_ANIMATION(&(level->enemy[i].sprite));
-                level->enemy[i].phase = 0;
+                DOWN_ANIMATION(&(enemySprite));
+                DOWN_ANIMATION(&(enemySprite));
+                enemy.phase = 0;
                 break;
             }
             break;
 
         case 7:
             //Gravity walk, hit when near
-            if (level->enemy[i].dying != 0) { //If not 0, the enemy is dying or dead, and have special movement
-                DEAD1(level, &(level->enemy[i]));
+            if (enemy.dying != 0) { //If not 0, the enemy is dying or dead, and have special movement
+                DEAD1(level, &(enemy));
                 continue;
             }
-            switch (level->enemy[i].phase) { //State dependent actions
+            switch (enemy.phase) { //State dependent actions
             case 0:
                 //Waiting
-                if (level->enemy[i].sprite.y > level->player.sprite.y) {
+                if (enemySprite.y > level->player.sprite.y) {
                     continue;
                 }
-                if (level->enemy[i].rangeX < abs(level->enemy[i].sprite.x - level->player.sprite.x)) {
+                if (enemy.rangeX < abs(enemySprite.x - level->player.sprite.x)) {
                     continue;
                 }
-                if (abs(level->enemy[i].sprite.y - level->player.sprite.y) > 200) {
+                if (abs(enemySprite.y - level->player.sprite.y) > 200) {
                     continue;
                 }
-                level->enemy[i].phase = 1;
-                UP_ANIMATION(&(level->enemy[i].sprite));
-                if (level->enemy[i].sprite.x > level->player.sprite.x) { //Enemy is right for the player
-                    level->enemy[i].sprite.speedX = level->enemy[i].walkspeedX; //Move left
+                enemy.phase = 1;
+                UP_ANIMATION(&(enemySprite));
+                if (enemySprite.x > level->player.sprite.x) { //Enemy is right for the player
+                    enemySprite.speedX = enemy.walkspeedX; //Move left
                 } else { //Enemy is left for the player
-                    level->enemy[i].sprite.speedX = 0 - level->enemy[i].walkspeedX; //Move right
+                    enemySprite.speedX = 0 - enemy.walkspeedX; //Move right
                 }
                 break;
             case 1:
                 //Gravity walk
-                if (get_floorflag(level, (level->enemy[i].sprite.y >> 4), (level->enemy[i].sprite.x >> 4)) == FFLAG_NOFLOOR) {
-                    if (level->enemy[i].sprite.speedY < 16) { //16 = Max yspeed
-                        level->enemy[i].sprite.speedY++;
+                if (get_floorflag(level, (enemySprite.y >> 4), (enemySprite.x >> 4)) == FFLAG_NOFLOOR) {
+                    if (enemySprite.speedY < 16) { //16 = Max yspeed
+                        enemySprite.speedY++;
                     }
-                    level->enemy[i].sprite.y += level->enemy[i].sprite.speedY;
+                    enemySprite.y += enemySprite.speedY;
                     continue;
                 }
-                if (level->enemy[i].sprite.speedY != 0) {
-                    if (level->enemy[i].sprite.x > level->player.sprite.x) { //Enemy is right for the player
-                        level->enemy[i].sprite.speedX = level->enemy[i].walkspeedX; //Move left
+                if (enemySprite.speedY != 0) {
+                    if (enemySprite.x > level->player.sprite.x) { //Enemy is right for the player
+                        enemySprite.speedX = enemy.walkspeedX; //Move left
                     } else { //Enemy is left for the player
-                        level->enemy[i].sprite.speedX = 0 - level->enemy[i].walkspeedX; //Move right
+                        enemySprite.speedX = 0 - enemy.walkspeedX; //Move right
                     }
                 }
-                level->enemy[i].sprite.speedY = 0;
-                level->enemy[i].sprite.y = level->enemy[i].sprite.y & 0xFFF0;
-                if (level->enemy[i].sprite.speedX > 0) {
+                enemySprite.speedY = 0;
+                enemySprite.y = enemySprite.y & 0xFFF0;
+                if (enemySprite.speedX > 0) {
                     j = -1; //moving left
                 } else {
                     j = 1; //moving right
                 }
-                hflag = get_horizflag(level, (level->enemy[i].sprite.y >> 4) - 1, (level->enemy[i].sprite.x >> 4) + j);
+                hflag = get_horizflag(level, (enemySprite.y >> 4) - 1, (enemySprite.x >> 4) + j);
                 if ((hflag == HFLAG_WALL) ||
                   (hflag == HFLAG_DEADLY) ||
                   (hflag == HFLAG_PADLOCK)) { //Next tile is wall, change direction
-                    level->enemy[i].sprite.speedX = 0 - level->enemy[i].sprite.speedX;
+                    enemySprite.speedX = 0 - enemySprite.speedX;
                 }
-                level->enemy[i].sprite.x -= level->enemy[i].sprite.speedX;
-                if (level->enemy[i].sprite.x < 0) {
-                    level->enemy[i].sprite.speedX =  0 - level->enemy[i].sprite.speedX;
-                    level->enemy[i].sprite.x -= level->enemy[i].sprite.speedX;
+                enemySprite.x -= enemySprite.speedX;
+                if (enemySprite.x < 0) {
+                    enemySprite.speedX =  0 - enemySprite.speedX;
+                    enemySprite.x -= enemySprite.speedX;
                 }
-                if (abs(level->player.sprite.x - level->enemy[i].sprite.x) > 320 * 2) { //Too far away from the player in X, reset
-                    level->enemy[i].phase = 2;
+                if (abs(level->player.sprite.x - enemySprite.x) > 320 * 2) { //Too far away from the player in X, reset
+                    enemy.phase = 2;
                     continue;
                 }
-                if (abs(level->player.sprite.y - level->enemy[i].sprite.y) >= 200 * 2) { //Too far away from the player in Y, reset
-                    level->enemy[i].phase = 2;
+                if (abs(level->player.sprite.y - enemySprite.y) >= 200 * 2) { //Too far away from the player in Y, reset
+                    enemy.phase = 2;
                     continue;
                 }
-                if (abs(level->player.sprite.x - level->enemy[i].sprite.x) > level->enemy[i].sprite.spritedata->data->w + 6) {
+                if (abs(level->player.sprite.x - enemySprite.x) > enemySprite.spritedata->data->w + 6) {
                     continue;
                 }
-                if (abs(level->player.sprite.y - level->enemy[i].sprite.y) > 8) {
+                if (abs(level->player.sprite.y - enemySprite.y) > 8) {
                     continue;
                 }
-                level->enemy[i].phase = 3; //The player is close to the enemy, strike!
-                UP_ANIMATION(&(level->enemy[i].sprite));
+                enemy.phase = 3; //The player is close to the enemy, strike!
+                UP_ANIMATION(&(enemySprite));
                 break;
             case 2:
                 //Reset the enemy
-                if (((level->enemy[i].initY >> 4) - BITMAP_Y <= 13) && //13 tiles in Y
-                  ((level->enemy[i].initY >> 4) - BITMAP_Y >= 0) &&
-                  ((level->enemy[i].initX >> 4) - BITMAP_X < 21) && //21 tiles in X
-                  ((level->enemy[i].initX >> 4) - BITMAP_X >= 0)) {
+                if (((enemy.initY >> 4) - BITMAP_Y <= 13) && //13 tiles in Y
+                  ((enemy.initY >> 4) - BITMAP_Y >= 0) &&
+                  ((enemy.initX >> 4) - BITMAP_X < 21) && //21 tiles in X
+                  ((enemy.initX >> 4) - BITMAP_X >= 0)) {
                     continue; //Player is too close to the enemy's spawning point
                 }
-                level->enemy[i].sprite.y = level->enemy[i].initY;
-                level->enemy[i].sprite.x = level->enemy[i].initX;
-                level->enemy[i].phase = 0;
-                DOWN_ANIMATION(&(level->enemy[i].sprite));
+                enemySprite.y = enemy.initY;
+                enemySprite.x = enemy.initX;
+                enemy.phase = 0;
+                DOWN_ANIMATION(&(enemySprite));
                 break;
             case 3:
                 //Strike!
-                if (level->enemy[i].trigger) { //End of strike animation (TODO: check if this will ever be executed)
-                    level->enemy[i].phase = 1;
+                if (enemy.trigger) { //End of strike animation (TODO: check if this will ever be executed)
+                    enemy.phase = 1;
                     continue;
                 }
                 //Gravity walk (equal to the first part of "case 1:")
-                if (get_floorflag(level, (level->enemy[i].sprite.y >> 4), (level->enemy[i].sprite.x >> 4)) == FFLAG_NOFLOOR) {
-                    if (level->enemy[i].sprite.speedY < 16) { //16 = Max yspeed
-                        level->enemy[i].sprite.speedY++;
+                if (get_floorflag(level, (enemySprite.y >> 4), (enemySprite.x >> 4)) == FFLAG_NOFLOOR) {
+                    if (enemySprite.speedY < 16) { //16 = Max yspeed
+                        enemySprite.speedY++;
                     }
-                    level->enemy[i].sprite.y += level->enemy[i].sprite.speedY;
+                    enemySprite.y += enemySprite.speedY;
                     continue;
                 }
-                if (level->enemy[i].sprite.speedY != 0) {
-                    if (level->enemy[i].sprite.x > level->player.sprite.x) { //Enemy is right for the player
-                        level->enemy[i].sprite.speedX = level->enemy[i].walkspeedX; //Move left
+                if (enemySprite.speedY != 0) {
+                    if (enemySprite.x > level->player.sprite.x) { //Enemy is right for the player
+                        enemySprite.speedX = enemy.walkspeedX; //Move left
                     } else { //Enemy is left for the player
-                        level->enemy[i].sprite.speedX = 0 - level->enemy[i].walkspeedX; //Move right
+                        enemySprite.speedX = 0 - enemy.walkspeedX; //Move right
                     }
                 }
-                level->enemy[i].sprite.speedY = 0;
-                level->enemy[i].sprite.y = level->enemy[i].sprite.y & 0xFFF0;
-                if (level->enemy[i].sprite.speedX > 0) {
+                enemySprite.speedY = 0;
+                enemySprite.y = enemySprite.y & 0xFFF0;
+                if (enemySprite.speedX > 0) {
                     j = -1; //moving left
                 } else {
                     j = 1; //moving right
                 }
-                hflag = get_horizflag(level, (level->enemy[i].sprite.y >> 4) - 1, (level->enemy[i].sprite.x >> 4) + j);
+                hflag = get_horizflag(level, (enemySprite.y >> 4) - 1, (enemySprite.x >> 4) + j);
                 if ((hflag == HFLAG_WALL) ||
                   (hflag == HFLAG_DEADLY) ||
                   (hflag == HFLAG_PADLOCK)) { //Next tile is wall, change direction
-                    level->enemy[i].sprite.speedX = 0 - level->enemy[i].sprite.speedX;
+                    enemySprite.speedX = 0 - enemySprite.speedX;
                 }
-                level->enemy[i].sprite.x -= level->enemy[i].sprite.speedX;
-                if (level->enemy[i].sprite.x < 0) {
-                    level->enemy[i].sprite.speedX =  0 - level->enemy[i].sprite.speedX;
-                    level->enemy[i].sprite.x -= level->enemy[i].sprite.speedX;
+                enemySprite.x -= enemySprite.speedX;
+                if (enemySprite.x < 0) {
+                    enemySprite.speedX =  0 - enemySprite.speedX;
+                    enemySprite.x -= enemySprite.speedX;
                 }
-                if (abs(level->player.sprite.x - level->enemy[i].sprite.x) > 320 * 2) { //Too far away from the player in X, reset
-                    level->enemy[i].phase = 2;
+                if (abs(level->player.sprite.x - enemySprite.x) > 320 * 2) { //Too far away from the player in X, reset
+                    enemy.phase = 2;
                     continue;
                 }
-                if (abs(level->player.sprite.y - level->enemy[i].sprite.y) >= 200 * 2) { //Too far away from the player in Y, reset
-                    level->enemy[i].phase = 2;
+                if (abs(level->player.sprite.y - enemySprite.y) >= 200 * 2) { //Too far away from the player in Y, reset
+                    enemy.phase = 2;
                     continue;
                 }
                 break;
@@ -454,101 +458,101 @@ void MOVE_NMI(TITUS_level *level) {
 
         case 8: //Gravity walk when off-screen
         case 14: //Gravity walk when off-screen (immortal)
-            if (level->enemy[i].type == 14) {
-                level->enemy[i].dying = 0; //Immortal
-            } else if (level->enemy[i].dying != 0) { //If not 0, the enemy is dying or dead, and have special movement
-                DEAD1(level, &(level->enemy[i]));
+            if (enemyType == 14) {
+                enemy.dying = 0; //Immortal
+            } else if (enemy.dying != 0) { //If not 0, the enemy is dying or dead, and have special movement
+                DEAD1(level, &(enemy));
                 continue;
             }
-            switch (level->enemy[i].phase) { //State dependent actions
+            switch (enemy.phase) { //State dependent actions
             case 0:
                 //waiting
-                if ((abs(level->enemy[i].sprite.x - level->player.sprite.x) > 340) ||
-                  (abs(level->enemy[i].sprite.y - level->player.sprite.y) >= 230)) {
-                    level->enemy[i].phase = 1;
-                    UP_ANIMATION(&(level->enemy[i].sprite));
-                    if (level->enemy[i].sprite.x > level->player.sprite.x) { //Enemy is right for the player
-                        level->enemy[i].sprite.speedX = level->enemy[i].walkspeedX; //Move left
+                if ((abs(enemySprite.x - level->player.sprite.x) > 340) ||
+                  (abs(enemySprite.y - level->player.sprite.y) >= 230)) {
+                    enemy.phase = 1;
+                    UP_ANIMATION(&(enemySprite));
+                    if (enemySprite.x > level->player.sprite.x) { //Enemy is right for the player
+                        enemySprite.speedX = enemy.walkspeedX; //Move left
                     } else { //Enemy is left for the player
-                        level->enemy[i].sprite.speedX = 0 - level->enemy[i].walkspeedX; //Move right
+                        enemySprite.speedX = 0 - enemy.walkspeedX; //Move right
                     }
                 }
                 break;
             case 1:
-                if (get_floorflag(level, (level->enemy[i].sprite.y >> 4), (level->enemy[i].sprite.x >> 4)) == FFLAG_NOFLOOR) {
-                    if (level->enemy[i].sprite.speedY < 16) { //16 = Max yspeed
-                        level->enemy[i].sprite.speedY++;
+                if (get_floorflag(level, (enemySprite.y >> 4), (enemySprite.x >> 4)) == FFLAG_NOFLOOR) {
+                    if (enemySprite.speedY < 16) { //16 = Max yspeed
+                        enemySprite.speedY++;
                     }
-                    level->enemy[i].sprite.y += level->enemy[i].sprite.speedY;
+                    enemySprite.y += enemySprite.speedY;
                     continue;
                 }
-                if (level->enemy[i].sprite.speedY != 0) {
-                    if (level->enemy[i].sprite.x > level->player.sprite.x) { //Enemy is right for the player
-                        level->enemy[i].sprite.speedX = level->enemy[i].walkspeedX; //Move left
+                if (enemySprite.speedY != 0) {
+                    if (enemySprite.x > level->player.sprite.x) { //Enemy is right for the player
+                        enemySprite.speedX = enemy.walkspeedX; //Move left
                     } else { //Enemy is left for the player
-                        level->enemy[i].sprite.speedX = 0 - level->enemy[i].walkspeedX; //Move right
+                        enemySprite.speedX = 0 - enemy.walkspeedX; //Move right
                     }
                 }
-                level->enemy[i].sprite.speedY = 0;
-                level->enemy[i].sprite.y = level->enemy[i].sprite.y & 0xFFF0;
-                if (level->enemy[i].sprite.speedX > 0) {
+                enemySprite.speedY = 0;
+                enemySprite.y = enemySprite.y & 0xFFF0;
+                if (enemySprite.speedX > 0) {
                     j = -1; //moving left
                 } else {
                     j = 1; //moving right
                 }
-                hflag = get_horizflag(level, (level->enemy[i].sprite.y >> 4) - 1, (level->enemy[i].sprite.x >> 4) + j);
+                hflag = get_horizflag(level, (enemySprite.y >> 4) - 1, (enemySprite.x >> 4) + j);
                 if ((hflag == HFLAG_WALL) ||
                   (hflag == HFLAG_DEADLY) ||
                   (hflag == HFLAG_PADLOCK)) { //Next tile is wall, change direction
-                    level->enemy[i].sprite.speedX = 0 - level->enemy[i].sprite.speedX;
+                    enemySprite.speedX = 0 - enemySprite.speedX;
                 }
-                level->enemy[i].sprite.x -= level->enemy[i].sprite.speedX;
-                if (level->enemy[i].sprite.x < 0) {
-                    level->enemy[i].sprite.speedX =  0 - level->enemy[i].sprite.speedX;
-                    level->enemy[i].sprite.x -= level->enemy[i].sprite.speedX;
+                enemySprite.x -= enemySprite.speedX;
+                if (enemySprite.x < 0) {
+                    enemySprite.speedX =  0 - enemySprite.speedX;
+                    enemySprite.x -= enemySprite.speedX;
                 }
-                if (abs(level->player.sprite.x - level->enemy[i].sprite.x) < 320 * 2) {
+                if (abs(level->player.sprite.x - enemySprite.x) < 320 * 2) {
                     continue;
                 }
-                level->enemy[i].phase = 2;
+                enemy.phase = 2;
                 break;
             case 2:
                 //Reset the enemy
-                if (((level->enemy[i].initY >> 4) - BITMAP_Y < 12) && //12 tiles in Y
-                  ((level->enemy[i].initY >> 4) - BITMAP_Y >= 0) &&
-                  ((level->enemy[i].initX >> 4) - BITMAP_X < 19) && //19 tiles in X
-                  ((level->enemy[i].initX >> 4) - BITMAP_X >= 0)) {
+                if (((enemy.initY >> 4) - BITMAP_Y < 12) && //12 tiles in Y
+                  ((enemy.initY >> 4) - BITMAP_Y >= 0) &&
+                  ((enemy.initX >> 4) - BITMAP_X < 19) && //19 tiles in X
+                  ((enemy.initX >> 4) - BITMAP_X >= 0)) {
                     continue; //Player is too close to the enemy's spawning point
                 }
-                level->enemy[i].sprite.y = level->enemy[i].initY;
-                level->enemy[i].sprite.x = level->enemy[i].initX;
-                level->enemy[i].phase = 0;
-                DOWN_ANIMATION(&(level->enemy[i].sprite));
+                enemySprite.y = enemy.initY;
+                enemySprite.x = enemy.initX;
+                enemy.phase = 0;
+                DOWN_ANIMATION(&(enemySprite));
                 break;
             }
             break;
 
         case 9:
             //Walk and periodically pop-up
-            if (level->enemy[i].dying != 0) { //If not 0, the enemy is dying or dead, and have special movement
-                DEAD1(level, &(level->enemy[i]));
+            if (enemy.dying != 0) { //If not 0, the enemy is dying or dead, and have special movement
+                DEAD1(level, &(enemy));
                 continue;
             }
-            switch (level->enemy[i].phase) { //State dependent actions
+            switch (enemy.phase) { //State dependent actions
             case 0:
                 //wait for its prey!
-                if (level->enemy[i].rangeX < abs(level->player.sprite.x - level->enemy[i].sprite.x)) {
+                if (enemy.rangeX < abs(level->player.sprite.x - enemySprite.x)) {
                     continue;
                 }
-                if (abs(level->player.sprite.y - level->enemy[i].sprite.y) > 60) {
+                if (abs(level->player.sprite.y - enemySprite.y) > 60) {
                     continue;
                 }
-                level->enemy[i].phase = 1;
-                UP_ANIMATION(&(level->enemy[i].sprite));
-                if (level->enemy[i].sprite.x > level->player.sprite.x) { //Enemy is right for the player
-                    level->enemy[i].sprite.speedX = level->enemy[i].walkspeedX; //Move left
+                enemy.phase = 1;
+                UP_ANIMATION(&(enemySprite));
+                if (enemySprite.x > level->player.sprite.x) { //Enemy is right for the player
+                    enemySprite.speedX = enemy.walkspeedX; //Move left
                 } else { //Enemy is left for the player
-                    level->enemy[i].sprite.speedX = 0 - level->enemy[i].walkspeedX; //Move right
+                    enemySprite.speedX = 0 - enemy.walkspeedX; //Move right
                 }
                 break;
             case 1:
@@ -556,94 +560,94 @@ void MOVE_NMI(TITUS_level *level) {
                 TAUPE_FLAG++;
                 if (((TAUPE_FLAG & 0x04) == 0) && //xxxxx0xx //true 4 times, false 4 times,
                   ((IMAGE_COUNTER & 0x01FF) == 0)) { //xxxxxxx0 00000000 //true 1 time, false 511 times
-                    UP_ANIMATION(&(level->enemy[i].sprite));
+                    UP_ANIMATION(&(enemySprite));
                 }
                 if ((IMAGE_COUNTER & 0x007F) == 0) { //xxxxxxxx x0000000 //true 1 time, false 127 times
-                    level->enemy[i].phase = 3;
-                    UP_ANIMATION(&(level->enemy[i].sprite));
+                    enemy.phase = 3;
+                    UP_ANIMATION(&(enemySprite));
                     //Same as "case 3:"
                     //Remove the head or Periskop!
-                    if (!level->enemy[i].visible) { //Is it on the screen?
+                    if (!enemy.visible) { //Is it on the screen?
                         //Give the sequence # 2 and Phase # 1
-                        UP_ANIMATION(&(level->enemy[i].sprite));
-                        level->enemy[i].sprite.animation--; //Previous animation frame
-                        GAL_FORM(level, &(level->enemy[i]));
-                        if (level->enemy[i].sprite.x > level->player.sprite.x) { //Enemy is right for the player
-                            level->enemy[i].sprite.speedX = level->enemy[i].walkspeedX; //Move left
+                        UP_ANIMATION(&(enemySprite));
+                        enemySprite.animation--; //Previous animation frame
+                        GAL_FORM(level, &(enemy));
+                        if (enemySprite.x > level->player.sprite.x) { //Enemy is right for the player
+                            enemySprite.speedX = enemy.walkspeedX; //Move left
                         } else { //Enemy is left for the player
-                            level->enemy[i].sprite.speedX = 0 - level->enemy[i].walkspeedX; //Move right
+                            enemySprite.speedX = 0 - enemy.walkspeedX; //Move right
                         }
-                        level->enemy[i].phase = 1;
-                    } else if (level->enemy[i].trigger) {
-                        if (level->enemy[i].sprite.x > level->player.sprite.x) { //Enemy is right for the player
-                            level->enemy[i].sprite.speedX = level->enemy[i].walkspeedX; //Move left
+                        enemy.phase = 1;
+                    } else if (enemy.trigger) {
+                        if (enemySprite.x > level->player.sprite.x) { //Enemy is right for the player
+                            enemySprite.speedX = enemy.walkspeedX; //Move left
                         } else { //Enemy is left for the player
-                            level->enemy[i].sprite.speedX = 0 - level->enemy[i].walkspeedX; //Move right
+                            enemySprite.speedX = 0 - enemy.walkspeedX; //Move right
                         }
-                        level->enemy[i].phase = 1;
+                        enemy.phase = 1;
                     }
                     continue;
                 }
-                if (get_floorflag(level, (level->enemy[i].sprite.y >> 4), (level->enemy[i].sprite.x >> 4)) == FFLAG_NOFLOOR) {
-                    level->enemy[i].sprite.speedX = abs(level->enemy[i].sprite.speedX);
-                    if (level->enemy[i].initX > level->enemy[i].sprite.x) {
-                        level->enemy[i].sprite.speedX = 0 - level->enemy[i].sprite.speedX;
+                if (get_floorflag(level, (enemySprite.y >> 4), (enemySprite.x >> 4)) == FFLAG_NOFLOOR) {
+                    enemySprite.speedX = abs(enemySprite.speedX);
+                    if (enemy.initX > enemySprite.x) {
+                        enemySprite.speedX = 0 - enemySprite.speedX;
                     }
                 }
-                level->enemy[i].sprite.y = level->enemy[i].sprite.y & 0xFFF0;
-                if (level->enemy[i].sprite.speedX > 0) {
+                enemySprite.y = enemySprite.y & 0xFFF0;
+                if (enemySprite.speedX > 0) {
                     j = -1; //moving left
                 } else {
                     j = 1; //moving right
                 }
-                hflag = get_horizflag(level, (level->enemy[i].sprite.y >> 4) - 1, (level->enemy[i].sprite.x >> 4) + j);
+                hflag = get_horizflag(level, (enemySprite.y >> 4) - 1, (enemySprite.x >> 4) + j);
                 if ((hflag == HFLAG_WALL) ||
                   (hflag == HFLAG_DEADLY) ||
                   (hflag == HFLAG_PADLOCK)) { //Next tile is wall, change direction
-                    level->enemy[i].sprite.speedX = 0 - level->enemy[i].sprite.speedX;
+                    enemySprite.speedX = 0 - enemySprite.speedX;
                 }
-                level->enemy[i].sprite.x -= level->enemy[i].sprite.speedX;
-                if (level->enemy[i].sprite.x < 0) {
-                    level->enemy[i].sprite.speedX = 0 - level->enemy[i].sprite.speedX;
-                    level->enemy[i].sprite.x -= level->enemy[i].sprite.speedX;
+                enemySprite.x -= enemySprite.speedX;
+                if (enemySprite.x < 0) {
+                    enemySprite.speedX = 0 - enemySprite.speedX;
+                    enemySprite.x -= enemySprite.speedX;
                 }
-                if (abs(level->player.sprite.x - level->enemy[i].sprite.x) < 320 * 4) {
+                if (abs(level->player.sprite.x - enemySprite.x) < 320 * 4) {
                     continue;
                 }
-                level->enemy[i].phase = 2;
+                enemy.phase = 2;
                 break;
             case 2:
                 //Reset, if not visible on the screen
-                if (((level->enemy[i].initY >> 4) - BITMAP_Y <= 12) && //12 tiles in Y
-                  ((level->enemy[i].initY >> 4) - BITMAP_Y >= 0) &&
-                  ((level->enemy[i].initX >> 4) - BITMAP_X < 25) && //25 tiles in X
-                  ((level->enemy[i].initX >> 4) - BITMAP_X >= 0)) {
+                if (((enemy.initY >> 4) - BITMAP_Y <= 12) && //12 tiles in Y
+                  ((enemy.initY >> 4) - BITMAP_Y >= 0) &&
+                  ((enemy.initX >> 4) - BITMAP_X < 25) && //25 tiles in X
+                  ((enemy.initX >> 4) - BITMAP_X >= 0)) {
                     continue; //Player is too close to the enemy's spawning point
                 }
-                level->enemy[i].sprite.y = level->enemy[i].initY;
-                level->enemy[i].sprite.x = level->enemy[i].initX;
-                level->enemy[i].phase = 0;
-                DOWN_ANIMATION(&(level->enemy[i].sprite));
+                enemySprite.y = enemy.initY;
+                enemySprite.x = enemy.initX;
+                enemy.phase = 0;
+                DOWN_ANIMATION(&(enemySprite));
                 break;
             case 3:
                 //Remove the head or Periskop!
-                if (!level->enemy[i].visible) { //Is it on the screen?
-                    UP_ANIMATION(&(level->enemy[i].sprite));
-                    level->enemy[i].sprite.animation--; //Previous animation frame
-                    GAL_FORM(level, &(level->enemy[i]));
-                    if (level->enemy[i].sprite.x > level->player.sprite.x) { //Enemy is right for the player
-                        level->enemy[i].sprite.speedX = level->enemy[i].walkspeedX; //Move left
+                if (!enemy.visible) { //Is it on the screen?
+                    UP_ANIMATION(&(enemySprite));
+                    enemySprite.animation--; //Previous animation frame
+                    GAL_FORM(level, &(enemy));
+                    if (enemySprite.x > level->player.sprite.x) { //Enemy is right for the player
+                        enemySprite.speedX = enemy.walkspeedX; //Move left
                     } else { //Enemy is left for the player
-                        level->enemy[i].sprite.speedX = 0 - level->enemy[i].walkspeedX; //Move right
+                        enemySprite.speedX = 0 - enemy.walkspeedX; //Move right
                     }
-                    level->enemy[i].phase = 1;
-                } else if (level->enemy[i].trigger) {
-                    if (level->enemy[i].sprite.x > level->player.sprite.x) { //Enemy is right for the player
-                        level->enemy[i].sprite.speedX = level->enemy[i].walkspeedX; //Move left
+                    enemy.phase = 1;
+                } else if (enemy.trigger) {
+                    if (enemySprite.x > level->player.sprite.x) { //Enemy is right for the player
+                        enemySprite.speedX = enemy.walkspeedX; //Move left
                     } else { //Enemy is left for the player
-                        level->enemy[i].sprite.speedX = 0 - level->enemy[i].walkspeedX; //Move right
+                        enemySprite.speedX = 0 - enemy.walkspeedX; //Move right
                     }
-                    level->enemy[i].phase = 1;
+                    enemy.phase = 1;
                 }
                 break;
             }
@@ -651,220 +655,220 @@ void MOVE_NMI(TITUS_level *level) {
 
         case 10:
             //Alert when near, walk when nearer
-            if (level->enemy[i].dying != 0) { //If not 0, the enemy is dying or dead, and have special movement
-                DEAD1(level, &(level->enemy[i]));
+            if (enemy.dying != 0) { //If not 0, the enemy is dying or dead, and have special movement
+                DEAD1(level, &(enemy));
                 continue;
             }
-            switch (level->enemy[i].phase) { //State dependent actions
+            switch (enemy.phase) { //State dependent actions
             case 0:
                 if (FURTIF_FLAG != 0) {
                     continue;
                 }
-                if (level->enemy[i].rangeX < abs(level->player.sprite.x - level->enemy[i].sprite.x)) {
+                if (enemy.rangeX < abs(level->player.sprite.x - enemySprite.x)) {
                     continue;
                 }
-                if (abs(level->player.sprite.y - level->enemy[i].sprite.y) > 26) {
+                if (abs(level->player.sprite.y - enemySprite.y) > 26) {
                     continue;
                 }
-                level->enemy[i].phase = 1;
-                UP_ANIMATION(&(level->enemy[i].sprite));
-                if (level->enemy[i].sprite.x > level->player.sprite.x) { //Enemy is right for the player
-                    level->enemy[i].sprite.speedX = level->enemy[i].walkspeedX; //Move left
+                enemy.phase = 1;
+                UP_ANIMATION(&(enemySprite));
+                if (enemySprite.x > level->player.sprite.x) { //Enemy is right for the player
+                    enemySprite.speedX = enemy.walkspeedX; //Move left
                 } else { //Enemy is left for the player
-                    level->enemy[i].sprite.speedX = 0 - level->enemy[i].walkspeedX; //Move right
+                    enemySprite.speedX = 0 - enemy.walkspeedX; //Move right
                 }
             case 1:
                 //wait
                 if (FURTIF_FLAG != 0) {
                     continue;
                 }
-                if (level->enemy[i].rangeX < abs(level->player.sprite.x - level->enemy[i].sprite.x)) {
+                if (enemy.rangeX < abs(level->player.sprite.x - enemySprite.x)) {
                     //Switch back to state 0
-                    DOWN_ANIMATION(&(level->enemy[i].sprite));
-                    level->enemy[i].phase = 0;
+                    DOWN_ANIMATION(&(enemySprite));
+                    enemy.phase = 0;
                     continue;
                 }
-                if ((level->enemy[i].rangeX - 50 >= abs(level->player.sprite.x - level->enemy[i].sprite.x)) &&
-                  (abs(level->player.sprite.y - level->enemy[i].sprite.y) <= 60)) {
-                    level->enemy[i].phase = 2;
-                    UP_ANIMATION(&(level->enemy[i].sprite));
+                if ((enemy.rangeX - 50 >= abs(level->player.sprite.x - enemySprite.x)) &&
+                  (abs(level->player.sprite.y - enemySprite.y) <= 60)) {
+                    enemy.phase = 2;
+                    UP_ANIMATION(&(enemySprite));
                 }
                 break;
             case 2:
                 //run
-                if (get_floorflag(level, (level->enemy[i].sprite.y >> 4), (level->enemy[i].sprite.x >> 4)) == FFLAG_NOFLOOR) {
-                    level->enemy[i].sprite.speedX = abs(level->enemy[i].sprite.speedX);
-                    if (level->enemy[i].initX > level->enemy[i].sprite.x) {
-                        level->enemy[i].sprite.speedX = 0 - level->enemy[i].sprite.speedX;
+                if (get_floorflag(level, (enemySprite.y >> 4), (enemySprite.x >> 4)) == FFLAG_NOFLOOR) {
+                    enemySprite.speedX = abs(enemySprite.speedX);
+                    if (enemy.initX > enemySprite.x) {
+                        enemySprite.speedX = 0 - enemySprite.speedX;
                     }
                 }
-                level->enemy[i].sprite.y = level->enemy[i].sprite.y & 0xFFF0;
-                if (level->enemy[i].sprite.speedX > 0) {
+                enemySprite.y = enemySprite.y & 0xFFF0;
+                if (enemySprite.speedX > 0) {
                     j = -1; //moving left
                 } else {
                     j = 1; //moving right
                 }
-                hflag = get_horizflag(level, (level->enemy[i].sprite.y >> 4) - 1, (level->enemy[i].sprite.x >> 4) + j);
+                hflag = get_horizflag(level, (enemySprite.y >> 4) - 1, (enemySprite.x >> 4) + j);
                 if ((hflag == HFLAG_WALL) ||
                   (hflag == HFLAG_DEADLY) ||
                   (hflag == HFLAG_PADLOCK)) { //Next tile is wall, change direction
-                    level->enemy[i].sprite.speedX = abs(level->enemy[i].sprite.speedX);
-                    if (level->enemy[i].initX > level->enemy[i].sprite.x) {
-                        level->enemy[i].sprite.speedX = 0 - level->enemy[i].sprite.speedX;
+                    enemySprite.speedX = abs(enemySprite.speedX);
+                    if (enemy.initX > enemySprite.x) {
+                        enemySprite.speedX = 0 - enemySprite.speedX;
                     }
                 }
-                level->enemy[i].sprite.x -= level->enemy[i].sprite.speedX;
-                if (level->enemy[i].sprite.x < 0) {
-                    level->enemy[i].sprite.speedX = 0 - level->enemy[i].sprite.speedX;
-                    level->enemy[i].sprite.x -= level->enemy[i].sprite.speedX;
+                enemySprite.x -= enemySprite.speedX;
+                if (enemySprite.x < 0) {
+                    enemySprite.speedX = 0 - enemySprite.speedX;
+                    enemySprite.x -= enemySprite.speedX;
                 }
-                if (abs(level->player.sprite.x - level->enemy[i].sprite.x) >= 320 * 2) {
-                    level->enemy[i].phase = 3;
+                if (abs(level->player.sprite.x - enemySprite.x) >= 320 * 2) {
+                    enemy.phase = 3;
                 }
                 break;
             case 3:
                 //Reset, if not visible on the screen
-                if (((level->enemy[i].initY >> 4) - BITMAP_Y <= 13) && //13 tiles in Y
-                  ((level->enemy[i].initY >> 4) - BITMAP_Y >= 0) &&
-                  ((level->enemy[i].initX >> 4) - BITMAP_X < 21) && //21 tiles in X
-                  ((level->enemy[i].initX >> 4) - BITMAP_X >= 0)) {
+                if (((enemy.initY >> 4) - BITMAP_Y <= 13) && //13 tiles in Y
+                  ((enemy.initY >> 4) - BITMAP_Y >= 0) &&
+                  ((enemy.initX >> 4) - BITMAP_X < 21) && //21 tiles in X
+                  ((enemy.initX >> 4) - BITMAP_X >= 0)) {
                     continue; //Spawning point is visible on screen
                 }
-                level->enemy[i].sprite.y = level->enemy[i].initY;
-                level->enemy[i].sprite.x = level->enemy[i].initX;
-                DOWN_ANIMATION(&(level->enemy[i].sprite));
-                DOWN_ANIMATION(&(level->enemy[i].sprite));
-                level->enemy[i].phase = 0;
+                enemySprite.y = enemy.initY;
+                enemySprite.x = enemy.initX;
+                DOWN_ANIMATION(&(enemySprite));
+                DOWN_ANIMATION(&(enemySprite));
+                enemy.phase = 0;
                 break;
             }
             break;
 
         case 11:
             //Walk and shoot
-            if (level->enemy[i].dying != 0) { //If not 0, the enemy is dying or dead, and have special movement
-                DEAD1(level, &(level->enemy[i]));
+            if (enemy.dying != 0) { //If not 0, the enemy is dying or dead, and have special movement
+                DEAD1(level, &(enemy));
                 continue;
             }
-            switch (level->enemy[i].phase) { //State dependent actions
+            switch (enemy.phase) { //State dependent actions
             case 0:
                 //wait
-                if (level->enemy[i].rangeX < abs(level->player.sprite.x - level->enemy[i].sprite.x)) {
+                if (enemy.rangeX < abs(level->player.sprite.x - enemySprite.x)) {
                     continue;
                 }
-                if (abs(level->player.sprite.y - level->enemy[i].sprite.y) > 26) {
+                if (abs(level->player.sprite.y - enemySprite.y) > 26) {
                     continue;
                 }
-                level->enemy[i].phase = 1;
-                UP_ANIMATION(&(level->enemy[i].sprite));
-                if (level->enemy[i].sprite.x > level->player.sprite.x) { //Enemy is right for the player
-                    level->enemy[i].sprite.speedX = level->enemy[i].walkspeedX; //Move left
+                enemy.phase = 1;
+                UP_ANIMATION(&(enemySprite));
+                if (enemySprite.x > level->player.sprite.x) { //Enemy is right for the player
+                    enemySprite.speedX = enemy.walkspeedX; //Move left
                 } else { //Enemy is left for the player
-                    level->enemy[i].sprite.speedX = 0 - level->enemy[i].walkspeedX; //Move right
+                    enemySprite.speedX = 0 - enemy.walkspeedX; //Move right
                 }
                 break;
             case 1:
-                if (get_floorflag(level, (level->enemy[i].sprite.y >> 4), (level->enemy[i].sprite.x >> 4)) == FFLAG_NOFLOOR) {
-                    level->enemy[i].sprite.speedX = abs(level->enemy[i].sprite.speedX);
-                    if (level->enemy[i].initX > level->enemy[i].sprite.x) {
-                        level->enemy[i].sprite.speedX = 0 - level->enemy[i].sprite.speedX;
+                if (get_floorflag(level, (enemySprite.y >> 4), (enemySprite.x >> 4)) == FFLAG_NOFLOOR) {
+                    enemySprite.speedX = abs(enemySprite.speedX);
+                    if (enemy.initX > enemySprite.x) {
+                        enemySprite.speedX = 0 - enemySprite.speedX;
                     }
                 }
-                level->enemy[i].sprite.y = level->enemy[i].sprite.y & 0xFFF0;
-                hflag = get_horizflag(level, (level->enemy[i].sprite.y >> 4) - 1, level->enemy[i].sprite.x >> 4);
+                enemySprite.y = enemySprite.y & 0xFFF0;
+                hflag = get_horizflag(level, (enemySprite.y >> 4) - 1, enemySprite.x >> 4);
                 if ((hflag == HFLAG_WALL) ||
                   (hflag == HFLAG_DEADLY) ||
                   (hflag == HFLAG_PADLOCK)) { //Next tile is wall, change direction
-                    level->enemy[i].sprite.speedX = 0 - level->enemy[i].sprite.speedX;
+                    enemySprite.speedX = 0 - enemySprite.speedX;
                 }
-                level->enemy[i].sprite.x -= level->enemy[i].sprite.speedX;
-                if (level->enemy[i].sprite.x < 0) {
-                    level->enemy[i].sprite.speedX = 0 - level->enemy[i].sprite.speedX;
-                    level->enemy[i].sprite.x -= level->enemy[i].sprite.speedX;
+                enemySprite.x -= enemySprite.speedX;
+                if (enemySprite.x < 0) {
+                    enemySprite.speedX = 0 - enemySprite.speedX;
+                    enemySprite.x -= enemySprite.speedX;
                 }
-                if (abs(level->player.sprite.x - level->enemy[i].sprite.x) >= 320 * 2) {
-                    level->enemy[i].phase = 2;
+                if (abs(level->player.sprite.x - enemySprite.x) >= 320 * 2) {
+                    enemy.phase = 2;
                 }
-                subto0(&(level->enemy[i].counter));
-                if (level->enemy[i].counter != 0) {
+                subto0(&(enemy.counter));
+                if (enemy.counter != 0) {
                     continue;
                 }
-                if (abs(level->player.sprite.x - level->enemy[i].sprite.x) > 64) {
+                if (abs(level->player.sprite.x - enemySprite.x) > 64) {
                     continue;
                 }
-                if (abs(level->player.sprite.y - level->enemy[i].sprite.y) > 20) {
+                if (abs(level->player.sprite.y - enemySprite.y) > 20) {
                     continue;
                 }
-                if (level->enemy[i].sprite.x > level->player.sprite.x) { //Enemy is right for the player
-                    level->enemy[i].sprite.speedX = level->enemy[i].walkspeedX; //Move left
+                if (enemySprite.x > level->player.sprite.x) { //Enemy is right for the player
+                    enemySprite.speedX = enemy.walkspeedX; //Move left
                 } else { //Enemy is left for the player
-                    level->enemy[i].sprite.speedX = 0 - level->enemy[i].walkspeedX; //Move right
+                    enemySprite.speedX = 0 - enemy.walkspeedX; //Move right
                 }
-                level->enemy[i].phase = 3; //phase started!
-                UP_ANIMATION(&(level->enemy[i].sprite));
-                level->enemy[i].counter = 20;
+                enemy.phase = 3; //phase started!
+                UP_ANIMATION(&(enemySprite));
+                enemy.counter = 20;
                 break;
             case 2:
                 //Reset enemy when spawn point isn't visible for the player
-                if (((level->enemy[i].initY >> 4) - BITMAP_Y > 13) || //13 tiles in Y (Spawn is below)
-                  ((level->enemy[i].initY >> 4) - BITMAP_Y < 0) || // (Spawn is above)
-                  ((level->enemy[i].initX >> 4) - BITMAP_X >= 21) || //21 tiles in X (Spawn is to the right)
-                  ((level->enemy[i].initX >> 4) - BITMAP_X < 0)) { //(Spawn is to the right)
-                    level->enemy[i].sprite.x = level->enemy[i].initX;
-                    level->enemy[i].sprite.y = level->enemy[i].initY;
-                    DOWN_ANIMATION(&(level->enemy[i].sprite));
-                    level->enemy[i].phase = 0;
+                if (((enemy.initY >> 4) - BITMAP_Y > 13) || //13 tiles in Y (Spawn is below)
+                  ((enemy.initY >> 4) - BITMAP_Y < 0) || // (Spawn is above)
+                  ((enemy.initX >> 4) - BITMAP_X >= 21) || //21 tiles in X (Spawn is to the right)
+                  ((enemy.initX >> 4) - BITMAP_X < 0)) { //(Spawn is to the right)
+                    enemySprite.x = enemy.initX;
+                    enemySprite.y = enemy.initY;
+                    DOWN_ANIMATION(&(enemySprite));
+                    enemy.phase = 0;
                 }
                 break;
             case 3:
                 //Shoot
-                if (!level->enemy[i].trigger) {
+                if (!enemy.trigger) {
                     continue;
                 }
                 if (FIND_TRASH(level, &(bullet))) {
-                    level->enemy[i].sprite.animation += 2;
-                    PUT_BULLET(level, &(level->enemy[i]), bullet);
+                    enemySprite.animation += 2;
+                    PUT_BULLET(level, &(enemy), bullet);
                 }
-                DOWN_ANIMATION(&(level->enemy[i].sprite));
-                level->enemy[i].phase = 1;
+                DOWN_ANIMATION(&(enemySprite));
+                enemy.phase = 1;
                 break;
             }
             break;
 
         case 12:
             //Jump (fireball) (immortal)
-            level->enemy[i].dying = 0; //Immortal
-            switch (level->enemy[i].phase) { //State dependent actions
+            enemy.dying = 0; //Immortal
+            switch (enemy.phase) { //State dependent actions
             case 0:
                 //init
-                UP_ANIMATION(&(level->enemy[i].sprite));
-                level->enemy[i].sprite.speedY = level->enemy[i].rangeY;
-                level->enemy[i].initY = level->enemy[i].sprite.y;
-                level->enemy[i].phase = 1;
+                UP_ANIMATION(&(enemySprite));
+                enemySprite.speedY = enemy.rangeY;
+                enemy.initY = enemySprite.y;
+                enemy.phase = 1;
                 break;
             case 1:
                 //Fireball moving up
-                level->enemy[i].sprite.y -= level->enemy[i].sprite.speedY;
-                level->enemy[i].sprite.speedY--;
-                if (level->enemy[i].sprite.speedY == 0) {
-                    level->enemy[i].phase = 2;
+                enemySprite.y -= enemySprite.speedY;
+                enemySprite.speedY--;
+                if (enemySprite.speedY == 0) {
+                    enemy.phase = 2;
                 }
                 break;
             case 2:
                 //Fireball falling down
-                level->enemy[i].sprite.y += level->enemy[i].sprite.speedY;
-                level->enemy[i].sprite.speedY++;
-                if (level->enemy[i].sprite.y >= level->enemy[i].initY) {
-                    level->enemy[i].sprite.y = level->enemy[i].initY;
-                    level->enemy[i].counter = level->enemy[i].delay;
-                    level->enemy[i].phase = 3;
-                    DOWN_ANIMATION(&(level->enemy[i].sprite));
+                enemySprite.y += enemySprite.speedY;
+                enemySprite.speedY++;
+                if (enemySprite.y >= enemy.initY) {
+                    enemySprite.y = enemy.initY;
+                    enemy.counter = enemy.delay;
+                    enemy.phase = 3;
+                    DOWN_ANIMATION(&(enemySprite));
                 }
                 break;
             case 3:
                 //Fireball delay
-                level->enemy[i].counter--;
-                if (level->enemy[i].counter == 0) {
-                    level->enemy[i].phase = 0;
+                enemy.counter--;
+                if (enemy.counter == 0) {
+                    enemy.phase = 0;
                 }
                 break;
             }
@@ -872,54 +876,54 @@ void MOVE_NMI(TITUS_level *level) {
 
         case 13:
             //Bounce (big baby)
-            if (level->enemy[i].dying != 0) { //If not 0, the enemy is dying or dead, and have special movement
-                DEAD1(level, &(level->enemy[i]));
+            if (enemy.dying != 0) { //If not 0, the enemy is dying or dead, and have special movement
+                DEAD1(level, &(enemy));
                 continue;
             }
-            switch (level->enemy[i].phase) { //State dependent actions
+            switch (enemy.phase) { //State dependent actions
             case 0:
                 //remain at rest or attack!
-                if (level->player.sprite.x >= level->enemy[i].sprite.x) {
-                    level->enemy[i].sprite.speedX = 0 - abs(level->enemy[i].sprite.speedX);
+                if (level->player.sprite.x >= enemySprite.x) {
+                    enemySprite.speedX = 0 - abs(enemySprite.speedX);
                 } else {
-                    level->enemy[i].sprite.speedX = abs(level->enemy[i].sprite.speedX);
+                    enemySprite.speedX = abs(enemySprite.speedX);
                 }
-                if ((abs(level->player.sprite.x - level->enemy[i].sprite.x) <= level->enemy[i].rangeX) &&
-                  (abs(level->player.sprite.y - level->enemy[i].sprite.y) <= 40)) {
-                    UP_ANIMATION(&(level->enemy[i].sprite));
-                    level->enemy[i].phase = 1;
-                    level->enemy[i].sprite.speedY = 10;
+                if ((abs(level->player.sprite.x - enemySprite.x) <= enemy.rangeX) &&
+                  (abs(level->player.sprite.y - enemySprite.y) <= 40)) {
+                    UP_ANIMATION(&(enemySprite));
+                    enemy.phase = 1;
+                    enemySprite.speedY = 10;
                 }
                 break;
             case 1:
                 //Jump, move upwards
-                level->enemy[i].sprite.x -= level->enemy[i].sprite.speedX;
-                level->enemy[i].sprite.y -= level->enemy[i].sprite.speedY;
-                level->enemy[i].sprite.speedY--;
-                if (level->enemy[i].sprite.speedY == 0) {
-                    UP_ANIMATION(&(level->enemy[i].sprite));
-                    level->enemy[i].phase = 2;
+                enemySprite.x -= enemySprite.speedX;
+                enemySprite.y -= enemySprite.speedY;
+                enemySprite.speedY--;
+                if (enemySprite.speedY == 0) {
+                    UP_ANIMATION(&(enemySprite));
+                    enemy.phase = 2;
                 }
                 break;
             case 2:
                 //Fall down to the ground
-                level->enemy[i].sprite.x -= level->enemy[i].sprite.speedX;
-                level->enemy[i].sprite.y += level->enemy[i].sprite.speedY;
-                level->enemy[i].sprite.speedY++;
-                if (level->enemy[i].sprite.speedY > 10) {
-                    level->enemy[i].phase = 3;
-                    UP_ANIMATION(&(level->enemy[i].sprite));
-                    level->enemy[i].counter = level->enemy[i].delay;
+                enemySprite.x -= enemySprite.speedX;
+                enemySprite.y += enemySprite.speedY;
+                enemySprite.speedY++;
+                if (enemySprite.speedY > 10) {
+                    enemy.phase = 3;
+                    UP_ANIMATION(&(enemySprite));
+                    enemy.counter = enemy.delay;
                 }
                 break;
             case 3:
                 //Stay on the ground for a while
-                level->enemy[i].counter--;
-                if (level->enemy[i].counter == 0) {
-                    DOWN_ANIMATION(&(level->enemy[i].sprite));
-                    DOWN_ANIMATION(&(level->enemy[i].sprite));
-                    DOWN_ANIMATION(&(level->enemy[i].sprite));
-                    level->enemy[i].phase = 0;
+                enemy.counter--;
+                if (enemy.counter == 0) {
+                    DOWN_ANIMATION(&(enemySprite));
+                    DOWN_ANIMATION(&(enemySprite));
+                    DOWN_ANIMATION(&(enemySprite));
+                    enemy.phase = 0;
                 }
                 break;
             }
@@ -931,30 +935,30 @@ void MOVE_NMI(TITUS_level *level) {
 
         case 15:
             //Nothing (immortal)
-            level->enemy[i].dying = 0; //Immortal
+            enemy.dying = 0; //Immortal
             break;
 
         case 16:
             //Nothing
-            if (level->enemy[i].dying != 0) { //If not 0, the enemy is dying or dead, and have special movement
-                DEAD1(level, &(level->enemy[i]));
+            if (enemy.dying != 0) { //If not 0, the enemy is dying or dead, and have special movement
+                DEAD1(level, &(enemy));
                 continue;
             }
             break;
 
         case 17:
             //Drop (immortal)
-            level->enemy[i].dying = 0; //Immortal
+            enemy.dying = 0; //Immortal
             //Delay
-            if (level->enemy[i].counter + 1 < level->enemy[i].delay) {
-                level->enemy[i].counter++;
+            if (enemy.counter + 1 < enemy.delay) {
+                enemy.counter++;
                 continue;
             }
-            if (level->enemy[i].rangeX < abs(level->enemy[i].sprite.x - level->player.sprite.x)) { //hero too far! at x
-                level->enemy[i].counter = 0;
+            if (enemy.rangeX < abs(enemySprite.x - level->player.sprite.x)) { //hero too far! at x
+                enemy.counter = 0;
                 continue;
             }
-            if (level->enemy[i].rangeY < (level->player.sprite.y - level->enemy[i].sprite.y)) { //hero too far! at y
+            if (enemy.rangeY < (level->player.sprite.y - enemySprite.y)) { //hero too far! at y
                 continue;
             }
             //you attack, so finding a free object
@@ -962,68 +966,68 @@ void MOVE_NMI(TITUS_level *level) {
             do {
                 j++;
                 if (j > level->objectcount) {
-                    level->enemy[i].counter = 0;
+                    enemy.counter = 0;
                     continue;
                 }
             } while (level->object[j].sprite.enabled == true);
             //object[j] is free!
-            UP_ANIMATION(&(level->enemy[i].sprite));
-            updateobjectsprite(level, &(level->object[j]), *level->enemy[i].sprite.animation & 0x1FFF, true);
+            UP_ANIMATION(&(enemySprite));
+            updateobjectsprite(level, &(level->object[j]), *enemySprite.animation & 0x1FFF, true);
             level->object[j].sprite.flipped = true;
-            level->object[j].sprite.x = level->enemy[i].sprite.x;
-            level->object[j].sprite.y = level->enemy[i].sprite.y;
+            level->object[j].sprite.x = enemySprite.x;
+            level->object[j].sprite.y = enemySprite.y;
             level->object[j].sprite.droptobottom = true;
             level->object[j].sprite.killing = true;
             level->object[j].sprite.speedY = 0;
             GRAVITY_FLAG = 4;
-            DOWN_ANIMATION(&(level->enemy[i].sprite));
-            level->enemy[i].counter = 0;
+            DOWN_ANIMATION(&(enemySprite));
+            enemy.counter = 0;
             break;
 
         case 18:
             //Guard (helicopter guy)
-            if (level->enemy[i].dying != 0) { //If not 0, the enemy is dying or dead, and have special movement
-                DEAD1(level, &(level->enemy[i]));
+            if (enemy.dying != 0) { //If not 0, the enemy is dying or dead, and have special movement
+                DEAD1(level, &(enemy));
                 continue;
             }
-            if ((level->player.sprite.x < (int16)(level->enemy[i].initX - level->enemy[i].rangeX)) || //Player is too far left
-              (level->player.sprite.x > (int16)(level->enemy[i].initX + level->enemy[i].rangeX)) || //Player is too far right
-              (level->player.sprite.y < (int16)(level->enemy[i].initY - level->enemy[i].rangeY)) || //Player is too high above
-              (level->player.sprite.y > (int16)(level->enemy[i].initY + level->enemy[i].rangeY))) { //Player is too far below
+            if ((level->player.sprite.x < (int16)(enemy.initX - enemy.rangeX)) || //Player is too far left
+              (level->player.sprite.x > (int16)(enemy.initX + enemy.rangeX)) || //Player is too far right
+              (level->player.sprite.y < (int16)(enemy.initY - enemy.rangeY)) || //Player is too high above
+              (level->player.sprite.y > (int16)(enemy.initY + enemy.rangeY))) { //Player is too far below
                 //The player is too far away, move enemy to center
-                if (level->enemy[i].initX != level->enemy[i].sprite.x) {
-                    level->enemy[i].sprite.speedX = abs(level->enemy[i].sprite.speedX);
-                    if (level->enemy[i].initX > level->enemy[i].sprite.x) {
-                        level->enemy[i].sprite.speedX = 0 - level->enemy[i].sprite.speedX;
+                if (enemy.initX != enemySprite.x) {
+                    enemySprite.speedX = abs(enemySprite.speedX);
+                    if (enemy.initX > enemySprite.x) {
+                        enemySprite.speedX = 0 - enemySprite.speedX;
                     }
-                    level->enemy[i].sprite.x -= level->enemy[i].sprite.speedX;
+                    enemySprite.x -= enemySprite.speedX;
                 }
-                if (level->enemy[i].initY != level->enemy[i].sprite.y) {
-                    if (level->enemy[i].initY > level->enemy[i].sprite.y) {
-                        level->enemy[i].sprite.y += level->enemy[i].sprite.speedY;
+                if (enemy.initY != enemySprite.y) {
+                    if (enemy.initY > enemySprite.y) {
+                        enemySprite.y += enemySprite.speedY;
                     } else {
-                        level->enemy[i].sprite.y -= level->enemy[i].sprite.speedY;
+                        enemySprite.y -= enemySprite.speedY;
                     }
                 }
             } else {
                 //The player is inside the guarded area, move enemy to player
-                if (level->player.sprite.x != level->enemy[i].sprite.x) {
-                    level->enemy[i].sprite.speedX = abs(level->enemy[i].sprite.speedX);
-                    if (level->player.sprite.x > level->enemy[i].sprite.x) {
-                        level->enemy[i].sprite.speedX = 0 - level->enemy[i].sprite.speedX;
+                if (level->player.sprite.x != enemySprite.x) {
+                    enemySprite.speedX = abs(enemySprite.speedX);
+                    if (level->player.sprite.x > enemySprite.x) {
+                        enemySprite.speedX = 0 - enemySprite.speedX;
                     }
-                    level->enemy[i].sprite.x -= level->enemy[i].sprite.speedX;
+                    enemySprite.x -= enemySprite.speedX;
                 }
-                if (level->player.sprite.y != level->enemy[i].sprite.y) {
-                    if (level->player.sprite.y > level->enemy[i].sprite.y) {
-                        level->enemy[i].sprite.y += level->enemy[i].sprite.speedY;
+                if (level->player.sprite.y != enemySprite.y) {
+                    if (level->player.sprite.y > enemySprite.y) {
+                        enemySprite.y += enemySprite.speedY;
                     } else {
-                        level->enemy[i].sprite.y -= level->enemy[i].sprite.speedY;
+                        enemySprite.y -= enemySprite.speedY;
                     }
                 }
             }
             break;
-        } //switch (level->enemy[i].NMI_ACTION & 0x1FFF)
+        } //switch (enemy.NMI_ACTION & 0x1FFF)
     } //for (i = 0; i < NMI_BY_LEVEL; i++)
 }
 

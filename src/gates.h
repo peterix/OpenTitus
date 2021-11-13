@@ -1,4 +1,6 @@
-/*   
+#pragma once
+
+/*
  * Copyright (C) 2008 - 2011 The OpenTitus team
  *
  * Authors:
@@ -26,14 +28,11 @@
  * Handles gates (kneestand) and checks if the player have completed the level
  */
 
-#ifndef GATES_H
-#define GATES_H
-
 #include "SDL2/SDL.h"
 #include "level.h"
 
-void CROSSING_GATE(TITUS_level *level); //Check and handle level completion, and if the player does a kneestand on a secret entrance
-void CLOSE_SCREEN();
-void OPEN_SCREEN(TITUS_level *level);
+struct ScreenContext;
 
-#endif
+void CROSSING_GATE(ScreenContext &context, TITUS_level *level); //Check and handle level completion, and if the player does a kneestand on a secret entrance
+void CLOSE_SCREEN(ScreenContext &context);
+void OPEN_SCREEN(ScreenContext &context, TITUS_level *level);

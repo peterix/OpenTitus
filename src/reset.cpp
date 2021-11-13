@@ -56,7 +56,7 @@ static void SET_ALL_SPRITES(TITUS_level *level);
 //3 - Death
 
 
-uint8 RESET_LEVEL(TITUS_level *level) {
+uint8 RESET_LEVEL(ScreenContext &context, TITUS_level *level) {
     TITUS_player *player = &(level->player);
     bool pass;
     int16 i;
@@ -95,7 +95,7 @@ uint8 RESET_LEVEL(TITUS_level *level) {
             //View all
             DISPLAY_TILES(level);
             DISPLAY_SPRITES(level);
-            flip_screen(true);
+            flip_screen(context, true);
         } while (player->sprite2.x > player->sprite.x + 28);
         //Lovers in one sprite
         updatesprite(level, &(player->sprite2), 346, true);
@@ -110,7 +110,7 @@ uint8 RESET_LEVEL(TITUS_level *level) {
             scroll(level);
             DISPLAY_TILES(level);
             DISPLAY_SPRITES(level);
-            flip_screen(true);
+            flip_screen(context, true);
             player->sprite.y++;
         }
         //Display hearts
@@ -129,7 +129,7 @@ uint8 RESET_LEVEL(TITUS_level *level) {
             scroll(level);
             DISPLAY_TILES(level);
             DISPLAY_SPRITES(level);
-            flip_screen(true);
+            flip_screen(context, true);
 
             SDL_PumpEvents(); //Update keyboard state
 
@@ -171,7 +171,7 @@ uint8 RESET_LEVEL(TITUS_level *level) {
         for (i = 0; i < 31; i++) {
             DISPLAY_TILES(level);
             DISPLAY_SPRITES(level);
-            flip_screen(true);
+            flip_screen(context, true);
             player->sprite.x += 8;
             player->sprite3.x -= 8;
         }

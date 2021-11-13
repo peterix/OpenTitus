@@ -54,11 +54,13 @@
 
 #include "audio.h"
 
-static int playlevel(TITUS_level *level);
-static void death(TITUS_level *level);
-static void gameover(TITUS_level *level);
+static int playlevel(ScreenContext &context, TITUS_level *level);
+static void death(ScreenContext &context, TITUS_level *level);
+static void gameover(ScreenContext &context, TITUS_level *level);
 
 int playtitus(int firstlevel){
+    ScreenContext context;
+
     int retval;
 
     TITUS_level level;
@@ -160,12 +162,12 @@ int playtitus(int firstlevel){
             //changemusic(modulelevelfile[modulelevel[level.levelnumber] - 1], modulelevelfileloop[modulelevel[level.levelnumber] - 1]);
             SELECT_MUSIC(LEVEL_MUSIC[level.levelid]);
 
-            INIT_SCREENM(&level); //Todo: comment, DOCUMENTED! (reset_level_simplified)
+            INIT_SCREENM(context, &level); //Todo: comment, DOCUMENTED! (reset_level_simplified)
             DISPLAY_TILES(&level);
-            flip_screen(true);
+            flip_screen(context, true);
 
 
-            retval = playlevel (&level);
+            retval = playlevel (context, &level);
             if (retval < 0) {
                 freelevel (&level);
                 freeobjects(&objects, object_count);
@@ -183,7 +185,7 @@ int playtitus(int firstlevel){
                     GAMEOVER_FLAG = true;
                 } else {
                     level.lives--;
-                    death(&level);
+                    death(context, &level);
                 }
             }
 
@@ -191,7 +193,7 @@ int playtitus(int firstlevel){
 
 
             if (GAMEOVER_FLAG) {
-                gameover(&level);
+                gameover(context, &level);
 
                 freelevel (&level);
                 freeobjects(&objects, object_count);
@@ -240,32 +242,32 @@ int playtitus(int firstlevel){
 }
 
 
-static int playlevel(TITUS_level *level) {
+static int playlevel(ScreenContext &context, TITUS_level *level) {
     int retval = 0;
     bool firstrun = true;
     do {
         if (!firstrun) {
             draw_health_bars(level);
             RETURN_MUSIC(); //Restart music if the song is finished
-            flip_screen(true);
+            flip_screen(context, true);
         }
         firstrun = false;
         IMAGE_COUNTER = (IMAGE_COUNTER + 1) & 0x0FFF; //Cycle from 0 to 0x0FFF
         MOVE_TRP(level); //Move elevators
         move_objects(level); //Object gravity
-        retval = move_player(level); //Key input, update and move player, handle carried object and decrease timers
+        retval = move_player(context, level); //Key input, update and move player, handle carried object and decrease timers
         if (retval == TITUS_ERROR_QUIT) {
             return retval;
         }
         MOVE_NMI(level); //Move enemies
         MOVE_TRASH(level); //Move enemy throwed objects
         SET_NMI(level); //Handle enemies on the screen
-        CROSSING_GATE(level); //Check and handle level completion, and if the player does a kneestand on a secret entrance
+        CROSSING_GATE(context, level); //Check and handle level completion, and if the player does a kneestand on a secret entrance
         SPRITES_ANIMATION(level); //Animate player and objects
         scroll(level); //X- and Y-scrolling
         DISPLAY_TILES(level); //Draws tiles on the backbuffer
         DISPLAY_SPRITES(level); //Draws sprites on the backbuffer
-        retval = RESET_LEVEL(level); //Check terminate flags (finishlevel, gameover, death or theend)
+        retval = RESET_LEVEL(context, level); //Check terminate flags (finishlevel, gameover, death or theend)
         if (retval < 0) {
             return retval;
         }
@@ -273,7 +275,7 @@ static int playlevel(TITUS_level *level) {
     return (0);
 }
 
-void death(TITUS_level *level) {
+void death(ScreenContext &context, TITUS_level *level) {
     TITUS_player *player = &(level->player);
     int i;
 
@@ -285,7 +287,7 @@ void death(TITUS_level *level) {
         DISPLAY_TILES(level);
         //TODO! GRAVITY();
         DISPLAY_SPRITES(level);
-        flip_screen(true);
+        flip_screen(context, true);
         player->sprite.speedY--;
         if (player->sprite.speedY < -16) {
             player->sprite.speedY = -16;
@@ -302,10 +304,10 @@ void death(TITUS_level *level) {
     INIT_SCREENM(level);
     return 3; //Do not break main loop
     */
-    CLOSE_SCREEN();
+    CLOSE_SCREEN(context);
 }
 
-void gameover(TITUS_level *level) {
+void gameover(ScreenContext &context, TITUS_level *level) {
     TITUS_player *player = &(level->player);
     int i, retval;
     SELECT_MUSIC(2);
@@ -320,7 +322,7 @@ void gameover(TITUS_level *level) {
     for (i = 0; i < 31; i++) {
         DISPLAY_TILES(level);
         DISPLAY_SPRITES(level);
-        flip_screen(true);
+        flip_screen(context, true);
         player->sprite2.x += 8;
         player->sprite3.x -= 8;
     }

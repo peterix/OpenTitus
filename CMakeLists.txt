@@ -12,7 +12,6 @@ set(TITUS_SOURCES
     opentitus.cpp
     src/audio.cpp
     src/window.cpp
-    src/common.cpp
     src/draw.cpp
     src/enemies.cpp
     src/engine.cpp

@@ -158,7 +158,6 @@ extern int16 XLIMIT; //The engine will not scroll past this tile before the play
 extern bool g_scroll_y; //If true, the screen will scroll in Y
 extern uint8 g_scroll_y_target; //If scrolling: scroll until player is in this tile (Y)
 extern uint8 ALTITUDE_ZERO; //The engine will not scroll below this tile before the player have gone below (Y)
-extern int LAST_CLOCK; //Used for fixed framerate
 extern uint16 IMAGE_COUNTER; //Increased every loop in game loop (0 to 0x0FFF)
 extern int8 SENSX; //1: walk right, 0: stand still, -1: walk left, triggers the ACTION_TIMER if it changes
 extern uint8 SAUT_COUNT; //Incremented from 0 to 3 when accelerating while jumping, stop acceleration upwards if >= 3
@@ -175,10 +174,6 @@ extern uint8 AUDIOMODE;
 extern bool GODMODE; //If true, the player will not interfere with the enemies
 extern bool NOCLIP; //If true, the player will move noclip
 extern bool DISPLAYLOOPTIME; //If true, display loop time in milliseconds
-extern uint8 LOOPTIME; //Loop time
-extern uint16 FPS; //Frames pr second
-extern uint16 FPS_LAST; //Frames pr second
-extern uint16 LAST_CLOCK_CORR; //Correction to LAST_CLOCK
 
 extern SPRITE sprites[256];
 

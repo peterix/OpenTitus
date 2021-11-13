@@ -41,14 +41,53 @@
 #include "level.h"
 #include "definitions.h"
 
+struct ScreenContext {
+    void reset() {
+        *this = ScreenContext();
+    }
+
+    void initial() {
+        auto initial_clock = SDL_GetTicks();
+        TARGET_CLOCK = initial_clock + tick_delay;
+        started = true;
+        SDL_Delay(tick_delay);
+        LAST_CLOCK = SDL_GetTicks();
+        TARGET_CLOCK += tick_delay;
+    }
+
+    void advance_29() {
+        if(!started) {
+            initial();
+            return;
+        }
+        auto now = SDL_GetTicks();
+        auto delay = TARGET_CLOCK - now;
+        if(delay < 0) {
+            delay = 29;
+        }
+        else {
+            SDL_Delay(delay);
+        }
+        LAST_CLOCK = SDL_GetTicks();
+        TARGET_CLOCK += tick_delay;
+    }
+
+    constexpr static int tick_delay = 29;
+
+    bool started = false;
+    int LAST_CLOCK = 0;
+    int TARGET_CLOCK = 0;
+};
+void flip_screen(ScreenContext & context, bool slow);
+
 void DISPLAY_TILES(TITUS_level *level);
 int viewstatus(TITUS_level *level, bool countbonus);
-void flip_screen(bool slow);
-void INIT_SCREENM(TITUS_level *level);
+
+void INIT_SCREENM(ScreenContext &context, TITUS_level *level);
 void draw_health_bars(TITUS_level *level);
 void DISPLAY_SPRITES(TITUS_level *level);
 void fadeout();
-int view_password(TITUS_level *level, uint8 level_index);
+int view_password(ScreenContext &context, TITUS_level *level, uint8 level_index);
 int loadpixelformat(SDL_PixelFormat **pixelformat);
 int loadpixelformat_font(SDL_PixelFormat **pixelformat);
 int freepixelformat(SDL_PixelFormat **pixelformat);

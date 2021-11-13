@@ -43,7 +43,6 @@ int16 XLIMIT; //The engine will not scroll past this tile before the player have
 bool g_scroll_y; //If true, the screen will scroll in Y
 uint8 g_scroll_y_target; //If scrolling: scroll until player is in this tile (Y)
 uint8 ALTITUDE_ZERO; //The engine will not scroll below this tile before the player have gone below (Y)
-int LAST_CLOCK; //Used for fixed framerate
 uint16 IMAGE_COUNTER; //Increased every loop in game loop (0 to 0x0FFF)
 int8 SENSX; //1: walk right, 0: stand still, -1: walk left, triggers the ACTION_TIMER if it changes
 uint8 SAUT_COUNT; //Incremented from 0 to 3 when accelerating while jumping, stop acceleration upwards if >= 3
@@ -60,11 +59,6 @@ uint8 AUDIOMODE;
 bool GODMODE; //If true, the player will not interfere with the enemies
 bool NOCLIP; //If true, the player will move noclip
 bool DISPLAYLOOPTIME; //If true, display loop time in milliseconds
-uint8 LOOPTIME; //Loop time
-uint16 FPS; //Frames pr second
-uint16 FPS_LAST; //Frames pr second
-uint16 LAST_CLOCK_CORR; //Correction to LAST_CLOCK
-
 
 SPRITE sprites[256];
 

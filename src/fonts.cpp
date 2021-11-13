@@ -216,7 +216,7 @@ int freesubfont(TITUS_font *f_sub) {
     return 0;
 }
 
-int SDL_Print_Text(const char *text, int x, int y){
+void SDL_Print_Text(const char *text, int x, int y){
     TITUS_font *f_sub;
     uint8 i, j;
     SDL_Rect src, dest;
@@ -232,17 +232,17 @@ int SDL_Print_Text(const char *text, int x, int y){
         f_sub = font;
         if ((text[i] & 0xC0) == 0x80) { //The first character cannot start with 10xxxxxx
             sprintf(lasterror, "Error: Invalid UTF-8!\n");
-            return (TITUS_ERROR_INVALID_UTF8);
+            return;
         }
         while (f_sub->type[(size_t)text[i]] == 1) { //Sub
             if (i == strlen(text) - 1) {
                 sprintf(lasterror, "Error: Invalid UTF-8!\n");
-                return (TITUS_ERROR_INVALID_UTF8);
+                return;
             }
             i++;
             if ((text[i] & 0xC0) != 0x80) { //The following characters must begin with 10xxxxxx
                 sprintf(lasterror, "Error: Invalid UTF-8!\n");
-                return (TITUS_ERROR_INVALID_UTF8);
+                return;
             }
             f_sub = (TITUS_font *)f_sub->sub[(size_t)text[i]];
         }
@@ -258,14 +258,14 @@ int SDL_Print_Text(const char *text, int x, int y){
                 do {
                     if (j == strlen(text) - 1) {
                         sprintf(lasterror, "Error: Invalid UTF-8!\n");
-                        return (TITUS_ERROR_INVALID_UTF8);
+                        return;
                     }
                     j++;
                 } while ((text[j] & 0xC0) == 0x80); //Loop while continuing bytes begin with 10xxxxxx
                 j--;
                 if (j < i) { //Error in the data structure
                     sprintf(lasterror, "Error: Invalid font data!\n");
-                    return (TITUS_ERROR_INVALID_FILE);
+                    return;
                 }
                 i = j;
             }
@@ -280,10 +280,10 @@ int SDL_Print_Text(const char *text, int x, int y){
             break;
         case 4: //Invalid UTF-8
             sprintf(lasterror, "Error: Invalid UTF-8!\n");
-            return (TITUS_ERROR_INVALID_UTF8);
+            return;
         }
     }
-    return (0);
+    return;
 }
 
 int viewintrotext(){

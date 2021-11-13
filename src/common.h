@@ -35,7 +35,16 @@
 #include "SDL2/SDL.h"
 #include "definitions.h"
 
-void subto0(uint8 *number);
-void titus_sleep();
+/// Decreases a value with 1 until it's zero
+inline void subto0(uint8 *number) {
+    if (*number > 0) {
+        *number = *number - 1;
+    }
+}
+
+/// sleep for a specified number of milliseconds
+inline void titus_sleep(int ms = 1) {
+    SDL_Delay(ms);
+}
 
 #endif
