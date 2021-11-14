@@ -35,7 +35,25 @@
 #include "window.h"
 #include "scroll.h"
 
-static uint8 BARRYCENTRE(TITUS_level *level) {
+namespace {
+
+float clamp(float x, float lowerlimit, float upperlimit) {
+    if (x < lowerlimit)
+        x = lowerlimit;
+    if (x > upperlimit)
+        x = upperlimit;
+    return x;
+}
+
+float smootherstep(float edge0, float edge1, float x) {
+    // Scale, and clamp x to 0..1 range
+    x = clamp((x - edge0) / (edge1 - edge0), 0.0, 1.0);
+    // Evaluate polynomial
+    return x * x * x * (x * (x * 6 - 15) + 10);
+}
+
+float ideal_camera_position(TITUS_level *level) {
+    /*
     //If an enemy is behind the player, max. 12.5 tiles away horizontally, scroll until player is in the middle
     //If not, scroll until player is in the 3rd screen tile
     int16 enemy_left, i;
@@ -43,28 +61,54 @@ static uint8 BARRYCENTRE(TITUS_level *level) {
         if (!level->enemy[i].sprite.enabled || !level->enemy[i].visible) {
             continue;
         }
-        enemy_left = (level->enemy[i].sprite.x < level->player.sprite.x); //True if enemy is left for the player
-        if ((enemy_left != level->player.sprite.flipped) && //Enemy is behind the player
-          (abs(level->enemy[i].sprite.x - level->player.sprite.x) < 200)) { //Enemy is max. 12.5 tiles away
-            return (screen_width / 2);
+        auto ydistance_from_mob = abs(level->enemy[i].sprite.y - level->player.sprite.y);
+        if(ydistance_from_mob > 40) {
+            continue;
+        }
+        // True if enemy is left for the player
+        enemy_left = (level->enemy[i].sprite.x < level->player.sprite.x);
+        // Enemy is behind the player  && Enemy is max. 12.5 tiles away
+        if (enemy_left != level->player.sprite.flipped) {
+            auto distance_from_mob = abs(level->enemy[i].sprite.x - level->player.sprite.x);
+            if(distance_from_mob < 160) {
+                return 0.0f;
+            }
         }
     }
+    */
+
     if (!level->player.sprite.flipped) {
-        return 3;
-    } else {
-        return (screen_width - 3);
+        return 60.0f;
+    }
+    else {
+        return -60.0f;
     }
 }
 
-static void X_ADJUST(TITUS_level *level) {
+void X_ADJUST(TITUS_level *level) {
     TITUS_player *player = &(level->player);
     g_scroll_x = true;
 
+    static float camera_offset = 0.0f;
+    int16 target_camera_offset = ideal_camera_position(level);
+    if(camera_offset < target_camera_offset) {
+        camera_offset += 3.0;
+    }
+    else if(camera_offset > target_camera_offset) {
+        camera_offset -= 3.0;
+    }
+    int real_camera_offset = smootherstep(-60, 60, camera_offset) * 120 - 60;
+
     // clamp player position to level bounds
     int16 player_position = player->sprite.x;
-    if(player_position < 160) {
-        player_position = 160;
+    int16 camera_position = player_position + real_camera_offset;
+
+    // left side of the map
+    if(camera_position < 160) {
+        camera_position = 160;
     }
+
+    // right side of the map, or a weird arbitrary divide on the right
     int16 rlimit;
     if(player_position > XLIMIT * 16) {
         rlimit = (level->width * 16 - 160);
@@ -72,13 +116,13 @@ static void X_ADJUST(TITUS_level *level) {
     else {
         rlimit = (XLIMIT * 16 - 160);
     }
-    if(player_position > rlimit) {
-        player_position = rlimit;
+    if(camera_position > rlimit || player_position > rlimit) {
+        camera_position = rlimit;
     }
 
-    int16 player_screen_px = player_position - BITMAP_X * 16;
+    int16 camera_screen_px = camera_position - BITMAP_X * 16;
     int16 scroll_px_target = 160;
-    int16 scroll_offset_x = scroll_px_target - player_screen_px;
+    int16 scroll_offset_x = scroll_px_target - camera_screen_px;
     int16 tile_offset_x = scroll_offset_x / 16;
     int16 px_offset_x = scroll_offset_x % 16;
     if(tile_offset_x < 0) {
@@ -97,7 +141,7 @@ static void X_ADJUST(TITUS_level *level) {
     }
 }
 
-static void Y_ADJUST(TITUS_level *level) {
+void Y_ADJUST(TITUS_level *level) {
     TITUS_player *player = &(level->player);
     if (player->sprite.speedY == 0) {
         g_scroll_y = false;
@@ -151,6 +195,8 @@ static void Y_ADJUST(TITUS_level *level) {
             }
         }
     }
+}
+
 }
 
 void scroll(TITUS_level *level) {
