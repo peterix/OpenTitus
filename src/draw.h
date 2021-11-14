@@ -63,7 +63,7 @@ struct ScreenContext {
         auto now = SDL_GetTicks();
         auto delay = TARGET_CLOCK - now;
         if(delay < 0) {
-            delay = 29;
+            delay = tick_delay;
         }
         else {
             SDL_Delay(delay);
@@ -72,6 +72,7 @@ struct ScreenContext {
         TARGET_CLOCK += tick_delay;
     }
 
+    // constexpr static int tick_delay = 29;
     constexpr static int tick_delay = 29;
 
     bool started = false;

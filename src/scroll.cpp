@@ -57,31 +57,9 @@ static uint8 BARRYCENTRE(TITUS_level *level) {
 }
 
 static void X_ADJUST(TITUS_level *level) {
-    bool block = true;
     TITUS_player *player = &(level->player);
-
-    /*
-    int16 player_screen_tileX = (player->sprite.x / 16) - BITMAP_X;
-
-    int16 scroll_x_target = screen_width / 2;
-
     g_scroll_x = true;
-    if (scroll_x_target == player_screen_tileX) {
-        g_scroll_x = false; //Stop scrolling
-    } else if (scroll_x_target > player_screen_tileX) {
-        block = L_SCROLL(level);
-        if (block) { //Carry flag
-            g_scroll_x = false; //Stop scrolling
-        }
-    } else {
-        block = R_SCROLL(level);
-        if (block) { //Carry flag
-            g_scroll_x = false; //Stop scrolling
-        }
-    }
-    */
 
-    g_scroll_x = true;
     // clamp player position to level bounds
     int16 player_position = player->sprite.x;
     if(player_position < 160) {
@@ -102,14 +80,15 @@ static void X_ADJUST(TITUS_level *level) {
     int16 scroll_px_target = 160;
     int16 scroll_offset_x = scroll_px_target - player_screen_px;
     int16 tile_offset_x = scroll_offset_x / 16;
+    int16 px_offset_x = scroll_offset_x % 16;
     if(tile_offset_x < 0) {
         BITMAP_X ++;
-        g_scroll_px_offset = 0;
+        g_scroll_px_offset = px_offset_x;
         g_scroll_x = true;
     }
     else if (tile_offset_x > 0) {
         BITMAP_X --;
-        g_scroll_px_offset = 0;
+        g_scroll_px_offset = px_offset_x;
         g_scroll_x = true;
     }
     else {

@@ -116,8 +116,7 @@ void DISPLAY_SPRITES(TITUS_level *level) {
 
     display_sprite(level, &(level->player.sprite3));
     display_sprite(level, &(level->player.sprite2));
-    //display_sprite_xx(level, &(level->player.sprite2), "HELD");
-    display_sprite_xx(level, &(level->player.sprite), "FOX");
+    display_sprite(level, &(level->player.sprite));
 
     if (GODMODE) {
         SDL_Print_Text("GODMODE", 30 * 8, 0 * 12);
@@ -125,75 +124,6 @@ void DISPLAY_SPRITES(TITUS_level *level) {
     if (NOCLIP) {
         SDL_Print_Text("NOCLIP", 30 * 8, 1 * 12);
     }
-}
-
-void set_pixel(SDL_Surface *surface, int x, int y, Uint32 pixel)
-{
-    Uint32 * const target_pixel = (Uint32 *) ((Uint8 *) surface->pixels + y * surface->pitch + x * surface->format->BytesPerPixel);
-    *target_pixel = pixel;
-}
-
-void display_sprite_xx(TITUS_level *level, TITUS_sprite *spr, const char * thing) {
-    SDL_Surface *image;
-    SDL_Rect src, dest;
-    if (!spr->enabled) {
-        return;
-    }
-    if (spr->invisible) {
-        return;
-    }
-    spr->visible = false;
-    //At this point, the buffer should be the correct size
-
-    printf("%s %d %d\n", thing, spr->x, spr->spritedata->refwidth);
-    fflush(stdout);
-
-    if (!spr->flipped) {
-        dest.x = spr->x - spr->spritedata->refwidth - (BITMAP_X << 4) + 16;
-    } else {
-        dest.x = spr->x + spr->spritedata->refwidth - spr->spritedata->data->w - (BITMAP_X << 4) + 16;
-    }
-    dest.y = spr->y + spr->spritedata->refheight - spr->spritedata->data->h + 1 - (BITMAP_Y << 4);
-
-    auto screen_limit = screen_width + 2;
-
-    if ((dest.x >= screen_limit * 16) || //Right for the screen
-      (dest.x + spr->spritedata->data->w < 0) || //Left for the screen
-      (dest.y + spr->spritedata->data->h < 0) || //Above the screen
-      (dest.y >= screen_height * 16)) { //Below the screen
-        return;
-    }
-
-    image = sprite_from_cache(level, spr);
-
-    src.x = 0;
-    src.y = 0;
-    src.w = image->w;
-    src.h = image->h;
-
-    if (dest.x < 0) {
-        src.x = 0 - dest.x;
-        src.w -= src.x;
-        dest.x = 0;
-    }
-    if (dest.y < 0) {
-        src.y = 0 - dest.y;
-        src.h -= src.y;
-        dest.y = 0;
-    }
-    if (dest.x + src.w > screen_limit * 16) {
-        src.w = screen_limit * 16 - dest.x;
-    }
-    if (dest.y + src.h > screen_height * 16) {
-        src.h = screen_height * 16 - dest.y;
-    }
-
-    SDL_BlitSurface(image, &src, Window::screen, &dest);
-    set_pixel(Window::screen, dest.x, dest.y, 0);
-
-    spr->visible = true;
-    spr->flash = false;
-
 }
 
 void display_sprite(TITUS_level *level, TITUS_sprite *spr) {
@@ -317,7 +247,7 @@ void flip_screen(ScreenContext & context, bool slow) {
 }
 
 int viewstatus(TITUS_level *level, bool countbonus){
-    int retval, i, j;
+    int retval;
     char tmpchars[10];
     Window::clear();
 
@@ -350,7 +280,7 @@ int viewstatus(TITUS_level *level, bool countbonus){
             return retval;
         }
         while (level->extrabonus >= 10) {
-            for (i = 0; i < 10; i++) {
+            for (int i = 0; i < 10; i++) {
                 level->extrabonus--;
                 sprintf(tmpchars, "%2d", level->extrabonus);
                 SDL_Print_Text(tmpchars, 28 * 8 - strlen(tmpchars) * 8, 10 * 12);
