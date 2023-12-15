@@ -32,4 +32,4 @@
 #include "level.h"
 
 void CLEAR_DATA(TITUS_level *level);
-uint8 RESET_LEVEL(ScreenContext &context, TITUS_level *level);
+uint8_t RESET_LEVEL(ScreenContext *context, TITUS_level *level);

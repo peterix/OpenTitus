@@ -67,7 +67,7 @@ SDL_Surface * copysurface(SDL_Surface * original, bool flip, bool flash){
             }
         }
     }
-    surface2 = SDL_ConvertSurfaceFormat(surface, SDL_GetWindowPixelFormat(Window::window), 0);
+    surface2 = SDL_ConvertSurfaceFormat(surface, SDL_GetWindowPixelFormat(window), 0);
     SDL_FreeSurface(surface);
     return(surface2);
 }
@@ -98,7 +98,7 @@ SDL_Surface * SDL_LoadSprite(unsigned char * first, char width, char height, uns
     return(surface);
 }
 
-int loadsprites(TITUS_spritedata ***sprites, unsigned char * spritedata, int spritedatasize, SDL_PixelFormat * pixelformat, uint16 *count) {
+int loadsprites(TITUS_spritedata ***sprites, unsigned char * spritedata, int spritedatasize, SDL_PixelFormat * pixelformat, uint16_t *count) {
     int i;
     unsigned int offset = 0;
     *count = SPRITECOUNT;
@@ -117,7 +117,7 @@ int loadsprites(TITUS_spritedata ***sprites, unsigned char * spritedata, int spr
         (*sprites)[i]->data = SDL_LoadSprite(spritedata, spritewidth[i], spriteheight[i], offset, pixelformat);
         (*sprites)[i]->collheight = spritecollheight[i];
         (*sprites)[i]->collwidth = spritecollwidth[i];
-        (*sprites)[i]->refheight = 0 - ((int16)spriterefheight[i] - spriteheight[i]);
+        (*sprites)[i]->refheight = 0 - ((int16_t)spriterefheight[i] - spriteheight[i]);
         (*sprites)[i]->refwidth = spriterefwidth[i];
         (*sprites)[i]->spritebuffer[0] = NULL;
         (*sprites)[i]->spritebuffer[1] = NULL;
@@ -127,7 +127,7 @@ int loadsprites(TITUS_spritedata ***sprites, unsigned char * spritedata, int spr
     return SPRITECOUNT;
 }
 
-int freesprites(TITUS_spritedata ***sprites, uint16 count) {
+int freesprites(TITUS_spritedata ***sprites, uint16_t count) {
     int i;
 
     for (i = 0; i < count; i++) {
@@ -141,7 +141,7 @@ int freesprites(TITUS_spritedata ***sprites, uint16 count) {
 }
 
 
-int initspritecache(TITUS_spritecache *spritecache, uint16 count, uint16 tmpcount) {
+int initspritecache(TITUS_spritecache *spritecache, uint16_t count, uint16_t tmpcount) {
     int i;
 
     spritecache->count = count;
@@ -203,7 +203,7 @@ SDL_Surface * SDL_LoadTile(unsigned char * first, int i, SDL_PixelFormat * pixel
             tmpchar++;
         }
     }
-    surface2 = SDL_ConvertSurfaceFormat(surface, SDL_GetWindowPixelFormat(Window::window), 0);
+    surface2 = SDL_ConvertSurfaceFormat(surface, SDL_GetWindowPixelFormat(window), 0);
     SDL_FreeSurface(surface);
     return(surface2);
 }
@@ -290,7 +290,7 @@ static void animate_sprite(TITUS_level *level, TITUS_sprite *spr) {
 }
 
 void SPRITES_ANIMATION(TITUS_level *level) {
-    int16 i;
+    int16_t i;
     //Animate player
     if ((LAST_ORDER == 0) &&
       (POCKET_FLAG) &&
@@ -319,7 +319,7 @@ void SPRITES_ANIMATION(TITUS_level *level) {
     }
 }
 
-int updatesprite(TITUS_level *level, TITUS_sprite *spr, int16 number, bool clearflags){
+int updatesprite(TITUS_level *level, TITUS_sprite *spr, int16_t number, bool clearflags){
     spr->number = number;
     spr->spritedata = level->spritedata[number];
     spr->enabled = true;

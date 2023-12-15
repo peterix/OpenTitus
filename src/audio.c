@@ -25,7 +25,7 @@
 #include "tituserror.h"
 #include "opl.h"
 #include "common.h"
-#include <cassert>
+#include <assert.h>
 
 #define ADLIB_DATA_COUNT 10
 #define ADLIB_INSTRUMENT_COUNT 20
@@ -50,13 +50,13 @@ unsigned int song_type[] = {0,1,0,0,0,1,1,1,1,0,0,0,0,0,0,0};
 
 FILE* gifp;
 
-uint8 last_song;
+uint8_t last_song;
 
 int debug_test[20];
 
 int debug_counter;
 
-uint16 seg_reduction;
+uint16_t seg_reduction;
 
 unsigned int lastnote, tick; //debug
 
@@ -104,17 +104,17 @@ typedef struct {
 } SDL_PLAYER;
 
 bool FX_ON;
-uint16 FX_TIME;
-uint8 AUDIOTIMING;
+uint16_t FX_TIME;
+uint8_t AUDIOTIMING;
 int lastaudiotick;
-uint8 audiodelay;
+uint8_t audiodelay;
 
 SDL_PLAYER sdl_player_data;
 
 void updatechip(int reg, int val);
 int fillchip(ADLIB_DATA *aad);
 void insmaker(unsigned char *insdata, int channel);
-int load_file(char *filename, unsigned char **raw_data);
+int load_file(const char *filename, unsigned char **raw_data);
 void all_vox_zero();
 void TimerCallback(void *data);
 
@@ -543,7 +543,7 @@ int initsfx() {
     unsigned char *raw_data = aad->data;
     FX_ON = false;
     FX_TIME = 0;
-    uint16 tmp1;
+    uint16_t tmp1;
     int i, k;
 
     tmp1 = SFX_OFFSET;
@@ -570,7 +570,7 @@ int initaudio(){
     int in_len;
     FILE *ifp;
 
-    if (game == GameType::Titus) {
+    if (game == Titus) {
         seg_reduction = 1301;
         ifp = fopen("music.bin", "rb");
         if (ifp == NULL) {
@@ -586,7 +586,7 @@ int initaudio(){
             }
             fclose (ifp);
         }
-    } else if (game == GameType::Moktar) {
+    } else if (game == Moktar) {
         seg_reduction = 1345;
         ifp = fopen("music.bin", "rb");
         if (ifp == NULL) {
@@ -644,7 +644,7 @@ void WAIT_SONG() {
         return;
     }
     do {
-        titus_sleep();
+        SDL_Delay(1);
         keystate = SDL_GetKeyboardState(NULL);
         while(SDL_PollEvent(&event)) { //Check all events
             if (event.type == SDL_QUIT) {

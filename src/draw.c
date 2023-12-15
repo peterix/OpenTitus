@@ -32,7 +32,7 @@
  * void INIT_SCREENM(TITUS_level *level): Initialize screen
  * void draw_health_bars(TITUS_level *level): Draw energy
  * void fadeout(): Fade the screen to black
- * int view_password(TITUS_level *level, uint8 level_index): Display the password
+ * int view_password(TITUS_level *level, uint8_t level_index): Display the password
  */
 
 #include <stdio.h>
@@ -52,9 +52,9 @@
 #include "scroll.h"
 #include "audio.h"
 
+static const int tick_delay = 29;
 static SDL_Surface *sprite_from_cache(TITUS_level *level, TITUS_sprite *spr);
 static void display_sprite(TITUS_level *level, TITUS_sprite *spr);
-static void display_sprite_xx(TITUS_level *level, TITUS_sprite *spr, const char * thing);
 
 void DISPLAY_TILES(TITUS_level *level) {
     //First of all: make the screen black, at least the lower part of the screen
@@ -63,7 +63,7 @@ void DISPLAY_TILES(TITUS_level *level) {
     bottom_bar.y = screen_height * 16;
     bottom_bar.w = screen_width * 16;
     bottom_bar.h = 200 - screen_height * 16;
-    Window::clear(&bottom_bar);
+    window_clear(&bottom_bar);
 
     SDL_Rect src, dest;
     src.x = 0;
@@ -84,8 +84,8 @@ void DISPLAY_TILES(TITUS_level *level) {
         for (int y = 0; y < 12; y++) {
             dest.x = 16 + x * 16;
             dest.y = y * 16;
-            auto tile = level->tilemap[BITMAP_Y + y][tileX];
-            SDL_BlitSurface(level->tile[level->tile[tile].animation[tile_anim]].tiledata, &src, Window::screen, &dest);
+            unsigned char tile = level->tilemap[BITMAP_Y + y][tileX];
+            SDL_BlitSurface(level->tile[level->tile[tile].animation[tile_anim]].tiledata, &src, screen, &dest);
         }
     }
 }
@@ -96,7 +96,7 @@ void DISPLAY_TILES(TITUS_level *level) {
 
 
 void DISPLAY_SPRITES(TITUS_level *level) {
-    int16 i;
+    int16_t i;
 
     for (i = level->elevatorcount - 1; i >= 0; i--) {
         display_sprite(level, &(level->elevator[i].sprite));
@@ -145,7 +145,7 @@ void display_sprite(TITUS_level *level, TITUS_sprite *spr) {
     }
     dest.y = spr->y + spr->spritedata->refheight - spr->spritedata->data->h + 1 - (BITMAP_Y << 4);
 
-    auto screen_limit = screen_width + 2;
+    int screen_limit = screen_width + 2;
 
     if ((dest.x >= screen_limit * 16) || //Right for the screen
       (dest.x + spr->spritedata->data->w < 0) || //Left for the screen
@@ -178,7 +178,7 @@ void display_sprite(TITUS_level *level, TITUS_sprite *spr) {
         src.h = screen_height * 16 - dest.y;
     }
 
-    SDL_BlitSurface(image, &src, Window::screen, &dest);
+    SDL_BlitSurface(image, &src, screen, &dest);
 
     spr->visible = true;
     spr->flash = false;
@@ -189,8 +189,8 @@ SDL_Surface *sprite_from_cache(TITUS_level *level, TITUS_sprite *spr) {
     TITUS_spritecache *cache = level->spritecache;
     TITUS_spritedata *spritedata = level->spritedata[spr->number];
     TITUS_spritebuffer *spritebuffer;
-    uint8 index;
-    int16 i;
+    uint8_t index;
+    int16_t i;
 
     if (spr->flipped) {index = 1;} else {index = 0;};
 
@@ -235,27 +235,57 @@ SDL_Surface *sprite_from_cache(TITUS_level *level, TITUS_sprite *spr) {
     }
 }
 
-void flip_screen(ScreenContext & context, bool slow) {
-    Window::render();
+void screencontext_reset(ScreenContext * context) {
+    memset(context, 0, sizeof(ScreenContext));
+}
+
+void screencontext_initial(ScreenContext * context) {
+    uint32_t initial_clock = SDL_GetTicks();
+    context->TARGET_CLOCK = initial_clock + tick_delay;
+    context->started = true;
+    SDL_Delay(tick_delay);
+    context->LAST_CLOCK = SDL_GetTicks();
+    context->TARGET_CLOCK += tick_delay;
+}
+
+void screencontext_advance_29(ScreenContext * context) {
+    if(!context->started) {
+        screencontext_initial(context);
+        return;
+    }
+    uint32_t now = SDL_GetTicks();
+    uint32_t delay = context->TARGET_CLOCK - now;
+    if(delay < 0) {
+        delay = tick_delay;
+    }
+    else {
+        SDL_Delay(delay);
+    }
+    context->LAST_CLOCK = SDL_GetTicks();
+    context->TARGET_CLOCK += tick_delay;
+}
+
+void flip_screen(ScreenContext * context, bool slow) {
+    window_render();
     if(slow) {
-        context.advance_29();
+        screencontext_advance_29(context);
     }
     else {
         SDL_Delay(10);
-        context.reset();
+        screencontext_reset(context);
     }
 }
 
 int viewstatus(TITUS_level *level, bool countbonus){
     int retval;
     char tmpchars[10];
-    Window::clear();
+    window_clear(NULL);
 
-    if (game == GameType::Titus) {
+    if (game == Titus) {
         SDL_Print_Text("LEVEL", 13 * 8, 12 * 5);
         SDL_Print_Text("EXTRA BONUS", 10 * 8, 10 * 12);
         SDL_Print_Text("LIVES", 10 * 8, 11 * 12);
-    } else if (game == GameType::Moktar) {
+    } else if (game == Moktar) {
         SDL_Print_Text("ETAPE", 13 * 8, 12 * 5);
         SDL_Print_Text("EXTRA BONUS", 10 * 8, 10 * 12);
         SDL_Print_Text("VIE", 10 * 8, 11 * 12);
@@ -272,7 +302,7 @@ int viewstatus(TITUS_level *level, bool countbonus){
     sprintf(tmpchars, "%d", level->lives);
     SDL_Print_Text(tmpchars, 28 * 8 - strlen(tmpchars) * 8, 11 * 12);
 
-    Window::render();
+    window_render();
 
     if (countbonus && (level->extrabonus >= 10)) {
         retval = waitforbutton();
@@ -284,16 +314,16 @@ int viewstatus(TITUS_level *level, bool countbonus){
                 level->extrabonus--;
                 sprintf(tmpchars, "%2d", level->extrabonus);
                 SDL_Print_Text(tmpchars, 28 * 8 - strlen(tmpchars) * 8, 10 * 12);
-                Window::render();
+                window_render();
                 // 150 ms
-                titus_sleep(150);
+                SDL_Delay(150);
             }
             level->lives++;
             sprintf(tmpchars, "%d", level->lives);
             SDL_Print_Text(tmpchars, 28 * 8 - strlen(tmpchars) * 8, 11 * 12);
-            Window::render();
+            window_render();
             // 100 ms
-            titus_sleep(100);
+            SDL_Delay(100);
         }
     }
 
@@ -301,13 +331,13 @@ int viewstatus(TITUS_level *level, bool countbonus){
     if (retval < 0)
         return retval;
 
-    Window::clear();
-    Window::render();
+    window_clear(NULL);
+    window_render();
 
     return (0);
 }
 
-void INIT_SCREENM(ScreenContext &context, TITUS_level *level) {
+void INIT_SCREENM(ScreenContext *context, TITUS_level *level) {
     CLOSE_SCREEN(context);
     BITMAP_X = 0;
     BITMAP_Y = 0;
@@ -322,15 +352,15 @@ void draw_health_bars(TITUS_level *level) {
     if(BAR_FLAG <= 0) {
         return;
     }
-    uint8 offset = 96 + 16 - g_scroll_px_offset;
-    uint8 i;
+    uint8_t offset = 96 + 16 - g_scroll_px_offset;
+    uint8_t i;
     SDL_Rect dest;
     for (i = 0; i < level->player.hp; i++) { //Draw big bars (4px*16px, spacing 4px)
         dest.x = offset;
         dest.y = 9;
         dest.w = 4;
         dest.h = 16;
-        SDL_FillRect(Window::screen, &dest, SDL_MapRGB(Window::screen->format, 255, 255, 255));
+        SDL_FillRect(screen, &dest, SDL_MapRGB(screen->format, 255, 255, 255));
         offset += 8;
     }
     for (i = 0; i < MAXIMUM_ENERGY - level->player.hp; i++) { //Draw small bars (4px*4px, spacing 4px)
@@ -338,7 +368,7 @@ void draw_health_bars(TITUS_level *level) {
         dest.y = 15;
         dest.w = 4;
         dest.h = 4;
-        SDL_FillRect(Window::screen, &dest, SDL_MapRGB(Window::screen->format, 255, 255, 255));
+        SDL_FillRect(screen, &dest, SDL_MapRGB(screen->format, 255, 255, 255));
         offset += 8;
     }
 }
@@ -353,17 +383,17 @@ void fadeout() {
 
     src.x = 0;
     src.y = 0;
-    src.w = Window::screen->w;
-    src.h = Window::screen->h;
+    src.w = screen->w;
+    src.h = screen->h;
 
     dest.x = 0;
     dest.y = 0;
-    dest.w = Window::screen->w;
-    dest.h = Window::screen->h;
+    dest.w = screen->w;
+    dest.h = screen->h;
 
-    image = SDL_ConvertSurface(Window::screen, Window::screen->format, SDL_SWSURFACE);
+    image = SDL_ConvertSurface(screen, screen->format, SDL_SWSURFACE);
 
-    SDL_BlitSurface(Window::screen, &src, image, &dest);
+    SDL_BlitSurface(screen, &src, image, &dest);
     tick_start = SDL_GetTicks();
     while (image_alpha < 255) //Fade to black
     {
@@ -389,7 +419,7 @@ void fadeout() {
                         startmusic();
                     }
                 } else if (event.key.keysym.scancode == KEY_FULLSCREEN) {
-                    Window::toggle_fullscreen();
+                    window_toggle_fullscreen();
                 }
             }
         }
@@ -402,30 +432,30 @@ void fadeout() {
 
         SDL_SetSurfaceAlphaMod(image, 255 - image_alpha);
         SDL_SetSurfaceBlendMode(image, SDL_BLENDMODE_BLEND);
-        Window::clear();
-        SDL_BlitSurface(image, &src, Window::screen, &dest);
-        Window::render();
+        window_clear(NULL);
+        SDL_BlitSurface(image, &src, screen, &dest);
+        window_render();
 
-        titus_sleep(1);
+        SDL_Delay(1);
     }
     SDL_FreeSurface(image);
 
 }
 
-int view_password(ScreenContext &context, TITUS_level *level, uint8 level_index) {
+int view_password(ScreenContext *context, TITUS_level *level, uint8_t level_index) {
     //Display the password !
     char tmpchars[10];
     int retval;
 
     CLOSE_SCREEN(context);
-    Window::clear();
-    Window::render();
-    auto saved_value = g_scroll_px_offset;
+    window_clear(NULL);
+    window_render();
+    short int saved_value = g_scroll_px_offset;
     g_scroll_px_offset = 0;
 
-    if (game == GameType::Titus) {
+    if (game == Titus) {
         SDL_Print_Text("LEVEL", 13 * 8, 13 * 8);
-    } else if (game == GameType::Moktar) {
+    } else if (game == Moktar) {
         SDL_Print_Text("ETAPE", 13 * 8, 13 * 8);
     }
     sprintf(tmpchars, "%d", level_index + 1);
@@ -434,13 +464,13 @@ int view_password(ScreenContext &context, TITUS_level *level, uint8 level_index)
     SDL_Print_Text("CODE", 14 * 8, 10 * 8);
     SDL_Print_Text(levelcode[level_index], 20 * 8, 10 * 8);
 
-    Window::render();
+    window_render();
     retval = waitforbutton();
     g_scroll_px_offset = saved_value;
     if (retval < 0)
         return retval;
 
-    //Window::paint();
+    //paint();
     OPEN_SCREEN(context, level);
     return (0);
 }

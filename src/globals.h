@@ -100,76 +100,76 @@
 #define CFLAG_PADLOCK 3
 #define CFLAG_DEADLY 4
 
-#define uint8 unsigned char
-#define uint16 unsigned short int
-#define int8 signed char
-#define int16 signed short int
+#define uint8_t unsigned char
+#define uint16_t unsigned short int
+#define int8_t signed char
+#define int16_t signed short int
 
 typedef struct {
     bool enabled;
-    uint16 NUM;
+    uint16_t NUM;
 } SPRITE;
 
 typedef struct {
     bool enabled;
-    uint16 NUM;
+    uint16_t NUM;
 } SPRITEDATA;
 
-extern uint8 RESETLEVEL_FLAG;
+extern uint8_t RESETLEVEL_FLAG;
 extern bool GAMEOVER_FLAG; //triggers a game over
-extern uint8 BAR_FLAG; //timer for health bar
+extern uint8_t BAR_FLAG; //timer for health bar
 extern bool X_FLAG; //true if left or right key is pressed
 extern bool Y_FLAG; //true if up or down key is pressed
-extern uint8 CHOC_FLAG; //headache timer
-extern uint8 action; //player sprite array
-extern uint8 KICK_FLAG; //hit/burn timer
+extern uint8_t CHOC_FLAG; //headache timer
+extern uint8_t action; //player sprite array
+extern uint8_t KICK_FLAG; //hit/burn timer
 extern bool GRANDBRULE_FLAG; //If set, player will be "burned" when hit (fireballs)
 extern bool LADDER_FLAG; //True if in a ladder
 extern bool PRIER_FLAG; //True if player is forced into kneestanding because of low ceiling
-extern uint8 SAUT_FLAG; //6 if free fall or in the middle of a jump, decremented if on solid surface. Must be 0 to initiate a jump.
-extern uint8 LAST_ORDER; //Last action (kneestand + jump = silent walk)
-extern uint8 FURTIF_FLAG; //Silent walk timer
+extern uint8_t SAUT_FLAG; //6 if free fall or in the middle of a jump, decremented if on solid surface. Must be 0 to initiate a jump.
+extern uint8_t LAST_ORDER; //Last action (kneestand + jump = silent walk)
+extern uint8_t FURTIF_FLAG; //Silent walk timer
 extern bool DROP_FLAG; //True if an object is throwed forward
 extern bool DROPREADY_FLAG;
 extern bool CARRY_FLAG; //true if carrying something (add 16 to player sprite)
 extern bool POSEREADY_FLAG;
-extern uint8 ACTION_TIMER; //Frames since last action change
+extern uint8_t ACTION_TIMER; //Frames since last action change
 //extern TITUS_sprite sprite; //Player sprite
 //extern TITUS_sprite sprite2; //Secondary player sprite (throwed objects, "hit" when object hits an enemy, smoke when object hits the floor)
-extern uint8 INVULNERABLE_FLAG; //When non-zero, boss is invulnerable
-extern uint8 TAPISFLY_FLAG; //When non-zero, the flying carpet is flying
-extern uint8 CROSS_FLAG; //When non-zero, fall through certain floors (after key down)
-extern uint8 GRAVITY_FLAG; //When zero, skip object gravity function
-extern uint8 FUME_FLAG; //Smoke when object hits the floor
-extern const Uint8 *keystate; //Keyboard state
-extern uint8 YFALL;
+extern uint8_t INVULNERABLE_FLAG; //When non-zero, boss is invulnerable
+extern uint8_t TAPISFLY_FLAG; //When non-zero, the flying carpet is flying
+extern uint8_t CROSS_FLAG; //When non-zero, fall through certain floors (after key down)
+extern uint8_t GRAVITY_FLAG; //When zero, skip object gravity function
+extern uint8_t FUME_FLAG; //Smoke when object hits the floor
+extern const uint8_t *keystate; //Keyboard state
+extern uint8_t YFALL;
 extern bool POCKET_FLAG;
 extern bool PERMUT_FLAG; //If false, there are no animated tiles on the screen?
-extern uint8 loop_cycle; //Increased every loop in game loop
-extern uint8 tile_anim; //Current tile animation (0-1-2), changed every 4th game loop cycle
-extern uint8 BITMAP_X; //Screen offset (X) in tiles
-// extern uint8 BITMAP_XM; //Point to the left tile in the tile screen (0 to 19)
-extern uint8 BITMAP_Y; //Screen offset (Y) in tiles
-// extern uint8 BITMAP_YM; //Point to the top tile in the tile screen (0 to 11)
+extern uint8_t loop_cycle; //Increased every loop in game loop
+extern uint8_t tile_anim; //Current tile animation (0-1-2), changed every 4th game loop cycle
+extern uint8_t BITMAP_X; //Screen offset (X) in tiles
+// extern uint8_t BITMAP_XM; //Point to the left tile in the tile screen (0 to 19)
+extern uint8_t BITMAP_Y; //Screen offset (Y) in tiles
+// extern uint8_t BITMAP_YM; //Point to the top tile in the tile screen (0 to 11)
 extern bool g_scroll_x; //If true, the screen will scroll in X
-extern int16 g_scroll_x_target; //If scrolling: scroll until player is in this tile (X)
-extern int16 g_scroll_px_offset;
-extern int16 XLIMIT; //The engine will not scroll past this tile before the player have crossed the line (X)
+extern int16_t g_scroll_x_target; //If scrolling: scroll until player is in this tile (X)
+extern int16_t g_scroll_px_offset;
+extern int16_t XLIMIT; //The engine will not scroll past this tile before the player have crossed the line (X)
 extern bool g_scroll_y; //If true, the screen will scroll in Y
-extern uint8 g_scroll_y_target; //If scrolling: scroll until player is in this tile (Y)
-extern uint8 ALTITUDE_ZERO; //The engine will not scroll below this tile before the player have gone below (Y)
-extern uint16 IMAGE_COUNTER; //Increased every loop in game loop (0 to 0x0FFF)
-extern int8 SENSX; //1: walk right, 0: stand still, -1: walk left, triggers the ACTION_TIMER if it changes
-extern uint8 SAUT_COUNT; //Incremented from 0 to 3 when accelerating while jumping, stop acceleration upwards if >= 3
+extern uint8_t g_scroll_y_target; //If scrolling: scroll until player is in this tile (Y)
+extern uint8_t ALTITUDE_ZERO; //The engine will not scroll below this tile before the player have gone below (Y)
+extern uint16_t IMAGE_COUNTER; //Increased every loop in game loop (0 to 0x0FFF)
+extern int8_t SENSX; //1: walk right, 0: stand still, -1: walk left, triggers the ACTION_TIMER if it changes
+extern uint8_t SAUT_COUNT; //Incremented from 0 to 3 when accelerating while jumping, stop acceleration upwards if >= 3
 extern bool NOSCROLL_FLAG;
 extern bool NEWLEVEL_FLAG; //Finish a level
-extern uint8 BIGNMI_NBR; //Number of bosses that needs to be killed to finish
-extern uint8 TAUPE_FLAG; //Used for enemies walking and popping up
-extern uint8 TAPISWAIT_FLAG; //Flying carpet state
-extern uint8 SEECHOC_FLAG; //Counter when hit
-extern uint8 BIGNMI_POWER; //Lives of the boss
+extern uint8_t BIGNMI_NBR; //Number of bosses that needs to be killed to finish
+extern uint8_t TAUPE_FLAG; //Used for enemies walking and popping up
+extern uint8_t TAPISWAIT_FLAG; //Flying carpet state
+extern uint8_t SEECHOC_FLAG; //Counter when hit
+extern uint8_t BIGNMI_POWER; //Lives of the boss
 extern bool boss_alive; //True if the boss is alive
-extern uint8 AUDIOMODE;
+extern uint8_t AUDIOMODE;
 
 extern bool GODMODE; //If true, the player will not interfere with the enemies
 extern bool NOCLIP; //If true, the player will move noclip
@@ -179,4 +179,4 @@ extern SPRITE sprites[256];
 
 extern SPRITEDATA spritedata[256];
 
-extern uint16 level_code[16];
+extern uint16_t level_code[16];

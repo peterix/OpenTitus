@@ -54,12 +54,13 @@
 
 #include "audio.h"
 
-static int playlevel(ScreenContext &context, TITUS_level *level);
-static void death(ScreenContext &context, TITUS_level *level);
-static void gameover(ScreenContext &context, TITUS_level *level);
+static int playlevel(ScreenContext *context, TITUS_level *level);
+static void death(ScreenContext *context, TITUS_level *level);
+static void gameover(ScreenContext *context, TITUS_level *level);
 
 int playtitus(int firstlevel){
     ScreenContext context;
+    screencontext_reset(&context);
 
     int retval;
 
@@ -68,9 +69,9 @@ int playtitus(int firstlevel){
     unsigned char *spritedata;
     TITUS_spritecache spritecache;
     TITUS_spritedata **sprites;
-    uint16 sprite_count;
+    uint16_t sprite_count;
     TITUS_objectdata **objects;
-    uint16 object_count;
+    uint16_t object_count;
     int leveldatasize;
     bool first;
 
@@ -162,12 +163,12 @@ int playtitus(int firstlevel){
             //changemusic(modulelevelfile[modulelevel[level.levelnumber] - 1], modulelevelfileloop[modulelevel[level.levelnumber] - 1]);
             SELECT_MUSIC(LEVEL_MUSIC[level.levelid]);
 
-            INIT_SCREENM(context, &level); //Todo: comment, DOCUMENTED! (reset_level_simplified)
+            INIT_SCREENM(&context, &level); //Todo: comment, DOCUMENTED! (reset_level_simplified)
             DISPLAY_TILES(&level);
-            flip_screen(context, true);
+            flip_screen(&context, true);
 
 
-            retval = playlevel (context, &level);
+            retval = playlevel (&context, &level);
             if (retval < 0) {
                 freelevel (&level);
                 freeobjects(&objects, object_count);
@@ -185,7 +186,7 @@ int playtitus(int firstlevel){
                     GAMEOVER_FLAG = true;
                 } else {
                     level.lives--;
-                    death(context, &level);
+                    death(&context, &level);
                 }
             }
 
@@ -193,7 +194,7 @@ int playtitus(int firstlevel){
 
 
             if (GAMEOVER_FLAG) {
-                gameover(context, &level);
+                gameover(&context, &level);
 
                 freelevel (&level);
                 freeobjects(&objects, object_count);
@@ -232,7 +233,7 @@ int playtitus(int firstlevel){
     freespritecache(&spritecache);
     freesprites(&sprites, sprite_count);
     freepixelformat(&(level.pixelformat));
-    if (game == GameType::Titus) {
+    if (game == Titus) {
         retval = viewimage(titusfinishfile, titusfinishformat, 1, 0);
         if (retval < 0)
             return retval;
@@ -242,7 +243,7 @@ int playtitus(int firstlevel){
 }
 
 
-static int playlevel(ScreenContext &context, TITUS_level *level) {
+static int playlevel(ScreenContext *context, TITUS_level *level) {
     int retval = 0;
     bool firstrun = true;
     do {
@@ -275,7 +276,7 @@ static int playlevel(ScreenContext &context, TITUS_level *level) {
     return (0);
 }
 
-void death(ScreenContext &context, TITUS_level *level) {
+void death(ScreenContext *context, TITUS_level *level) {
     TITUS_player *player = &(level->player);
     int i;
 
@@ -307,7 +308,7 @@ void death(ScreenContext &context, TITUS_level *level) {
     CLOSE_SCREEN(context);
 }
 
-void gameover(ScreenContext &context, TITUS_level *level) {
+void gameover(ScreenContext *context, TITUS_level *level) {
     TITUS_player *player = &(level->player);
     int i, retval;
     SELECT_MUSIC(2);
@@ -336,7 +337,7 @@ void gameover(ScreenContext &context, TITUS_level *level) {
 
 /*
 void SCREEN_5C() {
-    uint16 key;
+    uint16_t key;
     int retval;
     if (keystate[SDLK_LCTRL] && keystate[SDLK_LALT] && keystate[SDLK_e]) {
         for (key = SDLK_FIRST; key <= SDLK_LAST; key++) {

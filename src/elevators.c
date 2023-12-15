@@ -48,7 +48,7 @@ void MTSBR(TITUS_elevator *elevator) {
 
 void MOVE_TRP(TITUS_level *level) {
     TITUS_elevator *elevator = level->elevator;
-    uint8 i;
+    uint8_t i;
     for (i = 0; i < level->elevatorcount; i++) {
         //Find elevators on the screen
         if (elevator[i].enabled == false) {

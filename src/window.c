@@ -2,23 +2,20 @@
 #include "settings.h"
 #include "tituserror.h"
 #include "globals.h"
+#include "settings.h"
 
-namespace Window {
-
-namespace {
-const char* getGameTitle() {
+static const char* getGameTitle() {
     switch(game) {
-        case GameType::Titus:
+        case Titus:
             return "OpenTitus";
-        case GameType::Moktar:
+        case Moktar:
             return "OpenMoktar";
         default:
             return "Something else...";
     }
 }
 
-Uint32 black = 0;
-}
+static uint32_t black = 0;
 
 bool fullscreen = false;
 
@@ -26,7 +23,7 @@ SDL_Surface *screen;
 SDL_Window *window;
 SDL_Renderer *renderer;
 
-void toggle_fullscreen() {
+void window_toggle_fullscreen() {
     if(!fullscreen) {
         SDL_SetWindowFullscreen(window, SDL_WINDOW_FULLSCREEN_DESKTOP);
         fullscreen = true;
@@ -37,8 +34,8 @@ void toggle_fullscreen() {
     }
 }
 
-int init() {
-    Uint32 windowflags = 0;
+int window_init() {
+    uint32_t windowflags = 0;
     int w;
     int h;
     switch (videomode) {
@@ -80,11 +77,11 @@ int init() {
     return 0;
 }
 
-void clear(const SDL_Rect * rect) {
+void window_clear(const SDL_Rect * rect) {
     SDL_FillRect(screen, rect, black);
 }
 
-void render() {
+void window_render() {
     if(!screen) {
         return;
     }
@@ -100,6 +97,4 @@ void render() {
     SDL_RenderCopy(renderer, frame, &src, &dst);
     SDL_RenderPresent(renderer);
     SDL_DestroyTexture(frame);
-}
-
 }

@@ -116,7 +116,7 @@ int viewimage(char * imagefile, int imageformat, int displayformat, int delay) {
     }
 
     free (imagedata);
-    image = SDL_ConvertSurfaceFormat(surface, SDL_GetWindowPixelFormat(Window::window), 0);
+    image = SDL_ConvertSurfaceFormat(surface, SDL_GetWindowPixelFormat(window), 0);
 
     src.x = 0;
     src.y = 0;
@@ -161,7 +161,7 @@ int viewimage(char * imagefile, int imageformat, int displayformat, int delay) {
                             startmusic();
                         }
                     } else if (event.key.keysym.scancode == KEY_FULLSCREEN) {
-                        Window::toggle_fullscreen();
+                        window_toggle_fullscreen();
                     }
 
                 }
@@ -174,10 +174,10 @@ int viewimage(char * imagefile, int imageformat, int displayformat, int delay) {
 
             SDL_SetSurfaceAlphaMod(image, image_alpha);
             SDL_SetSurfaceBlendMode(image, SDL_BLENDMODE_BLEND);
-            Window::clear();
-            SDL_BlitSurface(image, &src, Window::screen, &dest);
-            Window::render();
-            titus_sleep();
+            window_clear(NULL);
+            SDL_BlitSurface(image, &src, screen, &dest);
+            window_render();
+            SDL_Delay(1);
         }
 
         while (activedelay) //Visible delay
@@ -208,7 +208,7 @@ int viewimage(char * imagefile, int imageformat, int displayformat, int delay) {
                             startmusic();
                         }
                     } else if (event.key.keysym.scancode == KEY_FULLSCREEN) {
-                        Window::toggle_fullscreen();
+                        window_toggle_fullscreen();
                     }
                 }
 
@@ -218,13 +218,13 @@ int viewimage(char * imagefile, int imageformat, int displayformat, int delay) {
                         case SDL_WINDOWEVENT_SIZE_CHANGED:
                         case SDL_WINDOWEVENT_MAXIMIZED:
                         case SDL_WINDOWEVENT_RESTORED:
-                            Window::render();
+                            window_render();
                         default:
                             break;
                     }
                 }
             }
-            titus_sleep();
+            SDL_Delay(1);
             if ((SDL_GetTicks() - tick_start + fade_time) >= delay)
                 activedelay = 0;
         }
@@ -255,7 +255,7 @@ int viewimage(char * imagefile, int imageformat, int displayformat, int delay) {
                             startmusic();
                         }
                     } else if (event.key.keysym.scancode == KEY_FULLSCREEN) {
-                        Window::toggle_fullscreen();
+                        window_toggle_fullscreen();
                     }
                 }
             }
@@ -267,17 +267,17 @@ int viewimage(char * imagefile, int imageformat, int displayformat, int delay) {
 
             SDL_SetSurfaceAlphaMod(image, 255 - image_alpha);
             SDL_SetSurfaceBlendMode(image, SDL_BLENDMODE_BLEND);
-            Window::clear();
-            SDL_BlitSurface(image, &src, Window::screen, &dest);
-            Window::render();
-            titus_sleep();
+            window_clear(NULL);
+            SDL_BlitSurface(image, &src, screen, &dest);
+            window_render();
+            SDL_Delay(1);
         }
         break;
 
     case 1: //visible until keypress, then fade out
-        Window::clear();
-        SDL_BlitSurface(image, &src, Window::screen, &dest);
-        Window::render();
+        window_clear(NULL);
+        SDL_BlitSurface(image, &src, screen, &dest);
+        window_render();
 
         retval = waitforbutton();
         if (retval < 0) {
@@ -311,7 +311,7 @@ int viewimage(char * imagefile, int imageformat, int displayformat, int delay) {
                             startmusic();
                         }
                     } else if (event.key.keysym.scancode == KEY_FULLSCREEN) {
-                        Window::toggle_fullscreen();
+                        window_toggle_fullscreen();
                     }
                 }
             }
@@ -323,10 +323,10 @@ int viewimage(char * imagefile, int imageformat, int displayformat, int delay) {
 
             SDL_SetSurfaceAlphaMod(image, 255 - image_alpha);
             SDL_SetSurfaceBlendMode(image, SDL_BLENDMODE_BLEND);
-            Window::clear();
-            SDL_BlitSurface(image, &src, Window::screen, &dest);
-            Window::render();
-            titus_sleep();
+            window_clear(NULL);
+            SDL_BlitSurface(image, &src, screen, &dest);
+            window_render();
+            SDL_Delay(1);
         }
 
         break;

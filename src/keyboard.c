@@ -59,7 +59,7 @@ int waitforbutton() {
                         startmusic();
                     }
                 } else if (event.key.keysym.scancode == KEY_FULLSCREEN) {
-                    Window::toggle_fullscreen();
+                    window_toggle_fullscreen();
                 }
             }
             if (event.type == SDL_WINDOWEVENT) {
@@ -68,13 +68,13 @@ int waitforbutton() {
                     case SDL_WINDOWEVENT_SIZE_CHANGED:
                     case SDL_WINDOWEVENT_MAXIMIZED:
                     case SDL_WINDOWEVENT_RESTORED:
-                        Window::render();
+                        window_render();
                     default:
                         break;
                 }
             }
         }
-        titus_sleep();
+        SDL_Delay(1);
 
     }
     return (waiting);

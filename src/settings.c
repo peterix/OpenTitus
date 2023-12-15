@@ -46,7 +46,7 @@ int levelcount;
 int devmode;
 int resheight;
 int videomode;
-GameType game;
+enum GameType game;
 
 char levelcode[16][5];
 char leveltitle[16][41];
@@ -129,11 +129,11 @@ int readconfig(const char *configfile) {
         else if (strcmp (tmp, "game") == 0) {
             sscanf (line, "%*s %255d", (int *)&game);
             switch(game) {
-                case GameType::Moktar:
-                case GameType::Titus:
+                case Moktar:
+                case Titus:
                     break;
                 default: {
-                    printf("Error: You have specified invalid game type: %d, check config file: %s!\n", int(game), configfile);
+                    printf("Error: You have specified invalid game type: %d, check config file: %s!\n", game, configfile);
                     fclose(ifp);
                     return(-1);
                 }
@@ -282,7 +282,7 @@ int initcodes() {
 }
 
 int initleveltitles() {
-    if (game == GameType::Titus) {
+    if (game == Titus) {
         strcpy (leveltitle[0], "           ON THE FOXY TRAIL");
         strcpy (leveltitle[1], "           LOOKING FOR CLUES");
         strcpy (leveltitle[2], "           ROAD WORKS AHEAD");
@@ -298,7 +298,7 @@ int initleveltitles() {
         strcpy (leveltitle[12], "             A PIPE DREAM");
         strcpy (leveltitle[13], "              GOING HOME");
         strcpy (leveltitle[14], "             JUST MARRIED");
-    } else if (game == GameType::Moktar) {
+    } else if (game == Moktar) {
         strcpy (leveltitle[0], "     A LA RECHERCHE DE LA ZOUBIDA");
         strcpy (leveltitle[1], "          LES QUARTIERS CHICS");
         strcpy (leveltitle[2], "           ATTENTION TRAVAUX");

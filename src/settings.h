@@ -33,7 +33,7 @@ int initcodes();
 
 int initleveltitles();
 
-enum class GameType {
+enum GameType {
     Titus,
     Moktar
 };
@@ -52,7 +52,7 @@ extern char fontfile[256];
 extern int levelcount;
 extern int devmode;
 extern int videomode;
-extern GameType game;
+extern enum GameType game;
 
 extern char levelcode[16][5];
 extern char leveltitle[16][41];

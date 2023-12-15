@@ -44,22 +44,22 @@
 #include "scroll.h"
 #include "window.h"
 
-static void TAKE_BLK_AND_YTEST(ScreenContext &context, TITUS_level *level, int16 tileY, uint8 tileX);
-static void BLOCK_YYPRGD(TITUS_level *level, uint8 ceil, uint8 tileY, uint8 tileX);
-static void BLOCK_XXPRG(ScreenContext &context, TITUS_level *level, uint8 horiz, uint8 tileY, uint8 tileX);
-static void XACCELERATION(TITUS_player *player, int16 maxspeed);
-static void YACCELERATION(TITUS_player *player, int16 maxspeed);
+static void TAKE_BLK_AND_YTEST(ScreenContext *context, TITUS_level *level, int16_t tileY, uint8_t tileX);
+static void BLOCK_YYPRGD(TITUS_level *level, uint8_t ceil, uint8_t tileY, uint8_t tileX);
+static void BLOCK_XXPRG(ScreenContext *context, TITUS_level *level, uint8_t horiz, uint8_t tileY, uint8_t tileX);
+static void XACCELERATION(TITUS_player *player, int16_t maxspeed);
+static void YACCELERATION(TITUS_player *player, int16_t maxspeed);
 static void DECELERATION(TITUS_player *player);
-static void BLOCK_YYPRG(ScreenContext &context, TITUS_level *level, uint8 floor, uint8 floor_above, uint8 tileY, uint8 tileX);
-static int CASE_BONUS(TITUS_level *level, uint8 tileY, uint8 tileX);
-static void CASE_PASS(ScreenContext &context, TITUS_level *level, uint8 viewlevel, uint8 tileY, uint8 tileX);
-static void CASE_SECU(TITUS_level *level, uint8 tileY, uint8 tileX);
-static void NEW_FORM(TITUS_player *player, uint8 action);
+static void BLOCK_YYPRG(ScreenContext *context, TITUS_level *level, uint8_t floor, uint8_t floor_above, uint8_t tileY, uint8_t tileX);
+static int CASE_BONUS(TITUS_level *level, uint8_t tileY, uint8_t tileX);
+static void CASE_PASS(ScreenContext *context, TITUS_level *level, uint8_t viewlevel, uint8_t tileY, uint8_t tileX);
+static void CASE_SECU(TITUS_level *level, uint8_t tileY, uint8_t tileX);
+static void NEW_FORM(TITUS_player *player, uint8_t action);
 static void GET_IMAGE(TITUS_level *level);
-static void YACCELERATION_NEG(TITUS_player *player, int16 maxspeed);
-static void ACTION_PRG(TITUS_level *level, uint8 action);
+static void YACCELERATION_NEG(TITUS_player *player, int16_t maxspeed);
+static void ACTION_PRG(TITUS_level *level, uint8_t action);
 static void CASE_DEAD_IM (TITUS_level *level);
-static void BRK_COLLISION(ScreenContext &context, TITUS_level *level);
+static void BRK_COLLISION(ScreenContext *context, TITUS_level *level);
 static void COLLISION_TRP(TITUS_level *level);
 static void COLLISION_OBJET(TITUS_level *level);
 static void ARAB_TOMBE(TITUS_level *level);
@@ -69,10 +69,10 @@ static void ARAB_BLOCK_YU(TITUS_player *player);
 static void INC_ENERGY(TITUS_level *level);
 
 // FIXME: int is really an error enum, see tituserror.h
-static int t_pause (ScreenContext &context, TITUS_level *level);
-int16 add_carry();
+static int t_pause (ScreenContext *context, TITUS_level *level);
+int16_t add_carry();
 
-int move_player(ScreenContext &context, TITUS_level *level) {
+int move_player(ScreenContext *context, TITUS_level *level) {
     //Part 1: Check keyboard input
     //Part 2: Determine the player's action, and execute action dependent code
     //Part 3: Move the player + collision detection
@@ -80,9 +80,9 @@ int move_player(ScreenContext &context, TITUS_level *level) {
     //Part 5: decrease the timers
 
     int retval;
-    int8 newsensX; //temporary SENSX
+    int8_t newsensX; //temporary SENSX
     SDL_Event event;
-    int16 newX, newY;
+    int16_t newX, newY;
     bool pause = false;
 
     //Part 1: Check keyboard input
@@ -124,7 +124,7 @@ int move_player(ScreenContext &context, TITUS_level *level) {
             } else if (event.key.keysym.scancode == KEY_P) {
                 pause = true;
             } else if (event.key.keysym.scancode == KEY_FULLSCREEN) {
-                Window::toggle_fullscreen();
+                window_toggle_fullscreen();
             }
         }
     }
@@ -372,7 +372,7 @@ void CASE_DEAD_IM (TITUS_level *level) {
     RESETLEVEL_FLAG = 2;
 }
 
-int t_pause (ScreenContext &context, TITUS_level *level) {
+int t_pause (ScreenContext *context, TITUS_level *level) {
     TITUS_player *player = &(level->player);
     SDL_Event event;
     TITUS_sprite tmp;
@@ -385,10 +385,10 @@ int t_pause (ScreenContext &context, TITUS_level *level) {
     flip_screen(context, true); //Display it
     copysprite(level, &(player->sprite), &(tmp)); //Reset player sprite
 
-    context = ScreenContext();
+    screencontext_reset(context);
 
     do {
-        titus_sleep();
+        SDL_Delay(1);
         keystate = SDL_GetKeyboardState(NULL);
         while(SDL_PollEvent(&event)) { //Check all events
             if (event.type == SDL_QUIT) {
@@ -407,25 +407,25 @@ int t_pause (ScreenContext &context, TITUS_level *level) {
                 } else if (event.key.keysym.scancode == KEY_P) {
                     return 0;
                 } else if (event.key.keysym.scancode == KEY_FULLSCREEN) {
-                    Window::toggle_fullscreen();
+                    window_toggle_fullscreen();
                 }
             }
         }
     } while (1);
 }
 
-void BRK_COLLISION(ScreenContext &context, TITUS_level *level) { //Collision detection between player and tiles/objects/elevators
+void BRK_COLLISION(ScreenContext *context, TITUS_level *level) { //Collision detection between player and tiles/objects/elevators
     //Point the foot on the block!
     TITUS_player *player = &(level->player);
-    int16 changeX;
-    int16 height;
-    int16 initY;
-    uint8 tileX;
-    int16 tileY;
-    int16 colltest;
-    uint8 left_tileX;
+    int16_t changeX;
+    int16_t height;
+    int16_t initY;
+    uint8_t tileX;
+    int16_t tileY;
+    int16_t colltest;
+    uint8_t left_tileX;
     bool first;
-    uint8 hflag;
+    uint8_t hflag;
 
     tileX = (player->sprite.x >> 4);
     tileY = (player->sprite.y >> 4) - 1;
@@ -511,16 +511,16 @@ void BRK_COLLISION(ScreenContext &context, TITUS_level *level) { //Collision det
     }
 }
 
-static void TAKE_BLK_AND_YTEST(ScreenContext &context, TITUS_level *level, int16 tileY, uint8 tileX) {
+static void TAKE_BLK_AND_YTEST(ScreenContext *context, TITUS_level *level, int16_t tileY, uint8_t tileX) {
     //Test the current tile for vertical blocking
 
     TITUS_player *player = &(level->player);
     POCKET_FLAG = false;
     PRIER_FLAG = false;
     LADDER_FLAG = false;
-    uint8 horiz, ceil;
-    int8 change;
-    uint8 floor, floor_above;
+    uint8_t horiz, ceil;
+    int8_t change;
+    uint8_t floor, floor_above;
     if ((player->sprite.y <= MAP_LIMIT_Y) || (tileY < -1)) { //if player is too high (<= -1), skip test
         ARAB_TOMBE(level);
         YFALL = 0xFF;
@@ -570,10 +570,10 @@ static void TAKE_BLK_AND_YTEST(ScreenContext &context, TITUS_level *level, int16
     }
 }
 
-static void BLOCK_YYPRGD(TITUS_level *level, uint8 ceil, uint8 tileY, uint8 tileX) {
+static void BLOCK_YYPRGD(TITUS_level *level, uint8_t ceil, uint8_t tileY, uint8_t tileX) {
     TITUS_player *player = &(level->player);
     TITUS_object *object;
-    uint8 hflag;
+    uint8_t hflag;
     //Action on different ceiling flags
     switch (ceil) {
 
@@ -628,7 +628,7 @@ static void BLOCK_YYPRGD(TITUS_level *level, uint8 ceil, uint8 tileY, uint8 tile
     }
 }
 
-static void BLOCK_XXPRG(ScreenContext &context, TITUS_level *level, uint8 horiz, uint8 tileY, uint8 tileX) {
+static void BLOCK_XXPRG(ScreenContext *context, TITUS_level *level, uint8_t horiz, uint8_t tileY, uint8_t tileX) {
     //Action on different horizontal flags
     switch (horiz) {
     case 0: //No wall
@@ -682,7 +682,7 @@ TITUS_object *FORCE_POSE(TITUS_level *level) {
     //Move object from sprite2 to TMPFP
     TITUS_sprite *sprite2 = &(level->player.sprite2);
     TITUS_object *object;
-    int16 i;
+    int16_t i;
     if ((sprite2->enabled) && (CARRY_FLAG)) {
         //Drop the carried object
         i = 0;
@@ -737,9 +737,9 @@ void ARAB_TOMBE(TITUS_level *level) {
     player->sprite.flipped = (SENSX < 0);
 }
 
-static void XACCELERATION(TITUS_player *player, int16 maxspeed) {
+static void XACCELERATION(TITUS_player *player, int16_t maxspeed) {
     //Sideway acceleration
-    int16 changeX;
+    int16_t changeX;
     if (X_FLAG) {
         changeX = (SENSX << 4) >> player->GLISSE;
     } else {
@@ -755,7 +755,7 @@ static void XACCELERATION(TITUS_player *player, int16 maxspeed) {
     }
 }
 
-static void YACCELERATION(TITUS_player *player, int16 maxspeed) {
+static void YACCELERATION(TITUS_player *player, int16_t maxspeed) {
     //Accelerate downwards
     if ((player->sprite.speedY + 32/2) < maxspeed) {
         player->sprite.speedY = player->sprite.speedY + (32/2);
@@ -765,10 +765,10 @@ static void YACCELERATION(TITUS_player *player, int16 maxspeed) {
 }
 
 
-static void BLOCK_YYPRG(ScreenContext &context, TITUS_level *level, uint8 floor, uint8 floor_above, uint8 tileY, uint8 tileX) {
+static void BLOCK_YYPRG(ScreenContext *context, TITUS_level *level, uint8_t floor, uint8_t floor_above, uint8_t tileY, uint8_t tileX) {
     //Action on different floor flags
     TITUS_player *player = &(level->player);
-    uint8 order;
+    uint8_t order;
     switch (floor) {
 
     case 0: //No floor
@@ -889,9 +889,9 @@ void ARAB_BLOCK_YU(TITUS_player *player) {
     YFALL = 2;
 }
 
-static int CASE_BONUS(TITUS_level *level, uint8 tileY, uint8 tileX) {
+static int CASE_BONUS(TITUS_level *level, uint8_t tileY, uint8_t tileX) {
     //Handle bonuses. Increase energy if HP, and change the bonus tile to normal tile
-    uint16 i = 0;
+    uint16_t i = 0;
     do { //Is the bonus in the list?
         if (i >= MAXIMUM_BONUS) {
             return false; //Bonus not found
@@ -913,7 +913,7 @@ static int CASE_BONUS(TITUS_level *level, uint8 tileY, uint8 tileX) {
     return true; //No problems, bonus handling done correctly!
 }
 
-static void CASE_PASS(ScreenContext &context, TITUS_level *level, uint8 level_index, uint8 tileY, uint8 tileX) {
+static void CASE_PASS(ScreenContext *context, TITUS_level *level, uint8_t level_index, uint8_t tileY, uint8_t tileX) {
     //Codelamp
     SELECT_MUSIC(7);
     if (CASE_BONUS(level, tileY, tileX)) { //if the bonus is found in the bonus list
@@ -921,7 +921,7 @@ static void CASE_PASS(ScreenContext &context, TITUS_level *level, uint8 level_in
     }
 }
 
-static void CASE_SECU(TITUS_level *level, uint8 tileY, uint8 tileX) {
+static void CASE_SECU(TITUS_level *level, uint8_t tileY, uint8_t tileX) {
     TITUS_player *player = &(level->player);
     //Padlock, store X/Y coordinates
     SELECT_MUSIC(5);
@@ -958,12 +958,12 @@ void DEC_ENERGY(TITUS_level *level) {
     }
 }
 
-static void ACTION_PRG(TITUS_level *level, uint8 action) {
+static void ACTION_PRG(TITUS_level *level, uint8_t action) {
     //Action dependent code
     TITUS_player *player = &(level->player);
-    uint8 tileX, tileY, fflag;
+    uint8_t tileX, tileY, fflag;
     TITUS_object *object;
-    int16 i, diffX, speedX, speedY;
+    int16_t i, diffX, speedX, speedY;
 
     switch (action) {
     case 0:
@@ -1112,11 +1112,11 @@ static void ACTION_PRG(TITUS_level *level, uint8 action) {
                         if (!player->sprite.flipped) {
                             diffX = 0 - diffX;
                         }
-                        if (game == GameType::Moktar) {
+                        if (game == Moktar) {
                             if (diffX >= 25) {
                                 continue;
                             }
-                        } else if (game == GameType::Titus) {
+                        } else if (game == Titus) {
                             if (diffX >= 20) {
                                 continue;
                             }
@@ -1190,11 +1190,11 @@ static void ACTION_PRG(TITUS_level *level, uint8 action) {
                             if (!player->sprite.flipped) {
                                 diffX = 0 - diffX;
                             }
-                            if (game == GameType::Moktar) {
+                            if (game == Moktar) {
                                 if (diffX >= 25) {
                                     continue;
                                 }
-                            } else if (game == GameType::Titus) {
+                            } else if (game == Titus) {
                                 if (diffX >= 20) {
                                     continue;
                                 }
@@ -1398,8 +1398,8 @@ static void ACTION_PRG(TITUS_level *level, uint8 action) {
 
 void DECELERATION(TITUS_player *player) {
     //Stop acceleration
-    uint8 friction = (3 * 4) >> player->GLISSE;
-    int16 speed;
+    uint8_t friction = (3 * 4) >> player->GLISSE;
+    int16_t speed;
     if (player->sprite.speedX < 0) {
         speed = player->sprite.speedX + friction;
         if (speed > 0) {
@@ -1414,7 +1414,7 @@ void DECELERATION(TITUS_player *player) {
     player->sprite.speedX = speed;
 }
 
-static void NEW_FORM(TITUS_player *player, uint8 action) {
+static void NEW_FORM(TITUS_player *player, uint8_t action) {
     //if the order is changed, change player animation
     if ((LAST_ORDER != action) || (player->sprite.animation == NULL)) {
         LAST_ORDER = action;
@@ -1425,7 +1425,7 @@ static void NEW_FORM(TITUS_player *player, uint8 action) {
 static void GET_IMAGE(TITUS_level *level) {
     TITUS_player *player = &(level->player);
     //animate the player sprite
-    int16 frame = *(player->sprite.animation);
+    int16_t frame = *(player->sprite.animation);
     if (frame < 0) { //frame is a negative number, telling how many bytes to jump back
         player->sprite.animation += (frame / 2); //jump back to first frame of animation
         frame = *(player->sprite.animation);
@@ -1436,10 +1436,10 @@ static void GET_IMAGE(TITUS_level *level) {
     player->sprite.animation++; //Advance in the animation
 }
 
-static void YACCELERATION_NEG(TITUS_player *player, int16 maxspeed) {
+static void YACCELERATION_NEG(TITUS_player *player, int16_t maxspeed) {
     //Accelerate upwards
     maxspeed = 0 - maxspeed; //maxspeed is negative
-    int16 speed = player->sprite.speedY - 32;
+    int16_t speed = player->sprite.speedY - 32;
     if (speed >= maxspeed) {
         speed = maxspeed;
     }
@@ -1447,7 +1447,7 @@ static void YACCELERATION_NEG(TITUS_player *player, int16 maxspeed) {
 
 }
 
-int16 add_carry() {
+int16_t add_carry() {
     if (CARRY_FLAG) {
         return 16;
     } else {
@@ -1458,7 +1458,7 @@ int16 add_carry() {
 void COLLISION_TRP(TITUS_level *level) {
     //Player versus elevators
     //Change player's location according to the elevator
-    uint8 i;
+    uint8_t i;
     TITUS_player *player = &(level->player);
     TITUS_elevator *elevator = level->elevator;
     if ((player->sprite.speedY >= 0) && (CROSS_FLAG == 0)) {

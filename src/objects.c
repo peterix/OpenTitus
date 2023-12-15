@@ -44,10 +44,10 @@ void move_objects(TITUS_level *level) {
     if (GRAVITY_FLAG == 0) return; //Skip execution if there are no active objects
 
     TITUS_object *off_object;
-    uint8 i, hflag, fflag, max_speed;
-    int16 tileX, tileY, speed, j;
+    uint8_t i, hflag, fflag, max_speed;
+    int16_t tileX, tileY, speed, j;
     bool obj_vs_sprite;
-    int8 reduction, tile_count;
+    int8_t reduction, tile_count;
     for (i = 0; i < level->objectcount; i++) {
         obj_vs_sprite = false;
         if (!(level->object[i].sprite.enabled)) continue; //Skip unused objects
@@ -364,8 +364,8 @@ void shock(TITUS_level *level, TITUS_object *object) { //Falling object versus p
 
 
 bool SPRITES_VS_SPRITES (TITUS_level *level, TITUS_sprite *sprite1, TITUS_spritedata *sprite1data, TITUS_object **object2) { //check if there is an object below that can support the input object
-    uint8 i;
-    int16 obj1left, obj2left;
+    uint8_t i;
+    int16_t obj1left, obj2left;
     //sprite1ref is equal to sprite1, except when sprite1 is the player, then sprite1ref is level->spritedata[0] (first player sprite)
     obj1left = sprite1->x - (sprite1data->data->w >> 1);
     for (i = 0; i < level->objectcount; i++) { //loop all objects
@@ -397,8 +397,8 @@ bool SPRITES_VS_SPRITES (TITUS_level *level, TITUS_sprite *sprite1, TITUS_sprite
 
 
 
-int updateobjectsprite(TITUS_level *level, TITUS_object *obj, int16 number, bool clearflags){
-    int16 index = number - FIRST_OBJET;    
+int updateobjectsprite(TITUS_level *level, TITUS_object *obj, int16_t number, bool clearflags){
+    int16_t index = number - FIRST_OBJET;    
     updatesprite(level, &(obj->sprite), number, clearflags);
     if ((index < 0) || (index >= ORIG_OBJECT_COUNT)) {
         index = 0;
@@ -408,7 +408,7 @@ int updateobjectsprite(TITUS_level *level, TITUS_object *obj, int16 number, bool
 }
 
 
-int loadobjects(TITUS_objectdata ***objects, uint16 *count) {
+int loadobjects(TITUS_objectdata ***objects, uint16_t *count) {
     int i;
     *count = ORIG_OBJECT_COUNT;
     *objects = (TITUS_objectdata **)SDL_malloc(sizeof(TITUS_objectdata *) * ORIG_OBJECT_COUNT);
@@ -434,7 +434,7 @@ int loadobjects(TITUS_objectdata ***objects, uint16 *count) {
     return ORIG_OBJECT_COUNT;
 }
 
-int freeobjects(TITUS_objectdata ***objects, uint8 count) {
+int freeobjects(TITUS_objectdata ***objects, uint8_t count) {
     int i;
 
     for (i = 0; i < count; i++) {

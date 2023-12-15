@@ -32,7 +32,7 @@
  * void INIT_SCREENM(TITUS_level *level): Initialize screen
  * void draw_health_bars(TITUS_level *level): Draw energy
  * void fadeout(): Fade the screen to black
- * int view_password(TITUS_level *level, uint8 level_index): Display the password
+ * int view_password(TITUS_level *level, uint8_t level_index): Display the password
  */
 
 #pragma once
@@ -41,54 +41,26 @@
 #include "level.h"
 #include "definitions.h"
 
-struct ScreenContext {
-    void reset() {
-        *this = ScreenContext();
-    }
-
-    void initial() {
-        auto initial_clock = SDL_GetTicks();
-        TARGET_CLOCK = initial_clock + tick_delay;
-        started = true;
-        SDL_Delay(tick_delay);
-        LAST_CLOCK = SDL_GetTicks();
-        TARGET_CLOCK += tick_delay;
-    }
-
-    void advance_29() {
-        if(!started) {
-            initial();
-            return;
-        }
-        auto now = SDL_GetTicks();
-        auto delay = TARGET_CLOCK - now;
-        if(delay < 0) {
-            delay = tick_delay;
-        }
-        else {
-            SDL_Delay(delay);
-        }
-        LAST_CLOCK = SDL_GetTicks();
-        TARGET_CLOCK += tick_delay;
-    }
-
-    // constexpr static int tick_delay = 29;
-    constexpr static int tick_delay = 29;
-
-    bool started = false;
-    int LAST_CLOCK = 0;
-    int TARGET_CLOCK = 0;
+struct _ScreenContext {
+    bool started;
+    uint32_t LAST_CLOCK;
+    uint32_t TARGET_CLOCK;
 };
-void flip_screen(ScreenContext & context, bool slow);
+typedef struct _ScreenContext ScreenContext;
+
+void screencontext_reset(ScreenContext * context);
+void screencontext_initial(ScreenContext * context);
+void screencontext_advance_29(ScreenContext * context);
+void flip_screen(ScreenContext *context, bool slow);
 
 void DISPLAY_TILES(TITUS_level *level);
 int viewstatus(TITUS_level *level, bool countbonus);
 
-void INIT_SCREENM(ScreenContext &context, TITUS_level *level);
+void INIT_SCREENM(ScreenContext *context, TITUS_level *level);
 void draw_health_bars(TITUS_level *level);
 void DISPLAY_SPRITES(TITUS_level *level);
 void fadeout();
-int view_password(ScreenContext &context, TITUS_level *level, uint8 level_index);
+int view_password(ScreenContext *context, TITUS_level *level, uint8_t level_index);
 int loadpixelformat(SDL_PixelFormat **pixelformat);
 int loadpixelformat_font(SDL_PixelFormat **pixelformat);
 int freepixelformat(SDL_PixelFormat **pixelformat);

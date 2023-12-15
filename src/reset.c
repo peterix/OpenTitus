@@ -56,10 +56,10 @@ static void SET_ALL_SPRITES(TITUS_level *level);
 //3 - Death
 
 
-uint8 RESET_LEVEL(ScreenContext &context, TITUS_level *level) {
+uint8_t RESET_LEVEL(ScreenContext *context, TITUS_level *level) {
     TITUS_player *player = &(level->player);
     bool pass;
-    int16 i;
+    int16_t i;
     SDL_Event event;
     int retval;
     if (NEWLEVEL_FLAG) {
@@ -115,7 +115,7 @@ uint8 RESET_LEVEL(ScreenContext &context, TITUS_level *level) {
         }
         //Display hearts
         updatesprite(level, &(player->sprite), 355, true);
-        int16 *heart = COEUR_POS; //Heart position array
+        int16_t *heart = COEUR_POS; //Heart position array
         pass = false;
         do {
             if (*heart < 0) {
@@ -148,7 +148,7 @@ uint8 RESET_LEVEL(ScreenContext &context, TITUS_level *level) {
                             startmusic();
                         }
                     } else if (event.key.keysym.scancode == KEY_FULLSCREEN) {
-                        Window::toggle_fullscreen();
+                        window_toggle_fullscreen();
                     }
                 } else if (event.type == SDL_KEYUP) {
                     if (event.key.keysym.scancode == KEY_RETURN || event.key.keysym.scancode == KEY_ENTER || event.key.keysym.scancode == KEY_SPACE) {
@@ -186,7 +186,7 @@ uint8 RESET_LEVEL(ScreenContext &context, TITUS_level *level) {
 
 
 void MOVE_HIM(TITUS_level *level, TITUS_sprite *spr) {
-    int16 *pointer = spr->animation + 1;
+    int16_t *pointer = spr->animation + 1;
     while (*pointer < 0) {
         pointer += (*pointer / 2); //End of animation, jump back
     }
@@ -303,7 +303,7 @@ int clearsprite(TITUS_sprite *spr){
 
 
 void SET_ALL_SPRITES(TITUS_level *level) {
-    int16 i;
+    int16_t i;
     TITUS_player *player = &(level->player);
 
     for (i = 0; i < level->trashcount; i++) {
@@ -320,7 +320,7 @@ void SET_ALL_SPRITES(TITUS_level *level) {
         level->enemy[i].trigger = false;
         level->enemy[i].visible = false;
         if (level->enemy[i].init_enabled) {
-            updateenemysprite(level, &(level->enemy[i]), (int16)(level->enemy[i].initsprite & 0x1FFF) + 101, true);
+            updateenemysprite(level, &(level->enemy[i]), (int16_t)(level->enemy[i].initsprite & 0x1FFF) + 101, true);
             level->enemy[i].sprite.flipped = ((level->enemy[i].initsprite & 0x8000) == 0x8000);
             level->enemy[i].sprite.x = level->enemy[i].initX;
             level->enemy[i].sprite.y = level->enemy[i].initY;
@@ -332,7 +332,7 @@ void SET_ALL_SPRITES(TITUS_level *level) {
     for (i = 0; i < level->elevatorcount; i++) {
         clearsprite(&(level->elevator[i].sprite));
         if (level->elevator[i].init_enabled) {
-            updatesprite(level, &(level->elevator[i].sprite), (int16)(level->elevator[i].initsprite & 0x1FFF) + 30, true);
+            updatesprite(level, &(level->elevator[i].sprite), (int16_t)(level->elevator[i].initsprite & 0x1FFF) + 30, true);
             level->elevator[i].sprite.visible = ((level->elevator[i].initsprite & 0x2000) == 0x2000);
             level->elevator[i].sprite.flash = ((level->elevator[i].initsprite & 0x4000) == 0x4000);
             level->elevator[i].sprite.flipped = ((level->elevator[i].initsprite & 0x8000) == 0x8000);
@@ -348,7 +348,7 @@ void SET_ALL_SPRITES(TITUS_level *level) {
         clearsprite(&(level->object[i].sprite));
         level->object[i].mass = 0;
         if (level->object[i].init_enabled) {
-            updateobjectsprite(level, &(level->object[i]), (int16)(level->object[i].initsprite & 0x1FFF), true);
+            updateobjectsprite(level, &(level->object[i]), (int16_t)(level->object[i].initsprite & 0x1FFF), true);
             level->object[i].sprite.visible = ((level->object[i].initsprite & 0x2000) == 0x2000);
             level->object[i].sprite.flash = ((level->object[i].initsprite & 0x4000) == 0x4000);
             level->object[i].sprite.flipped = ((level->object[i].initsprite & 0x8000) == 0x8000);

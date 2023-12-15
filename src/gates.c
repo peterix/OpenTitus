@@ -38,7 +38,7 @@
 #include "scroll.h"
 #include "draw.h"
 
-static void check_finish(ScreenContext &context, TITUS_level *level) {
+static void check_finish(ScreenContext *context, TITUS_level *level) {
     TITUS_player *player = &(level->player);
     if (boss_alive) { //There is still a boss that needs to be killed!
         return;
@@ -63,9 +63,9 @@ static void check_finish(ScreenContext &context, TITUS_level *level) {
     NEWLEVEL_FLAG = true;
 }
 
-static void check_gates(ScreenContext &context, TITUS_level *level) {
+static void check_gates(ScreenContext *context, TITUS_level *level) {
     TITUS_player *player = &(level->player);
-    uint8 i;
+    uint8_t i;
     if ((CROSS_FLAG == 0) || //not kneestanding
       (NEWLEVEL_FLAG)) { //the player has finished the level
         return;
@@ -83,7 +83,7 @@ static void check_gates(ScreenContext &context, TITUS_level *level) {
     player->sprite.speedX = 0;
     player->sprite.speedY = 0;
     CLOSE_SCREEN(context);
-    uint8 orig_xlimit = XLIMIT;
+    uint8_t orig_xlimit = XLIMIT;
     XLIMIT = level->width - screen_width;
     player->sprite.x = level->gate[i].exitX << 4;
     player->sprite.y = level->gate[i].exitY << 4;
@@ -104,19 +104,19 @@ static void check_gates(ScreenContext &context, TITUS_level *level) {
     OPEN_SCREEN(context, level);
 }
 
-void CROSSING_GATE(ScreenContext &context, TITUS_level *level) { //Check and handle level completion, and if the player does a kneestand on a secret entrance
+void CROSSING_GATE(ScreenContext *context, TITUS_level *level) { //Check and handle level completion, and if the player does a kneestand on a secret entrance
     check_finish(context, level);
     check_gates(context, level);
 }
 
-void CLOSE_SCREEN(ScreenContext &context) {
+void CLOSE_SCREEN(ScreenContext *context) {
     SDL_Rect dest;
-    uint8 step_count = 10;
-    uint16 rwidth = 320; //TODO: make this global
-    uint16 rheight = 192;
-    uint16 incX = rwidth / (step_count * 2);  //16
-    uint16 incY = rheight / (step_count * 2); //10
-    uint8 i;
+    uint8_t step_count = 10;
+    uint16_t rwidth = 320; //TODO: make this global
+    uint16_t rheight = 192;
+    uint16_t incX = rwidth / (step_count * 2);  //16
+    uint16_t incY = rheight / (step_count * 2); //10
+    uint8_t i;
     for (i = 0; i < step_count; i++) {
         flip_screen(context, false); //quick flip TODO: move to other end of loop?
 
@@ -125,40 +125,40 @@ void CLOSE_SCREEN(ScreenContext &context) {
         dest.y = 0;
         dest.w = screen_width * 16;
         dest.h = i * incY;
-        Window::clear(&dest);
+        window_clear(&dest);
 
         //Clear left
         dest.x = 0;
         dest.y = 0;
         dest.w = i * incX;
         dest.h = screen_height * 16;
-        Window::clear(&dest);
+        window_clear(&dest);
 
         //Clear bottom
         dest.x = 0;
         dest.y = rheight - (i * incY);
         dest.w = screen_width * 16;
         dest.h = i * incY;
-        Window::clear(&dest);
+        window_clear(&dest);
 
         //Clear right
         dest.x = rwidth - (i * incX);
         dest.y = 0;
         dest.w = i * incX;
         dest.h = screen_height * 16;
-        Window::clear(&dest);
+        window_clear(&dest);
     }
 }
 
 
-void OPEN_SCREEN(ScreenContext &context, TITUS_level *level) {
+void OPEN_SCREEN(ScreenContext *context, TITUS_level *level) {
     SDL_Rect dest;
-    int8 step_count = 10;
-    uint16 rwidth = 320; //TODO: make this global
-    uint16 rheight = 192;
-    uint16 incX = rwidth / (step_count * 2);  //16
-    uint16 incY = rheight / (step_count * 2); //10
-    uint8 i;
+    int8_t step_count = 10;
+    uint16_t rwidth = 320; //TODO: make this global
+    uint16_t rheight = 192;
+    uint16_t incX = rwidth / (step_count * 2);  //16
+    uint16_t incY = rheight / (step_count * 2); //10
+    uint8_t i;
     for (i = step_count - 1; i >= 2; i -= 2) {
         flip_screen(context, false); //quick flip TODO: move to other end of loop?
 
@@ -170,27 +170,27 @@ void OPEN_SCREEN(ScreenContext &context, TITUS_level *level) {
         dest.y = 0;
         dest.w = screen_width * 16;
         dest.h = i * incY;
-        Window::clear(&dest);
+        window_clear(&dest);
 
         //Clear left
         dest.x = 0;
         dest.y = 0;
         dest.w = i * incX;
         dest.h = screen_height * 16;
-        Window::clear(&dest);
+        window_clear(&dest);
 
         //Clear bottom
         dest.x = 0;
         dest.y = rheight - (i * incY);
         dest.w = screen_width * 16;
         dest.h = i * incY;
-        Window::clear(&dest);
+        window_clear(&dest);
 
         //Clear right
         dest.x = rwidth - (i * incX);
         dest.y = 0;
         dest.w = i * incX;
         dest.h = screen_height * 16;
-        Window::clear(&dest);
+        window_clear(&dest);
     }
 }

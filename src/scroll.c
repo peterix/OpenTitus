@@ -35,9 +35,7 @@
 #include "window.h"
 #include "scroll.h"
 
-namespace {
-
-float clamp(float x, float lowerlimit, float upperlimit) {
+static float clamp(float x, float lowerlimit, float upperlimit) {
     if (x < lowerlimit)
         x = lowerlimit;
     if (x > upperlimit)
@@ -45,18 +43,18 @@ float clamp(float x, float lowerlimit, float upperlimit) {
     return x;
 }
 
-float smootherstep(float edge0, float edge1, float x) {
+static float smootherstep(float edge0, float edge1, float x) {
     // Scale, and clamp x to 0..1 range
     x = clamp((x - edge0) / (edge1 - edge0), 0.0, 1.0);
     // Evaluate polynomial
     return x * x * x * (x * (x * 6 - 15) + 10);
 }
 
-float ideal_camera_position(TITUS_level *level) {
+static float ideal_camera_position(TITUS_level *level) {
     /*
     //If an enemy is behind the player, max. 12.5 tiles away horizontally, scroll until player is in the middle
     //If not, scroll until player is in the 3rd screen tile
-    int16 enemy_left, i;
+    int16_t enemy_left, i;
     for (i = 0; i < level->enemycount; i++) {
         if (!level->enemy[i].sprite.enabled || !level->enemy[i].visible) {
             continue;
@@ -85,12 +83,12 @@ float ideal_camera_position(TITUS_level *level) {
     }
 }
 
-void X_ADJUST(TITUS_level *level) {
+static void X_ADJUST(TITUS_level *level) {
     TITUS_player *player = &(level->player);
     g_scroll_x = true;
 
     static float camera_offset = 0.0f;
-    int16 target_camera_offset = ideal_camera_position(level);
+    int16_t target_camera_offset = ideal_camera_position(level);
     if(camera_offset < target_camera_offset) {
         camera_offset += 3.0;
     }
@@ -100,8 +98,8 @@ void X_ADJUST(TITUS_level *level) {
     int real_camera_offset = smootherstep(-60, 60, camera_offset) * 120 - 60;
 
     // clamp player position to level bounds
-    int16 player_position = player->sprite.x;
-    int16 camera_position = player_position + real_camera_offset;
+    int16_t player_position = player->sprite.x;
+    int16_t camera_position = player_position + real_camera_offset;
 
     // left side of the map
     if(camera_position < 160) {
@@ -109,7 +107,7 @@ void X_ADJUST(TITUS_level *level) {
     }
 
     // right side of the map, or a weird arbitrary divide on the right
-    int16 rlimit;
+    int16_t rlimit;
     if(player_position > XLIMIT * 16) {
         rlimit = (level->width * 16 - 160);
     }
@@ -120,11 +118,11 @@ void X_ADJUST(TITUS_level *level) {
         camera_position = rlimit;
     }
 
-    int16 camera_screen_px = camera_position - BITMAP_X * 16;
-    int16 scroll_px_target = 160;
-    int16 scroll_offset_x = scroll_px_target - camera_screen_px;
-    int16 tile_offset_x = scroll_offset_x / 16;
-    int16 px_offset_x = scroll_offset_x % 16;
+    int16_t camera_screen_px = camera_position - BITMAP_X * 16;
+    int16_t scroll_px_target = 160;
+    int16_t scroll_offset_x = scroll_px_target - camera_screen_px;
+    int16_t tile_offset_x = scroll_offset_x / 16;
+    int16_t px_offset_x = scroll_offset_x % 16;
     if(tile_offset_x < 0) {
         BITMAP_X ++;
         g_scroll_px_offset = px_offset_x;
@@ -141,12 +139,12 @@ void X_ADJUST(TITUS_level *level) {
     }
 }
 
-void Y_ADJUST(TITUS_level *level) {
+static void Y_ADJUST(TITUS_level *level) {
     TITUS_player *player = &(level->player);
     if (player->sprite.speedY == 0) {
         g_scroll_y = false;
     }
-    int16 pstileY = (player->sprite.y >> 4) - BITMAP_Y; //Player screen tile Y (0 to 11)
+    int16_t pstileY = (player->sprite.y >> 4) - BITMAP_Y; //Player screen tile Y (0 to 11)
     if (!g_scroll_y) {
         if ((player->sprite.speedY == 0) &&
           (LADDER_FLAG == 0)) {
@@ -197,8 +195,6 @@ void Y_ADJUST(TITUS_level *level) {
     }
 }
 
-}
-
 void scroll(TITUS_level *level) {
     //Scroll screen and update tile animation
     loop_cycle++; //Cycle from 0 to 3
@@ -230,7 +226,7 @@ bool L_SCROLL(TITUS_level *level) {
 
 bool R_SCROLL(TITUS_level *level) {
     //Scroll right
-    uint8 maxX;
+    uint8_t maxX;
     if (((level->player.sprite.x >> 4) - screen_width) > XLIMIT) { //Scroll limit
         maxX = level->width - screen_width; //256 - 20
     } else {

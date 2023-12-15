@@ -30,6 +30,7 @@
 
 #include "SDL2/SDL.h"
 #include "definitions.h"
+#include <stdbool.h>
 
 typedef struct _TITUS_tile TITUS_tile;
 typedef struct _TITUS_sprite TITUS_sprite;
@@ -47,20 +48,20 @@ typedef struct _TITUS_level TITUS_level;
 
 struct _TITUS_tile {
     SDL_Surface *tiledata; //Malloced
-    uint8 animation[3]; //Index to animation tiles
+    uint8_t animation[3]; //Index to animation tiles
     bool animated;
-    uint8 horizflag;
-    uint8 floorflag;
-    uint8 ceilflag;
-    uint8 current; //Index of the current (animated) tile
+    uint8_t horizflag;
+    uint8_t floorflag;
+    uint8_t ceilflag;
+    uint8_t current; //Index of the current (animated) tile
 };
 
 struct _TITUS_sprite {
-    int16 x;
-    int16 y;
-    int16 speedX;
-    int16 speedY;
-    int16 number;
+    int16_t x;
+    int16_t y;
+    int16_t speedX;
+    int16_t speedY;
+    int16_t number;
     bool visible; //On screen or not on screen (above/below/left/right)
     bool flash;
     bool flipped;
@@ -69,9 +70,9 @@ struct _TITUS_sprite {
     bool enabled;
     //SDL_Surface *buffer; //Malloced
     TITUS_spritedata *spritedata;
-    uint8 UNDER; //0: big spring, 1: small spring because of another object on top, 2: small spring because player on top
+    uint8_t UNDER; //0: big spring, 1: small spring because of another object on top, 2: small spring because player on top
     TITUS_sprite *ONTOP; //Object on top of the spring
-    int16 *animation;
+    int16_t *animation;
     bool droptobottom;
     bool killing;
     bool invisible; //Set by "hidden" enemies
@@ -79,29 +80,29 @@ struct _TITUS_sprite {
 
 struct _TITUS_spritedata {
     SDL_Surface *data; //Malloced
-    uint8 collheight;
-    uint8 collwidth;
-    int16 refheight;
-    uint8 refwidth;
+    uint8_t collheight;
+    uint8_t collwidth;
+    int16_t refheight;
+    uint8_t refwidth;
     TITUS_spritebuffer *spritebuffer[1]; //Not malloced
 };
 
 struct _TITUS_spritebuffer {
     SDL_Surface *data; //Malloced
     TITUS_spritedata *spritedata;
-    uint8 index;
+    uint8_t index;
 };
 
 struct _TITUS_spritecache {
     TITUS_spritebuffer **spritebuffer; //Malloced
-    uint16 count;
-    uint16 tmpcount;
-    uint16 cycle;
-    uint16 cycle2;
+    uint16_t count;
+    uint16_t tmpcount;
+    uint16_t cycle;
+    uint16_t cycle2;
 };
 
 struct _TITUS_objectdata {
-    uint8 maxspeedY;
+    uint8_t maxspeedY;
     bool support; //not support/support
     bool bounce; //not bounce/bounce against floor + player bounces (ball, all spring, yellow stone, squeezed ball, skateboard)
     bool gravity; //no gravity on throw/gravity (ball, all carpet, trolley, squeezed ball, garbage, grey stone, scooter, yellow bricks between the statues, skateboard, cage)
@@ -112,39 +113,39 @@ struct _TITUS_objectdata {
 struct _TITUS_object {
     TITUS_sprite sprite;
     //unsigned char animcycle;
-    uint16 initsprite;
+    uint16_t initsprite;
     int initX;
     int initY;
     //unsigned char initanimcycle;
     bool init_enabled;
-    uint8 mass; //momentum, must be >= 10 to cause a falling object to hit an enemy or the player
+    uint8_t mass; //momentum, must be >= 10 to cause a falling object to hit an enemy or the player
     TITUS_objectdata *objectdata;
 };
 
 struct _TITUS_enemy {
-    uint8 dying; //00: alive, not 00: dying/dead
-    uint8 phase; //the current phase of the enemy
+    uint8_t dying; //00: alive, not 00: dying/dead
+    uint8_t phase; //the current phase of the enemy
     TITUS_sprite sprite;
-    uint16 type; //What kind of enemy
-    int16 power;
+    uint16_t type; //What kind of enemy
+    int16_t power;
     int centerX;
     unsigned int rangeX;
     unsigned int delay;
     unsigned char direction;
     unsigned int rangeY;
-    uint16 initsprite;
+    uint16_t initsprite;
     int initX;
     int initY;
     bool init_enabled;
     int initspeedX;
     int initspeedY;
-    int16 carry_sprite;
-    int16 dead_sprite;
+    int16_t carry_sprite;
+    int16_t dead_sprite;
     bool boss;
     bool trigger;
     bool visible;
-    uint8 counter;
-    uint8 walkspeedX;
+    uint8_t counter;
+    uint8_t walkspeedX;
 };
 
 struct _TITUS_bonus {
@@ -173,9 +174,9 @@ struct _TITUS_elevator {
     unsigned int range;
     unsigned char init_direction;
     bool init_enabled;
-    int16 initspeedX;
-    int16 initspeedY;
-    uint16 initsprite;
+    int16_t initspeedX;
+    int16_t initspeedY;
+    uint16_t initsprite;
     int initX;
     int initY;
 };
@@ -185,18 +186,18 @@ struct _TITUS_player {
     TITUS_sprite sprite2;
     TITUS_sprite sprite3;
     unsigned char animcycle;
-    int16 cageX;
-    int16 cageY;
-    int16 hp;
-    int16 initX;
-    int16 initY;
+    int16_t cageX;
+    int16_t cageY;
+    int16_t hp;
+    int16_t initX;
+    int16_t initY;
     unsigned char inithp;
-    uint8 GLISSE; //Friction (0-3). 0: full friction, 3: max sliding
+    uint8_t GLISSE; //Friction (0-3). 0: full friction, 3: max sliding
 };
 
 struct _TITUS_level {
-    int16 levelnumber;
-    int16 levelid;
+    int16_t levelnumber;
+    int16_t levelid;
     //char title[41];
     int height;
     int width; //Usually 256
@@ -216,22 +217,22 @@ struct _TITUS_level {
     TITUS_player player;
 
     TITUS_object *object; //Malloced
-    int16 objectcount;
+    int16_t objectcount;
     TITUS_enemy *enemy; //Malloced
-    int16 enemycount;
+    int16_t enemycount;
     TITUS_bonus *bonus; //Malloced
-    int16 bonuscount;
+    int16_t bonuscount;
     TITUS_gate *gate; //Malloced
-    int16 gatecount;
+    int16_t gatecount;
     TITUS_elevator *elevator; //Malloced
-    int16 elevatorcount;
+    int16_t elevatorcount;
     TITUS_sprite *trash; //Malloced
-    int16 trashcount;
+    int16_t trashcount;
 
 };
 
 int loadlevel(TITUS_level *level, unsigned char *leveldata, int leveldatasize, TITUS_spritedata **spritedata, TITUS_spritecache *spritecache, TITUS_objectdata **objectdata);
 int freelevel(TITUS_level *level);
-uint8 get_horizflag(TITUS_level *level, int16 tileY, int16 tileX);
-uint8 get_floorflag(TITUS_level *level, int16 tileY, int16 tileX);
-uint8 get_ceilflag(TITUS_level *level, int16 tileY, int16 tileX);
+uint8_t get_horizflag(TITUS_level *level, int16_t tileY, int16_t tileX);
+uint8_t get_floorflag(TITUS_level *level, int16_t tileY, int16_t tileX);
+uint8_t get_ceilflag(TITUS_level *level, int16_t tileY, int16_t tileX);

@@ -29,17 +29,11 @@
 #pragma once
 #include "SDL2/SDL.h"
 
-namespace Window {
-
-int init();
-void toggle_fullscreen();
-void render();
-void clear(const SDL_Rect * rect = nullptr);
+int window_init();
+void window_toggle_fullscreen();
+void window_render();
+void window_clear(const SDL_Rect * rect);
 
 extern SDL_Window *window;
 extern SDL_Renderer *renderer;
 extern SDL_Surface *screen;
-
-}
-
-

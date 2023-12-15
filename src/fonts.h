@@ -49,7 +49,7 @@
 typedef struct _TITUS_font TITUS_font;
 
 struct _TITUS_font {
-    uint8 type[256]; //0: not in use, 1: malloced sub, 2: malloced surface, 3: surface pointer, 4: invalid UTF-8
+    uint8_t type[256]; //0: not in use, 1: malloced sub, 2: malloced surface, 3: surface pointer, 4: invalid UTF-8
     void *sub[256]; //May be malloced
 };
 

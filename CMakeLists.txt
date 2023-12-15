@@ -9,29 +9,29 @@ find_package(SDL2_mixer REQUIRED)
 add_subdirectory(opl)
 
 set(TITUS_SOURCES
-    opentitus.cpp
-    src/audio.cpp
-    src/window.cpp
-    src/draw.cpp
-    src/enemies.cpp
-    src/engine.cpp
-    src/elevators.cpp
-    src/fonts.cpp
-    src/gates.cpp
-    src/globals.cpp
-    src/keyboard.cpp
-    src/level.cpp
-    src/menu.cpp
-    src/objects.cpp
-    src/original.cpp
-    src/player.cpp
-    src/reset.cpp
-    src/scroll.cpp
-    src/settings.cpp
-    src/sprites.cpp
-    src/sqz.cpp
-    src/tituserror.cpp
-    src/viewimage.cpp
+    opentitus.c
+    src/audio.c
+    src/window.c
+    src/draw.c
+    src/enemies.c
+    src/engine.c
+    src/elevators.c
+    src/fonts.c
+    src/gates.c
+    src/globals.c
+    src/keyboard.c
+    src/level.c
+    src/menu.c
+    src/objects.c
+    src/original.c
+    src/player.c
+    src/reset.c
+    src/scroll.c
+    src/settings.c
+    src/sprites.c
+    src/sqz.c
+    src/tituserror.c
+    src/viewimage.c
 )
 
 set(CMAKE_C_STANDARD 11)

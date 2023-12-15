@@ -41,7 +41,7 @@
 #include "level.h"
 #include "globals.h"
 
-unsigned int loaduint16(unsigned char c1, unsigned char c2);
+unsigned int loaduint16_t(unsigned char c1, unsigned char c2);
 int loadint16(unsigned char c1, unsigned char c2);
 
 int loadlevel(TITUS_level *level, unsigned char *leveldata, int leveldatasize, TITUS_spritedata **spritedata, TITUS_spritecache *spritecache, TITUS_objectdata **objectdata){
@@ -138,7 +138,7 @@ int loadlevel(TITUS_level *level, unsigned char *leveldata, int leveldatasize, T
     offset = level->height * level->width + 33536;
     for (i = 0; i < level->objectcount; i++) {
         //level->object[i].sprite.buffer = NULL;
-        level->object[i].initsprite = loaduint16(leveldata[offset + i * 6 + 1], leveldata[offset + i * 6 + 0]);
+        level->object[i].initsprite = loaduint16_t(leveldata[offset + i * 6 + 1], leveldata[offset + i * 6 + 0]);
         level->object[i].init_enabled = (level->object[i].initsprite != 0xFFFF);
         if (level->object[i].init_enabled) {
             level->object[i].initX = loadint16(leveldata[offset + i * 6 + 3], leveldata[offset + i * 6 + 2]);
@@ -158,7 +158,7 @@ int loadlevel(TITUS_level *level, unsigned char *leveldata, int leveldatasize, T
     for (i = 0; i < level->enemycount; i++) {
         //level->enemy[i].sprite.buffer = NULL;
         level->enemy[i].initspeedY = 0;
-        level->enemy[i].initsprite = loaduint16(leveldata[offset + 5], leveldata[offset + 4]);
+        level->enemy[i].initsprite = loaduint16_t(leveldata[offset + 5], leveldata[offset + 4]);
         level->enemy[i].init_enabled = (level->enemy[i].initsprite != 0xFFFF);
         level->enemy[i].power = 0;
         level->enemy[i].walkspeedX = 0;
@@ -166,7 +166,7 @@ int loadlevel(TITUS_level *level, unsigned char *leveldata, int leveldatasize, T
             level->enemy[i].initspeedY = 0;
             level->enemy[i].initX = loadint16(leveldata[offset + 1], leveldata[offset + 0]);
             level->enemy[i].initY = loadint16(leveldata[offset + 3], leveldata[offset + 2]);
-            level->enemy[i].type = loaduint16(leveldata[offset + 7], leveldata[offset + 6]) & 0x1FFF;
+            level->enemy[i].type = loaduint16_t(leveldata[offset + 7], leveldata[offset + 6]) & 0x1FFF;
             level->enemy[i].initspeedX = loadint16(leveldata[offset + 9], leveldata[offset + 8]);
             level->enemy[i].power = loadint16(leveldata[offset + 13], leveldata[offset + 12]);
 
@@ -174,68 +174,68 @@ int loadlevel(TITUS_level *level, unsigned char *leveldata, int leveldatasize, T
             case 0: //Noclip walk
             case 1: //Noclip walk
                 level->enemy[i].centerX = loadint16(leveldata[offset + 16], leveldata[offset + 15]);
-                level->enemy[i].rangeX = loaduint16(leveldata[offset + 18], leveldata[offset + 17]);
+                level->enemy[i].rangeX = loaduint16_t(leveldata[offset + 18], leveldata[offset + 17]);
                 break;
             case 2: //Shoot
                 level->enemy[i].delay = (unsigned int)leveldata[offset + 16] & 0xFF;
-                level->enemy[i].rangeX = loaduint16(leveldata[offset + 18], leveldata[offset + 17]);
+                level->enemy[i].rangeX = loaduint16_t(leveldata[offset + 18], leveldata[offset + 17]);
                 level->enemy[i].direction = (level->enemy[i].rangeX >> 14) & 0x0003;
                 level->enemy[i].rangeX = level->enemy[i].rangeX & 0x3FFF;
                 break;
             case 3: //Noclip walk, jump to player
             case 4: //Noclip walk, jump to player
                 level->enemy[i].centerX = loadint16(leveldata[offset + 16], leveldata[offset + 15]);
-                level->enemy[i].rangeX = loaduint16(leveldata[offset + 18], leveldata[offset + 17]);
+                level->enemy[i].rangeX = loaduint16_t(leveldata[offset + 18], leveldata[offset + 17]);
                 level->enemy[i].rangeY = (unsigned int)leveldata[offset + 19] & 0xFF;
                 break;
             case 5: //Noclip walk, move to player
             case 6: //Noclip walk, move to player
                 level->enemy[i].centerX = loadint16(leveldata[offset + 16], leveldata[offset + 15]);
-                level->enemy[i].rangeX = loaduint16(leveldata[offset + 18], leveldata[offset + 17]);
+                level->enemy[i].rangeX = loaduint16_t(leveldata[offset + 18], leveldata[offset + 17]);
                 level->enemy[i].rangeY = (unsigned int)leveldata[offset + 19] & 0xFF;
                 break;
             case 7: //Gravity walk, hit when near
-                level->enemy[i].walkspeedX = (uint8)leveldata[offset + 19] & 0xFF;
-                level->enemy[i].rangeX = loaduint16(leveldata[offset + 24], leveldata[offset + 23]);
+                level->enemy[i].walkspeedX = (uint8_t)leveldata[offset + 19] & 0xFF;
+                level->enemy[i].rangeX = loaduint16_t(leveldata[offset + 24], leveldata[offset + 23]);
                 break;
             case 8: //Gravity walk when off-screen
-                level->enemy[i].walkspeedX = (uint8)leveldata[offset + 19] & 0xFF;
+                level->enemy[i].walkspeedX = (uint8_t)leveldata[offset + 19] & 0xFF;
                 break;
             case 9: //Walk and periodically pop-up
-                level->enemy[i].walkspeedX = (uint8)leveldata[offset + 19] & 0xFF;
-                level->enemy[i].rangeX = loaduint16(leveldata[offset + 24], leveldata[offset + 23]);
+                level->enemy[i].walkspeedX = (uint8_t)leveldata[offset + 19] & 0xFF;
+                level->enemy[i].rangeX = loaduint16_t(leveldata[offset + 24], leveldata[offset + 23]);
                 break;
             case 10: //Alert when near, walk when nearer
-                level->enemy[i].walkspeedX = (uint8)leveldata[offset + 19] & 0xFF;
-                level->enemy[i].rangeX = loaduint16(leveldata[offset + 24], leveldata[offset + 23]);
+                level->enemy[i].walkspeedX = (uint8_t)leveldata[offset + 19] & 0xFF;
+                level->enemy[i].rangeX = loaduint16_t(leveldata[offset + 24], leveldata[offset + 23]);
                 break;
             case 11: //Walk and shoot
-                level->enemy[i].walkspeedX = (uint8)leveldata[offset + 19] & 0xFF;
-                level->enemy[i].rangeX = loaduint16(leveldata[offset + 24], leveldata[offset + 23]);
+                level->enemy[i].walkspeedX = (uint8_t)leveldata[offset + 19] & 0xFF;
+                level->enemy[i].rangeX = loaduint16_t(leveldata[offset + 24], leveldata[offset + 23]);
                 break;
             case 12: //Jump (immortal)
-                level->enemy[i].rangeY = loaduint16(leveldata[offset + 16], leveldata[offset + 15]);;
+                level->enemy[i].rangeY = loaduint16_t(leveldata[offset + 16], leveldata[offset + 15]);;
                 level->enemy[i].delay = (unsigned int)leveldata[offset + 19] & 0xFF;
                 break;
             case 13: //Bounce
                 level->enemy[i].delay = (unsigned int)leveldata[offset + 20] & 0xFF;
-                level->enemy[i].rangeX = loaduint16(leveldata[offset + 24], leveldata[offset + 23]);
+                level->enemy[i].rangeX = loaduint16_t(leveldata[offset + 24], leveldata[offset + 23]);
                 break;
             case 14: //Gravity walk when off-screen (immortal)
-                level->enemy[i].walkspeedX = (uint8)leveldata[offset + 19] & 0xFF;
+                level->enemy[i].walkspeedX = (uint8_t)leveldata[offset + 19] & 0xFF;
                 break;
             case 15: //Nothing (immortal)
                 break;
             case 16: //Nothing
                 break;
             case 17: //Drop (immortal)
-                level->enemy[i].rangeX = loaduint16(leveldata[offset + 16], leveldata[offset + 15]);
-                level->enemy[i].delay = loaduint16(leveldata[offset + 18], leveldata[offset + 17]);
-                level->enemy[i].rangeY = loaduint16(leveldata[offset + 22], leveldata[offset + 21]);
+                level->enemy[i].rangeX = loaduint16_t(leveldata[offset + 16], leveldata[offset + 15]);
+                level->enemy[i].delay = loaduint16_t(leveldata[offset + 18], leveldata[offset + 17]);
+                level->enemy[i].rangeY = loaduint16_t(leveldata[offset + 22], leveldata[offset + 21]);
                 break;
             case 18: //Drop (immortal)
-                level->enemy[i].rangeX = loaduint16(leveldata[offset + 16], leveldata[offset + 15]);
-                level->enemy[i].rangeY = loaduint16(leveldata[offset + 18], leveldata[offset + 17]);
+                level->enemy[i].rangeX = loaduint16_t(leveldata[offset + 16], leveldata[offset + 15]);
+                level->enemy[i].rangeY = loaduint16_t(leveldata[offset + 18], leveldata[offset + 17]);
                 level->enemy[i].initspeedY = leveldata[offset + 19];
                 break;
             }
@@ -284,7 +284,7 @@ int loadlevel(TITUS_level *level, unsigned char *leveldata, int leveldatasize, T
             level->gate[i].screenY = (unsigned int)leveldata[offset + 3] & 0xFF;
             level->gate[i].exitX = (unsigned int)leveldata[offset + 4] & 0xFF;
             level->gate[i].exitY = (unsigned int)leveldata[offset + 5] & 0xFF;
-            level->gate[i].noscroll = ((uint8)leveldata[offset + 6] != 0);
+            level->gate[i].noscroll = ((uint8_t)leveldata[offset + 6] != 0);
         }
         offset += 7;
     }
@@ -301,7 +301,7 @@ int loadlevel(TITUS_level *level, unsigned char *leveldata, int leveldatasize, T
     for (i = 0; i < level->elevatorcount; i++) {
         //level->elevator[i].sprite.buffer = NULL;
         level->elevator[i].sprite.enabled = false;
-        level->elevator[i].initsprite = loaduint16(leveldata[offset + 5], leveldata[offset + 4]);
+        level->elevator[i].initsprite = loaduint16_t(leveldata[offset + 5], leveldata[offset + 4]);
         level->elevator[i].initspeedX = 0;
         level->elevator[i].initspeedY = 0;
         level->elevator[i].initX = loadint16(leveldata[offset + 13], leveldata[offset + 12]);
@@ -311,7 +311,7 @@ int loadlevel(TITUS_level *level, unsigned char *leveldata, int leveldatasize, T
         level->elevator[i].enabled = level->elevator[i].init_enabled;
 
         if (level->elevator[i].enabled) {
-            level->elevator[i].range = loaduint16(leveldata[offset + 11], leveldata[offset + 10]);
+            level->elevator[i].range = loaduint16_t(leveldata[offset + 11], leveldata[offset + 10]);
             level->elevator[i].init_direction = (unsigned int)leveldata[offset + 16] & 0xFF;
             if ((level->elevator[i].init_direction == 0) || (level->elevator[i].init_direction == 3)) { //Up or left
                 j = 0 - j;
@@ -402,7 +402,7 @@ int freelevel(TITUS_level *level){
     return (0);
 }
 
-uint8 get_horizflag(TITUS_level *level, int16 tileY, int16 tileX) {
+uint8_t get_horizflag(TITUS_level *level, int16_t tileY, int16_t tileX) {
     if ((tileX < 0) ||
       (tileX >= level->width)) {
         return HFLAG_WALL;
@@ -414,7 +414,7 @@ uint8 get_horizflag(TITUS_level *level, int16 tileY, int16 tileX) {
     }
 }
 
-uint8 get_floorflag(TITUS_level *level, int16 tileY, int16 tileX) {
+uint8_t get_floorflag(TITUS_level *level, int16_t tileY, int16_t tileX) {
     if ((tileX < 0) ||
       (tileX >= level->width)) {
         return FFLAG_FLOOR;
@@ -426,7 +426,7 @@ uint8 get_floorflag(TITUS_level *level, int16 tileY, int16 tileX) {
     }
 }
 
-uint8 get_ceilflag(TITUS_level *level, int16 tileY, int16 tileX) {
+uint8_t get_ceilflag(TITUS_level *level, int16_t tileY, int16_t tileX) {
     if ((tileY < 0) ||
       (tileY >= level->height) ||
       (tileX < 0) ||
@@ -437,7 +437,7 @@ uint8 get_ceilflag(TITUS_level *level, int16 tileY, int16 tileX) {
     }
 }
 
-unsigned int loaduint16(unsigned char c1, unsigned char c2){
+unsigned int loaduint16_t(unsigned char c1, unsigned char c2){
     return (((unsigned int)c1 * 256) & 0xFF00) + (unsigned int)c2;
 }
 

@@ -90,7 +90,7 @@ int viewmenu(char * menufile, int menuformat) {
             tmpchar++;
         }
 
-        image = SDL_ConvertSurfaceFormat(surface, SDL_GetWindowPixelFormat(Window::window), 0);
+        image = SDL_ConvertSurfaceFormat(surface, SDL_GetWindowPixelFormat(window), 0);
         palette = NULL;
 
         SDL_FreeSurface(surface);
@@ -113,7 +113,7 @@ int viewmenu(char * menufile, int menuformat) {
     SDL_Rect sel[2];
     SDL_Rect sel_dest[2];
 
-    if (game == GameType::Titus) {
+    if (game == Titus) {
 
         sel[0].x = 120;
         sel[0].y = 160;
@@ -125,7 +125,7 @@ int viewmenu(char * menufile, int menuformat) {
         sel[1].w = 8;
         sel[1].h = 8;
 
-    } else if (game == GameType::Moktar) {
+    } else if (game == Moktar) {
 
         sel[0].x = 130;
         sel[0].y = 167;
@@ -166,7 +166,7 @@ int viewmenu(char * menufile, int menuformat) {
                         startmusic();
                     }
                 } else if (event.key.keysym.scancode == KEY_FULLSCREEN) {
-                    Window::toggle_fullscreen();
+                    window_toggle_fullscreen();
                 }
             }
         }
@@ -176,14 +176,14 @@ int viewmenu(char * menufile, int menuformat) {
         if (image_alpha > 255)
             image_alpha = 255;
 
-        Window::clear();
+        window_clear(NULL);
         SDL_SetSurfaceBlendMode(image, SDL_BLENDMODE_BLEND);
         SDL_SetSurfaceAlphaMod(image, image_alpha);
-        SDL_BlitSurface(image, &src, Window::screen, &dest);
-        SDL_BlitSurface(image, &sel[1], Window::screen, &sel_dest[0]);
-        SDL_BlitSurface(image, &sel[0], Window::screen, &sel_dest[selection]);
-        Window::render();
-        titus_sleep();
+        SDL_BlitSurface(image, &src, screen, &dest);
+        SDL_BlitSurface(image, &sel[1], screen, &sel_dest[0]);
+        SDL_BlitSurface(image, &sel[0], screen, &sel_dest[selection]);
+        window_render();
+        SDL_Delay(1);
 
     }
 
@@ -217,17 +217,17 @@ int viewmenu(char * menufile, int menuformat) {
                         startmusic();
                     }
                 } else if (event.key.keysym.scancode == KEY_FULLSCREEN) {
-                    Window::toggle_fullscreen();
+                    window_toggle_fullscreen();
                 }
             }
         }
 
-        Window::clear();
-        SDL_BlitSurface(image, &src, Window::screen, &dest);
-        SDL_BlitSurface(image, &sel[1], Window::screen, &sel_dest[0]);
-        SDL_BlitSurface(image, &sel[0], Window::screen, &sel_dest[selection]);
-        Window::render();
-        titus_sleep();
+        window_clear(NULL);
+        SDL_BlitSurface(image, &src, screen, &dest);
+        SDL_BlitSurface(image, &sel[1], screen, &sel_dest[0]);
+        SDL_BlitSurface(image, &sel[0], screen, &sel_dest[selection]);
+        window_render();
+        SDL_Delay(1);
     }
 
     switch (selection) {
@@ -279,7 +279,7 @@ int viewmenu(char * menufile, int menuformat) {
                         startmusic();
                     }
                 } else if (event.key.keysym.scancode == KEY_FULLSCREEN) {
-                    Window::toggle_fullscreen();
+                    window_toggle_fullscreen();
                 }
             }
         }
@@ -289,14 +289,14 @@ int viewmenu(char * menufile, int menuformat) {
         if (image_alpha > 255)
             image_alpha = 255;
 
-        Window::clear();
+        window_clear(NULL);
         SDL_SetSurfaceBlendMode(image, SDL_BLENDMODE_BLEND);
         SDL_SetSurfaceAlphaMod(image, 255 - image_alpha);
-        SDL_BlitSurface(image, &src, Window::screen, &dest);
-        SDL_FillRect(Window::screen, &sel_dest[0], 0); //SDL_MapRGB(surface->format, 0, 0, 0));
-        SDL_BlitSurface(image, &sel[0], Window::screen, &sel_dest[selection]);
-        Window::render();
-        titus_sleep();
+        SDL_BlitSurface(image, &src, screen, &dest);
+        SDL_FillRect(screen, &sel_dest[0], 0); //SDL_MapRGB(surface->format, 0, 0, 0));
+        SDL_BlitSurface(image, &sel[0], screen, &sel_dest[selection]);
+        window_render();
+        SDL_Delay(1);
     }
 
     return (curlevel);
@@ -308,7 +308,7 @@ int enterpassword(){
     char code[] = "____";
     int i;
 
-    Window::clear();
+    window_clear(NULL);
 
     SDL_Print_Text("CODE", 111, 80);
 
@@ -334,13 +334,13 @@ int enterpassword(){
                         startmusic();
                     }
                 } else if (event.key.keysym.scancode == KEY_FULLSCREEN) {
-                    Window::toggle_fullscreen();
+                    window_toggle_fullscreen();
                 }
             }
         }
         SDL_Print_Text(code, 159, 80);
-        Window::render();
-        titus_sleep();
+        window_render();
+        SDL_Delay(1);
     }
 
     for (i = 0; i < levelcount; i++) {
@@ -348,24 +348,24 @@ int enterpassword(){
             SDL_Print_Text("LEVEL", 103, 104);
             sprintf(code, "%d", i + 1);
             SDL_Print_Text(code, 199 - 8 * strlen(code), 104);
-            Window::render();
+            window_render();
             retval = waitforbutton();
 
             if (retval < 0)
                 return retval;
 
-            Window::clear();
-            Window::render();
+            window_clear(NULL);
+            window_render();
 
             return (i + 1);
         }
     }
 
     SDL_Print_Text("!  WRONG CODE  !", 87, 104);
-    Window::render();
+    window_render();
     retval = waitforbutton();
 
-    Window::clear();
-    Window::render();
+    window_clear(NULL);
+    window_render();
     return (retval);
 }

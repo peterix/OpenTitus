@@ -31,6 +31,8 @@
 #include "SDL2/SDL.h"
 #include "definitions.h"
 
+#include <stdbool.h>
+
 #define SPRITECOUNT 356
 #define ANIM_PLAYER_MAX 15
 #define ANIM_PLAYER_MAX_MOKTAR 12
@@ -42,30 +44,30 @@
 #define NMI_ANIM_TABLE_COUNT 879 //1758
 
 int initoriginal();
-int16 getlevelid(int16 levelnumber);
+int16_t getlevelid(int16_t levelnumber);
 
 extern SDL_Color orig_palette_colour[16];
 extern SDL_Color orig_palette_level_colour[16];
 extern SDL_Color orig_palette_font_colour[16];
 
-extern uint8 spritewidth[SPRITECOUNT];
-extern uint8 spriteheight[SPRITECOUNT];
-extern uint8 spritecollwidth[SPRITECOUNT];
-extern uint8 spritecollheight[SPRITECOUNT];
-extern uint8 spriterefwidth[SPRITECOUNT];
-extern uint8 spriterefheight[SPRITECOUNT];
+extern uint8_t spritewidth[SPRITECOUNT];
+extern uint8_t spriteheight[SPRITECOUNT];
+extern uint8_t spritecollwidth[SPRITECOUNT];
+extern uint8_t spritecollheight[SPRITECOUNT];
+extern uint8_t spriterefwidth[SPRITECOUNT];
+extern uint8_t spriterefheight[SPRITECOUNT];
 
-extern int16 anim_player[ANIM_PLAYER_COUNT][ANIM_PLAYER_MAX];
-extern int16 anim_enemy[NMI_ANIM_TABLE_COUNT];
-extern uint8 NMI_POWER[ORIG_LEVEL_COUNT];
-extern uint8 LEVEL_MUSIC[ORIG_LEVEL_COUNT];
+extern int16_t anim_player[ANIM_PLAYER_COUNT][ANIM_PLAYER_MAX];
+extern int16_t anim_enemy[NMI_ANIM_TABLE_COUNT];
+extern uint8_t NMI_POWER[ORIG_LEVEL_COUNT];
+extern uint8_t LEVEL_MUSIC[ORIG_LEVEL_COUNT];
 
-extern int16 anim_zoubida[ORIG_ANIM_MAX];
-extern int16 anim_moktar[ORIG_ANIM_MAX];
-extern int16 anim_smoke[ORIG_ANIM_MAX];
-extern int16 COEUR_POS[ORIG_ANIM_MAX * 2];
+extern int16_t anim_zoubida[ORIG_ANIM_MAX];
+extern int16_t anim_moktar[ORIG_ANIM_MAX];
+extern int16_t anim_smoke[ORIG_ANIM_MAX];
+extern int16_t COEUR_POS[ORIG_ANIM_MAX * 2];
 
-extern uint8 object_maxspeedY[ORIG_OBJECT_COUNT];
+extern uint8_t object_maxspeedY[ORIG_OBJECT_COUNT];
 extern bool object_support[ORIG_OBJECT_COUNT]; //not support/support
 extern bool object_bounce[ORIG_OBJECT_COUNT]; //not bounce/bounce against floor + player bounces (ball, all spring, yellow stone, squeezed ball, skateboard)
 extern bool object_gravity[ORIG_OBJECT_COUNT]; //no gravity on throw/gravity (ball, all carpet, trolley, squeezed ball, garbage, grey stone, scooter, yellow bricks between the statues, skateboard, cage)

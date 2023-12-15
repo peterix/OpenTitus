@@ -41,4 +41,4 @@ void MOVE_NMI(TITUS_level *level);
 void SET_NMI(TITUS_level *level);
 void MOVE_TRASH(TITUS_level *level);
 
-int updateenemysprite(TITUS_level *level, TITUS_enemy *enemy, int16 number, bool clearflags);
+int updateenemysprite(TITUS_level *level, TITUS_enemy *enemy, int16_t number, bool clearflags);
