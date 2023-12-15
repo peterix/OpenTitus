@@ -39,7 +39,9 @@
 
 #include "SDL2/SDL.h"
 #include "level.h"
-#include "definitions.h"
+
+#include <stdbool.h>
+#include <stdint.h>
 
 struct _ScreenContext {
     bool started;

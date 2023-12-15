@@ -31,9 +31,11 @@
 #include "SDL2/SDL.h"
 #include "level.h"
 #include "globals.h"
-#include "definitions.h"
 #include "window.h"
 #include "scroll.h"
+
+#include <stdbool.h>
+#include <stdint.h>
 
 static float clamp(float x, float lowerlimit, float upperlimit) {
     if (x < lowerlimit)

@@ -29,7 +29,6 @@
 #pragma once
 
 #include "SDL2/SDL.h"
-#include "definitions.h"
 #include "level.h"
 
 #define KEY_F1 SDL_SCANCODE_F1 //Loose a life

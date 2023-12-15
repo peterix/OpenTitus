@@ -42,7 +42,6 @@
 #include "keyboard.h"
 #include "globals.h"
 #include "player.h"
-#include "definitions.h"
 #include "scroll.h"
 #include "draw.h"
 #include "reset.h"

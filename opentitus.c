@@ -36,7 +36,6 @@
 #include "tituserror.h"
 #include "sqz.h"
 #include "settings.h"
-#include "malloc.h"
 #include "sprites.h"
 #include "window.h"
 #include "viewimage.h"

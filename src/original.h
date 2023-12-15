@@ -29,9 +29,9 @@
 #pragma once
 
 #include "SDL2/SDL.h"
-#include "definitions.h"
 
 #include <stdbool.h>
+#include <stdint.h>
 
 #define SPRITECOUNT 356
 #define ANIM_PLAYER_MAX 15

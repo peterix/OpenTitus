@@ -21,7 +21,6 @@
 #include "audio.h"
 #include "globals.h"
 #include "settings.h"
-#include "definitions.h"
 #include "tituserror.h"
 #include "opl.h"
 #include "common.h"

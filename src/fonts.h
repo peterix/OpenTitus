@@ -29,7 +29,7 @@
  #ifndef FONTS_H
 #define FONTS_H
 
-#include "definitions.h"
+#include <stdint.h>
 
 #define CHAR_a 97
 #define CHAR_A 65

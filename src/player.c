@@ -32,7 +32,6 @@
 #include "level.h"
 #include "player.h"
 #include "globals.h"
-#include "definitions.h"
 #include "tituserror.h"
 #include "draw.h"
 #include "original.h"

@@ -36,7 +36,6 @@
 #include "SDL2/SDL.h"
 #include "level.h"
 #include "globals.h"
-#include "definitions.h"
 #include "enemies.h"
 #include "common.h"
 #include "player.h"
