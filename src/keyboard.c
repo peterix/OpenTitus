@@ -29,7 +29,6 @@
 #include "SDL2/SDL.h"
 #include "keyboard.h"
 #include "globals.h"
-#include "common.h"
 
 #include "audio.h"
 #include "window.h"

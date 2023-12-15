@@ -23,7 +23,6 @@
 #include "settings.h"
 #include "tituserror.h"
 #include "opl.h"
-#include "common.h"
 #include <assert.h>
 
 #define ADLIB_DATA_COUNT 10

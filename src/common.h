@@ -32,10 +32,6 @@
 #ifndef COMMON_H
 #define COMMON_H
 
-#include "SDL2/SDL.h"
-
-#include <stdint.h>
-
 /// Decreases a value with 1 until it's zero
 static inline void subto0(uint8_t *number) {
     if (*number > 0) {
