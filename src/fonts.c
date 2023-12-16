@@ -44,7 +44,7 @@ TITUS_font *font; //Malloced
 SDL_Surface *font_undefined; //Pointer
 
 SDL_Surface * SDL_LoadChar(unsigned char * fontdata, int offset, SDL_PixelFormat * pixelformat);
-int freesubfont(TITUS_font *f_sub);
+void freesubfont(TITUS_font *f_sub);
 
 int loadfonts(void) {
     int i, retval;
@@ -198,12 +198,11 @@ SDL_Surface * SDL_LoadChar(unsigned char * fontdata, int offset, SDL_PixelFormat
 }
 
 
-int freefonts(void) {
+void freefonts(void) {
     freesubfont(font);
-    return 0;
 }
 
-int freesubfont(TITUS_font *f_sub) {
+void freesubfont(TITUS_font *f_sub) {
     int i;
     for (i = 0; i < 256; i++) {
         if (f_sub->type[i] == 1) { //Malloced sub
@@ -213,7 +212,6 @@ int freesubfont(TITUS_font *f_sub) {
         }
     }
     free (f_sub);
-    return 0;
 }
 
 void SDL_Print_Text(const char *text, int x, int y){

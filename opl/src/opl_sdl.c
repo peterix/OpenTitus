@@ -24,12 +24,12 @@
 #include "SDL.h"
 #include "SDL_mixer.h"
 
-#include "opl3.h"
+#include "../include/opl/opl3.h"
 
-#include "opl.h"
+#include "../include/opl/opl.h"
 #include "opl_internal.h"
 
-#include "opl_queue.h"
+#include "../include/opl/opl_queue.h"
 
 #define MAX_SOUND_SLICE_TIME 100 /* ms */
 

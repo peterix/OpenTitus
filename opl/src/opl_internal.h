@@ -19,7 +19,7 @@
 #ifndef OPL_INTERNAL_H
 #define OPL_INTERNAL_H
 
-#include "opl.h"
+#include "../include/opl/opl.h"
 
 typedef int (*opl_init_func)(unsigned int port_base);
 typedef void (*opl_shutdown_func)(void);

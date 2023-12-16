@@ -46,9 +46,9 @@
 #include <errno.h>
 #include <unistd.h>
 
-#include "opl.h"
+#include "../include/opl/opl.h"
 #include "opl_internal.h"
-#include "opl_timer.h"
+#include "../include/opl/opl_timer.h"
 
 static unsigned int opl_port_base;
 

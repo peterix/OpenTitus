@@ -22,7 +22,7 @@
 #include "globals.h"
 #include "settings.h"
 #include "tituserror.h"
-#include "opl.h"
+#include "opl/opl.h"
 #include <assert.h>
 
 #define ADLIB_DATA_COUNT 10

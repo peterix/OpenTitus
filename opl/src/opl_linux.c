@@ -23,9 +23,9 @@
 #include <unistd.h>
 #include <sys/io.h>
 
-#include "opl.h"
-#include "opl_internal.h"
-#include "opl_timer.h"
+#include "../include/opl/opl.h"
+#include "/opl_internal.h"
+#include "../include/opl/opl_timer.h"
 
 static unsigned int opl_port_base;
 

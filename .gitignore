@@ -1,4 +1,5 @@
 bin/
 /bin/*
-build/
+zig-cache/
+zig-out/
 *.kdev4

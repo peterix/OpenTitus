@@ -21,7 +21,7 @@
 
 #include "SDL.h"
 
-#include "opl.h"
+#include "../include/opl/opl.h"
 #include "opl_internal.h"
 
 //#define OPL_DEBUG_TRACE

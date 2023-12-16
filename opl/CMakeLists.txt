@@ -1,23 +1,25 @@
 add_library(opl STATIC
-    opl_internal.h
-    opl.c
-    opl.h
-    opl_linux.c
-    opl_obsd.c
-    opl_queue.c
-    opl_queue.h
-    opl_sdl.c
-    opl_timer.c
-    opl_timer.h
-    opl_win32.c
-    ioperm_sys.c
-    ioperm_sys.h
-    opl3.c
-    opl3.h
+    src/opl_internal.h
+    src/opl.c
+    src/opl_linux.c
+    src/opl_obsd.c
+    src/opl_queue.c
+    src/opl_sdl.c
+    src/opl_timer.c
+    src/opl_win32.c
+    src/ioperm_sys.c
+    src/opl3.c
+
+    include/opl/opl.h
+    include/opl/opl_queue.h
+    include/opl/opl_timer.h
+    include/opl/ioperm_sys.h
+    include/opl/opl3.h
 )
 
 target_include_directories(opl
-    INTERFACE "."
+    INTERFACE "include"
+    PRIVATE "src"
 )
 
 target_link_libraries(opl SDL2::mixer)
