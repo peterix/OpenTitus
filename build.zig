@@ -33,6 +33,7 @@ fn build_opl(b: *std.Build, target: CrossTarget, optimize: std.builtin.Mode) *St
         "opl/src/opl3.c",
     },
     // NOTE: the use of bit shifts of negative numbers is quite extensive, so we disable ubsan shooting us in the foot with those...
+    // FIXME: remove the UB-ness
     &.{
         "-fno-sanitize=shift",
     });
@@ -80,7 +81,12 @@ fn build_game(b: *std.Build, name: []const u8, target: CrossTarget, optimize: st
         "src/sqz.c",
         "src/tituserror.c",
         "src/viewimage.c",
-    }, &[_][]const u8{});
+    },
+    // NOTE: the use of bit shifts of negative numbers is quite extensive, so we disable ubsan shooting us in the foot with those...
+    // FIXME: remove the UB-ness
+    &.{
+        "-fno-sanitize=shift",
+    });
     exe.addIncludePath(std.build.LazyPath.relative("src/"));
 
     exe.linkLibC();
