@@ -643,7 +643,7 @@ static int sfx_init() {
     return 0;
 }
 
-int sfx_play(int fx_number){
+void sfx_play(int fx_number){
     ADLIB_DATA *aad = &(sdl_player_data.aad);
     sfx_time = 15;
     sfx_on = true;
@@ -653,7 +653,6 @@ int sfx_play(int fx_number){
     insmaker(aad->sfx[fx_number].op[1], 0x10); //Channel 6 operator 2
     updatechip(0xC6, aad->sfx[fx_number].fb_alg); //Channel 6 (Feedback/Algorithm)
     SDL_UnlockAudio();
-    return 0;
 }
 
 void sfx_driver() {

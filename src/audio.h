@@ -29,7 +29,7 @@
 int audio_init();
 void audio_free();
 
-int sfx_play(int fx_number);
+void sfx_play(int fx_number);
 
 void music_wait_to_finish();
 void music_select_song(int song_number);
