@@ -53,30 +53,6 @@ static float smootherstep(float edge0, float edge1, float x) {
 }
 
 static float ideal_camera_position(TITUS_level *level) {
-    /*
-    //If an enemy is behind the player, max. 12.5 tiles away horizontally, scroll until player is in the middle
-    //If not, scroll until player is in the 3rd screen tile
-    int16_t enemy_left, i;
-    for (i = 0; i < level->enemycount; i++) {
-        if (!level->enemy[i].sprite.enabled || !level->enemy[i].visible) {
-            continue;
-        }
-        auto ydistance_from_mob = abs(level->enemy[i].sprite.y - level->player.sprite.y);
-        if(ydistance_from_mob > 40) {
-            continue;
-        }
-        // True if enemy is left for the player
-        enemy_left = (level->enemy[i].sprite.x < level->player.sprite.x);
-        // Enemy is behind the player  && Enemy is max. 12.5 tiles away
-        if (enemy_left != level->player.sprite.flipped) {
-            auto distance_from_mob = abs(level->enemy[i].sprite.x - level->player.sprite.x);
-            if(distance_from_mob < 160) {
-                return 0.0f;
-            }
-        }
-    }
-    */
-
     if (!level->player.sprite.flipped) {
         return 60.0f;
     }
@@ -98,6 +74,7 @@ static void X_ADJUST(TITUS_level *level) {
         camera_offset -= 3.0;
     }
     int real_camera_offset = smootherstep(-60, 60, camera_offset) * 120 - 60;
+    fprintf(stderr, "CAMERA %f, real %d\n", camera_offset, real_camera_offset);
 
     // clamp player position to level bounds
     int16_t player_position = player->sprite.x;
@@ -110,14 +87,19 @@ static void X_ADJUST(TITUS_level *level) {
 
     // right side of the map, or a weird arbitrary divide on the right
     int16_t rlimit;
-    if(player_position > XLIMIT * 16) {
+    if(player_position > XLIMIT * 16 || XLIMIT_BREACHED) {
+        XLIMIT_BREACHED = true;
         rlimit = (level->width * 16 - 160);
-    }
-    else {
+    } else {
         rlimit = (XLIMIT * 16 - 160);
     }
     if(camera_position > rlimit || player_position > rlimit) {
         camera_position = rlimit;
+    }
+
+    // un-breach XLIMIT if we go one screen to the left of it
+    if(XLIMIT_BREACHED && camera_position < XLIMIT * 16 - 160) {
+        XLIMIT_BREACHED = false;
     }
 
     int16_t camera_screen_px = camera_position - BITMAP_X * 16;

@@ -240,7 +240,6 @@ void CLEAR_DATA(TITUS_level *level) {
     ACTION_TIMER = 0;
     g_scroll_x = 0;
     g_scroll_y = 0;
-    g_scroll_x_target = 0;
     g_scroll_y_target = 0;
     g_scroll_px_offset = 0;
     YFALL = 0;

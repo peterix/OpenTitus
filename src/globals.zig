@@ -119,12 +119,11 @@ pub export var BITMAP_Y: u8 = 0;
 //If true, the screen will scroll in X
 export var g_scroll_x: bool = false;
 
-//If scrolling: scroll until player is in this tile (X)
-export var g_scroll_x_target: i16 = 0;
 export var g_scroll_px_offset: i16 = 0;
 
 //The engine will not scroll past this tile before the player have crossed the line (X)
 export var XLIMIT: i16 = 0;
+export var XLIMIT_BREACHED: bool = false;
 
 //If true, the screen will scroll in Y
 export var g_scroll_y: bool = false;

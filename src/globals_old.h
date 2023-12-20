@@ -139,14 +139,17 @@ extern bool POCKET_FLAG;
 extern bool PERMUT_FLAG; //If false, there are no animated tiles on the screen?
 extern uint8_t loop_cycle; //Increased every loop in game loop
 extern uint8_t tile_anim; //Current tile animation (0-1-2), changed every 4th game loop cycle
+
+// scrolling madness
 extern uint8_t BITMAP_X; //Screen offset (X) in tiles
 extern uint8_t BITMAP_Y; //Screen offset (Y) in tiles
 extern bool g_scroll_x; //If true, the screen will scroll in X
-extern int16_t g_scroll_x_target; //If scrolling: scroll until player is in this tile (X)
 extern int16_t g_scroll_px_offset;
 extern int16_t XLIMIT; //The engine will not scroll past this tile before the player have crossed the line (X)
+extern bool XLIMIT_BREACHED;
 extern bool g_scroll_y; //If true, the screen will scroll in Y
 extern uint8_t g_scroll_y_target; //If scrolling: scroll until player is in this tile (Y)
+
 extern uint8_t ALTITUDE_ZERO; //The engine will not scroll below this tile before the player have gone below (Y)
 extern uint16_t IMAGE_COUNTER; //Increased every loop in game loop (0 to 0x0FFF)
 extern int8_t SENSX; //1: walk right, 0: stand still, -1: walk left, triggers the ACTION_TIMER if it changes
