@@ -92,26 +92,22 @@ int move_player(ScreenContext *context, TITUS_level *level) {
         if (event.type == SDL_QUIT) {
             return TITUS_ERROR_QUIT;
         } else if (event.type == SDL_KEYDOWN) {
-            if ((event.key.keysym.scancode == KEY_GODMODE) && (devmode == 1)) {
+            if (event.key.keysym.scancode == KEY_GODMODE && (devmode == 1)) {
                 if (GODMODE) {
                     GODMODE = false;
                     NOCLIP = false;
                 } else {
                     GODMODE = true;
                 }
-            } else if ((event.key.keysym.scancode == KEY_NOCLIP) && (devmode == 1)) {
+            } else if (event.key.keysym.scancode == KEY_NOCLIP && (devmode == 1)) {
                 if (NOCLIP) {
                     NOCLIP = false;
                 } else {
                     NOCLIP = true;
                     GODMODE = true;
                 }
-#ifdef DEBUG_VERSION
-//Will display debug information
-            } else if (event.key.keysym.scancode == KEY_DEBUG) {
+            } else if (event.key.keysym.scancode == KEY_DEBUG && (devmode == 1)) {
                 DISPLAYLOOPTIME = !DISPLAYLOOPTIME;
-#endif
-
             } else if (event.key.keysym.scancode == KEY_MUSIC) {
                 music_toggle();
             } else if (event.key.keysym.scancode == KEY_P) {
