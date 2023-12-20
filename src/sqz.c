@@ -32,8 +32,13 @@
 #include "sqz.h"
 #include "tituserror.h"
 
-static int lzw_decode(unsigned char *input, int in_len, unsigned char *output, int out_len);
+#define LZW_CLEAR_CODE 0x100
+#define LZW_END_CODE   0x101
+#define LZW_FIRST      0x102
+#define LZW_MAX_TABLE  4096
+
 static int huffman_decode(unsigned char *input, int in_len, unsigned char *output, int out_len);
+static int lzw_decode(unsigned char *input, int in_len, unsigned char *output, int out_len);
 
 int unSQZ(char *inputfile, unsigned char **output) {
     int i = 0;
@@ -139,7 +144,6 @@ static int lzw_decode(unsigned char *input, int in_len, unsigned char *output, i
     }
 
     while ((k_pos < in_len) && (out_pos < out_len)) {
-
         k = 0;
         i = 0;
         while (i < 4) {

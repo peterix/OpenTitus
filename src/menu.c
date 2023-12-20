@@ -36,7 +36,7 @@
 #include "fonts.h"
 #include "settings.h"
 #include "audio.h"
-#include "globals.h"
+#include "globals_old.h"
 #include "keyboard.h"
 
 int enterpassword();

@@ -1,0 +1,261 @@
+//
+// Copyright (C) 2008 - 2011 The OpenTitus team
+//
+// Authors:
+// Eirik Stople
+// Petr Mrázek
+//
+// "Titus the Fox: To Marrakech and Back" (1992) and
+// "Lagaf': Les Aventures de Moktar - Vol 1: La Zoubida" (1991)
+// was developed by, and is probably copyrighted by Titus Software,
+// which, according to Wikipedia, stopped buisness in 2005.
+//
+// OpenTitus is not affiliated with Titus Software.
+//
+// OpenTitus is  free software; you can redistribute  it and/or modify
+// it under the  terms of the GNU General  Public License as published
+// by the Free  Software Foundation; either version 3  of the License,
+// or (at your option) any later version.
+//
+// This program is distributed in the hope that it will be useful, but
+// WITHOUT  ANY  WARRANTY;  without   even  the  implied  warranty  of
+// MERCHANTABILITY or  FITNESS FOR A PARTICULAR PURPOSE.   See the GNU
+// General Public License for more details.
+//
+
+const std = @import("std");
+
+const c = @cImport({
+    @cInclude("SDL2/SDL.h");
+    @cInclude("sqz.h");
+    @cInclude("settings.h");
+    @cInclude("fonts.h");
+    @cInclude("window.h");
+    @cInclude("tituserror.h");
+    @cInclude("original.h");
+    @cInclude("sprites.h");
+    @cInclude("level.h");
+    @cInclude("keyboard.h");
+    @cInclude("player.h");
+    @cInclude("scroll.h");
+    @cInclude("draw.h");
+    @cInclude("reset.h");
+    @cInclude("gates.h");
+    @cInclude("elevators.h");
+    @cInclude("objects.h");
+    @cInclude("enemies.h");
+    @cInclude("viewimage.h");
+    @cInclude("audio.h");
+});
+
+const globals = @import("globals.zig");
+const sqz = @import("sqz.zig");
+
+const c_alloc = std.heap.c_allocator;
+
+pub fn playtitus(firstlevel: u16) c_int {
+    var context: c.ScreenContext = undefined;
+    c.screencontext_reset(&context);
+
+    var retval: c_int = 0;
+
+    var level: c.TITUS_level = undefined;
+    var spritecache: c.TITUS_spritecache = undefined;
+    var sprites: [*c][*c]c.TITUS_spritedata = undefined;
+    var sprite_count: u16 = 0;
+    var objects: [*c][*c]c.TITUS_objectdata = undefined;
+    var object_count: u16 = 0;
+
+    level.lives = 2;
+    level.extrabonus = 0;
+
+    retval = c.loadpixelformat(&(level.pixelformat));
+    if (retval < 0) {
+        return retval;
+    }
+    defer c.freepixelformat(&(level.pixelformat));
+
+    var spritedata = sqz.unSQZ2(&c.spritefile, c_alloc) catch {
+        std.debug.print("Failed to uncompress sprites file: {s}\n", .{c.spritefile});
+        return -1;
+    };
+
+    // TODO: same as unSQZ()
+    retval = c.loadsprites(&sprites, &spritedata[0], @intCast(spritedata.len), level.pixelformat, &sprite_count);
+    c_alloc.free(spritedata);
+    if (retval < 0) {
+        return retval;
+    }
+    defer c.freesprites(&sprites, sprite_count);
+
+    // TODO: same as unSQZ()
+    retval = c.initspritecache(&spritecache, 100, 3); //Cache size: 100 surfaces, 3 temporary
+    if (retval < 0) {
+        return retval;
+    }
+    defer c.freespritecache(&spritecache);
+
+    // TODO: same as unSQZ()
+    retval = c.loadobjects(&objects, &object_count);
+    if (retval < 0) {
+        return retval;
+    }
+    defer c.freeobjects(&objects, object_count);
+
+    level.levelnumber = firstlevel;
+    while (level.levelnumber < c.levelcount) {
+        defer level.levelnumber += 1;
+        level.levelid = c.getlevelid(level.levelnumber);
+        var leveldata = sqz.unSQZ2(&c.levelfiles[@as(usize, @intCast(level.levelnumber))], c_alloc) catch {
+            std.debug.print("Failed to uncompress level file: {}\n", .{level.levelnumber});
+            return 1;
+        };
+
+        retval = c.loadlevel(&level, &leveldata[0], @intCast(leveldata.len), sprites, &(spritecache), objects);
+        c_alloc.free(leveldata);
+        if (retval < 0) {
+            return retval;
+        }
+        defer c.freelevel(&level);
+        var first = true;
+        while (true) {
+            c.SELECT_MUSIC(0);
+            c.CLEAR_DATA(&level);
+
+            globals.GODMODE = false;
+            globals.NOCLIP = false;
+            globals.DISPLAYLOOPTIME = false;
+
+            retval = c.viewstatus(&level, first);
+            first = false;
+            if (retval < 0) {
+                return retval;
+            }
+
+            c.SELECT_MUSIC(c.LEVEL_MUSIC[level.levelid]);
+
+            c.INIT_SCREENM(&context, &level); //Todo: comment, DOCUMENTED! (reset_level_simplified)
+            c.DISPLAY_TILES(&level);
+            c.flip_screen(&context, true);
+
+            retval = playlevel(&context, &level);
+            if (retval < 0) {
+                return retval;
+            }
+
+            if (globals.NEWLEVEL_FLAG) {
+                break;
+            }
+            if (globals.RESETLEVEL_FLAG == 1) {
+                if (level.lives == 0) {
+                    globals.GAMEOVER_FLAG = true;
+                } else {
+                    level.lives -= 1;
+                    death(&context, &level);
+                }
+            }
+
+            if (globals.GAMEOVER_FLAG) {
+                gameover(&context, &level);
+                return 0;
+            }
+        }
+
+        if (retval < 0) {
+            unreachable;
+            // return retval;
+        }
+    }
+    if (c.game == c.Titus) {
+        retval = c.viewimage(&c.titusfinishfile, c.titusfinishformat, 1, 0);
+        if (retval < 0)
+            return retval;
+    }
+
+    return (0);
+}
+
+fn playlevel(context: [*c]c.ScreenContext, level: *c.TITUS_level) c_int {
+    var retval: c_int = 0;
+    var firstrun = true;
+    while (true) {
+        if (!firstrun) {
+            c.draw_health_bars(level);
+            c.RETURN_MUSIC(); //Restart music if the song is finished
+            c.flip_screen(context, true);
+        }
+        firstrun = false;
+        globals.IMAGE_COUNTER = (globals.IMAGE_COUNTER + 1) & 0x0FFF; //Cycle from 0 to 0x0FFF
+        c.MOVE_TRP(level); //Move elevators
+        c.move_objects(level); //Object gravity
+        retval = c.move_player(context, level); //Key input, update and move player, handle carried object and decrease timers
+        if (retval == c.TITUS_ERROR_QUIT) {
+            return retval;
+        }
+        c.MOVE_NMI(level); //Move enemies
+        c.MOVE_TRASH(level); //Move enemy throwed objects
+        c.SET_NMI(level); //Handle enemies on the screen
+        c.CROSSING_GATE(context, level); //Check and handle level completion, and if the player does a kneestand on a secret entrance
+        c.SPRITES_ANIMATION(level); //Animate player and objects
+        c.scroll(level); //X- and Y-scrolling
+        c.DISPLAY_TILES(level); //Draws tiles on the backbuffer
+        c.DISPLAY_SPRITES(level); //Draws sprites on the backbuffer
+        retval = c.RESET_LEVEL(context, level); //Check terminate flags (finishlevel, gameover, death or theend)
+        if (retval < 0) {
+            return retval;
+        }
+        if (retval != 0) {
+            break;
+        }
+    }
+    return (0);
+}
+
+fn death(context: [*c]c.ScreenContext, level: *c.TITUS_level) void {
+    var player = &(level.player);
+
+    c.SELECT_MUSIC(1);
+    _ = c.FORCE_POSE(level);
+    c.updatesprite(level, &(player.sprite), 13, true); //Death
+    player.sprite.speedY = 15;
+    for (0..60) |_| {
+        c.DISPLAY_TILES(level);
+        //TODO! GRAVITY();
+        c.DISPLAY_SPRITES(level);
+        c.flip_screen(context, true);
+        player.sprite.speedY -= 1;
+        if (player.sprite.speedY < -16) {
+            player.sprite.speedY = -16;
+        }
+        player.sprite.y -= player.sprite.speedY;
+    }
+
+    c.WAIT_SONG();
+    c.SELECT_MUSIC(0);
+    c.CLOSE_SCREEN(context);
+}
+
+fn gameover(context: [*c]c.ScreenContext, level: *c.TITUS_level) void {
+    var player = &(level.player);
+
+    c.SELECT_MUSIC(2);
+    c.updatesprite(level, &(player.sprite), 13, true); //Death
+    c.updatesprite(level, &(player.sprite2), 333, true); //Game
+    player.sprite2.x = (globals.BITMAP_X << 4) - (120 - 2);
+    player.sprite2.y = (globals.BITMAP_Y << 4) + 100;
+    //over
+    c.updatesprite(level, &(player.sprite3), 334, true); //Over
+    player.sprite3.x = @as(i16, globals.BITMAP_X << 4) + (320 + 120 - 2);
+    player.sprite3.y = @as(i16, globals.BITMAP_Y << 4) + 100;
+    for (0..31) |_| {
+        c.DISPLAY_TILES(level);
+        c.DISPLAY_SPRITES(level);
+        c.flip_screen(context, true);
+        player.sprite2.x += 8;
+        player.sprite3.x -= 8;
+    }
+    if (c.waitforbutton() < 0)
+        return;
+
+    c.fadeout();
+}

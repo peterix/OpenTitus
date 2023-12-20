@@ -42,7 +42,7 @@ int titusmenuformat;
 char titusfinishfile[256];
 int titusfinishformat;
 char fontfile[256];
-int levelcount;
+uint16_t levelcount;
 int devmode;
 int resheight;
 int videomode;
@@ -91,9 +91,9 @@ int readconfig(const char *configfile) {
                 fclose(ifp);
                 return(-1);
             }
-            sscanf (line, "%*s %255d", &levelcount);
+            sscanf (line, "%*s %hu", &levelcount);
             if ((levelcount < 1) || (levelcount > 16)) {
-                printf("Error: 'levelcount' (%d) must be between 1 and 16, check config file: %s!\n", levelcount, configfile);
+                printf("Error: 'levelcount' (%hu) must be between 1 and 16, check config file: %s!\n", levelcount, configfile);
                 fclose(ifp);
                 return(-1);
             }

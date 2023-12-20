@@ -27,6 +27,8 @@
  */
 #pragma once
 
+#include <stdint.h>
+
 int readconfig(const char *configfile);
 
 int initcodes();
@@ -49,7 +51,7 @@ extern int titusmenuformat;
 extern char titusfinishfile[256];
 extern int titusfinishformat;
 extern char fontfile[256];
-extern int levelcount;
+extern uint16_t levelcount;
 extern int devmode;
 extern int videomode;
 extern enum GameType game;

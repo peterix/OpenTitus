@@ -31,7 +31,7 @@
 #include "SDL2/SDL.h"
 #include "level.h"
 #include "player.h"
-#include "globals.h"
+#include "globals_old.h"
 #include "tituserror.h"
 #include "draw.h"
 #include "original.h"

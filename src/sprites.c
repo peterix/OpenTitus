@@ -34,7 +34,7 @@
 #include "settings.h"
 #include "original.h"
 #include "tituserror.h"
-#include "globals.h"
+#include "globals_old.h"
 #include "window.h"
 
 SDL_Surface * copysurface(SDL_Surface * original, bool flip, bool flash){
@@ -126,7 +126,7 @@ int loadsprites(TITUS_spritedata ***sprites, unsigned char * spritedata, int spr
     return SPRITECOUNT;
 }
 
-int freesprites(TITUS_spritedata ***sprites, uint16_t count) {
+void freesprites(TITUS_spritedata ***sprites, uint16_t count) {
     int i;
 
     for (i = 0; i < count; i++) {
@@ -135,8 +135,6 @@ int freesprites(TITUS_spritedata ***sprites, uint16_t count) {
     }
 
     free (*sprites);
-
-    return 0;
 }
 
 
@@ -169,7 +167,7 @@ int initspritecache(TITUS_spritecache *spritecache, uint16_t count, uint16_t tmp
 }
 
 
-int freespritecache(TITUS_spritecache *spritecache) {
+void freespritecache(TITUS_spritecache *spritecache) {
     int i;
 
     for (i = 0; i < spritecache->count; i++) {
@@ -178,8 +176,6 @@ int freespritecache(TITUS_spritecache *spritecache) {
     }
 
     free (spritecache->spritebuffer);
-
-    return 0;
 }
 
 
@@ -318,7 +314,7 @@ void SPRITES_ANIMATION(TITUS_level *level) {
     }
 }
 
-int updatesprite(TITUS_level *level, TITUS_sprite *spr, int16_t number, bool clearflags){
+void updatesprite(TITUS_level *level, TITUS_sprite *spr, int16_t number, bool clearflags){
     spr->number = number;
     spr->spritedata = level->spritedata[number];
     spr->enabled = true;
@@ -336,7 +332,6 @@ int updatesprite(TITUS_level *level, TITUS_sprite *spr, int16_t number, bool cle
     spr->flash_last = spr->flash;
 */
     spr->invisible = false;
-    return (0);
 }
 
 int copysprite(TITUS_level *level, TITUS_sprite *dest, TITUS_sprite *src){

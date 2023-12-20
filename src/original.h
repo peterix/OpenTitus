@@ -44,7 +44,7 @@
 #define NMI_ANIM_TABLE_COUNT 879 //1758
 
 int initoriginal();
-int16_t getlevelid(int16_t levelnumber);
+uint16_t getlevelid(uint16_t levelnumber);
 
 extern SDL_Color orig_palette_colour[16];
 extern SDL_Color orig_palette_level_colour[16];

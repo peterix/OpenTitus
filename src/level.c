@@ -34,12 +34,11 @@
 #include "settings.h"
 #include "fonts.h"
 #include "window.h"
-#include "engine.h"
 #include "tituserror.h"
 #include "original.h"
 #include "sprites.h"
 #include "level.h"
-#include "globals.h"
+#include "globals_old.h"
 
 unsigned int loaduint16_t(unsigned char c1, unsigned char c2);
 int loadint16(unsigned char c1, unsigned char c2);
@@ -354,7 +353,7 @@ int loadlevel(TITUS_level *level, unsigned char *leveldata, int leveldatasize, T
     return (0);
 }
 
-int freelevel(TITUS_level *level){
+void freelevel(TITUS_level *level){
     int i;
 
     for (i = 0; i < level->height; i++)
@@ -364,42 +363,13 @@ int freelevel(TITUS_level *level){
 
     for (i = 0; i < 256; i++)
         SDL_FreeSurface(level->tile[i].tiledata);
-/*
-    SDL_FreeSurface(level->player.sprite.buffer);
-    SDL_FreeSurface(level->player.sprite2.buffer);
-    SDL_FreeSurface(level->player.sprite3.buffer);
 
-    for (i = 0; i < level->objectcount; i++) {
-        if (level->object[i].sprite.buffer != NULL)
-            SDL_FreeSurface(level->object[i].sprite.buffer);
-    }
-*/
     free (level->object);
-/*
-    for (i = 0; i < level->enemycount; i++)
-        if (level->enemy[i].sprite.buffer != NULL)
-            SDL_FreeSurface(level->enemy[i].sprite.buffer);
-*/
     free (level->enemy);
-
     free (level->bonus);
-
     free (level->gate);
-/*
-    for (i = 0; i < level->elevatorcount; i++)
-        if (level->elevator[i].sprite.buffer != NULL)
-            SDL_FreeSurface(level->elevator[i].sprite.buffer);
-*/
     free (level->elevator);
-/*
-    for (i = 0; i < level->trashcount; i++) {
-        if (level->trash[i].buffer != NULL)
-            SDL_FreeSurface(level->trash[i].buffer);
-    }
-*/
     free (level->trash);
-
-    return (0);
 }
 
 uint8_t get_horizflag(TITUS_level *level, int16_t tileY, int16_t tileX) {

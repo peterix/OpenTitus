@@ -1,7 +1,7 @@
 #include "window.h"
 #include "settings.h"
 #include "tituserror.h"
-#include "globals.h"
+#include "globals_old.h"
 #include "settings.h"
 
 static const char* getGameTitle() {

@@ -22,14 +22,14 @@
  * General Public License for more details.
  */
 
-/* globals.h
+/* globals_old.h
  * Global variables
  */
 
 #pragma once
 
 #include "SDL2/SDL.h"
-#include "level.h"
+#include <stdbool.h>
 
 #define KEY_F1 SDL_SCANCODE_F1 //Loose a life
 #define KEY_F2 SDL_SCANCODE_F2 //Game over
@@ -99,11 +99,6 @@
 #define CFLAG_PADLOCK 3
 #define CFLAG_DEADLY 4
 
-#define uint8_t unsigned char
-#define uint16_t unsigned short int
-#define int8_t signed char
-#define int16_t signed short int
-
 typedef struct {
     bool enabled;
     uint16_t NUM;
@@ -133,8 +128,6 @@ extern bool DROPREADY_FLAG;
 extern bool CARRY_FLAG; //true if carrying something (add 16 to player sprite)
 extern bool POSEREADY_FLAG;
 extern uint8_t ACTION_TIMER; //Frames since last action change
-//extern TITUS_sprite sprite; //Player sprite
-//extern TITUS_sprite sprite2; //Secondary player sprite (throwed objects, "hit" when object hits an enemy, smoke when object hits the floor)
 extern uint8_t INVULNERABLE_FLAG; //When non-zero, boss is invulnerable
 extern uint8_t TAPISFLY_FLAG; //When non-zero, the flying carpet is flying
 extern uint8_t CROSS_FLAG; //When non-zero, fall through certain floors (after key down)
@@ -147,9 +140,7 @@ extern bool PERMUT_FLAG; //If false, there are no animated tiles on the screen?
 extern uint8_t loop_cycle; //Increased every loop in game loop
 extern uint8_t tile_anim; //Current tile animation (0-1-2), changed every 4th game loop cycle
 extern uint8_t BITMAP_X; //Screen offset (X) in tiles
-// extern uint8_t BITMAP_XM; //Point to the left tile in the tile screen (0 to 19)
 extern uint8_t BITMAP_Y; //Screen offset (Y) in tiles
-// extern uint8_t BITMAP_YM; //Point to the top tile in the tile screen (0 to 11)
 extern bool g_scroll_x; //If true, the screen will scroll in X
 extern int16_t g_scroll_x_target; //If scrolling: scroll until player is in this tile (X)
 extern int16_t g_scroll_px_offset;

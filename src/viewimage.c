@@ -33,7 +33,7 @@
 #include "sqz.h"
 #include "settings.h"
 #include "window.h"
-#include "globals.h"
+#include "globals_old.h"
 #include "keyboard.h"
 
 #include "audio.h"

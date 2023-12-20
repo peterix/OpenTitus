@@ -38,7 +38,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include "SDL2/SDL.h"
-#include "globals.h"
+#include "globals_old.h"
 #include "window.h"
 #include "sprites.h"
 #include "draw.h"
@@ -581,9 +581,8 @@ int loadpixelformat_font(SDL_PixelFormat **pixelformat){
     return (0);
 }
 
-int freepixelformat(SDL_PixelFormat **pixelformat){
+void freepixelformat(SDL_PixelFormat **pixelformat){
     free ((*pixelformat)->palette->colors);
     free ((*pixelformat)->palette);
     free (*pixelformat);
-    return (0);
 }

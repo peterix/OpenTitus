@@ -33,7 +33,7 @@
 #include <stdlib.h>
 #include "SDL2/SDL.h"
 #include "level.h"
-#include "globals.h"
+#include "globals_old.h"
 #include "elevators.h"
 
 void MTSBR(TITUS_elevator *elevator) {

@@ -65,4 +65,4 @@ void fadeout();
 int view_password(ScreenContext *context, TITUS_level *level, uint8_t level_index);
 int loadpixelformat(SDL_PixelFormat **pixelformat);
 int loadpixelformat_font(SDL_PixelFormat **pixelformat);
-int freepixelformat(SDL_PixelFormat **pixelformat);
+void freepixelformat(SDL_PixelFormat **pixelformat);

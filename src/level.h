@@ -196,8 +196,8 @@ struct _TITUS_player {
 };
 
 struct _TITUS_level {
-    int16_t levelnumber;
-    int16_t levelid;
+    uint16_t levelnumber;
+    uint16_t levelid;
     //char title[41];
     int height;
     int width; //Usually 256
@@ -232,7 +232,7 @@ struct _TITUS_level {
 };
 
 int loadlevel(TITUS_level *level, unsigned char *leveldata, int leveldatasize, TITUS_spritedata **spritedata, TITUS_spritecache *spritecache, TITUS_objectdata **objectdata);
-int freelevel(TITUS_level *level);
+void freelevel(TITUS_level *level);
 uint8_t get_horizflag(TITUS_level *level, int16_t tileY, int16_t tileX);
 uint8_t get_floorflag(TITUS_level *level, int16_t tileY, int16_t tileX);
 uint8_t get_ceilflag(TITUS_level *level, int16_t tileY, int16_t tileX);

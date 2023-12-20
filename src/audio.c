@@ -19,7 +19,7 @@
 #include <SDL2/SDL_mixer.h>
 #include <SDL2/SDL_audio.h>
 #include "audio.h"
-#include "globals.h"
+#include "globals_old.h"
 #include "settings.h"
 #include "tituserror.h"
 #include "opl/opl.h"

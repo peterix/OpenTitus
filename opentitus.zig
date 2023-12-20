@@ -25,30 +25,24 @@
 
 const std = @import("std");
 
-const SDL2 = @cImport({
-    @cInclude("SDL2/SDL.h");
-});
-
-// TODO: port
-const viewimage = @cImport({
-    @cInclude("viewimage.h");
-});
-
 // TODO: split, port one by one
 const c = @cImport({
+    @cInclude("SDL2/SDL.h");
+    @cInclude("viewimage.h");
     @cInclude("audio.h");
     @cInclude("tituserror.h");
-    @cInclude("sqz.h");
     @cInclude("settings.h");
     @cInclude("sprites.h");
     @cInclude("window.h");
     @cInclude("fonts.h");
     @cInclude("menu.h");
-    @cInclude("engine.h");
     @cInclude("original.h");
     @cInclude("objects.h");
     @cInclude("window.h");
 });
+
+const globals = @import("src/globals.zig");
+const engine = @import("src/engine.zig");
 
 const span = std.mem.span;
 
@@ -57,12 +51,14 @@ const span = std.mem.span;
 fn init() c_int {
     var retval: c_int = 0;
 
+    globals.reset();
+
     retval = c.readconfig("game.conf");
     if (retval < 0)
         return retval;
 
-    if (SDL2.SDL_Init(SDL2.SDL_INIT_VIDEO | SDL2.SDL_INIT_TIMER | SDL2.SDL_INIT_AUDIO) != 0) {
-        std.debug.print("Unable to initialize SDL: {s}\n", .{span(SDL2.SDL_GetError())});
+    if (c.SDL_Init(c.SDL_INIT_VIDEO | c.SDL_INIT_TIMER | c.SDL_INIT_AUDIO) != 0) {
+        std.debug.print("Unable to initialize SDL: {s}\n", .{span(c.SDL_GetError())});
         return c.TITUS_ERROR_SDL_ERROR;
     }
 
@@ -113,7 +109,7 @@ pub fn main() u8 {
     }
 
     if (state != 0) {
-        retval = viewimage.viewimage(&c.tituslogofile, c.tituslogoformat, 0, 4000);
+        retval = c.viewimage(&c.tituslogofile, c.tituslogoformat, 0, 4000);
         if (retval < 0)
             state = 0;
     }
@@ -121,7 +117,7 @@ pub fn main() u8 {
     c.SELECT_MUSIC(15);
 
     if (state != 0) {
-        retval = viewimage.viewimage(&c.titusintrofile, c.titusintroformat, 0, 6500);
+        retval = c.viewimage(&c.titusintrofile, c.titusintroformat, 0, 6500);
         if (retval < 0)
             state = 0;
     }
@@ -133,7 +129,7 @@ pub fn main() u8 {
             state = 0;
 
         if (state != 0 and (retval <= c.levelcount)) {
-            retval = c.playtitus(retval - 1);
+            retval = engine.playtitus(@as(u16, @intCast(retval - 1)));
             if (retval < 0)
                 state = 0;
         }
@@ -144,7 +140,7 @@ pub fn main() u8 {
 
     c.freeaudio();
 
-    SDL2.SDL_Quit();
+    c.SDL_Quit();
 
     checkerror();
 

@@ -28,7 +28,7 @@
 
 #include <stdio.h>
 #include "level.h"
-#include "globals.h"
+#include "globals_old.h"
 #include "original.h"
 #include "player.h"
 #include "objects.h"
@@ -434,14 +434,12 @@ int loadobjects(TITUS_objectdata ***objects, uint16_t *count) {
     return ORIG_OBJECT_COUNT;
 }
 
-int freeobjects(TITUS_objectdata ***objects, uint8_t count) {
-    int i;
+void freeobjects(TITUS_objectdata ***objects, uint16_t count) {
+    uint16_t i;
 
     for (i = 0; i < count; i++) {
         free ((*objects)[i]);
     }
 
     free (*objects);
-
-    return 0;
 }

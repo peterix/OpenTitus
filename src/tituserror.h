@@ -33,8 +33,6 @@
 #define TITUS_ERROR_FILE_NOT_FOUND -3
 #define TITUS_ERROR_INVALID_FILE -4
 #define TITUS_ERROR_SDL_ERROR -5
-#define TITUS_ERROR_AUDIO_ERROR -6
-#define TITUS_ERROR_INVALID_UTF8 -4
 extern char lasterror[200];
 extern int lasterrornr; //Only to be used when needed, f.ex. when return value is not int (f.ex. in function SDL_Text) (maybe this always should be used?)
 extern void checkerror(void);
