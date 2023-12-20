@@ -71,6 +71,12 @@ static void INC_ENERGY(TITUS_level *level);
 static int t_pause (ScreenContext *context, TITUS_level *level);
 int16_t add_carry();
 
+void handle_player_input(TITUS_player *player, const uint8_t* keystate) {
+    player->x_axis = (int8_t)(keystate[KEY_RIGHT] || keystate[KEY_D]) - (int8_t)(keystate[KEY_LEFT] || keystate[KEY_A]);
+    player->y_axis = (int8_t)(keystate[KEY_DOWN] || keystate[KEY_S]) - (int8_t)(keystate[KEY_UP] || keystate[KEY_W]);
+    player->action_pressed = keystate[KEY_SPACE];
+}
+
 int move_player(ScreenContext *context, TITUS_level *level) {
     //Part 1: Check keyboard input
     //Part 2: Determine the player's action, and execute action dependent code
@@ -120,21 +126,25 @@ int move_player(ScreenContext *context, TITUS_level *level) {
     if (keystate[KEY_ESC]) {
         return TITUS_ERROR_QUIT;
     }
-    if (keystate[KEY_F1] && (RESETLEVEL_FLAG == 0)) { //F1 = suicide
-        CASE_DEAD_IM(level);
-        RESETLEVEL_FLAG--;
-        return 0;
+    if(devmode == true) {
+        if (keystate[KEY_F1] && (RESETLEVEL_FLAG == 0)) { //F1 = suicide
+            CASE_DEAD_IM(level);
+            RESETLEVEL_FLAG--;
+            return 0;
+        }
+        if (keystate[KEY_F2]) { //F2 = game over
+            GAMEOVER_FLAG = true;
+            return 0;
+        }
+        if (keystate[KEY_F3]) { //F3 = skip to next level
+            NEWLEVEL_FLAG = true;
+        }
     }
-    if (keystate[KEY_F2]) { //F2 = game over
-        GAMEOVER_FLAG = true;
-        return 0;
-    }
+    
     if (keystate[KEY_E]) { //E = display energy
         BAR_FLAG = 50;
     }
-    if (keystate[SDL_SCANCODE_S] && (devmode == 1)) { //S = skip to next level
-        NEWLEVEL_FLAG = true;
-    }
+
     if (keystate[KEY_F4]) { //F4 = view status page
         viewstatus(level, false);
     }
@@ -147,25 +157,15 @@ int move_player(ScreenContext *context, TITUS_level *level) {
     }
 
     TITUS_player *player = &(level->player);
+    handle_player_input(player, keystate);
 
     //Part 2: Determine the player's action, and execute action dependent code
-    X_FLAG = keystate[KEY_LEFT] | keystate[KEY_RIGHT]; //Set if either is true
-    Y_FLAG = keystate[KEY_UP] | keystate[KEY_JUMP] | keystate[KEY_DOWN]; //Set if either is true
+
+    X_FLAG = player->x_axis != 0;
+    Y_FLAG = player->y_axis != 0;
     if (NOCLIP) {
-        if (keystate[KEY_LEFT]) {
-            player->sprite.speedX = -100;
-        } else if (keystate[KEY_RIGHT]) {
-            player->sprite.speedX = 100;
-        } else {
-            player->sprite.speedX = 0;
-        }
-        if (keystate[KEY_UP] || keystate[KEY_JUMP]) {
-            player->sprite.speedY = -100;
-        } else if (keystate[KEY_DOWN]) {
-            player->sprite.speedY = 100;
-        } else {
-            player->sprite.speedY = 0;
-        }
+        player->sprite.speedX = player->x_axis * 100;
+        player->sprite.speedY = player->y_axis * 100;
         player->sprite.x += (player->sprite.speedX >> 4);
         player->sprite.y += (player->sprite.speedY >> 4);
         return 0;
@@ -183,12 +183,12 @@ int move_player(ScreenContext *context, TITUS_level *level) {
         GRANDBRULE_FLAG = false;
         if (LADDER_FLAG) {
             action = 6; //Action: climb
-        } else if (!PRIER_FLAG && (keystate[KEY_UP] || keystate[KEY_JUMP]) && (SAUT_FLAG == 0)) {
+        } else if (!PRIER_FLAG && player->y_axis < 0 && (SAUT_FLAG == 0)) {
             action = 2; //Action: jump
             if (LAST_ORDER == 5) { //Test if last order was kneestanding
                 FURTIF_FLAG = 100; //If jump after kneestanding, init silent walk timer
             }
-        } else if (PRIER_FLAG || ((SAUT_FLAG != 6) && keystate[KEY_DOWN])) {
+        } else if (PRIER_FLAG || ((SAUT_FLAG != 6) && player->y_axis > 0)) {
             if (X_FLAG) { //Move left or right
                 action = 3; //Action: crawling
             } else {
@@ -200,7 +200,7 @@ int move_player(ScreenContext *context, TITUS_level *level) {
             action = 0;  //Action: rest (no action)
         }
         //Is space button pressed?
-        if (keystate[KEY_SPACE] && !PRIER_FLAG) {
+        if (player->action_pressed && !PRIER_FLAG) {
             if (!DROP_FLAG) {
                 if ((action == 3) || (action == 5)) { //Kneestand
                     DROPREADY_FLAG = false;
@@ -224,10 +224,8 @@ int move_player(ScreenContext *context, TITUS_level *level) {
         } else { // 0 or 1
             newsensX = 0;
         }
-    } else if (keystate[KEY_LEFT]) {
-        newsensX = -1;
-    } else if (keystate[KEY_RIGHT]) {
-        newsensX = 1;
+    } else if (player->x_axis != 0) {
+        newsensX = player->x_axis;
     } else if (SENSX == -1) {
         newsensX = -1;
     } else if (action == 0) {
@@ -811,7 +809,7 @@ static void BLOCK_YYPRG(ScreenContext *context, TITUS_level *level, uint8_t floo
                 ARAB_BLOCK_YU(player); //Stop fall
                 return;
             }
-            if ((keystate[KEY_UP] || keystate[KEY_JUMP]) && (order == 6)) { //action UP + climb ladder
+            if (player->y_axis < 0 && order == 6) { //action UP + climb ladder
                 ARAB_BLOCK_YU(player); //Stop fall
                 return;
             }
@@ -1049,7 +1047,7 @@ static void ACTION_PRG(TITUS_level *level, uint8_t action) {
                     player->sprite.x += 16;
                 }
             }
-            if (!keystate[KEY_UP] && !keystate[KEY_JUMP]) {
+            if (player->y_axis >= 0) {
                 player->sprite.speedY = 4 * 16;
             } else {
                 player->sprite.speedY = 0 - (4 * 16);
@@ -1266,7 +1264,7 @@ static void ACTION_PRG(TITUS_level *level, uint8_t action) {
         GET_IMAGE(level);
         DECELERATION(player);
         if (CARRY_FLAG) {
-            if (!keystate[KEY_UP] && !keystate[KEY_JUMP]) { //Ordinary throw
+            if (player->y_axis >= 0) { //Ordinary throw
                 speedX = 0x0E * 16;
                 speedY = 0;
                 if (player->sprite.flipped) {
@@ -1552,10 +1550,10 @@ void COLLISION_OBJET(TITUS_level *level) {
       (player->sprite.speedY > (16 * 3)) &&
       (off_object->objectdata->bounce)) {
         //Bounce on a ball if no long kneestand (down key)
-        if (keystate[KEY_DOWN]) {
+        if (player->y_axis > 0) {
             player->sprite.speedY = 0;
         } else {
-            if (keystate[KEY_UP] || keystate[KEY_JUMP]) {
+            if (player->y_axis < 0) {
                 player->sprite.speedY += 16 * 3; //increase speed
             } else {
                 player->sprite.speedY -= 16; //reduce speed

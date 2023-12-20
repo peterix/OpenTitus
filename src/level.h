@@ -193,6 +193,11 @@ struct _TITUS_player {
     int16_t initY;
     unsigned char inithp;
     uint8_t GLISSE; //Friction (0-3). 0: full friction, 3: max sliding
+
+    // Player input this frame
+    int8_t x_axis;
+    int8_t y_axis;
+    bool action_pressed;
 };
 
 struct _TITUS_level {
