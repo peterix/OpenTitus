@@ -150,14 +150,14 @@ static void Y_ADJUST(TITUS_level *level) {
         }
     }
 
-    if ((player->sprite.y <= ((ALTITUDE_ZERO + screen_height) << 4)) && //If the player is above the horizontal limit
+    if ((player->sprite.y <= ((ALTITUDE_ZERO + screen_height) << 4) + 8) && //If the player is above the horizontal limit
       (BITMAP_Y > ALTITUDE_ZERO + 1)) { //... and the screen have scrolled below the the horizontal limit
         if (U_SCROLL(level)) { //Scroll up
             g_scroll_y = false;
         }
     } else if ((BITMAP_Y > ALTITUDE_ZERO - 5) && //If the screen is less than 5 tiles above the horizontal limit
       (BITMAP_Y <= ALTITUDE_ZERO) && //... and still above the horizontal limit
-      (player->sprite.y + (7 * 16) > ((ALTITUDE_ZERO + screen_height) << 4))) {
+      (player->sprite.y + (7 * 16) > ((ALTITUDE_ZERO + screen_height) << 4) + 8)) {
         if (D_SCROLL(level)) { //Scroll down
             g_scroll_y = false;
         }
@@ -168,7 +168,7 @@ static void Y_ADJUST(TITUS_level *level) {
             if (U_SCROLL(level)) {
                 g_scroll_y = false;
             }
-        } else if ((player->sprite.y <= ((ALTITUDE_ZERO + screen_height) << 4)) && //If the player is above the horizontal limit
+        } else if ((player->sprite.y <= ((ALTITUDE_ZERO + screen_height) << 4) + 8) && //If the player is above the horizontal limit
           (BITMAP_Y > ALTITUDE_ZERO)) { //... and the screen is below the horizontal limit
             g_scroll_y = false; //Stop scrolling
         } else {

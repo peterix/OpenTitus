@@ -59,7 +59,7 @@ void MOVE_TRP(TITUS_level *level) {
         if (((elevator[i].sprite.x + 16 - (BITMAP_X << 4)) >= 0) && // +16: closer to center
           ((elevator[i].sprite.x - 16 - (BITMAP_X << 4)) <= screen_width * 16) && // -16: closer to center
           ((elevator[i].sprite.y - (BITMAP_Y << 4)) >= 0) &&
-          ((elevator[i].sprite.y - (BITMAP_Y << 4)) - 16 <= screen_height * 16)) {
+          ((elevator[i].sprite.y - (BITMAP_Y << 4)) - 16 <= screen_height * 16 + 8)) {
             elevator[i].sprite.invisible = false;
         } else {
             elevator[i].sprite.invisible = true; //Not necessary, but to mimic the original game

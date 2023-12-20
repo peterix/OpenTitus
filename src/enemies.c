@@ -1130,7 +1130,7 @@ void SET_NMI(TITUS_level *level) {
         if ((level->enemy[i].sprite.x + 32 < BITMAP_X << 4) || //Left for the screen?
           (level->enemy[i].sprite.x - 32 > (BITMAP_X << 4) + screen_width * 16) || //Right for the screen?
           (level->enemy[i].sprite.y < BITMAP_Y << 4) || //Above the screen?
-          (level->enemy[i].sprite.y - 32 > (BITMAP_Y << 4) + screen_height * 16)) { //Below the screen?
+          (level->enemy[i].sprite.y - 32 > (BITMAP_Y << 4) + screen_height * 16 + 8)) { //Below the screen?
             if ((level->enemy[i].dying & 0x03) != 0) { //If the enemy is dying or dead and not on the screen, remove from the list!
                 level->enemy[i].sprite.enabled = false;
             }
@@ -1343,7 +1343,7 @@ void MOVE_TRASH(TITUS_level *level) {
             if (tmp != 0) { //Bug in the code
                 level->trash[i].y += (level->trash[i].speedY >> 4);
                 tmp = (level->trash[i].y >> 4) - BITMAP_Y;
-                if ((tmp < 0) || (tmp > screen_height*16)) { //Bug?
+                if ((tmp < 0) || (tmp > screen_height*16 + 8)) { //Bug?
                     level->trash[i].enabled = false;
                     continue;
                 }

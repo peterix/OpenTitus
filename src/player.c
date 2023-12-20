@@ -275,7 +275,7 @@ int move_player(ScreenContext *context, TITUS_level *level) {
             if ((newY < (level->height << 4)) && //Above bottom edge of level
               (newY >= 0) && //Below top edge of level
               (newY >= (BITMAP_Y << 4) - GESTION_Y) && //Max 20 pixels above the screen (bug: the purpose was probably one screen above the screen)
-              (newY <= (BITMAP_Y << 4) + (screen_height << 4) + GESTION_Y)) { //Max 20 pixels below the screen
+              (newY <= (BITMAP_Y << 4) + (screen_height << 4) + 8 + GESTION_Y)) { //Max 20 pixels below the screen
                 player->sprite2.y = newY;
             } else {
                 player->sprite2.enabled = false;

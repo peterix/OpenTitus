@@ -58,12 +58,12 @@ static void display_sprite(TITUS_level *level, TITUS_sprite *spr);
 
 void DISPLAY_TILES(TITUS_level *level) {
     //First of all: make the screen black, at least the lower part of the screen
-    SDL_Rect bottom_bar;
-    bottom_bar.x = 0;
-    bottom_bar.y = screen_height * 16;
-    bottom_bar.w = screen_width * 16;
-    bottom_bar.h = 200 - screen_height * 16;
-    window_clear(&bottom_bar);
+    SDL_Rect top_bar;
+    top_bar.x = 0;
+    top_bar.y = 0;
+    top_bar.w = screen_width * 16;
+    top_bar.h = 8;
+    window_clear(&top_bar);
 
     SDL_Rect src, dest;
     src.x = 0;
@@ -157,7 +157,7 @@ void display_sprite(TITUS_level *level, TITUS_sprite *spr) {
     if ((dest.x >= screen_limit * 16) || //Right for the screen
       (dest.x + spr->spritedata->data->w < 0) || //Left for the screen
       (dest.y + spr->spritedata->data->h < 0) || //Above the screen
-      (dest.y >= screen_height * 16)) { //Below the screen
+      (dest.y >= screen_height * 16 + 8)) { //Below the screen
         return;
     }
 
@@ -181,8 +181,8 @@ void display_sprite(TITUS_level *level, TITUS_sprite *spr) {
     if (dest.x + src.w > screen_limit * 16) {
         src.w = screen_limit * 16 - dest.x;
     }
-    if (dest.y + src.h > screen_height * 16) {
-        src.h = screen_height * 16 - dest.y;
+    if (dest.y + src.h > screen_height * 16 + 8) {
+        src.h = screen_height * 16 + 8 - dest.y;
     }
 
     SDL_BlitSurface(image, &src, screen, &dest);
