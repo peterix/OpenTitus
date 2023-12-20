@@ -81,10 +81,17 @@ void DISPLAY_TILES(TITUS_level *level) {
         if(tileX >= level->width) {
             continue;
         }
-        for (int y = 0; y < 12; y++) {
+        for (int y = -1; y < 12; y++) {
+            int tileY = BITMAP_Y + y;
+            if(tileY < 0) {
+                continue;
+            }
+            if(tileY >= level->height) {
+                continue;
+            }
             dest.x = 16 + x * 16;
-            dest.y = y * 16;
-            unsigned char tile = level->tilemap[BITMAP_Y + y][tileX];
+            dest.y = y * 16 + 8;
+            unsigned char tile = level->tilemap[tileY][tileX];
             SDL_BlitSurface(level->tile[level->tile[tile].animation[tile_anim]].tiledata, &src, screen, &dest);
         }
     }
@@ -143,7 +150,7 @@ void display_sprite(TITUS_level *level, TITUS_sprite *spr) {
     } else {
         dest.x = spr->x + spr->spritedata->refwidth - spr->spritedata->data->w - (BITMAP_X << 4) + 16;
     }
-    dest.y = spr->y + spr->spritedata->refheight - spr->spritedata->data->h + 1 - (BITMAP_Y << 4);
+    dest.y = spr->y + spr->spritedata->refheight - spr->spritedata->data->h + 1 - (BITMAP_Y << 4) + 8;
 
     int screen_limit = screen_width + 2;
 
