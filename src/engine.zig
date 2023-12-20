@@ -241,8 +241,8 @@ fn gameover(context: [*c]c.ScreenContext, level: *c.TITUS_level) void {
     c.music_select_song(2);
     c.updatesprite(level, &(player.sprite), 13, true); //Death
     c.updatesprite(level, &(player.sprite2), 333, true); //Game
-    player.sprite2.x = (globals.BITMAP_X << 4) - (120 - 2);
-    player.sprite2.y = (globals.BITMAP_Y << 4) + 100;
+    player.sprite2.x = @as(i16, globals.BITMAP_X << 4) - (120 - 2);
+    player.sprite2.y = @as(i16, globals.BITMAP_X << 4) + 100;
     //over
     c.updatesprite(level, &(player.sprite3), 334, true); //Over
     player.sprite3.x = @as(i16, globals.BITMAP_X << 4) + (320 + 120 - 2);
