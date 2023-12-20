@@ -149,9 +149,6 @@ export var NOSCROLL_FLAG: bool = false;
 //Finish a level
 pub export var NEWLEVEL_FLAG: bool = false;
 
-//Number of bosses that needs to be killed to finish
-export var BIGNMI_NBR: u8 = 0;
-
 //Used for enemies walking and popping up
 export var TAUPE_FLAG: u8 = 0;
 
@@ -162,12 +159,10 @@ export var TAPISWAIT_FLAG: u8 = 0;
 export var SEECHOC_FLAG: u8 = 0;
 
 //Lives of the boss
-export var BIGNMI_POWER: u8 = 0;
+export var boss_lives: u8 = 0;
 
 //True if the boss is alive
 export var boss_alive: bool = false;
-
-export var AUDIOMODE: u8 = 0;
 
 //If true, the player will not interfere with the enemies
 pub export var GODMODE: bool = false;

@@ -140,13 +140,7 @@ uint8_t RESET_LEVEL(ScreenContext *context, TITUS_level *level) {
                     if (event.key.keysym.scancode == KEY_ESC) {
                         return TITUS_ERROR_QUIT;
                     } else if (event.key.keysym.scancode == KEY_MUSIC) {
-                        AUDIOMODE++;
-                        if (AUDIOMODE > 1) {
-                            AUDIOMODE = 0;
-                        }
-                        if (AUDIOMODE == 1) {
-                            startmusic();
-                        }
+                        music_toggle();
                     } else if (event.key.keysym.scancode == KEY_FULLSCREEN) {
                         window_toggle_fullscreen();
                     }
@@ -208,13 +202,12 @@ void SET_DATA_NMI(TITUS_level *level) {
             boss_alive = true;
         }
     }
-    BIGNMI_POWER = NMI_POWER[level->levelid];
+    boss_lives = NMI_POWER[level->levelid];
 }
 
 void CLEAR_DATA(TITUS_level *level) {
     loop_cycle = 0;
     tile_anim = 0;
-    BIGNMI_NBR = 0;
     IMAGE_COUNTER = 0;
     TAUPE_FLAG = 0;
     GRANDBRULE_FLAG = 0;
@@ -278,8 +271,6 @@ void CLEAR_DATA(TITUS_level *level) {
 }
 
 int clearsprite(TITUS_sprite *spr){
-    //SDL_FreeSurface(spr->buffer);
-    //spr->buffer = NULL;
     spr->enabled = false;
     spr->x = 0;
     spr->y = 0;
@@ -292,8 +283,6 @@ int clearsprite(TITUS_sprite *spr){
     spr->flipped = false;
     spr->flash = false;
     spr->visible = false;
-    //spr->flipped_last = false;
-    //spr->flash_last = false;
     spr->animation = NULL;
     spr->droptobottom = false;
     spr->killing = false;

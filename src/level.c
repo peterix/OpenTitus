@@ -40,8 +40,14 @@
 #include "level.h"
 #include "globals_old.h"
 
-unsigned int loaduint16_t(unsigned char c1, unsigned char c2);
-int loadint16(unsigned char c1, unsigned char c2);
+static unsigned int loaduint16_t(unsigned char c1, unsigned char c2){
+    return (((unsigned int)c1 * 256) & 0xFF00) + (unsigned int)c2;
+}
+
+static int loadint16(unsigned char c1, unsigned char c2){
+    short int tmpint = ((short int)c1 << 8) + (short int)c2;
+    return (int)tmpint;
+}
 
 int loadlevel(TITUS_level *level, unsigned char *leveldata, int leveldatasize, TITUS_spritedata **spritedata, TITUS_spritecache *spritecache, TITUS_objectdata **objectdata){
     int i;
@@ -58,11 +64,7 @@ int loadlevel(TITUS_level *level, unsigned char *leveldata, int leveldatasize, T
     level->objectcount = 0;
     level->enemycount = 0;
     level->elevatorcount = 0;
-/*
-    level->player.sprite.buffer = NULL;
-    level->player.sprite2.buffer = NULL;
-    level->player.sprite3.buffer = NULL;
-*/
+
     pre_size = (leveldatasize - 35828) >> 8; //level->height
     level->width = 256;
 
@@ -298,7 +300,6 @@ int loadlevel(TITUS_level *level, unsigned char *leveldata, int leveldatasize, T
     level->elevatorcount = pre_size;
     offset = level->height * level->width + 35624;
     for (i = 0; i < level->elevatorcount; i++) {
-        //level->elevator[i].sprite.buffer = NULL;
         level->elevator[i].sprite.enabled = false;
         level->elevator[i].initsprite = loaduint16_t(leveldata[offset + 5], leveldata[offset + 4]);
         level->elevator[i].initspeedX = 0;
@@ -329,8 +330,6 @@ int loadlevel(TITUS_level *level, unsigned char *leveldata, int leveldatasize, T
     ALTITUDE_ZERO = loadint16(leveldata[offset + 1], leveldata[offset + 0]); // + 12;
     offset = level->height * level->width + 35482;
     XLIMIT = loadint16(leveldata[offset + 1], leveldata[offset + 0]); // + 20;
-    printf("XLIMIT %d\n", XLIMIT);
-    printf("WIDTH %d\n", level->width);
     for (i = 0; i < SPRITECOUNT; i++) {
         copypixelformat(level->spritedata[i]->data->format, level->pixelformat);
     }
@@ -343,13 +342,6 @@ int loadlevel(TITUS_level *level, unsigned char *leveldata, int leveldatasize, T
         return (TITUS_ERROR_NOT_ENOUGH_MEMORY);
     }
     level->trashcount = pre_size;
-    /*
-    for (i = 0; i < level->trashcount; i++) {
-        level->trash[i].buffer = NULL;
-    }
-*/
-
-
     return (0);
 }
 
@@ -405,13 +397,4 @@ uint8_t get_ceilflag(TITUS_level *level, int16_t tileY, int16_t tileX) {
     } else {
         return level->tile[level->tilemap[tileY][tileX]].ceilflag;
     }
-}
-
-unsigned int loaduint16_t(unsigned char c1, unsigned char c2){
-    return (((unsigned int)c1 * 256) & 0xFF00) + (unsigned int)c2;
-}
-
-int loadint16(unsigned char c1, unsigned char c2){
-    short int tmpint = ((short int)c1 << 8) + (short int)c2;
-    return (int)tmpint;
 }

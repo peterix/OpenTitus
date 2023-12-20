@@ -207,7 +207,6 @@ struct _TITUS_level {
     TITUS_spritecache *spritecache; //Not malloced (on an original level); pointer to a global spritebuffer variable
 
     TITUS_objectdata **objectdata; //Not malloced (on an original level); pointer to a global objectdata variable
-    //int spritecount;
     int finishX, finishY;
     int lives, extrabonus;
     //TITUS_enemy *boss; //Pointer to the boss; NULL if there is no boss

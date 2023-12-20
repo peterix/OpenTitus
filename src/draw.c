@@ -411,13 +411,7 @@ void fadeout() {
                     return;
                 }
                 if (event.key.keysym.scancode == KEY_MUSIC) {
-                    AUDIOMODE++;
-                    if (AUDIOMODE > 1) {
-                        AUDIOMODE = 0;
-                    }
-                    if (AUDIOMODE == 1) {
-                        startmusic();
-                    }
+                    music_toggle();
                 } else if (event.key.keysym.scancode == KEY_FULLSCREEN) {
                     window_toggle_fullscreen();
                 }

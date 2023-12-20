@@ -119,7 +119,7 @@ pub fn playtitus(firstlevel: u16) c_int {
         defer c.freelevel(&level);
         var first = true;
         while (true) {
-            c.SELECT_MUSIC(0);
+            c.music_select_song(0);
             c.CLEAR_DATA(&level);
 
             globals.GODMODE = false;
@@ -132,7 +132,7 @@ pub fn playtitus(firstlevel: u16) c_int {
                 return retval;
             }
 
-            c.SELECT_MUSIC(c.LEVEL_MUSIC[level.levelid]);
+            c.music_select_song(c.LEVEL_MUSIC[level.levelid]);
 
             c.INIT_SCREENM(&context, &level); //Todo: comment, DOCUMENTED! (reset_level_simplified)
             c.DISPLAY_TILES(&level);
@@ -181,7 +181,7 @@ fn playlevel(context: [*c]c.ScreenContext, level: *c.TITUS_level) c_int {
     while (true) {
         if (!firstrun) {
             c.draw_health_bars(level);
-            c.RETURN_MUSIC(); //Restart music if the song is finished
+            c.music_restart_if_finished();
             c.flip_screen(context, true);
         }
         firstrun = false;
@@ -214,7 +214,7 @@ fn playlevel(context: [*c]c.ScreenContext, level: *c.TITUS_level) c_int {
 fn death(context: [*c]c.ScreenContext, level: *c.TITUS_level) void {
     var player = &(level.player);
 
-    c.SELECT_MUSIC(1);
+    c.music_select_song(1);
     _ = c.FORCE_POSE(level);
     c.updatesprite(level, &(player.sprite), 13, true); //Death
     player.sprite.speedY = 15;
@@ -230,15 +230,15 @@ fn death(context: [*c]c.ScreenContext, level: *c.TITUS_level) void {
         player.sprite.y -= player.sprite.speedY;
     }
 
-    c.WAIT_SONG();
-    c.SELECT_MUSIC(0);
+    c.music_wait_to_finish();
+    c.music_select_song(0);
     c.CLOSE_SCREEN(context);
 }
 
 fn gameover(context: [*c]c.ScreenContext, level: *c.TITUS_level) void {
     var player = &(level.player);
 
-    c.SELECT_MUSIC(2);
+    c.music_select_song(2);
     c.updatesprite(level, &(player.sprite), 13, true); //Death
     c.updatesprite(level, &(player.sprite2), 333, true); //Game
     player.sprite2.x = (globals.BITMAP_X << 4) - (120 - 2);

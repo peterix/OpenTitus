@@ -157,13 +157,7 @@ int viewmenu(char * menufile, int menuformat) {
                     return (-1);
                 }
                 if (event.key.keysym.scancode == KEY_MUSIC) {
-                    AUDIOMODE++;
-                    if (AUDIOMODE > 1) {
-                        AUDIOMODE = 0;
-                    }
-                    if (AUDIOMODE == 1) {
-                        startmusic();
-                    }
+                    music_toggle();
                 } else if (event.key.keysym.scancode == KEY_FULLSCREEN) {
                     window_toggle_fullscreen();
                 }
@@ -208,13 +202,7 @@ int viewmenu(char * menufile, int menuformat) {
                 if (event.key.keysym.scancode == KEY_RETURN || event.key.keysym.scancode == KEY_ENTER || event.key.keysym.scancode == KEY_SPACE)
                     menuloop = 0;
                 if (event.key.keysym.scancode == KEY_MUSIC) {
-                    AUDIOMODE++;
-                    if (AUDIOMODE > 1) {
-                        AUDIOMODE = 0;
-                    }
-                    if (AUDIOMODE == 1) {
-                        startmusic();
-                    }
+                    music_toggle();
                 } else if (event.key.keysym.scancode == KEY_FULLSCREEN) {
                     window_toggle_fullscreen();
                 }
@@ -270,13 +258,7 @@ int viewmenu(char * menufile, int menuformat) {
                     return (-1);
                 }
                 if (event.key.keysym.scancode == KEY_MUSIC) {
-                    AUDIOMODE++;
-                    if (AUDIOMODE > 1) {
-                        AUDIOMODE = 0;
-                    }
-                    if (AUDIOMODE == 1) {
-                        startmusic();
-                    }
+                    music_toggle();
                 } else if (event.key.keysym.scancode == KEY_FULLSCREEN) {
                     window_toggle_fullscreen();
                 }
@@ -325,13 +307,7 @@ int enterpassword(){
                 }
 
                 if (event.key.keysym.scancode == KEY_MUSIC) {
-                    AUDIOMODE++;
-                    if (AUDIOMODE > 1) {
-                        AUDIOMODE = 0;
-                    }
-                    if (AUDIOMODE == 1) {
-                        startmusic();
-                    }
+                    music_toggle();
                 } else if (event.key.keysym.scancode == KEY_FULLSCREEN) {
                     window_toggle_fullscreen();
                 }

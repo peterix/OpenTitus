@@ -67,7 +67,7 @@ fn init() c_int {
         return retval;
     }
 
-    retval = c.initaudio();
+    retval = c.audio_init();
     if (retval != 0) {
         return retval;
     }
@@ -114,7 +114,7 @@ pub fn main() u8 {
             state = 0;
     }
 
-    c.SELECT_MUSIC(15);
+    c.music_select_song(15);
 
     if (state != 0) {
         retval = c.viewimage(&c.titusintrofile, c.titusintroformat, 0, 6500);
@@ -138,7 +138,7 @@ pub fn main() u8 {
     // FIXME: use defer()
     c.freefonts();
 
-    c.freeaudio();
+    c.audio_free();
 
     c.SDL_Quit();
 

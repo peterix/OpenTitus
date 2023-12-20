@@ -58,13 +58,3 @@ extern enum GameType game;
 
 extern char levelcode[16][5];
 extern char leveltitle[16][41];
-
-extern char moduleintrofile[256]; //.mod file
-extern int  moduleintrofileloop; //loop info
-extern char moduleprelevelfile[256];
-extern int  moduleprelevelfileloop;
-extern char modulelevelfile[6][256]; //6 different level files
-extern int  modulelevelfileloop[6];
-extern char modulegameoverfile[256];
-extern int  modulegameoverfileloop;
-extern char modulelevel[16]; //Link to modulelevelfiles

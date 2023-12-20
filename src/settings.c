@@ -51,17 +51,6 @@ enum GameType game;
 char levelcode[16][5];
 char leveltitle[16][41];
 
-char moduleintrofile[256]; //.mod file
-int  moduleintrofileloop; //loop info
-char moduleprelevelfile[256];
-int  moduleprelevelfileloop;
-char modulelevelfile[6][256]; //6 different level files
-int  modulelevelfileloop[6];
-char modulegameoverfile[256];
-int  modulegameoverfileloop;
-char modulelevel[16]; //Link to modulelevelfiles
-
-
 int readconfig(const char *configfile) {
     char line[300], tmp[256];
     int retval, i, j, tmpcount = 0;
@@ -157,71 +146,6 @@ int readconfig(const char *configfile) {
             sscanf (line, "%*s %255d", &titusfinishformat);
         else if (strcmp (tmp, "font") == 0)
             sscanf (line, "%*s %255s", fontfile);
-        else if (strcmp (tmp, "moduleintro") == 0)
-            sscanf (line, "%*s %255s", moduleintrofile);
-        else if (strcmp (tmp, "moduleintroloop") == 0)
-            sscanf (line, "%*s %255d", &moduleintrofileloop);
-        else if (strcmp (tmp, "moduleprelevel") == 0)
-            sscanf (line, "%*s %255s", moduleprelevelfile);
-        else if (strcmp (tmp, "moduleprelevelloop") == 0)
-            sscanf (line, "%*s %255d", &moduleprelevelfileloop);
-        else if (strcmp (tmp, "modulegameover") == 0)
-            sscanf (line, "%*s %255s", modulegameoverfile);
-        else if (strcmp (tmp, "modulegameoverloop") == 0)
-            sscanf (line, "%*s %255d", &modulegameoverfileloop);
-        else if (strcmp (tmp, "modulelevelfile") == 0) {
-            if (sscanf (line, "%*s %2d", &i) <= 0) {
-                printf("Error: Invalid numbering on the module level files, check config file: %s!\n", configfile);
-                fclose(ifp);
-                return(-1);
-            }
-            if ((retval = sscanf (line, "%*s %*2d %255s", tmp)) <= 0) {
-                printf("Error: You have not specified module level file number %d, check config file: %s!\n", i, configfile);
-                fclose(ifp);
-                return(-1);
-            }
-            if ((i < 1) || (i > 6)) {
-                printf("Error: Invalid numbering on the individual module level files, check config file: %s!\n", configfile);
-                fclose(ifp);
-                return(-1);
-            }
-            strcpy (modulelevelfile[i - 1], tmp);
-        } else if (strcmp (tmp, "modulelevelfileloop") == 0) {
-            if (sscanf (line, "%*s %2d", &i) <= 0) {
-                printf("Error: Invalid numbering on the module level files loop, check config file: %s!\n", configfile);
-                fclose(ifp);
-                return(-1);
-            }
-            if ((retval = sscanf (line, "%*s %*2d %d", &j)) <= 0) {
-                printf("Error: You have not specified module level file loop number %d, check config file: %s!\n", i, configfile);
-                fclose(ifp);
-                return(-1);
-            }
-            if ((i < 1) || (i > 6)) {
-                printf("Error: Invalid numbering on the individual module levels loop, check config file: %s!\n", configfile);
-                fclose(ifp);
-                return(-1);
-            }
-            modulelevelfileloop[i - 1] = j;
-        } else if (strcmp (tmp, "modulelevel") == 0) {
-            if (sscanf (line, "%*s %2d", &i) <= 0) {
-                printf("Error: Invalid numbering on the module levels, check config file: %s!\n", configfile);
-                fclose(ifp);
-                return(-1);
-            }
-            if ((retval = sscanf (line, "%*s %*2d %d", &j)) <= 0) {
-                printf("Error: You have not specified module level number %d, check config file: %s!\n", i, configfile);
-                fclose(ifp);
-                return(-1);
-            }
-            if ((i < 1) || (i > levelcount)) {
-                printf("Error: Invalid numbering on the individual module levels, check config file: %s!\n", configfile);
-                fclose(ifp);
-                return(-1);
-            }
-            modulelevel[i - 1] = j;
-        }
-
         else
             printf("Warning: undefined command '%s' in titus.conf\n", tmp);
 

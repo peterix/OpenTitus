@@ -63,7 +63,6 @@ fn build_game(b: *std.Build, name: []const u8, target: CrossTarget, optimize: st
         "src/window.c",
         "src/draw.c",
         "src/enemies.c",
-        "src/engine.c",
         "src/elevators.c",
         "src/fonts.c",
         "src/gates.c",

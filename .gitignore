@@ -2,4 +2,6 @@ bin/
 /bin/*
 zig-cache/
 zig-out/
+.vscode/
+build/
 *.kdev4

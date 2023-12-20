@@ -57,8 +57,8 @@ static void check_finish(ScreenContext *context, TITUS_level *level) {
       ((player->sprite.y & 0xFFF0) - 16 != level->finishY)) {
         return;
     }
-    SELECT_MUSIC(4);
-    WAIT_SONG();
+    music_select_song(4);
+    music_wait_to_finish();
     CLOSE_SCREEN(context);
     NEWLEVEL_FLAG = true;
 }

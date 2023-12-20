@@ -113,13 +113,7 @@ int move_player(ScreenContext *context, TITUS_level *level) {
 #endif
 
             } else if (event.key.keysym.scancode == KEY_MUSIC) {
-                AUDIOMODE++;
-                if (AUDIOMODE > 1) {
-                    AUDIOMODE = 0;
-                }
-                if (AUDIOMODE == 1) {
-                    startmusic();
-                }
+                music_toggle();
             } else if (event.key.keysym.scancode == KEY_P) {
                 pause = true;
             } else if (event.key.keysym.scancode == KEY_FULLSCREEN) {
@@ -396,13 +390,7 @@ int t_pause (ScreenContext *context, TITUS_level *level) {
                 if (event.key.keysym.scancode == KEY_ESC) {
                     return TITUS_ERROR_QUIT;
                 } else if (event.key.keysym.scancode == KEY_MUSIC) {
-                    AUDIOMODE++;
-                    if (AUDIOMODE > 1) {
-                        AUDIOMODE = 0;
-                    }
-                    if (AUDIOMODE == 1) {
-                        startmusic();
-                    }
+                    music_toggle();
                 } else if (event.key.keysym.scancode == KEY_P) {
                     return 0;
                 } else if (event.key.keysym.scancode == KEY_FULLSCREEN) {
@@ -901,7 +889,7 @@ static int CASE_BONUS(TITUS_level *level, uint8_t tileY, uint8_t tileX) {
     //If the bonus is 253-255, it's HP. Increase life!
     if (level->bonus[i].bonustile >= 255 - 2) {
         //Increase HP if tile number is >= 253
-        SELECT_MUSIC(6);
+        music_select_song(6);
         INC_ENERGY(level);
     }
     //Return the original tile underneath the bonus
@@ -914,7 +902,7 @@ static int CASE_BONUS(TITUS_level *level, uint8_t tileY, uint8_t tileX) {
 
 static void CASE_PASS(ScreenContext *context, TITUS_level *level, uint8_t level_index, uint8_t tileY, uint8_t tileX) {
     //Codelamp
-    SELECT_MUSIC(7);
+    music_select_song(7);
     if (CASE_BONUS(level, tileY, tileX)) { //if the bonus is found in the bonus list
         view_password(context, level, level_index);
     }
@@ -923,7 +911,7 @@ static void CASE_PASS(ScreenContext *context, TITUS_level *level, uint8_t level_
 static void CASE_SECU(TITUS_level *level, uint8_t tileY, uint8_t tileX) {
     TITUS_player *player = &(level->player);
     //Padlock, store X/Y coordinates
-    SELECT_MUSIC(5);
+    music_select_song(5);
     if (CASE_BONUS(level, tileY, tileX)) { //if the bonus is found in the bonus list
         player->initX = player->sprite.x;
         player->initY = player->sprite.y;
@@ -1157,7 +1145,7 @@ static void ACTION_PRG(TITUS_level *level, uint8_t action) {
                         }
 
                         //Take the object
-                        FX_START(9); //Sound effect
+                        sfx_play(9); //Sound effect
                         FUME_FLAG = 0;
                         level->object[i].sprite.speedY = 0;
                         level->object[i].sprite.speedX = 0;
@@ -1247,7 +1235,7 @@ static void ACTION_PRG(TITUS_level *level, uint8_t action) {
                                 }
                             }
 
-                            FX_START(9); //Sound effect
+                            sfx_play(9); //Sound effect
                             FUME_FLAG = 0;
                             level->enemy[i].sprite.speedY = 0;
                             level->enemy[i].sprite.speedX = 0;
@@ -1313,13 +1301,13 @@ static void ACTION_PRG(TITUS_level *level, uint8_t action) {
                         DROP_FLAG = true;
                         player->sprite2.speedX = speedX;
                         player->sprite2.speedY = speedY;
-                        FX_START(3); //Sound effect
+                        sfx_play(3); //Sound effect
                     }
                 } else { //Ordinary throw
                     DROP_FLAG = true;
                     player->sprite2.speedX = speedX;
                     player->sprite2.speedY = speedY;
-                    FX_START(3); //Sound effect
+                    sfx_play(3); //Sound effect
                 }
             }
             updatesprite(level, &(player->sprite), 10, true); //The same as in free fall
@@ -1585,7 +1573,7 @@ void COLLISION_OBJET(TITUS_level *level) {
 
         //If the ball lies on the ground
         if (off_object->sprite.speedY == 0) {
-            FX_START(12); //Sound effect
+            sfx_play(12); //Sound effect
             off_object->sprite.speedY = 0 - player->sprite.speedY;
             off_object->sprite.y -= off_object->sprite.speedY >> 4;
             GRAVITY_FLAG = 4;

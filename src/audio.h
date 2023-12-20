@@ -24,10 +24,14 @@
 
 #pragma once
 
-int initaudio();
-void freeaudio();
-void SELECT_MUSIC(int song_number);
-void WAIT_SONG();
-int FX_START(int fx_number);
-void RETURN_MUSIC();
-int startmusic();
+#include <stdbool.h>
+
+int audio_init();
+void audio_free();
+
+int sfx_play(int fx_number);
+
+void music_wait_to_finish();
+void music_select_song(int song_number);
+bool music_toggle();
+void music_restart_if_finished();
