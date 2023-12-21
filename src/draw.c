@@ -261,15 +261,11 @@ void screencontext_advance_29(ScreenContext * context) {
         return;
     }
     uint32_t now = SDL_GetTicks();
-    uint32_t delay = context->TARGET_CLOCK - now;
-    if(delay < 0) {
-        delay = tick_delay;
-    }
-    else {
-        SDL_Delay(delay);
+    if (context->TARGET_CLOCK > now) {
+        SDL_Delay(context->TARGET_CLOCK - now);
     }
     context->LAST_CLOCK = SDL_GetTicks();
-    context->TARGET_CLOCK += tick_delay;
+    context->TARGET_CLOCK = context->LAST_CLOCK + tick_delay;
 }
 
 void flip_screen(ScreenContext * context, bool slow) {
