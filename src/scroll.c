@@ -45,6 +45,14 @@ static float clamp(float x, float lowerlimit, float upperlimit) {
     return x;
 }
 
+static uint16_t clampi16(uint16_t x, uint16_t lowerlimit, uint16_t upperlimit) {
+    if (x < lowerlimit)
+        x = lowerlimit;
+    if (x > upperlimit)
+        x = upperlimit;
+    return x;
+}
+
 static float smootherstep(float edge0, float edge1, float x) {
     // Scale, and clamp x to 0..1 range
     x = clamp((x - edge0) / (edge1 - edge0), 0.0, 1.0);
@@ -52,32 +60,59 @@ static float smootherstep(float edge0, float edge1, float x) {
     return x * x * x * (x * (x * 6 - 15) + 10);
 }
 
-static float ideal_camera_position(TITUS_level *level) {
-    if (!level->player.sprite.flipped) {
-        return 60.0f;
-    }
-    else {
-        return -60.0f;
-    }
-}
-
 static void X_ADJUST(TITUS_level *level) {
     TITUS_player *player = &(level->player);
     g_scroll_x = true;
 
+    int16_t player_position = player->sprite.x;
+
+    // determine where we want the camera to be
+    int16_t right_limit;
+    if(player_position > XLIMIT * 16 || XLIMIT_BREACHED) {
+        XLIMIT_BREACHED = true;
+        right_limit = (level->width * 16 - 160);
+    } else {
+        right_limit = (XLIMIT * 16 - 160);
+    }
+
+    int16_t left_camera_limit = clampi16(player_position - 60, 160, right_limit) ;
+    int16_t right_camera_limit = clampi16(player_position + 60, 160, right_limit) ;
+
+    int16_t camera_target;
+    if(level->player.sprite.flipped) {
+        camera_target = left_camera_limit;
+    } else {
+        camera_target = right_camera_limit;
+    }
+
+
+    int16_t camera_position = camera_target;
+    
+    // un-breach XLIMIT if we go one screen to the left of it
+    if(XLIMIT_BREACHED && camera_position < XLIMIT * 16 - 160) {
+        XLIMIT_BREACHED = false;
+    }
+
+    /*
     static float camera_offset = 0.0f;
-    int16_t target_camera_offset = ideal_camera_position(level);
+    float target_camera_offset;
+    if (!level->player.sprite.flipped)  {
+        target_camera_offset = 60.0f;
+    }
+    else {
+        target_camera_offset = -60.0f;
+    }
     if(camera_offset < target_camera_offset) {
         camera_offset += 3.0;
     }
     else if(camera_offset > target_camera_offset) {
         camera_offset -= 3.0;
     }
-    int real_camera_offset = smootherstep(-60, 60, camera_offset) * 120 - 60;
+
+    int real_camera_offset = smootherstep(-60.0, 60.0, camera_offset) * 120 - 60;
     fprintf(stderr, "CAMERA %f, real %d\n", camera_offset, real_camera_offset);
 
-    // clamp player position to level bounds
-    int16_t player_position = player->sprite.x;
+    // clamp camera position to level bounds
     int16_t camera_position = player_position + real_camera_offset;
 
     // left side of the map
@@ -85,22 +120,10 @@ static void X_ADJUST(TITUS_level *level) {
         camera_position = 160;
     }
 
-    // right side of the map, or a weird arbitrary divide on the right
-    int16_t rlimit;
-    if(player_position > XLIMIT * 16 || XLIMIT_BREACHED) {
-        XLIMIT_BREACHED = true;
-        rlimit = (level->width * 16 - 160);
-    } else {
-        rlimit = (XLIMIT * 16 - 160);
-    }
     if(camera_position > rlimit || player_position > rlimit) {
         camera_position = rlimit;
     }
-
-    // un-breach XLIMIT if we go one screen to the left of it
-    if(XLIMIT_BREACHED && camera_position < XLIMIT * 16 - 160) {
-        XLIMIT_BREACHED = false;
-    }
+    */
 
     int16_t camera_screen_px = camera_position - BITMAP_X * 16;
     int16_t scroll_px_target = 160;
