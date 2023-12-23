@@ -83,7 +83,7 @@ static void check_gates(ScreenContext *context, TITUS_level *level) {
     player->sprite.speedX = 0;
     player->sprite.speedY = 0;
     CLOSE_SCREEN(context);
-    int16_t orig_xlimit = XLIMIT;
+    uint16_t orig_xlimit = XLIMIT;
     bool orig_xlimit_breached = XLIMIT_BREACHED;
     XLIMIT = level->width - screen_width;
     player->sprite.x = level->gate[i].exitX << 4;

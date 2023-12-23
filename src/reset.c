@@ -222,7 +222,7 @@ void CLEAR_DATA(TITUS_level *level) {
     DROP_FLAG = 0;
     DROPREADY_FLAG = 0;
     POSEREADY_FLAG = 0;
-    LADDER_FLAG = 0;
+    LADDER_FLAG = false;
     PRIER_FLAG = 0;
     SAUT_FLAG = 0;
     CROSS_FLAG = 0;
@@ -247,7 +247,7 @@ void CLEAR_DATA(TITUS_level *level) {
     TAPISFLY_FLAG = 0;
     CROSS_FLAG = 0;
     GRAVITY_FLAG = 4;
-    LADDER_FLAG = 0;
+    LADDER_FLAG = false;
     FURTIF_FLAG = 0;
     KICK_FLAG = 0;
     CHOC_FLAG = 0;

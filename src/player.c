@@ -40,7 +40,6 @@
 #include "audio.h"
 #include "objects.h"
 #include "sprites.h"
-#include "scroll.h"
 #include "window.h"
 
 static void TAKE_BLK_AND_YTEST(ScreenContext *context, TITUS_level *level, int16_t tileY, uint8_t tileX);
@@ -597,7 +596,7 @@ static void BLOCK_YYPRGD(TITUS_level *level, uint8_t ceil, uint8_t tileY, uint8_
     case 2: //Ladder
         if ((player->sprite.speedY < 0) && (player->sprite.speedX == 0)) {
             SAUT_COUNT = 10;
-            LADDER_FLAG = 1;
+            LADDER_FLAG = true;
         }
         break;
 
@@ -819,7 +818,7 @@ static void BLOCK_YYPRG(ScreenContext *context, TITUS_level *level, uint8_t floo
         SAUT_COUNT = 0;
         YFALL = 2;
 
-        LADDER_FLAG = 1;
+        LADDER_FLAG = true;
         break;
 
     case 7:

@@ -25,6 +25,12 @@
 
 const std = @import("std");
 
+pub const screen_width = 20;
+pub const screen_height = 12;
+
+pub const TileCoord = i16;
+pub const PixelCoord = i16;
+
 pub export var RESETLEVEL_FLAG: u8 = 0;
 
 // triggers a game over
@@ -52,7 +58,7 @@ export var KICK_FLAG: u8 = 0;
 export var GRANDBRULE_FLAG: bool = false;
 
 // True if on a ladder
-export var LADDER_FLAG: bool = false;
+pub export var LADDER_FLAG: bool = false;
 
 //True if player is forced into kneestanding because of low ceiling
 export var PRIER_FLAG: bool = false;
@@ -105,34 +111,34 @@ export var POCKET_FLAG: bool = false;
 export var PERMUT_FLAG: bool = false;
 
 //Increased every loop in game loop
-export var loop_cycle: u8 = 0;
+pub export var loop_cycle: u8 = 0;
 
 //Current tile animation (0-1-2), changed every 4th game loop cycle
-export var tile_anim: u8 = 0;
+pub export var tile_anim: u8 = 0;
 
 //Screen offset (X) in tiles
-pub export var BITMAP_X: u8 = 0;
+pub export var BITMAP_X: TileCoord = 0;
 
 //Screen offset (Y) in tiles
-pub export var BITMAP_Y: u8 = 0;
+pub export var BITMAP_Y: TileCoord = 0;
 
 //If true, the screen will scroll in X
-export var g_scroll_x: bool = false;
+pub export var g_scroll_x: bool = false;
 
-export var g_scroll_px_offset: i16 = 0;
+pub export var g_scroll_px_offset: PixelCoord = 0;
 
 //The engine will not scroll past this tile before the player have crossed the line (X)
-export var XLIMIT: i16 = 0;
-export var XLIMIT_BREACHED: bool = false;
+pub export var XLIMIT: TileCoord = 0;
+pub export var XLIMIT_BREACHED: bool = false;
 
 //If true, the screen will scroll in Y
-export var g_scroll_y: bool = false;
+pub export var g_scroll_y: bool = false;
 
 //If scrolling: scroll until player is in this tile (Y)
-export var g_scroll_y_target: u8 = 0;
+pub export var g_scroll_y_target: TileCoord = 0;
 
 //The engine will not scroll below this tile before the player have gone below (Y)
-export var ALTITUDE_ZERO: u8 = 0;
+pub export var ALTITUDE_ZERO: TileCoord = 0;
 
 //Increased every loop in game loop (0 to 0x0FFF)
 pub export var IMAGE_COUNTER: u16 = 0;
@@ -143,7 +149,7 @@ export var SENSX: i8 = 0;
 //Incremented from 0 to 3 when accelerating while jumping, stop acceleration upwards if >= 3
 export var SAUT_COUNT: u8 = 0;
 
-export var NOSCROLL_FLAG: bool = false;
+pub export var NOSCROLL_FLAG: bool = false;
 
 //Finish a level
 pub export var NEWLEVEL_FLAG: bool = false;

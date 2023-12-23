@@ -25,7 +25,7 @@
 
 const std = @import("std");
 
-const c = @cImport({
+pub const c = @cImport({
     @cInclude("SDL2/SDL.h");
     @cInclude("sqz.h");
     @cInclude("settings.h");
@@ -37,7 +37,6 @@ const c = @cImport({
     @cInclude("level.h");
     @cInclude("keyboard.h");
     @cInclude("player.h");
-    @cInclude("scroll.h");
     @cInclude("draw.h");
     @cInclude("reset.h");
     @cInclude("gates.h");
@@ -50,6 +49,7 @@ const c = @cImport({
 
 const globals = @import("globals.zig");
 const sqz = @import("sqz.zig");
+const scroll = @import("scroll.zig");
 
 const c_alloc = std.heap.c_allocator;
 
@@ -197,7 +197,7 @@ fn playlevel(context: [*c]c.ScreenContext, level: *c.TITUS_level) c_int {
         c.SET_NMI(level); //Handle enemies on the screen
         c.CROSSING_GATE(context, level); //Check and handle level completion, and if the player does a kneestand on a secret entrance
         c.SPRITES_ANIMATION(level); //Animate player and objects
-        c.scroll(level); //X- and Y-scrolling
+        scroll.scroll(level); //X- and Y-scrolling
         c.DISPLAY_TILES(level); //Draws tiles on the backbuffer
         c.DISPLAY_SPRITES(level); //Draws sprites on the backbuffer
         retval = c.RESET_LEVEL(context, level); //Check terminate flags (finishlevel, gameover, death or theend)

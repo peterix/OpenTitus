@@ -204,8 +204,8 @@ struct _TITUS_level {
     uint16_t levelnumber;
     uint16_t levelid;
     //char title[41];
-    int height;
-    int width; //Usually 256
+    int16_t height;
+    int16_t width; //Usually 256
     unsigned char **tilemap; //Malloced, usually 256 * height
     TITUS_tile tile[256];
     TITUS_spritedata **spritedata; //Not malloced (on an original level); pointer to a global spritedata variable
