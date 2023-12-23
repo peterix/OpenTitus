@@ -26,23 +26,20 @@
 const std = @import("std");
 const engine = @import("engine.zig");
 const globals = @import("globals.zig");
+const assert = std.debug.assert;
 
-// FIXME: maybe this is in standard library?
-fn clamp(x: f32, lowerlimit: f32, upperlimit: f32) f32 {
-    var temp = x;
-    if (temp < lowerlimit)
-        temp = lowerlimit;
-    if (temp > upperlimit)
-        temp = upperlimit;
-    return temp;
-}
-
-// Assumes x is between 0 and 1 inclusive
-fn smootherstep(edge0: f32, edge1: f32, x: f32) f32 {
-    // Scale, and clamp x to 0..1 range
-    var xx = clamp((x - edge0) / (edge1 - edge0), 0.0, 1.0);
+/// Easign function for the camera.
+///
+/// Assumes input is between edge0 and edge1 inclusive and that edge0 < edge1
+///
+/// See: https://www.wolframalpha.com/input?i=x%5E3+%2810+%2B+x+%28-15+%2B+6+x%29%29
+fn smootherstep(edge0: f32, edge1: f32, input: f32) f32 {
+    assert(edge0 < edge1);
+    assert(input >= edge0 and input <= edge1);
+    // Scale, and clamp input to 0..1 range
+    var x = std.math.clamp((input - edge0) / (edge1 - edge0), 0.0, 1.0);
     // Evaluate polynomial
-    return xx * xx * xx * (xx * (xx * 6 - 15) + 10);
+    return x * x * x * (x * (x * 6 - 15) + 10);
 }
 
 // NOTE: a full camera turn takes 2 * EASING_RANGE frames
@@ -170,8 +167,8 @@ fn Y_ADJUST(level: *engine.c.TITUS_level) void {
     }
 }
 
-pub export fn scroll(level: *engine.c.TITUS_level) void {
-    //Scroll screen and update tile animation
+// TODO: put this somewhere else, like `engine`, it has nothing to do with scrolling
+pub export fn animate_tiles() void {
     globals.loop_cycle += 1; //Cycle from 0 to 3
     if (globals.loop_cycle > 3) {
         globals.loop_cycle = 0;
@@ -182,6 +179,10 @@ pub export fn scroll(level: *engine.c.TITUS_level) void {
             globals.tile_anim = 0;
         }
     }
+}
+
+pub export fn scroll(level: *engine.c.TITUS_level) void {
+    animate_tiles();
     //Scroll
     if (!globals.NOSCROLL_FLAG) {
         X_ADJUST(level);
