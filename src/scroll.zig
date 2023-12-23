@@ -37,6 +37,7 @@ fn clamp(x: f32, lowerlimit: f32, upperlimit: f32) f32 {
     return temp;
 }
 
+// Assumes x is between 0 and 1 inclusive
 fn smootherstep(edge0: f32, edge1: f32, x: f32) f32 {
     // Scale, and clamp x to 0..1 range
     var xx = clamp((x - edge0) / (edge1 - edge0), 0.0, 1.0);
@@ -44,7 +45,13 @@ fn smootherstep(edge0: f32, edge1: f32, x: f32) f32 {
     return xx * xx * xx * (xx * (xx * 6 - 15) + 10);
 }
 
-var camera_offset: i16 = 0;
+// NOTE: a full camera turn takes 2 * EASING_RANGE frames
+const EASING_RANGE = 9;
+const CAMERA_DISTANCE = 60;
+const CAMERA_RANGE = CAMERA_DISTANCE * 2;
+
+// TODO: put this on the player struct
+var easing_value: i16 = 0;
 
 fn X_ADJUST(level: *engine.c.TITUS_level) void {
     var player = &(level.player);
@@ -62,18 +69,14 @@ fn X_ADJUST(level: *engine.c.TITUS_level) void {
     }
 
     // update the camera offset from the player (using an easing function)
-    var target_camera_offset: i16 = undefined;
-    if (!level.player.sprite.flipped) {
-        target_camera_offset = 60;
-    } else {
-        target_camera_offset = -60;
+    var facing_right = !level.player.sprite.flipped;
+    var easing_target: i16 = if (facing_right) EASING_RANGE else -EASING_RANGE;
+    if (easing_value < easing_target) {
+        easing_value += 1;
+    } else if (easing_value > easing_target) {
+        easing_value -= 1;
     }
-    if (camera_offset < target_camera_offset) {
-        camera_offset += 3;
-    } else if (camera_offset > target_camera_offset) {
-        camera_offset -= 3;
-    }
-    var real_camera_offset: i16 = @intFromFloat(@floor(smootherstep(-60.0, 60.0, @floatFromInt(camera_offset)) * 120.0 - 60.0));
+    var real_camera_offset: i16 = @intFromFloat(@floor(smootherstep(-EASING_RANGE, EASING_RANGE, @floatFromInt(easing_value)) * CAMERA_RANGE - CAMERA_DISTANCE));
 
     // clamp the camera inside the world space
     var camera_position: i16 = player_position + real_camera_offset;
@@ -134,32 +137,33 @@ fn Y_ADJUST(level: *engine.c.TITUS_level) void {
         }
     }
 
+    // TODO: do something about this weirdness of discrete tile scrolling.
     if ((player.sprite.y <= ((@as(i16, globals.ALTITUDE_ZERO) + globals.screen_height) >> 4)) and //If the player is above the horizontal limit
-        (globals.BITMAP_Y > globals.ALTITUDE_ZERO + 1))
-    { //... and the screen have scrolled below the the horizontal limit
-        if (U_SCROLL(level)) { //Scroll up
+        (globals.BITMAP_Y > globals.ALTITUDE_ZERO + 1)) //... and the screen have scrolled below the the horizontal limit
+    {
+        if (scroll_up(level)) {
             globals.g_scroll_y = false;
         }
-    } else if ((globals.BITMAP_Y > globals.ALTITUDE_ZERO - 5) and //If the screen is less than 5 tiles above the horizontal limit
-        (globals.BITMAP_Y <= globals.ALTITUDE_ZERO) and //... and still above the horizontal limit
+    } else if ((globals.BITMAP_Y > globals.ALTITUDE_ZERO - 5) and // If the screen is less than 5 tiles above the horizontal limit
+        (globals.BITMAP_Y <= globals.ALTITUDE_ZERO) and // ... and still above the horizontal limit
         (player.sprite.y + (7 * 16) > ((globals.ALTITUDE_ZERO + globals.screen_height) << 4)))
     {
-        if (D_SCROLL(level)) { //Scroll down
+        if (scroll_down(level)) {
             globals.g_scroll_y = false;
         }
     } else if (globals.g_scroll_y) {
         if (globals.g_scroll_y_target == pstileY) {
             globals.g_scroll_y = false;
         } else if (globals.g_scroll_y_target > pstileY) {
-            if (U_SCROLL(level)) {
+            if (scroll_up(level)) {
                 globals.g_scroll_y = false;
             }
         } else if ((player.sprite.y <= ((globals.ALTITUDE_ZERO + globals.screen_height) << 4)) and //If the player is above the horizontal limit
-            (globals.BITMAP_Y > globals.ALTITUDE_ZERO))
-        { //... and the screen is below the horizontal limit
+            (globals.BITMAP_Y > globals.ALTITUDE_ZERO)) //... and the screen is below the horizontal limit
+        {
             globals.g_scroll_y = false; //Stop scrolling
         } else {
-            if (D_SCROLL(level)) { //Scroll down
+            if (scroll_down(level)) {
                 globals.g_scroll_y = false;
             }
         }
@@ -185,7 +189,7 @@ pub export fn scroll(level: *engine.c.TITUS_level) void {
     }
 }
 
-pub export fn L_SCROLL(level: *engine.c.TITUS_level) bool {
+pub export fn scroll_left(level: *engine.c.TITUS_level) bool {
     _ = level;
     //Scroll left
     if (globals.BITMAP_X == 0) {
@@ -195,7 +199,7 @@ pub export fn L_SCROLL(level: *engine.c.TITUS_level) bool {
     return false; //Continue scrolling
 }
 
-pub export fn R_SCROLL(level: *engine.c.TITUS_level) bool {
+pub export fn scroll_right(level: *engine.c.TITUS_level) bool {
     //Scroll right
     var maxX: i32 = undefined;
     if (((level.player.sprite.x >> 4) - globals.screen_width) > globals.XLIMIT) { //Scroll limit
@@ -210,7 +214,7 @@ pub export fn R_SCROLL(level: *engine.c.TITUS_level) bool {
     return false;
 }
 
-pub export fn U_SCROLL(level: *engine.c.TITUS_level) bool {
+pub export fn scroll_up(level: *engine.c.TITUS_level) bool {
     _ = level;
     //Scroll up
     if (globals.BITMAP_Y == 0) {
@@ -220,7 +224,7 @@ pub export fn U_SCROLL(level: *engine.c.TITUS_level) bool {
     return false;
 }
 
-pub export fn D_SCROLL(level: *engine.c.TITUS_level) bool {
+pub export fn scroll_down(level: *engine.c.TITUS_level) bool {
     //Scroll down
     if (globals.BITMAP_Y >= (level.height - globals.screen_height)) { //The screen is already at the bottom
         return true; //Stop scrolling

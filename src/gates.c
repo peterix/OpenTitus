@@ -89,16 +89,16 @@ static void check_gates(ScreenContext *context, TITUS_level *level) {
     player->sprite.x = level->gate[i].exitX << 4;
     player->sprite.y = level->gate[i].exitY << 4;
     while (BITMAP_Y < level->gate[i].screenY) {
-        D_SCROLL(level);
+        scroll_down(level);
     }
     while (BITMAP_Y > level->gate[i].screenY) {
-        U_SCROLL(level);
+        scroll_up(level);
     }
     while (BITMAP_X < level->gate[i].screenX) {
-        R_SCROLL(level);
+        scroll_right(level);
     }
     while (BITMAP_X > level->gate[i].screenX) {
-        L_SCROLL(level);
+        scroll_left(level);
     }
     XLIMIT = orig_xlimit;
     XLIMIT_BREACHED = orig_xlimit_breached;

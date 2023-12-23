@@ -31,7 +31,7 @@
 #include "SDL2/SDL.h"
 
 void scroll(TITUS_level *level);
-bool L_SCROLL(TITUS_level *level);
-bool R_SCROLL(TITUS_level *level);
-bool U_SCROLL(TITUS_level *level);
-bool D_SCROLL(TITUS_level *level);
+bool scroll_left(TITUS_level *level);
+bool scroll_right(TITUS_level *level);
+bool scroll_up(TITUS_level *level);
+bool scroll_down(TITUS_level *level);
