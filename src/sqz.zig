@@ -25,6 +25,8 @@
 
 const std = @import("std");
 
+const engine = @import("engine.zig");
+
 const Allocator = std.mem.Allocator;
 
 const LZW_CLEAR_CODE = 0x100;
@@ -35,8 +37,28 @@ const LZW_MAX_TABLE = 4096;
 const SqzError = error{
     OutOfMemory,
     InvalidFile,
-    BadAlgorithm,
 };
+
+const c_alloc = std.heap.c_allocator;
+
+// TODO: remove when all the callers are zig
+pub export fn unSQZ(inputfile: [*c]u8, output: [*c][*c]u8) c_int {
+    var unsqueezed = unSQZ2(inputfile, std.heap.raw_c_allocator) catch |err| {
+        switch (err) {
+            error.OutOfMemory => {
+                return engine.c.TITUS_ERROR_NOT_ENOUGH_MEMORY;
+            },
+            error.InvalidFile => {
+                return engine.c.TITUS_ERROR_INVALID_FILE;
+            },
+            else => {
+                return engine.c.TITUS_ERROR_OTHER;
+            },
+        }
+    };
+    output.* = &unsqueezed[0];
+    return 0;
+}
 
 pub fn unSQZ2(inputfile: [*c]u8, allocator: Allocator) ![]u8 {
     var i: c_int = 0;
