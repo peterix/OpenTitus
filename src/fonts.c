@@ -56,7 +56,6 @@ int loadfonts(void) {
     retval = unSQZ(fontfile, &fontdata);
 
     if (retval < 0) {
-        lasterrornr = retval;
         free (fontdata);
         return (0);
     }

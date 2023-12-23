@@ -82,11 +82,6 @@ fn init() c_int {
         return retval;
     }
 
-    retval = c.initleveltitles();
-    if (retval != 0) {
-        return retval;
-    }
-
     retval = c.loadfonts();
     if (retval != 0) {
         return retval;

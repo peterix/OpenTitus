@@ -67,6 +67,8 @@ extern int16_t anim_moktar[ORIG_ANIM_MAX];
 extern int16_t anim_smoke[ORIG_ANIM_MAX];
 extern int16_t COEUR_POS[ORIG_ANIM_MAX * 2];
 
+extern char leveltitle[16][41];
+
 extern uint8_t object_maxspeedY[ORIG_OBJECT_COUNT];
 extern bool object_support[ORIG_OBJECT_COUNT]; //not support/support
 extern bool object_bounce[ORIG_OBJECT_COUNT]; //not bounce/bounce against floor + player bounces (ball, all spring, yellow stone, squeezed ball, skateboard)

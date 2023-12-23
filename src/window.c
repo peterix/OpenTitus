@@ -21,7 +21,7 @@ bool fullscreen = false;
 
 SDL_Surface *screen;
 SDL_Window *window;
-SDL_Renderer *renderer;
+static SDL_Renderer *renderer;
 
 void window_toggle_fullscreen() {
     if(!fullscreen) {

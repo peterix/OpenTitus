@@ -35,5 +35,4 @@ void window_render();
 void window_clear(const SDL_Rect * rect);
 
 extern SDL_Window *window;
-extern SDL_Renderer *renderer;
 extern SDL_Surface *screen;

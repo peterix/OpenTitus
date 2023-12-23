@@ -55,6 +55,8 @@ int16_t anim_moktar[ORIG_ANIM_MAX];
 int16_t anim_smoke[ORIG_ANIM_MAX];
 int16_t COEUR_POS[ORIG_ANIM_MAX * 2];
 
+char leveltitle[16][41];
+
 uint8_t object_maxspeedY[ORIG_OBJECT_COUNT];
 bool object_support[ORIG_OBJECT_COUNT]; //not support/support
 bool object_bounce[ORIG_OBJECT_COUNT]; //not bounce/bounce against floor + player bounces (ball, all spring, yellow stone, squeezed ball, skateboard)
@@ -638,6 +640,42 @@ int initoriginal() {
     orig_palette_font_colour[15].r = 20 * 4; // Darkest yellow
     orig_palette_font_colour[15].g = 16 * 4;
     orig_palette_font_colour[15].b = 0 * 4;
+
+
+    if (game == Titus) {
+        strcpy (leveltitle[0], "           ON THE FOXY TRAIL");
+        strcpy (leveltitle[1], "           LOOKING FOR CLUES");
+        strcpy (leveltitle[2], "           ROAD WORKS AHEAD");
+        strcpy (leveltitle[3], "           GOING UNDERGROUND");
+        strcpy (leveltitle[4], "          FLAMING CATACOMBES");
+        strcpy (leveltitle[5], "            COMING TO TOWN");
+        strcpy (leveltitle[6], "               FOXYS DEN");
+        strcpy (leveltitle[7], "       ON THE ROAD TO MARRAKESH");
+        strcpy (leveltitle[8], "         HOME OF THE PHARAOHS");
+        strcpy (leveltitle[9], "           DESERT EXPERIENCE");
+        strcpy (leveltitle[10], "             WALLS OF SAND");
+        strcpy (leveltitle[11], "           A BEACON OF HOPE");
+        strcpy (leveltitle[12], "             A PIPE DREAM");
+        strcpy (leveltitle[13], "              GOING HOME");
+        strcpy (leveltitle[14], "             JUST MARRIED");
+    } else if (game == Moktar) {
+        strcpy (leveltitle[0], "     A LA RECHERCHE DE LA ZOUBIDA");
+        strcpy (leveltitle[1], "          LES QUARTIERS CHICS");
+        strcpy (leveltitle[2], "           ATTENTION TRAVAUX");
+        strcpy (leveltitle[3], "         LES COULOIRS DU METRO");
+        strcpy (leveltitle[4], "       LES CATACOMBES INFERNALES");
+        strcpy (leveltitle[5], "         ARRIVEE DANS LA CITE");
+        strcpy (leveltitle[6], "       L IMMEUBLE DE LA ZOUBIDA");
+        strcpy (leveltitle[7], "      SOUS LE CHEMIN DE MARRAKECH");
+        strcpy (leveltitle[8], "            LA CITE ENFOUIE");
+        strcpy (leveltitle[9], "             DESERT PRIVE");
+        strcpy (leveltitle[10], "          LA VILLE DES SABLES");
+        strcpy (leveltitle[11], "            LE PHARE OUEST");
+        strcpy (leveltitle[12], "             UN BON TUYAU");
+        strcpy (leveltitle[13], "           DE RETOUR AU PAYS");
+        strcpy (leveltitle[14], "           DIRECTION BARBES");
+        strcpy (leveltitle[15], "              BIG BISOUS");
+    }
 
     return 0;
 }

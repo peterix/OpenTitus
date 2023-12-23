@@ -33,8 +33,6 @@ int readconfig(const char *configfile);
 
 int initcodes();
 
-int initleveltitles();
-
 enum GameType {
     Titus,
     Moktar
@@ -57,4 +55,3 @@ extern int videomode;
 extern enum GameType game;
 
 extern char levelcode[16][5];
-extern char leveltitle[16][41];
