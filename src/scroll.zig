@@ -191,44 +191,35 @@ pub export fn scroll(level: *engine.c.TITUS_level) void {
 
 pub export fn scroll_left(level: *engine.c.TITUS_level) bool {
     _ = level;
-    //Scroll left
     if (globals.BITMAP_X == 0) {
-        return true; //Stop scrolling
+        return true;
     }
-    globals.BITMAP_X -= 1; //Scroll 1 tile left
-    return false; //Continue scrolling
+    globals.BITMAP_X -= 1;
+    return false;
 }
 
 pub export fn scroll_right(level: *engine.c.TITUS_level) bool {
-    //Scroll right
-    var maxX: i32 = undefined;
-    if (((level.player.sprite.x >> 4) - globals.screen_width) > globals.XLIMIT) { //Scroll limit
-        maxX = level.width - globals.screen_width; //256 - 20
-    } else {
-        maxX = globals.XLIMIT;
-    }
+    var maxX: i16 = if (globals.XLIMIT_BREACHED) level.width - globals.screen_width else globals.XLIMIT;
     if (globals.BITMAP_X >= maxX) {
-        return true; //Stop scrolling
+        return true;
     }
-    globals.BITMAP_X += 1; //Increase pointer
+    globals.BITMAP_X += 1;
     return false;
 }
 
 pub export fn scroll_up(level: *engine.c.TITUS_level) bool {
     _ = level;
-    //Scroll up
     if (globals.BITMAP_Y == 0) {
         return true;
     }
-    globals.BITMAP_Y -= 1; //Scroll 1 tile up
+    globals.BITMAP_Y -= 1;
     return false;
 }
 
 pub export fn scroll_down(level: *engine.c.TITUS_level) bool {
-    //Scroll down
-    if (globals.BITMAP_Y >= (level.height - globals.screen_height)) { //The screen is already at the bottom
-        return true; //Stop scrolling
+    if (globals.BITMAP_Y >= (level.height - globals.screen_height)) {
+        return true;
     }
-    globals.BITMAP_Y += 1; //Increase pointer
+    globals.BITMAP_Y += 1;
     return false;
 }
