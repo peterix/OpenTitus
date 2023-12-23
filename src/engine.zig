@@ -45,11 +45,13 @@ pub const c = @cImport({
     @cInclude("enemies.h");
     @cInclude("viewimage.h");
     @cInclude("audio.h");
+    @cInclude("globals_old.h");
 });
 
 const globals = @import("globals.zig");
 const sqz = @import("sqz.zig");
 const scroll = @import("scroll.zig");
+const keyboard = @import("keyboard.zig");
 
 const c_alloc = std.heap.c_allocator;
 
@@ -254,7 +256,7 @@ fn gameover(context: [*c]c.ScreenContext, level: *c.TITUS_level) void {
         player.sprite2.x += 8;
         player.sprite3.x -= 8;
     }
-    if (c.waitforbutton() < 0)
+    if (keyboard.waitforbutton() < 0)
         return;
 
     c.fadeout();
