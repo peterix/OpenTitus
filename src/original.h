@@ -33,15 +33,6 @@
 #include <stdbool.h>
 #include <stdint.h>
 
-#define SPRITECOUNT 356
-#define ANIM_PLAYER_MAX 15
-#define ANIM_PLAYER_MAX_MOKTAR 12
-#define ANIM_PLAYER_COUNT 30
-#define ORIG_ANIM_MAX 20
-#define ORIG_OBJECT_COUNT 71
-#define ORIG_NMI_COUNT 230
-#define ORIG_LEVEL_COUNT 20
-#define NMI_ANIM_TABLE_COUNT 879 //1758
 
 int initoriginal();
 uint16_t getlevelid(uint16_t levelnumber);
@@ -50,6 +41,7 @@ extern SDL_Color orig_palette_colour[16];
 extern SDL_Color orig_palette_level_colour[16];
 extern SDL_Color orig_palette_font_colour[16];
 
+#define SPRITECOUNT 356
 extern uint8_t spritewidth[SPRITECOUNT];
 extern uint8_t spriteheight[SPRITECOUNT];
 extern uint8_t spritecollwidth[SPRITECOUNT];
@@ -57,11 +49,18 @@ extern uint8_t spritecollheight[SPRITECOUNT];
 extern uint8_t spriterefwidth[SPRITECOUNT];
 extern uint8_t spriterefheight[SPRITECOUNT];
 
+#define ANIM_PLAYER_MAX 15
+#define ANIM_PLAYER_COUNT 30
 extern int16_t anim_player[ANIM_PLAYER_COUNT][ANIM_PLAYER_MAX];
+
+#define NMI_ANIM_TABLE_COUNT 879 //1758
 extern int16_t anim_enemy[NMI_ANIM_TABLE_COUNT];
+
+#define ORIG_LEVEL_COUNT 20
 extern uint8_t NMI_POWER[ORIG_LEVEL_COUNT];
 extern uint8_t LEVEL_MUSIC[ORIG_LEVEL_COUNT];
 
+#define ORIG_ANIM_MAX 20
 extern int16_t anim_zoubida[ORIG_ANIM_MAX];
 extern int16_t anim_moktar[ORIG_ANIM_MAX];
 extern int16_t anim_smoke[ORIG_ANIM_MAX];
@@ -69,6 +68,7 @@ extern int16_t COEUR_POS[ORIG_ANIM_MAX * 2];
 
 extern char leveltitle[16][41];
 
+#define ORIG_OBJECT_COUNT 71
 extern uint8_t object_maxspeedY[ORIG_OBJECT_COUNT];
 extern bool object_support[ORIG_OBJECT_COUNT]; //not support/support
 extern bool object_bounce[ORIG_OBJECT_COUNT]; //not bounce/bounce against floor + player bounces (ball, all spring, yellow stone, squeezed ball, skateboard)

@@ -100,9 +100,6 @@ int initoriginal() {
                                     {15,15,15,15,15,15,15,15,10,-2},
                                     {28,28,28,28,28,28,28,28,10,-2} };
 
-    int16_t anim_player_titus[] =     {2,2,2,1,1,1,1,2,2,2,3,3,3,3,-28};
-    int16_t anim_player_moktar[] =    {2,2,2,1,1,1,2,2,3,3,3,-11*2};
-
     int16_t anim_zoubida_data[] = {337,337,337,338,338,338,339,339,339,340,340,340,341,341,341,342,342,342,-18*2};
     int16_t anim_moktar_data[] = {343,343,343,344,344,344,345,345,345,-9*2};
     int16_t anim_smoke_data[] = {347,347,348,348,349,349,350,350,351,351,352,352,353,353,354,354,-16*2};
@@ -425,6 +422,7 @@ int initoriginal() {
             spriterefwidth[i] = tmpspriteref_titus[i * 2];
             spriterefheight[i] = tmpspriteref_titus[(i * 2) + 1];
         }
+        int16_t anim_player_titus[] =     {2,2,2,1,1,1,1,2,2,2,3,3,3,3,-28};
         for (i = 0; i < ANIM_PLAYER_MAX; i++) {
             anim_player[1][i] = anim_player_titus[i];
         }
@@ -437,6 +435,8 @@ int initoriginal() {
             spriterefwidth[i] = tmpspriteref_moktar[i * 2];
             spriterefheight[i] = tmpspriteref_moktar[(i * 2) + 1];
         }
+        #define ANIM_PLAYER_MAX_MOKTAR 12
+        int16_t anim_player_moktar[] =    {2,2,2,1,1,1,2,2,3,3,3,-11*2};
         for (i = 0; i < ANIM_PLAYER_MAX_MOKTAR; i++) {
             anim_player[1][i] = anim_player_moktar[i];
         }
