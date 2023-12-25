@@ -235,8 +235,7 @@ fn huffman_decode(input: []u8, output: []u8) !void {
 
     for (2 + treesize..input.len) |i| {
         var bit: u8 = 128;
-        while (bit >= 1) {
-            defer bit >>= 1;
+        while (bit >= 1) : (bit >>= 1) {
             if (input[i] & bit != 0)
                 node += 1;
             var bintree = (@as(u16, input[3 + node * 2]) << 8) + @as(u16, input[2 + node * 2]);

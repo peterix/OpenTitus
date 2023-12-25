@@ -105,8 +105,7 @@ pub fn playtitus(firstlevel: u16) c_int {
     defer c.freeobjects(&objects, object_count);
 
     level.levelnumber = firstlevel;
-    while (level.levelnumber < c.levelcount) {
-        defer level.levelnumber += 1;
+    while (level.levelnumber < c.levelcount) : (level.levelnumber += 1) {
         level.levelid = c.getlevelid(level.levelnumber);
         var leveldata = sqz.unSQZ2(&c.levelfiles[@as(usize, @intCast(level.levelnumber))], c_alloc) catch {
             std.debug.print("Failed to uncompress level file: {}\n", .{level.levelnumber});
