@@ -53,5 +53,3 @@ extern uint16_t levelcount;
 extern int devmode;
 extern int videomode;
 extern enum GameType game;
-
-extern char levelcode[16][5];

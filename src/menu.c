@@ -38,6 +38,7 @@
 #include "audio.h"
 #include "globals_old.h"
 #include "keyboard.h"
+#include "levelcodes.h"
 
 int enterpassword();
 
@@ -287,14 +288,13 @@ int viewmenu(char * menufile, int menuformat) {
 int enterpassword(){
     int retval;
     char code[] = "____";
-    int i;
+    int i = 0;
 
     window_clear(NULL);
 
     SDL_Print_Text("CODE", 111, 80);
 
-    SDL_StartTextInput();
-    for (i = 0; i < 4; ) {
+    while (i < 4) {
         SDL_Event event;
         while(SDL_PollEvent(&event)) { //Check all events
             if (event.type == SDL_QUIT) {
@@ -302,6 +302,63 @@ int enterpassword(){
             }
 
             if (event.type == SDL_KEYDOWN) {
+                switch (event.key.keysym.scancode) {
+                    case SDL_SCANCODE_0:
+                        code[i++] = '0';
+                        break;
+                    case SDL_SCANCODE_1:
+                        code[i++] = '1';
+                        break;
+                    case SDL_SCANCODE_2:
+                        code[i++] = '2';
+                        break;
+                    case SDL_SCANCODE_3:
+                        code[i++] = '3';
+                        break;
+                    case SDL_SCANCODE_4:
+                        code[i++] = '4';
+                        break;
+                    case SDL_SCANCODE_5:
+                        code[i++] = '5';
+                        break;
+                    case SDL_SCANCODE_6:
+                        code[i++] = '6';
+                        break;
+                    case SDL_SCANCODE_7:
+                        code[i++] = '7';
+                        break;
+                    case SDL_SCANCODE_8:
+                        code[i++] = '8';
+                        break;
+                    case SDL_SCANCODE_9:
+                        code[i++] = '9';
+                        break;
+                    case SDL_SCANCODE_A:
+                        code[i++] = 'A';
+                        break;
+                    case SDL_SCANCODE_B:
+                        code[i++] = 'B';
+                        break;
+                    case SDL_SCANCODE_C:
+                        code[i++] = 'C';
+                        break;
+                    case SDL_SCANCODE_D:
+                        code[i++] = 'D';
+                        break;
+                    case SDL_SCANCODE_E:
+                        code[i++] = 'E';
+                        break;
+                    case SDL_SCANCODE_F:
+                        code[i++] = 'F';
+                        break;
+                    case SDL_SCANCODE_BACKSPACE:
+                        if(i > 0) {
+                            code[i--] = '\0';
+                        }
+                        break;
+                    default:
+                        break;
+                }
                 if (event.key.keysym.scancode == SDL_SCANCODE_ESCAPE) {
                     return (-1);
                 }
@@ -318,22 +375,20 @@ int enterpassword(){
         SDL_Delay(1);
     }
 
-    for (i = 0; i < levelcount; i++) {
-        if (strcmp (code, levelcode[i]) == 0) {
-            SDL_Print_Text("LEVEL", 103, 104);
-            sprintf(code, "%d", i + 1);
-            SDL_Print_Text(code, 199 - 8 * strlen(code), 104);
-            window_render();
-            retval = waitforbutton();
+    if ((i = levelForCode(code)) != -1) {
+        SDL_Print_Text("LEVEL", 103, 104);
+        sprintf(code, "%d", i + 1);
+        SDL_Print_Text(code, 199 - 8 * strlen(code), 104);
+        window_render();
+        retval = waitforbutton();
 
-            if (retval < 0)
-                return retval;
+        if (retval < 0)
+            return retval;
 
-            window_clear(NULL);
-            window_render();
+        window_clear(NULL);
+        window_render();
 
-            return (i + 1);
-        }
+        return (i + 1);
     }
 
     SDL_Print_Text("!  WRONG CODE  !", 87, 104);

@@ -60,7 +60,6 @@ fn build_game(b: *std.Build, name: []const u8, target: CrossTarget, optimize: st
 
     exe.addCSourceFiles(&.{
         "src/audio.c",
-        "src/window.c",
         "src/draw.c",
         "src/enemies.c",
         "src/elevators.c",

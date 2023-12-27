@@ -43,6 +43,8 @@ const c = @cImport({
 
 const globals = @import("src/globals.zig");
 const engine = @import("src/engine.zig");
+const window = @import("src/window.zig");
+const levelcodes = @import("src/levelcodes.zig");
 
 const span = std.mem.span;
 
@@ -62,10 +64,9 @@ fn init() c_int {
         return c.TITUS_ERROR_SDL_ERROR;
     }
 
-    retval = c.window_init();
-    if (retval != 0) {
-        return retval;
-    }
+    window.window_init() catch {
+        return c.TITUS_ERROR_SDL_ERROR;
+    };
 
     retval = c.audio_init();
     if (retval != 0) {
@@ -77,10 +78,7 @@ fn init() c_int {
         return retval;
     }
 
-    retval = c.initcodes();
-    if (retval != 0) {
-        return retval;
-    }
+    levelcodes.initCodes();
 
     retval = c.loadfonts();
     if (retval != 0) {

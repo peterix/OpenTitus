@@ -56,8 +56,6 @@ int devmode;
 // along with music on/off and volume
 int videomode;
 
-char levelcode[16][5];
-
 int readconfig(const char *configfile) {
     char line[300], tmp[256];
     int retval, i, j, tmpcount = 0;
@@ -192,24 +190,3 @@ int readconfig(const char *configfile) {
     return 0;
 }
 
-// FIXME: this should be unique to the installation. Or replaced it with a system of unlocks.
-// If it's a system of unlocks, maybe just entering the level should be enough.
-int initcodes() {
-    strcpy (levelcode[0], "EFE8");
-    strcpy (levelcode[1], "5165");
-    strcpy (levelcode[2], "67D4");
-    strcpy (levelcode[3], "2BDA");
-    strcpy (levelcode[4], "11E5");
-    strcpy (levelcode[5], "86EE");
-    strcpy (levelcode[6], "4275");
-    strcpy (levelcode[7], "A0B9");
-    strcpy (levelcode[8], "501C");
-    strcpy (levelcode[9], "E9ED");
-    strcpy (levelcode[10], "D4E6");
-    strcpy (levelcode[11], "A531");
-    strcpy (levelcode[12], "CE96");
-    strcpy (levelcode[13], "B1A4");
-    strcpy (levelcode[14], "EBEA");
-    strcpy (levelcode[15], "3B9C");
-    return 0;
-}

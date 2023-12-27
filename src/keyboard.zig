@@ -26,6 +26,7 @@
 const std = @import("std");
 const globals = @import("globals.zig");
 const engine = @import("engine.zig");
+const window = @import("window.zig");
 
 pub export fn waitforbutton() c_int {
     var event: engine.c.SDL_Event = undefined;
@@ -45,13 +46,13 @@ pub export fn waitforbutton() c_int {
                 if (event.key.keysym.scancode == engine.c.KEY_MUSIC) {
                     _ = engine.c.music_toggle();
                 } else if (event.key.keysym.scancode == engine.c.KEY_FULLSCREEN) {
-                    engine.c.window_toggle_fullscreen();
+                    window.window_toggle_fullscreen();
                 }
             }
             if (event.type == engine.c.SDL_WINDOWEVENT) {
                 switch (event.window.event) {
                     engine.c.SDL_WINDOWEVENT_RESIZED, engine.c.SDL_WINDOWEVENT_SIZE_CHANGED, engine.c.SDL_WINDOWEVENT_MAXIMIZED, engine.c.SDL_WINDOWEVENT_RESTORED => {
-                        engine.c.window_render();
+                        window.window_render();
                     },
                     else => break,
                 }

@@ -29,7 +29,6 @@
 #pragma once
 #include "SDL2/SDL.h"
 
-int window_init();
 void window_toggle_fullscreen();
 void window_render();
 void window_clear(const SDL_Rect * rect);
