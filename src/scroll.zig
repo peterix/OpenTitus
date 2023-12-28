@@ -24,9 +24,10 @@
 //
 
 const std = @import("std");
-const engine = @import("engine.zig");
-const globals = @import("globals.zig");
 const assert = std.debug.assert;
+
+const c = @import("c.zig");
+const globals = @import("globals.zig");
 
 /// Easign function for the camera.
 ///
@@ -50,7 +51,7 @@ const CAMERA_RANGE = CAMERA_DISTANCE * 2;
 // TODO: put this on the player struct
 var easing_value: i16 = 0;
 
-fn X_ADJUST(level: *engine.c.TITUS_level) void {
+fn X_ADJUST(level: *c.TITUS_level) void {
     var player = &(level.player);
     globals.g_scroll_x = true;
 
@@ -108,7 +109,7 @@ fn X_ADJUST(level: *engine.c.TITUS_level) void {
     }
 }
 
-fn Y_ADJUST(level: *engine.c.TITUS_level) void {
+fn Y_ADJUST(level: *c.TITUS_level) void {
     var player = &(level.player);
     if (player.sprite.speedY == 0) {
         globals.g_scroll_y = false;
@@ -181,7 +182,7 @@ pub export fn animate_tiles() void {
     }
 }
 
-pub export fn scroll(level: *engine.c.TITUS_level) void {
+pub export fn scroll(level: *c.TITUS_level) void {
     animate_tiles();
     //Scroll
     if (!globals.NOSCROLL_FLAG) {
@@ -190,7 +191,7 @@ pub export fn scroll(level: *engine.c.TITUS_level) void {
     }
 }
 
-pub export fn scroll_left(level: *engine.c.TITUS_level) bool {
+pub export fn scroll_left(level: *c.TITUS_level) bool {
     _ = level;
     if (globals.BITMAP_X == 0) {
         return true;
@@ -199,7 +200,7 @@ pub export fn scroll_left(level: *engine.c.TITUS_level) bool {
     return false;
 }
 
-pub export fn scroll_right(level: *engine.c.TITUS_level) bool {
+pub export fn scroll_right(level: *c.TITUS_level) bool {
     var maxX: i16 = if (globals.XLIMIT_BREACHED) level.width - globals.screen_width else globals.XLIMIT;
     if (globals.BITMAP_X >= maxX) {
         return true;
@@ -208,7 +209,7 @@ pub export fn scroll_right(level: *engine.c.TITUS_level) bool {
     return false;
 }
 
-pub export fn scroll_up(level: *engine.c.TITUS_level) bool {
+pub export fn scroll_up(level: *c.TITUS_level) bool {
     _ = level;
     if (globals.BITMAP_Y == 0) {
         return true;
@@ -217,7 +218,7 @@ pub export fn scroll_up(level: *engine.c.TITUS_level) bool {
     return false;
 }
 
-pub export fn scroll_down(level: *engine.c.TITUS_level) bool {
+pub export fn scroll_down(level: *c.TITUS_level) bool {
     if (globals.BITMAP_Y >= (level.height - globals.screen_height)) {
         return true;
     }

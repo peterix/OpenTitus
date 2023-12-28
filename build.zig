@@ -49,7 +49,7 @@ fn build_opl(b: *std.Build, target: CrossTarget, optimize: std.builtin.Mode) *St
 fn build_game(b: *std.Build, name: []const u8, target: CrossTarget, optimize: std.builtin.Mode, opl: *Step.Compile) *Step.Compile {
     const exe = b.addExecutable(.{
         .name = name,
-        .root_source_file = .{ .path = "opentitus.zig" },
+        .root_source_file = .{ .path = "src/main.zig" },
         .target = target,
         .optimize = optimize,
     });

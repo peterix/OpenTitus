@@ -31,8 +31,6 @@
 
 int readconfig(const char *configfile);
 
-int initcodes();
-
 enum GameType {
     Titus,
     Moktar

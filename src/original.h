@@ -34,7 +34,7 @@
 #include <stdint.h>
 
 
-int initoriginal();
+void initoriginal();
 uint16_t getlevelid(uint16_t levelnumber);
 
 extern SDL_Color orig_palette_colour[16];

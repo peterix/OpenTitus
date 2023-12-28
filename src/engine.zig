@@ -25,33 +25,11 @@
 
 const std = @import("std");
 
-pub const c = @cImport({
-    @cInclude("SDL2/SDL.h");
-    @cInclude("sqz.h");
-    @cInclude("settings.h");
-    @cInclude("fonts.h");
-    @cInclude("window.h");
-    @cInclude("tituserror.h");
-    @cInclude("original.h");
-    @cInclude("sprites.h");
-    @cInclude("level.h");
-    @cInclude("keyboard.h");
-    @cInclude("player.h");
-    @cInclude("draw.h");
-    @cInclude("reset.h");
-    @cInclude("gates.h");
-    @cInclude("elevators.h");
-    @cInclude("objects.h");
-    @cInclude("enemies.h");
-    @cInclude("viewimage.h");
-    @cInclude("audio.h");
-    @cInclude("globals_old.h");
-});
-
 const globals = @import("globals.zig");
 const sqz = @import("sqz.zig");
 const scroll = @import("scroll.zig");
 const keyboard = @import("keyboard.zig");
+const c = @import("c.zig");
 
 const c_alloc = std.heap.c_allocator;
 

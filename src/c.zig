@@ -1,0 +1,23 @@
+pub usingnamespace @cImport({
+    @cInclude("SDL2/SDL.h");
+    @cInclude("sqz.h");
+    @cInclude("settings.h");
+    @cInclude("fonts.h");
+    @cInclude("window.h");
+    @cInclude("tituserror.h");
+    @cInclude("original.h");
+    @cInclude("sprites.h");
+    @cInclude("level.h");
+    @cInclude("keyboard.h");
+    @cInclude("player.h");
+    @cInclude("draw.h");
+    @cInclude("reset.h");
+    @cInclude("menu.h");
+    @cInclude("gates.h");
+    @cInclude("elevators.h");
+    @cInclude("objects.h");
+    @cInclude("enemies.h");
+    @cInclude("viewimage.h");
+    @cInclude("audio.h");
+    @cInclude("globals_old.h");
+});

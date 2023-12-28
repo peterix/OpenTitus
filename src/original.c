@@ -65,7 +65,7 @@ bool object_droptobottom[ORIG_OBJECT_COUNT]; //on drop, lands on ground/continue
 bool object_no_damage[ORIG_OBJECT_COUNT]; //weapon/not weapon(cage)
 
 
-int initoriginal() {
+void initoriginal() {
     int i, j;
 
     //anim_player --> ACTION
@@ -676,8 +676,6 @@ int initoriginal() {
         strcpy (leveltitle[14], "           DIRECTION BARBES");
         strcpy (leveltitle[15], "              BIG BISOUS");
     }
-
-    return 0;
 }
 
 uint16_t getlevelid(uint16_t levelnumber) {

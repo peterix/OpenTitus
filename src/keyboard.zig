@@ -24,41 +24,42 @@
 //
 
 const std = @import("std");
+
+const c = @import("c.zig");
 const globals = @import("globals.zig");
-const engine = @import("engine.zig");
 const window = @import("window.zig");
 
 pub export fn waitforbutton() c_int {
-    var event: engine.c.SDL_Event = undefined;
+    var event: c.SDL_Event = undefined;
     var waiting: c_int = 1;
     while (waiting > 0) {
-        if (engine.c.SDL_PollEvent(&event) != 0) {
-            if (event.type == engine.c.SDL_QUIT)
+        if (c.SDL_PollEvent(&event) != 0) {
+            if (event.type == c.SDL_QUIT)
                 waiting = -1;
 
-            if (event.type == engine.c.SDL_KEYDOWN) {
-                if (event.key.keysym.scancode == engine.c.KEY_RETURN or event.key.keysym.scancode == engine.c.KEY_ENTER or event.key.keysym.scancode == engine.c.KEY_SPACE)
+            if (event.type == c.SDL_KEYDOWN) {
+                if (event.key.keysym.scancode == c.KEY_RETURN or event.key.keysym.scancode == c.KEY_ENTER or event.key.keysym.scancode == c.KEY_SPACE)
                     waiting = 0;
 
-                if (event.key.keysym.scancode == engine.c.SDL_SCANCODE_ESCAPE)
+                if (event.key.keysym.scancode == c.SDL_SCANCODE_ESCAPE)
                     waiting = -1;
 
-                if (event.key.keysym.scancode == engine.c.KEY_MUSIC) {
-                    _ = engine.c.music_toggle();
-                } else if (event.key.keysym.scancode == engine.c.KEY_FULLSCREEN) {
+                if (event.key.keysym.scancode == c.KEY_MUSIC) {
+                    _ = c.music_toggle();
+                } else if (event.key.keysym.scancode == c.KEY_FULLSCREEN) {
                     window.window_toggle_fullscreen();
                 }
             }
-            if (event.type == engine.c.SDL_WINDOWEVENT) {
+            if (event.type == c.SDL_WINDOWEVENT) {
                 switch (event.window.event) {
-                    engine.c.SDL_WINDOWEVENT_RESIZED, engine.c.SDL_WINDOWEVENT_SIZE_CHANGED, engine.c.SDL_WINDOWEVENT_MAXIMIZED, engine.c.SDL_WINDOWEVENT_RESTORED => {
+                    c.SDL_WINDOWEVENT_RESIZED, c.SDL_WINDOWEVENT_SIZE_CHANGED, c.SDL_WINDOWEVENT_MAXIMIZED, c.SDL_WINDOWEVENT_RESTORED => {
                         window.window_render();
                     },
                     else => break,
                 }
             }
         }
-        engine.c.SDL_Delay(1);
+        c.SDL_Delay(1);
     }
     return waiting;
 }

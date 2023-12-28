@@ -24,10 +24,9 @@
 //
 
 const std = @import("std");
-
-const engine = @import("engine.zig");
-
 const Allocator = std.mem.Allocator;
+
+const c = @import("c.zig");
 
 const LZW_CLEAR_CODE = 0x100;
 const LZW_END_CODE = 0x101;
@@ -46,13 +45,13 @@ pub export fn unSQZ(inputfile: [*c]u8, output: [*c][*c]u8) c_int {
     var unsqueezed = unSQZ2(inputfile, std.heap.raw_c_allocator) catch |err| {
         switch (err) {
             error.OutOfMemory => {
-                return engine.c.TITUS_ERROR_NOT_ENOUGH_MEMORY;
+                return c.TITUS_ERROR_NOT_ENOUGH_MEMORY;
             },
             error.InvalidFile => {
-                return engine.c.TITUS_ERROR_INVALID_FILE;
+                return c.TITUS_ERROR_INVALID_FILE;
             },
             else => {
-                return engine.c.TITUS_ERROR_OTHER;
+                return c.TITUS_ERROR_OTHER;
             },
         }
     };
