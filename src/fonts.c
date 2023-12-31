@@ -31,7 +31,6 @@
 #include <string.h>
 #include "SDL2/SDL.h"
 #include "sqz.h"
-#include "settings.h"
 #include "sprites.h"
 #include "fonts.h"
 #include "window.h"
@@ -46,7 +45,7 @@ SDL_Surface *font_undefined; //Pointer
 SDL_Surface * SDL_LoadChar(unsigned char * fontdata, int offset, SDL_PixelFormat * pixelformat);
 void freesubfont(TITUS_font *f_sub);
 
-int loadfonts(void) {
+int loadfonts(const char * fontfile) {
     int i, retval;
     SDL_Surface *surface = NULL;
     char *tmpchar;

@@ -30,10 +30,11 @@ const sqz = @import("sqz.zig");
 const scroll = @import("scroll.zig");
 const keyboard = @import("keyboard.zig");
 const c = @import("c.zig");
+const game = @import("game.zig");
 
 const c_alloc = std.heap.c_allocator;
 
-pub fn playtitus(firstlevel: u16) c_int {
+pub fn playtitus(constants: *const game.TITUS_constants, firstlevel: u16) c_int {
     var context: c.ScreenContext = undefined;
     c.screencontext_reset(&context);
 
@@ -55,8 +56,8 @@ pub fn playtitus(firstlevel: u16) c_int {
     }
     defer c.freepixelformat(&(level.pixelformat));
 
-    var spritedata = sqz.unSQZ2(&c.spritefile, c_alloc) catch {
-        std.debug.print("Failed to uncompress sprites file: {s}\n", .{c.spritefile});
+    var spritedata = sqz.unSQZ2(constants.*.spritefile, c_alloc) catch {
+        std.debug.print("Failed to uncompress sprites file: {s}\n", .{constants.*.spritefile});
         return -1;
     };
 
@@ -83,9 +84,9 @@ pub fn playtitus(firstlevel: u16) c_int {
     defer c.freeobjects(&objects, object_count);
 
     level.levelnumber = firstlevel;
-    while (level.levelnumber < c.levelcount) : (level.levelnumber += 1) {
+    while (level.levelnumber < constants.*.levelcount) : (level.levelnumber += 1) {
         level.levelid = c.getlevelid(level.levelnumber);
-        var leveldata = sqz.unSQZ2(&c.levelfiles[@as(usize, @intCast(level.levelnumber))], c_alloc) catch {
+        var leveldata = sqz.unSQZ2(constants.*.levelfiles[@as(usize, @intCast(level.levelnumber))], c_alloc) catch {
             std.debug.print("Failed to uncompress level file: {}\n", .{level.levelnumber});
             return 1;
         };
@@ -146,7 +147,7 @@ pub fn playtitus(firstlevel: u16) c_int {
         }
     }
     if (c.game == c.Titus) {
-        retval = c.viewimage(&c.titusfinishfile, c.titusfinishformat, 1, 0);
+        retval = c.viewimage(constants.*.titusfinishfile, constants.*.titusfinishformat, 1, 0);
         if (retval < 0)
             return retval;
     }

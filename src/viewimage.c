@@ -38,7 +38,7 @@
 
 #include "audio.h"
 
-int viewimage(char * imagefile, int imageformat, int displayformat, int delay) {
+int viewimage(const char * imagefile, int imageformat, int displayformat, int delay) {
     SDL_Surface *surface;
     SDL_Palette *palette;
     char *tmpchar;

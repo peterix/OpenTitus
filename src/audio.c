@@ -20,7 +20,7 @@
 #include <SDL2/SDL_audio.h>
 #include "audio.h"
 #include "globals_old.h"
-#include "settings.h"
+#include "game.h"
 #include "tituserror.h"
 #include "opl/opl.h"
 #include <assert.h>

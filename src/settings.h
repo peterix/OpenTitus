@@ -31,23 +31,5 @@
 
 int readconfig(const char *configfile);
 
-enum GameType {
-    Titus,
-    Moktar
-};
-
-extern char spritefile[256];
-extern char levelfiles[16][256]; //16 levels in moktar, 15 levels in titus
-extern char tituslogofile[256];
-extern int tituslogoformat;
-extern char titusintrofile[256];
-extern int titusintroformat;
-extern char titusmenufile[256];
-extern int titusmenuformat;
-extern char titusfinishfile[256];
-extern int titusfinishformat;
-extern char fontfile[256];
-extern uint16_t levelcount;
 extern int devmode;
 extern int videomode;
-extern enum GameType game;

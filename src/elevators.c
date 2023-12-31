@@ -36,7 +36,7 @@
 #include "globals_old.h"
 #include "elevators.h"
 
-void MTSBR(TITUS_elevator *elevator) {
+static void MTSBR(TITUS_elevator *elevator) {
     elevator->counter++;
     if (elevator->counter >= elevator->range) {
         elevator->counter = 0;

@@ -31,24 +31,6 @@
 #include <string.h>
 #include "settings.h"
 
-// FIXME: hardcode to moktar and titus, move to 'original.c'
-char spritefile[256];
-char levelfiles[16][256]; //16 levels in moktar, 15 levels in titus
-char tituslogofile[256];
-int tituslogoformat;
-char titusintrofile[256];
-int titusintroformat;
-char titusmenufile[256];
-int titusmenuformat;
-char titusfinishfile[256];
-int titusfinishformat;
-char fontfile[256];
-uint16_t levelcount;
-int resheight;
-
-// FIXME: deduce this from the files found next to the binary?
-enum GameType game;
-
 // FIXME: make this a build option.
 int devmode;
 
@@ -58,9 +40,7 @@ int videomode;
 
 int readconfig(const char *configfile) {
     char line[300], tmp[256];
-    int retval, i, j, tmpcount = 0;
-    levelcount = 0;
-    spritefile[0] = 0;
+    int retval, i, j = 0;
     devmode = 0;
     FILE *ifp = fopen (configfile, "rt");
     if (ifp == NULL) {
@@ -76,117 +56,15 @@ int readconfig(const char *configfile) {
         if ((line[0] == 0) || (tmp[0] == *"#"))
             continue;
 
-        else if (strcmp (tmp, "sprites") == 0)
-            sscanf (line, "%*s %255s", spritefile);
-
-        else if (strcmp (tmp, "levelcount") == 0) {
-            if (tmpcount > 0) {
-                printf("Error: You may only specify one 'levelcount', check config file: %s!\n", configfile);
-                fclose(ifp);
-                return(-1);
-            }
-            sscanf (line, "%*s %hu", &levelcount);
-            if ((levelcount < 1) || (levelcount > 16)) {
-                printf("Error: 'levelcount' (%hu) must be between 1 and 16, check config file: %s!\n", levelcount, configfile);
-                fclose(ifp);
-                return(-1);
-            }
-        }
-
-        else if (strcmp (tmp, "level") == 0) {
-            if (levelcount == 0) {
-                printf("Error: 'levelcount' must be set before level files, check config file: %s!\n", configfile);
-                fclose(ifp);
-                return(-1);
-            }
-            if (sscanf (line, "%*s %2d", &i) <= 0) {
-                printf("Error: Invalid numbering on the individual levels, check config file: %s!\n", configfile);
-                fclose(ifp);
-                return(-1);
-            }
-            if ((retval = sscanf (line, "%*s %*2d %255s", tmp)) <= 0) {
-                printf("Error: You have not specified level file number %d, check config file: %s!\n", i, configfile);
-                fclose(ifp);
-                return(-1);
-            }
-            if ((i < 1) || (i > levelcount) || (tmpcount >= levelcount)) {
-                printf("Error: Invalid numbering on the individual levels, check config file: %s!\n", configfile);
-                fclose(ifp);
-                return(-1);
-            }
-            strcpy (levelfiles[i - 1], tmp);
-            tmpcount++;
-        } else if (strcmp (tmp, "devmode") == 0)
+        if (strcmp (tmp, "devmode") == 0)
             sscanf (line, "%*s %255d", &devmode);
         else if (strcmp (tmp, "videomode") == 0)
             sscanf (line, "%*s %255d", &videomode);
-        else if (strcmp (tmp, "game") == 0) {
-            sscanf (line, "%*s %255d", (int *)&game);
-            switch(game) {
-                case Moktar:
-                case Titus:
-                    break;
-                default: {
-                    printf("Error: You have specified invalid game type: %d, check config file: %s!\n", game, configfile);
-                    fclose(ifp);
-                    return(-1);
-                }
-            }
-        }
-        else if (strcmp (tmp, "logo") == 0)
-            sscanf (line, "%*s %255s", tituslogofile);
-        else if (strcmp (tmp, "logoformat") == 0)
-            sscanf (line, "%*s %255d", &tituslogoformat);
-        else if (strcmp (tmp, "intro") == 0)
-            sscanf (line, "%*s %255s", titusintrofile);
-        else if (strcmp (tmp, "introformat") == 0)
-            sscanf (line, "%*s %255d", &titusintroformat);
-        else if (strcmp (tmp, "menu") == 0)
-            sscanf (line, "%*s %255s", titusmenufile);
-        else if (strcmp (tmp, "menuformat") == 0)
-            sscanf (line, "%*s %255d", &titusmenuformat);
-        else if (strcmp (tmp, "finish") == 0)
-            sscanf (line, "%*s %255s", titusfinishfile);
-        else if (strcmp (tmp, "finishformat") == 0)
-            sscanf (line, "%*s %255d", &titusfinishformat);
-        else if (strcmp (tmp, "font") == 0)
-            sscanf (line, "%*s %255s", fontfile);
         else
             printf("Warning: undefined command '%s' in titus.conf\n", tmp);
 
     }
     fclose(ifp);
-
-    if (tmpcount == 0) { // No levels
-        printf("Error: You must specify at least one level, check config file: %s!\n", configfile);
-        return(-1);
-    }
-
-    if (tmpcount < levelcount) { // No levels
-        printf("Error: 'levelcount' (%d) and the number of specified levels (%d) does not match, check config file: %s!\n", levelcount, tmpcount, configfile);
-        return(-1);
-    }
-
-    for (i = 1; i <= levelcount; i++) {
-        if (levelfiles[i - 1][0] == 0) {
-            fprintf(stderr, "Error: You have not specified level file number %d, check config file: %s!\n", i, configfile);
-            return(-1);
-        }
-        if ((ifp = fopen (levelfiles[i - 1], "r")) != NULL )
-            fclose(ifp);
-        else {
-            fprintf(stderr, "Error: Level file number %d (%s) does not exist, check config file: %s!\n", i, levelfiles[i - 1], configfile);
-            return(-1);
-        }
-    }
-
-    if ((ifp = fopen (spritefile, "r")) != NULL )
-        fclose(ifp);
-    else {
-        fprintf(stderr, "Error: Sprite file does not exist, check config file: %s!\n", configfile);
-        return(-1);
-    }
-
     return 0;
 }
 

@@ -31,7 +31,7 @@
 #include <string.h>
 #include "SDL2/SDL.h"
 #include "original.h"
-#include "settings.h"
+#include "game.h"
 #include <assert.h>
 
 SDL_Color orig_palette_colour[16];

@@ -34,15 +34,15 @@
 #include "window.h"
 #include "menu.h"
 #include "fonts.h"
-#include "settings.h"
 #include "audio.h"
 #include "globals_old.h"
 #include "keyboard.h"
 #include "levelcodes.h"
+#include "game.h"
 
-int enterpassword();
+int enterpassword(int levelcount);
 
-int viewmenu(char * menufile, int menuformat) {
+int viewmenu(const char * menufile, int menuformat, int levelcount) {
     SDL_Surface *surface;
     SDL_Palette *palette;
     char *tmpchar;
@@ -224,14 +224,13 @@ int viewmenu(char * menufile, int menuformat) {
         break;
 
     case 1: //Password
-        retval = enterpassword();
+        retval = enterpassword(levelcount);
 
         if (retval < 0)
             return retval;
 
         if (retval > 0) {
-            if (retval <= levelcount)
-                curlevel = retval;
+            curlevel = retval;
         }
         selection = 0;
         menuloop = 1;
@@ -285,7 +284,7 @@ int viewmenu(char * menufile, int menuformat) {
 
 }
 
-int enterpassword(){
+int enterpassword(int levelcount){
     int retval;
     char code[] = "____";
     int i = 0;
@@ -375,7 +374,8 @@ int enterpassword(){
         SDL_Delay(1);
     }
 
-    if ((i = levelForCode(code)) != -1) {
+    i = levelForCode(code);
+    if (i != -1 && i < levelcount) {
         SDL_Print_Text("LEVEL", 103, 104);
         sprintf(code, "%d", i + 1);
         SDL_Print_Text(code, 199 - 8 * strlen(code), 104);

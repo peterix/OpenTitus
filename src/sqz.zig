@@ -59,7 +59,7 @@ pub export fn unSQZ(inputfile: [*c]u8, output: [*c][*c]u8) c_int {
     return 0;
 }
 
-pub fn unSQZ2(inputfile: [*c]u8, allocator: Allocator) ![]u8 {
+pub fn unSQZ2(inputfile: [*c]const u8, allocator: Allocator) ![]u8 {
     var i: c_int = 0;
     _ = i;
 

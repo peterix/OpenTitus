@@ -20,4 +20,5 @@ pub usingnamespace @cImport({
     @cInclude("viewimage.h");
     @cInclude("audio.h");
     @cInclude("globals_old.h");
+    @cInclude("game.h");
 });

@@ -56,7 +56,7 @@ struct _TITUS_font {
 extern TITUS_font *font; //Malloced
 extern SDL_Surface *font_undefined; //Pointer
 
-int loadfonts(void);
+int loadfonts(const char * fontfile);
 void freefonts(void);
 
 void SDL_Print_Text(const char *text, int x, int y);

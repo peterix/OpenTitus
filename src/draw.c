@@ -42,7 +42,7 @@
 #include "window.h"
 #include "sprites.h"
 #include "draw.h"
-#include "settings.h"
+#include "game.h"
 #include "common.h"
 #include "tituserror.h"
 #include "original.h"

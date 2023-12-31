@@ -36,6 +36,8 @@
 #include "draw.h"
 #include "original.h"
 #include "common.h"
+#include "game.h"
+// FIXME: remove
 #include "settings.h"
 #include "audio.h"
 #include "objects.h"
