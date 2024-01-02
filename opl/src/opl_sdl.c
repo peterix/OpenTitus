@@ -33,6 +33,8 @@
 
 #define MAX_SOUND_SLICE_TIME 100 /* ms */
 
+uint8_t OPL_SDL_VOLUME = SDL_MIX_MAXVOLUME;
+
 typedef struct
 {
     unsigned int rate;        // Number of times the timer is advanced per sec.
@@ -164,8 +166,7 @@ static void FillBuffer(uint8_t *buffer, unsigned int nsamples)
     // OPL output is generated into temporary buffer and then mixed
     // (to avoid overflows etc.)
     OPL3_GenerateStream(&opl_chip, (Bit16s *) mix_buffer, nsamples);
-    SDL_MixAudioFormat(buffer, mix_buffer, AUDIO_S16SYS, nsamples * 4,
-                       SDL_MIX_MAXVOLUME);
+    SDL_MixAudioFormat(buffer, mix_buffer, AUDIO_S16SYS, nsamples * 4, OPL_SDL_VOLUME);
 }
 
 // Callback function to fill a new sound buffer:

@@ -31,7 +31,7 @@
 #include "SDL2/SDL.h"
 #include "viewimage.h"
 #include "sqz.h"
-#include "settings.h"
+#include "game.h"
 #include "window.h"
 #include "globals_old.h"
 #include "keyboard.h"

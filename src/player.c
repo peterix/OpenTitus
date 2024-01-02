@@ -37,8 +37,6 @@
 #include "original.h"
 #include "common.h"
 #include "game.h"
-// FIXME: remove
-#include "settings.h"
 #include "audio.h"
 #include "objects.h"
 #include "sprites.h"
@@ -99,21 +97,21 @@ int move_player(ScreenContext *context, TITUS_level *level) {
         if (event.type == SDL_QUIT) {
             return TITUS_ERROR_QUIT;
         } else if (event.type == SDL_KEYDOWN) {
-            if (event.key.keysym.scancode == KEY_GODMODE && (devmode == 1)) {
+            if (event.key.keysym.scancode == KEY_GODMODE && settings.devmode) {
                 if (GODMODE) {
                     GODMODE = false;
                     NOCLIP = false;
                 } else {
                     GODMODE = true;
                 }
-            } else if (event.key.keysym.scancode == KEY_NOCLIP && (devmode == 1)) {
+            } else if (event.key.keysym.scancode == KEY_NOCLIP && settings.devmode) {
                 if (NOCLIP) {
                     NOCLIP = false;
                 } else {
                     NOCLIP = true;
                     GODMODE = true;
                 }
-            } else if (event.key.keysym.scancode == KEY_DEBUG && (devmode == 1)) {
+            } else if (event.key.keysym.scancode == KEY_DEBUG && settings.devmode) {
                 DISPLAYLOOPTIME = !DISPLAYLOOPTIME;
             } else if (event.key.keysym.scancode == KEY_MUSIC) {
                 music_toggle();
@@ -127,7 +125,7 @@ int move_player(ScreenContext *context, TITUS_level *level) {
     if (keystate[KEY_ESC]) {
         return TITUS_ERROR_QUIT;
     }
-    if(devmode == true) {
+    if(settings.devmode) {
         if (keystate[KEY_F1] && (RESETLEVEL_FLAG == 0)) { //F1 = suicide
             CASE_DEAD_IM(level);
             RESETLEVEL_FLAG--;

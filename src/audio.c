@@ -85,13 +85,14 @@ typedef struct {
     ADLIB_DATA aad;
 } SDL_PLAYER;
 
-static bool music_on = true;
 uint8_t last_song;
 uint16_t seg_reduction;
 
 bool sfx_on;
 uint16_t sfx_time;
 static int sfx_init();
+
+extern uint8_t OPL_SDL_VOLUME;
 
 SDL_PLAYER sdl_player_data;
 
@@ -385,7 +386,7 @@ static void all_vox_zero()
 
 void TimerCallback(void *data)
 {
-    if (!music_on) {
+    if (!settings.music) {
         return;
     }
     SDL_PLAYER    *sdlp = (SDL_PLAYER *)data;
@@ -400,9 +401,6 @@ void TimerCallback(void *data)
 }
 
 int audio_init(){
-    // TODO: add it as a setting
-    music_on = true;
-
     last_song = 0;
     int in_len;
     FILE *ifp;
@@ -458,6 +456,7 @@ int audio_init(){
     sfx_init();
 
     OPL_SetCallback(0, TimerCallback, &sdl_player_data);
+    OPL_SDL_VOLUME = settings.volume;
 
     return 0;
 }
@@ -575,17 +574,17 @@ void music_select_song(int song_number) {
 }
 
 bool music_toggle() {
-    music_on = !music_on;
-    if(music_on) {
+    settings.music = !settings.music;
+    if(settings.music) {
         OPL_SetCallback(0, TimerCallback, &sdl_player_data);
     }
-    return music_on;
+    return settings.music;
 }
 
 void music_wait_to_finish() {
     SDL_Event event;
     bool waiting = true;
-    if (!music_on) {
+    if (!settings.music) {
         return;
     }
     do {
@@ -613,7 +612,7 @@ void music_wait_to_finish() {
 }
 
 void music_restart_if_finished() {
-    if (music_on) {
+    if (settings.music) {
         if (sdl_player_data.aad.cutsong == 0) {
             music_select_song(last_song);
         }
@@ -681,4 +680,15 @@ void sfx_stop() {
     updatechip(0xC6, 0x08); //Channel 6 (Feedback/Algorithm)
     SDL_UnlockAudio();
     sfx_on = false;
+}
+
+void audio_set_volume(uint8_t volume) {
+    if(volume > 128) {
+        volume = 128;
+    }
+    settings.volume = volume;
+    OPL_SDL_VOLUME = volume;
+}
+uint8_t audio_get_volume() {
+    return OPL_SDL_VOLUME;
 }

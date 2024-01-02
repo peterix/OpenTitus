@@ -29,7 +29,10 @@ const c = @import("c.zig");
 const globals = @import("globals.zig");
 const engine = @import("engine.zig");
 const window = @import("window.zig");
+const keyboard = @import("keyboard.zig");
+const fonts = @import("fonts.zig");
 const levelcodes = @import("levelcodes.zig");
+const s = @import("settings.zig");
 
 const TitusError = error{
     CannotDetermineGameType,
@@ -39,7 +42,8 @@ const TitusError = error{
     CannotInitFonts,
 };
 
-export var game: c.GameType = undefined;
+pub export var game: c.GameType = undefined;
+pub export var settings: s.Settings = undefined;
 
 pub const TITUS_constants = struct {
     levelfiles: [16][:0]const u8,
@@ -52,7 +56,6 @@ pub const TITUS_constants = struct {
     titusmenuformat: c_int,
     titusfinishfile: [:0]const u8,
     titusfinishformat: c_int,
-    fontfile: [:0]const u8,
     spritefile: [:0]const u8,
 };
 
@@ -67,7 +70,6 @@ const titus_consts: TITUS_constants = .{
     .titusmenuformat = 2,
     .titusfinishfile = "LEVELA.SQZ",
     .titusfinishformat = 0,
-    .fontfile = "FONTS.SQZ",
     .spritefile = "SPREXP.SQZ",
 };
 
@@ -82,7 +84,6 @@ const moktar_consts: TITUS_constants = .{
     .titusmenuformat = 2,
     .titusfinishfile = "",
     .titusfinishformat = 0,
-    .fontfile = "FONTS.SQZ",
     .spritefile = "SPRITES.SQZ",
 };
 
@@ -109,14 +110,50 @@ fn initGameType() !*const TITUS_constants {
     }
 }
 
+fn viewintrotext() c_int {
+    var tmpstring: [41]u8 = .{};
+    var rawtime = c.time(null);
+    var timeinfo = c.localtime(&rawtime);
+
+    _ = std.fmt.bufPrint(&tmpstring, "YOU ARE STILL PLAYING MOKTAR IN {d} !!", .{timeinfo.*.tm_year + 1900}) catch {};
+
+    fonts.SDL_Print_Text("     YEAAA . . .", 0, 5 * 12);
+    fonts.SDL_Print_Text(&tmpstring[0], 0, 6 * 12);
+    fonts.SDL_Print_Text(" PROGRAMMED IN 1991 ON AT .286 12MHZ.", 0, 12 * 12);
+    fonts.SDL_Print_Text("   . . . ENJOY MOKTAR ADVENTURE !!", 0, 13 * 12);
+
+    window.window_render();
+
+    var retval = keyboard.waitforbutton();
+    if (retval < 0)
+        return retval;
+
+    fonts.SDL_Print_Text("     YEAAA . . .", 0, 5 * 12);
+    fonts.SDL_Print_Text(&tmpstring[0], 0, 6 * 12);
+    fonts.SDL_Print_Text("REPROGRAMMED IN 2011 ON X86_64 2.40 GHZ.", 0, 12 * 12);
+    fonts.SDL_Print_Text("   . . . ENJOY MOKTAR ADVENTURE !!", 0, 13 * 12);
+
+    window.window_render();
+
+    retval = keyboard.waitforbutton();
+
+    settings.seen_intro = true;
+
+    if (retval < 0)
+        return retval;
+
+    return (0);
+}
+
 pub fn main() !u8 {
     // FIXME: report the missing files to the user in a better way than erroring into a terminal? dialog box if available?
     const constants = try initGameType();
 
     globals.reset();
 
-    if (c.readconfig("game.conf") < 0)
-        return TitusError.CannotReadConfig;
+    const c_alloc = std.heap.c_allocator;
+
+    settings = try s.read(c_alloc);
 
     if (c.SDL_Init(c.SDL_INIT_VIDEO | c.SDL_INIT_TIMER | c.SDL_INIT_AUDIO) != 0) {
         std.debug.print("Unable to initialize SDL: {s}\n", .{std.mem.span(c.SDL_GetError())});
@@ -135,20 +172,21 @@ pub fn main() !u8 {
     c.initoriginal();
     levelcodes.initCodes();
 
-    if (c.loadfonts(constants.*.fontfile) != 0) {
+    if (c.fonts_load() != 0) {
         return TitusError.CannotInitFonts;
     }
-    defer c.freefonts();
+    defer c.fonts_free();
 
     // View the menu when the main loop starts
     var state: c_int = 1;
     var retval: c_int = 0;
 
-    // TODO: add a way to skip all the intro stuff and go straight to the menu
-    if (state != 0) {
-        retval = c.viewintrotext();
-        if (retval < 0)
-            state = 0;
+    if (!settings.seen_intro) {
+        if (state != 0) {
+            retval = viewintrotext();
+            if (retval < 0)
+                state = 0;
+        }
     }
 
     if (state != 0) {
@@ -177,6 +215,8 @@ pub fn main() !u8 {
                 state = 0;
         }
     }
+
+    try s.write(c_alloc, settings);
 
     // TODO: completely stop using this. it's not consistent across the codebase...
     var error_span = std.mem.span(@as([*c]u8, @ptrCast(&c.lasterror)));

@@ -33,7 +33,7 @@
 #include "player.h"
 #include "objects.h"
 #include "tituserror.h"
-#include "settings.h"
+#include "game.h"
 #include "sprites.h"
 #include "audio.h"
 

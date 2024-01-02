@@ -31,7 +31,7 @@
 #include <string.h>
 #include "SDL2/SDL.h"
 #include "sqz.h"
-#include "settings.h"
+#include "game.h"
 #include "fonts.h"
 #include "window.h"
 #include "tituserror.h"

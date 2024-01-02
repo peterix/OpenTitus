@@ -55,7 +55,7 @@ pub export fn waitforbutton() c_int {
                     c.SDL_WINDOWEVENT_RESIZED, c.SDL_WINDOWEVENT_SIZE_CHANGED, c.SDL_WINDOWEVENT_MAXIMIZED, c.SDL_WINDOWEVENT_RESTORED => {
                         window.window_render();
                     },
-                    else => break,
+                    else => {},
                 }
             }
         }

@@ -2,9 +2,10 @@ const std = @import("std");
 
 const c = @import("c.zig");
 const globals = @import("globals.zig");
+const game = @import("game.zig");
 
 pub fn getGameTitle() [*c]const u8 {
-    switch (c.game) {
+    switch (game.game) {
         c.Titus => {
             return "OpenTitus";
         },
@@ -17,9 +18,10 @@ pub fn getGameTitle() [*c]const u8 {
     }
 }
 
-var black: u32 = 0;
+pub const game_width = 320;
+pub const game_height = 200;
 
-export var fullscreen = false;
+var black: u32 = 0;
 
 pub export var screen: ?*c.struct_SDL_Surface = null;
 pub export var window: ?*c.struct_SDL_Window = null;
@@ -32,36 +34,25 @@ const WindowError = error{
 };
 
 pub export fn window_toggle_fullscreen() void {
-    if (!fullscreen) {
+    if (!game.settings.fullscreen) {
         // FIXME: process error.
         _ = c.SDL_SetWindowFullscreen(window, c.SDL_WINDOW_FULLSCREEN_DESKTOP);
-        fullscreen = true;
+        game.settings.fullscreen = true;
     } else {
         // FIXME: process error.
         _ = c.SDL_SetWindowFullscreen(window, 0);
-        fullscreen = false;
+        game.settings.fullscreen = false;
     }
 }
 
 pub fn window_init() !void {
     var windowflags: u32 = 0;
-    var w: c_int = undefined;
-    var h: c_int = undefined;
-    switch (c.videomode) {
-        // Fullscreen
-        1 => {
-            w = 0;
-            h = 0;
-            windowflags = c.SDL_WINDOW_FULLSCREEN_DESKTOP;
-            fullscreen = true;
-        },
-        // Window = 0
-        else => {
-            w = 960;
-            h = 600;
-            windowflags = c.SDL_WINDOW_RESIZABLE;
-            fullscreen = false;
-        },
+    var w: c_int = game.settings.window_width;
+    var h: c_int = game.settings.window_height;
+    if (game.settings.fullscreen) {
+        windowflags = c.SDL_WINDOW_FULLSCREEN_DESKTOP;
+    } else {
+        windowflags = c.SDL_WINDOW_RESIZABLE;
     }
 
     window = c.SDL_CreateWindow(getGameTitle(), c.SDL_WINDOWPOS_UNDEFINED, c.SDL_WINDOWPOS_UNDEFINED, w, h, windowflags);
@@ -73,6 +64,8 @@ pub fn window_init() !void {
         c.SDL_DestroyWindow(window);
         window = null;
     }
+    c.SDL_SetWindowMinimumSize(window, game_width, game_height);
+
     renderer = c.SDL_CreateRenderer(window, -1, c.SDL_RENDERER_ACCELERATED);
     if (renderer == null) {
         std.debug.print("Unable to set video mode: {s}\n", .{c.SDL_GetError()});
@@ -83,7 +76,7 @@ pub fn window_init() !void {
         renderer = null;
     }
 
-    screen = c.SDL_CreateRGBSurfaceWithFormat(0, 320 + 32, 200, 32, c.SDL_GetWindowPixelFormat(window));
+    screen = c.SDL_CreateRGBSurfaceWithFormat(0, game_width + 32, game_height, 32, c.SDL_GetWindowPixelFormat(window));
     if (screen == null) {
         std.debug.print("Unable to create screen surface: {s}\n", .{c.SDL_GetError()});
         return WindowError.Other;
@@ -94,7 +87,7 @@ pub fn window_init() !void {
     }
     black = c.SDL_MapRGB(screen.?.*.format, 0, 0, 0);
 
-    if (c.SDL_RenderSetLogicalSize(renderer, 320, 200) != 0) {
+    if (c.SDL_RenderSetLogicalSize(renderer, game_width, game_height) != 0) {
         return WindowError.Other;
     }
 
@@ -118,8 +111,8 @@ pub export fn window_render() void {
     var src: c.SDL_Rect = undefined;
     src.x = 16 - globals.g_scroll_px_offset;
     src.y = 0;
-    src.w = 320;
-    src.h = 200;
+    src.w = game_width;
+    src.h = game_height;
     var dst = src;
     dst.x = 0;
     // FIXME: process error.

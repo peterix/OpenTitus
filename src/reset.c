@@ -37,7 +37,7 @@
 #include "scroll.h"
 #include "original.h"
 #include "tituserror.h"
-#include "settings.h"
+#include "game.h"
 #include "player.h"
 #include "objects.h"
 #include "enemies.h"

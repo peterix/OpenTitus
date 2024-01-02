@@ -41,7 +41,7 @@ const SqzError = error{
 const c_alloc = std.heap.c_allocator;
 
 // TODO: remove when all the callers are zig
-pub export fn unSQZ(inputfile: [*c]u8, output: [*c][*c]u8) c_int {
+pub export fn unSQZ(inputfile: [*c]const u8, output: [*c][*c]u8) c_int {
     var unsqueezed = unSQZ2(inputfile, std.heap.raw_c_allocator) catch |err| {
         switch (err) {
             error.OutOfMemory => {
@@ -56,7 +56,7 @@ pub export fn unSQZ(inputfile: [*c]u8, output: [*c][*c]u8) c_int {
         }
     };
     output.* = &unsqueezed[0];
-    return 0;
+    return @intCast(unsqueezed.len);
 }
 
 pub fn unSQZ2(inputfile: [*c]const u8, allocator: Allocator) ![]u8 {

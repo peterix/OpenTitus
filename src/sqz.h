@@ -29,6 +29,6 @@
 #ifndef SQZ_H
 #define SQZ_H
 
-int unSQZ(char *inputfile, unsigned char **output);
+int unSQZ(const char *inputfile, unsigned char **output);
 
 #endif

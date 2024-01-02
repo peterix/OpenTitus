@@ -32,7 +32,7 @@
 #include "globals_old.h"
 #include "window.h"
 #include "sprites.h"
-#include "settings.h"
+#include "game.h"
 #include "audio.h"
 #include "gates.h"
 #include "scroll.h"

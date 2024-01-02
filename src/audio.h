@@ -28,6 +28,8 @@
 
 int audio_init();
 void audio_free();
+void audio_set_volume(uint8_t volume);
+uint8_t audio_get_volume();
 
 void sfx_play(int fx_number);
 

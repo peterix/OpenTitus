@@ -40,6 +40,13 @@
 #include "levelcodes.h"
 #include "game.h"
 
+// TODO: redo all UI
+// - Add settings menu
+// - Remove level code input and replace it with level select
+// - Levels are unlocked by collecting the locks and the unlock state is persisted on disk instead of codes
+// - Add pause menu
+// - Esc opens pause menu instead of instant quit
+
 int enterpassword(int levelcount);
 
 int viewmenu(const char * menufile, int menuformat, int levelcount) {
@@ -262,6 +269,7 @@ int viewmenu(const char * menufile, int menuformat, int levelcount) {
                 } else if (event.key.keysym.scancode == KEY_FULLSCREEN) {
                     window_toggle_fullscreen();
                 }
+                // TODO: add a way to activate devmode from here (cheat code style using state machine)
             }
         }
 

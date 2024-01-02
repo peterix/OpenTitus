@@ -1,7 +1,6 @@
 pub usingnamespace @cImport({
     @cInclude("SDL2/SDL.h");
     @cInclude("sqz.h");
-    @cInclude("settings.h");
     @cInclude("fonts.h");
     @cInclude("window.h");
     @cInclude("tituserror.h");
@@ -21,4 +20,5 @@ pub usingnamespace @cImport({
     @cInclude("audio.h");
     @cInclude("globals_old.h");
     @cInclude("game.h");
+    @cInclude("time.h");
 });

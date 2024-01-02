@@ -39,7 +39,7 @@
 #include "enemies.h"
 #include "common.h"
 #include "player.h"
-#include "settings.h"
+#include "game.h"
 #include "objects.h"
 #include "sprites.h"
 #include "audio.h"

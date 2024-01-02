@@ -31,7 +31,7 @@
 #include "SDL2/SDL.h"
 #include "sprites.h"
 #include "sqz.h"
-#include "settings.h"
+#include "game.h"
 #include "original.h"
 #include "tituserror.h"
 #include "globals_old.h"

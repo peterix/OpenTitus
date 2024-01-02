@@ -26,42 +26,9 @@
  * Font functions
  */
 
- #ifndef FONTS_H
-#define FONTS_H
+#pragma once
 
-#include <stdint.h>
-
-#define CHAR_a 97
-#define CHAR_A 65
-#define CHAR_f 102
-#define CHAR_F 70
-#define CHAR_z 122
-#define CHAR_Z 90
-#define CHAR_0 48
-#define CHAR_9 57
-#define CHAR_EXCLAMATION 33
-#define CHAR_QUESTION 63
-#define CHAR_DOT 46
-#define CHAR_DOLLAR 36
-#define CHAR_UNDERSCORE 95
-#define CHAR_SPACE 32
-
-typedef struct _TITUS_font TITUS_font;
-
-struct _TITUS_font {
-    uint8_t type[256]; //0: not in use, 1: malloced sub, 2: malloced surface, 3: surface pointer, 4: invalid UTF-8
-    void *sub[256]; //May be malloced
-};
-
-extern TITUS_font *font; //Malloced
-extern SDL_Surface *font_undefined; //Pointer
-
-int loadfonts(const char * fontfile);
-void freefonts(void);
+int fonts_load(void);
+void fonts_free(void);
 
 void SDL_Print_Text(const char *text, int x, int y);
-
-int viewintrotext();
-
-#endif
-

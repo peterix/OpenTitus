@@ -29,291 +29,96 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <stdint.h>
+
 #include "SDL2/SDL.h"
-#include "sqz.h"
-#include "sprites.h"
 #include "fonts.h"
 #include "window.h"
 #include "tituserror.h"
-#include "keyboard.h"
-#include "draw.h"
-#include <time.h>
 
-TITUS_font *font; //Malloced
-SDL_Surface *font_undefined; //Pointer
+typedef struct _TITUS_font TITUS_font;
 
-SDL_Surface * SDL_LoadChar(unsigned char * fontdata, int offset, SDL_PixelFormat * pixelformat);
-void freesubfont(TITUS_font *f_sub);
+struct _TITUS_character {
+    uint8_t x;
+    uint8_t y;
+    uint8_t w;
+    uint8_t h;
+};
 
-int loadfonts(const char * fontfile) {
-    int i, retval;
-    SDL_Surface *surface = NULL;
-    char *tmpchar;
-    SDL_PixelFormat *pixelformat;
-    uint8_t *fontdata;
+struct _TITUS_font {
+    SDL_Surface *sheet;
+    struct _TITUS_character characters[256];
+    struct _TITUS_character fallback;
+};
 
-    retval = unSQZ(fontfile, &fontdata);
+// TODO: handle errors
+// TODO: embed the assets in the binary...
+// TODO: shave pixels off some characters so they can be used in menus
+// TODO: add a 'character' for menu bullet
+// TODO: maybe load the font from the original SQZ file again?
+static TITUS_font font;
+#define CHAR_QUESTION 63
 
-    if (retval < 0) {
-        free (fontdata);
-        return (0);
-    }
+static int loadfont(const char * fontfile, TITUS_font * font) {
+    SDL_Surface *image = SDL_LoadBMP(fontfile);
+    int surface_w = image->w;
+    int surface_h = image->h;
+    // assert(surface_w % 16 == 0);
+    // assert(surface_h % 16 == 0);
 
+    int character_w = surface_w / 16;
+    int character_h = surface_h / 16;
 
-    retval = loadpixelformat_font(&(pixelformat));
-    if (retval < 0) {
-        return retval;
-    }
-
-
-    //First byte
-    font = (TITUS_font *)SDL_malloc(sizeof(TITUS_font) * 256);
-    if (font == NULL) {
-        sprintf(lasterror, "Error: Not enough memory to load fonts!\n");
-        freepixelformat(&(pixelformat));
-        return (TITUS_ERROR_NOT_ENOUGH_MEMORY);
-    }
-    for (i = 0; i < 256; i++) {
-        font->type[i] = 0;
-        font->sub[i] = NULL;
-    }
-
-    //Font data
-    for (i = 0; i < 10; i++) { //0-9
-        if ((font->sub[i + CHAR_0] = SDL_LoadChar(fontdata, i, pixelformat)) == NULL) {
-            freepixelformat(&(pixelformat));
-            return (TITUS_ERROR_NOT_ENOUGH_MEMORY);
+    // initialize character coordinates
+    for (int y = 0; y < 16; y++) {
+        for (int x = 0; x < 16; x++) {
+            int xx = x * character_w;
+            int yy = y * character_h;
+            struct _TITUS_character* character = &font->characters[y * 16 + x];
+            character->x = xx;
+            character->y = yy;
+            character->w = character_w;
+            character->h = character_h;
         }
-        font->type[i + CHAR_0] = 2; //Malloced surface
     }
-
-    if ((font->sub[CHAR_EXCLAMATION] = SDL_LoadChar(fontdata, 10, pixelformat)) == NULL) { //"!"
-        freepixelformat(&(pixelformat));
-        return (TITUS_ERROR_NOT_ENOUGH_MEMORY);
-    }
-    font->type[CHAR_EXCLAMATION] = 2; //Malloced surface
-
-    if ((font->sub[CHAR_QUESTION] = SDL_LoadChar(fontdata, 11, pixelformat)) == NULL) { //"?"
-        freepixelformat(&(pixelformat));
-        return (TITUS_ERROR_NOT_ENOUGH_MEMORY);
-    }
-    font->type[CHAR_QUESTION] = 2; //Malloced surface
-    font_undefined = (SDL_Surface *)font->sub[CHAR_QUESTION];
-
-    if ((font->sub[CHAR_DOT] = SDL_LoadChar(fontdata, 12, pixelformat)) == NULL) { //"."
-        freepixelformat(&(pixelformat));
-        return (TITUS_ERROR_NOT_ENOUGH_MEMORY);
-    }
-    font->type[CHAR_DOT] = 2; //Malloced surface
-
-    if ((font->sub[CHAR_DOLLAR] = SDL_LoadChar(fontdata, 13, pixelformat)) == NULL) { //"$"
-        freepixelformat(&(pixelformat));
-        return (TITUS_ERROR_NOT_ENOUGH_MEMORY);
-    }
-    font->type[CHAR_DOLLAR] = 2; //Malloced surface
-
-    if ((font->sub[CHAR_UNDERSCORE] = SDL_LoadChar(fontdata, 14, pixelformat)) == NULL) { //"_"
-        freepixelformat(&(pixelformat));
-        return (TITUS_ERROR_NOT_ENOUGH_MEMORY);
-    }
-    font->type[CHAR_UNDERSCORE] = 2; //Malloced surface
-
-    for (i = 0; i < 26; i++) { //A-Z
-        if ((font->sub[i + CHAR_A] = SDL_LoadChar(fontdata, i + 15, pixelformat)) == NULL) {
-            freepixelformat(&(pixelformat));
-            return (TITUS_ERROR_NOT_ENOUGH_MEMORY);
-        }
-        font->type[i + CHAR_A] = 2; //Malloced surface
-    }
-
-    for (i = 0; i < 26; i++) { //a-z
-        font->sub[i + CHAR_a] = font->sub[i + CHAR_A]; //Use the same surface as the uppercase letter
-        font->type[i + CHAR_a] = 3; //Surface pointer
-    }
-
-    surface = SDL_CreateRGBSurface(SDL_SWSURFACE, 8, 12, 8, 0, 0, 0, 0); //" "
-    if (surface == NULL) {
-        sprintf(lasterror, "Error: Not enough memory to load fonts!\n");
-        freepixelformat(&(pixelformat));
-        return (TITUS_ERROR_NOT_ENOUGH_MEMORY);
-    }
-    copypixelformat(surface->format, pixelformat);
-    tmpchar = (char *)surface->pixels;
-    for (i = 0; i < 96; i++) {
-        *tmpchar = 0x01;
-        tmpchar++;
-    }
-
-    if ((font->sub[CHAR_SPACE] = SDL_ConvertSurfaceFormat(surface, SDL_GetWindowPixelFormat(window), 0)) == NULL) {
-        sprintf(lasterror, "Error: Not enough memory to load fonts!\n");
-        freepixelformat(&(pixelformat));
-        return (0);
-    }
-    SDL_FreeSurface(surface);
-    font->type[CHAR_SPACE] = 2; //Malloced surface
-
-    //The first byte cannot begin with 10xxxxxx
-    for (i = 0x80; i < 0xC0; i++) {
-        font->type[i] = 4; //Invalid UTF-8
-    }
-
-
-    freepixelformat(&(pixelformat));
-
-    return (0);
+    font->fallback = font->characters[CHAR_QUESTION];
+    font->sheet = SDL_ConvertSurfaceFormat(image, SDL_GetWindowPixelFormat(window), 0);
+    SDL_FreeSurface(image);
+    return 0;
 }
 
-SDL_Surface * SDL_LoadChar(unsigned char * fontdata, int offset, SDL_PixelFormat * pixelformat){
-    SDL_Surface *surface = NULL;
-    SDL_Surface *surface2 = NULL;
-    char *tmpchar;
-    int i, j;
-    surface = SDL_CreateRGBSurface(SDL_SWSURFACE, 8, 12, 8, 0, 0, 0, 0);
-    if (surface == NULL) {
-        sprintf(lasterror, "Error: Not enough memory to load fonts!\n");
-        return (NULL);
+static void freefont(TITUS_font * font) {
+    if(font == NULL) {
+        return;
     }
-
-    copypixelformat(surface->format, pixelformat);
-
-    tmpchar = (char *)surface->pixels;
-    for (i = offset * 48; i < offset * 48 + 12; i++) {//12
-        for (j = 7; j >= 0; j--) {
-            *tmpchar = (fontdata[i] >> j) & 0x01;
-            *tmpchar += (fontdata[i + 12] >> j << 1) & 0x02;
-            *tmpchar += (fontdata[i + 12 * 2] >> j << 2) & 0x04;
-            *tmpchar += (fontdata[i + 12 * 3] >> j << 3) & 0x08;
-            tmpchar++;
-        }
-    }
-    surface2 = SDL_ConvertSurfaceFormat(surface, SDL_GetWindowPixelFormat(window), 0);
-    if (surface2 == NULL) {
-        sprintf(lasterror, "Error: Not enough memory to load fonts!\n");
-        return (NULL);
-    }
-    SDL_FreeSurface(surface);
-    return(surface2);
+    SDL_FreeSurface(font->sheet);
+    font->sheet = NULL;
 }
 
-
-void freefonts(void) {
-    freesubfont(font);
+int fonts_load(void) {
+    return loadfont("FONT.BMP", &font);
 }
 
-void freesubfont(TITUS_font *f_sub) {
-    int i;
-    for (i = 0; i < 256; i++) {
-        if (f_sub->type[i] == 1) { //Malloced sub
-            freesubfont((TITUS_font *) f_sub->sub[i]);
-        } else if (f_sub->type[i] == 2) { //Malloced surface
-            SDL_FreeSurface((SDL_Surface *)f_sub->sub[i]);
-        }
-    }
-    free (f_sub);
+void fonts_free(void) {
+    freefont(&font);
 }
 
 void SDL_Print_Text(const char *text, int x, int y){
-    TITUS_font *f_sub;
-    uint8_t i, j;
-    SDL_Rect src, dest;
-    SDL_Surface *image;
-
-    src.x = 0;
-    src.y = 0;
+    SDL_Rect dest;
     dest.x = x + 16;
     dest.y = y;
 
-    for (i = 0; i < strlen(text); i++) {
-        j = i;
-        f_sub = font;
-        if ((text[i] & 0xC0) == 0x80) { //The first character cannot start with 10xxxxxx
-            sprintf(lasterror, "Error: Invalid UTF-8!\n");
-            return;
-        }
-        while (f_sub->type[(size_t)text[i]] == 1) { //Sub
-            if (i == strlen(text) - 1) {
-                sprintf(lasterror, "Error: Invalid UTF-8!\n");
-                return;
-            }
-            i++;
-            if ((text[i] & 0xC0) != 0x80) { //The following characters must begin with 10xxxxxx
-                sprintf(lasterror, "Error: Invalid UTF-8!\n");
-                return;
-            }
-            f_sub = (TITUS_font *)f_sub->sub[(size_t)text[i]];
-        }
-
-        switch (f_sub->type[(size_t)text[i]]) {
-        case 0: //Undefined character
-            image = font_undefined;
-            src.w = image->w;
-            src.h = image->h;
-            SDL_BlitSurface(image, &src, screen, &dest);
-            dest.x += 8;
-            if (text[j] > 0xBFu) { //If first letter is larger than 10111111: this is multibyte. Make sure "i" is in the last byte
-                do {
-                    if (j == strlen(text) - 1) {
-                        sprintf(lasterror, "Error: Invalid UTF-8!\n");
-                        return;
-                    }
-                    j++;
-                } while ((text[j] & 0xC0) == 0x80); //Loop while continuing bytes begin with 10xxxxxx
-                j--;
-                if (j < i) { //Error in the data structure
-                    sprintf(lasterror, "Error: Invalid font data!\n");
-                    return;
-                }
-                i = j;
-            }
-            break;
-        case 2: //Malloced surface
-        case 3: //Surface pointer
-            image = (SDL_Surface *)f_sub->sub[(size_t)text[i]];
-            src.w = image->w;
-            src.h = image->h;
-            SDL_BlitSurface(image, &src, screen, &dest);
-            dest.x += 8;
-            break;
-        case 4: //Invalid UTF-8
-            sprintf(lasterror, "Error: Invalid UTF-8!\n");
-            return;
-        }
+    // Let's assume ASCII for now... original code was trying to do something with UTF-8, but had the font files have no support for that
+    for (int i = 0; i < strlen(text); i++) {
+        unsigned char c = (unsigned char) text[i];
+        struct _TITUS_character* chardesc = &font.characters[c];
+        SDL_Rect src;
+        src.x = chardesc->x;
+        src.y = chardesc->y;
+        dest.w = src.w = chardesc->w;
+        dest.h = src.h = chardesc->h;
+        SDL_BlitSurface(font.sheet, &src, screen, &dest);
+        dest.x += 8;
     }
     return;
-}
-
-int viewintrotext(){
-    int retval;
-    char tmpstring[41];
-    time_t rawtime;
-    struct tm *timeinfo;
-
-    time(&rawtime);
-    timeinfo = localtime(&rawtime);
-
-    SDL_Print_Text("     YEAAA . . .", 0, 5 * 12);
-    sprintf(tmpstring, "YOU ARE STILL PLAYING MOKTAR IN %d !!", timeinfo->tm_year + 1900);
-    SDL_Print_Text(tmpstring, 0, 6 * 12);
-    SDL_Print_Text(" PROGRAMMED IN 1991 ON AT .286 12MHZ.", 0, 12 * 12);
-    SDL_Print_Text("   . . . ENJOY MOKTAR ADVENTURE !!", 0, 13 * 12);
-
-    window_render();
-
-    retval = waitforbutton();
-    if (retval < 0)
-        return retval;
-
-    SDL_Print_Text("     YEAAA . . .", 0, 5 * 12);
-    sprintf(tmpstring, "YOU ARE STILL PLAYING MOKTAR IN %d !!", timeinfo->tm_year + 1900);
-    SDL_Print_Text(tmpstring, 0, 6 * 12);
-    SDL_Print_Text("REPROGRAMMED IN 2011 ON X86_64 2.40 GHZ.", 0, 12 * 12);
-    SDL_Print_Text("   . . . ENJOY MOKTAR ADVENTURE !!", 0, 13 * 12);
-
-    window_render();
-
-    retval = waitforbutton();
-    if (retval < 0)
-        return retval;
-
-    return (0);
 }

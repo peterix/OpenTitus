@@ -31,6 +31,7 @@ const scroll = @import("scroll.zig");
 const keyboard = @import("keyboard.zig");
 const c = @import("c.zig");
 const game = @import("game.zig");
+const window = @import("window.zig");
 
 const c_alloc = std.heap.c_allocator;
 
@@ -225,7 +226,7 @@ fn gameover(context: [*c]c.ScreenContext, level: *c.TITUS_level) void {
     player.sprite2.y = @as(i16, globals.BITMAP_Y << 4) + 100;
     //over
     c.updatesprite(level, &(player.sprite3), 334, true); //Over
-    player.sprite3.x = @as(i16, globals.BITMAP_X << 4) + (320 + 120 - 2);
+    player.sprite3.x = @as(i16, globals.BITMAP_X << 4) + (window.game_width + 120 - 2);
     player.sprite3.y = @as(i16, globals.BITMAP_Y << 4) + 100;
     for (0..31) |_| {
         c.DISPLAY_TILES(level);

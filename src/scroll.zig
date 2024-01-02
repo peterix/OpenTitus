@@ -28,6 +28,7 @@ const assert = std.debug.assert;
 
 const c = @import("c.zig");
 const globals = @import("globals.zig");
+const window = @import("window.zig");
 
 /// Easign function for the camera.
 ///
@@ -86,7 +87,7 @@ fn X_ADJUST(level: *c.TITUS_level) void {
     }
 
     // un-breach XLIMIT if we go one screen to the left of it
-    if (globals.XLIMIT_BREACHED and camera_position < globals.XLIMIT * 16 - 320) {
+    if (globals.XLIMIT_BREACHED and camera_position < globals.XLIMIT * 16 - window.game_width) {
         globals.XLIMIT_BREACHED = false;
     }
 
