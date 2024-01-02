@@ -2,7 +2,7 @@ const std = @import("std");
 
 const c = @import("c.zig");
 const globals = @import("globals.zig");
-const game = @import("game.zig");
+const game = @import("../game.zig");
 
 pub fn getGameTitle() [*c]const u8 {
     switch (game.game) {

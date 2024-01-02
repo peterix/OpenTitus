@@ -77,21 +77,25 @@ void DISPLAY_TILES(TITUS_level *level) {
     for (int x = -1; x < 21; x++) {
         int tileX = BITMAP_X + x;
         if(tileX < 0) {
+            SDL_FillRect(screen, &dest, SDL_MapRGB(screen->format, 0, 0, 0));
             continue;
         }
         if(tileX >= level->width) {
+            SDL_FillRect(screen, &dest, SDL_MapRGB(screen->format, 0, 0, 0));
             continue;
         }
         for (int y = -1; y < 12; y++) {
             int tileY = BITMAP_Y + y;
+            dest.x = 16 + x * 16;
+            dest.y = y * 16 + 8;
             if(tileY < 0) {
+                SDL_FillRect(screen, &dest, SDL_MapRGB(screen->format, 0, 0, 0));
                 continue;
             }
             if(tileY >= level->height) {
+                SDL_FillRect(screen, &dest, SDL_MapRGB(screen->format, 0, 0, 0));
                 continue;
             }
-            dest.x = 16 + x * 16;
-            dest.y = y * 16 + 8;
             unsigned char tile = level->tilemap[tileY][tileX];
             SDL_BlitSurface(level->tile[level->tile[tile].animation[tile_anim]].tiledata, &src, screen, &dest);
         }

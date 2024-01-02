@@ -25,14 +25,14 @@
 
 const std = @import("std");
 
-const c = @import("c.zig");
-const globals = @import("globals.zig");
-const engine = @import("engine.zig");
-const window = @import("window.zig");
-const keyboard = @import("keyboard.zig");
-const fonts = @import("fonts.zig");
-const levelcodes = @import("levelcodes.zig");
-const s = @import("settings.zig");
+const c = @import("src/c.zig");
+const globals = @import("src/globals.zig");
+const engine = @import("src/engine.zig");
+const window = @import("src/window.zig");
+const keyboard = @import("src/keyboard.zig");
+const fonts = @import("src/fonts.zig");
+const levelcodes = @import("src/levelcodes.zig");
+const s = @import("src/settings.zig");
 
 const TitusError = error{
     CannotDetermineGameType,

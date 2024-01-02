@@ -30,8 +30,9 @@ const sqz = @import("sqz.zig");
 const scroll = @import("scroll.zig");
 const keyboard = @import("keyboard.zig");
 const c = @import("c.zig");
-const game = @import("game.zig");
+const game = @import("../game.zig");
 const window = @import("window.zig");
+const elevators = @import("elevators.zig");
 
 const c_alloc = std.heap.c_allocator;
 
@@ -167,7 +168,7 @@ fn playlevel(context: [*c]c.ScreenContext, level: *c.TITUS_level) c_int {
         }
         firstrun = false;
         globals.IMAGE_COUNTER = (globals.IMAGE_COUNTER + 1) & 0x0FFF; //Cycle from 0 to 0x0FFF
-        c.elevators_move(level);
+        elevators.elevators_move(level);
         c.move_objects(level); //Object gravity
         retval = c.move_player(context, level); //Key input, update and move player, handle carried object and decrease timers
         if (retval == c.TITUS_ERROR_QUIT) {

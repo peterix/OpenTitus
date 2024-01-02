@@ -221,17 +221,17 @@ struct _TITUS_level {
     TITUS_player player;
 
     TITUS_object *object; //Malloced
-    int16_t objectcount;
+    size_t objectcount;
     TITUS_enemy *enemy; //Malloced
-    int16_t enemycount;
+    size_t enemycount;
     TITUS_bonus *bonus; //Malloced
-    int16_t bonuscount;
+    size_t bonuscount;
     TITUS_gate *gate; //Malloced
-    int16_t gatecount;
+    size_t gatecount;
     TITUS_elevator *elevator; //Malloced
-    int16_t elevatorcount;
+    size_t elevatorcount;
     TITUS_sprite *trash; //Malloced
-    int16_t trashcount;
+    size_t trashcount;
 
 };
 

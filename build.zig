@@ -49,7 +49,7 @@ fn build_opl(b: *std.Build, target: CrossTarget, optimize: std.builtin.Mode) *St
 fn build_game(b: *std.Build, name: []const u8, target: CrossTarget, optimize: std.builtin.Mode, opl: *Step.Compile) *Step.Compile {
     const exe = b.addExecutable(.{
         .name = name,
-        .root_source_file = .{ .path = "src/game.zig" },
+        .root_source_file = .{ .path = "game.zig" },
         .target = target,
         .optimize = optimize,
     });
@@ -62,7 +62,6 @@ fn build_game(b: *std.Build, name: []const u8, target: CrossTarget, optimize: st
         "src/audio.c",
         "src/draw.c",
         "src/enemies.c",
-        "src/elevators.c",
         "src/gates.c",
         "src/level.c",
         "src/menu.c",

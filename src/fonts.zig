@@ -31,6 +31,9 @@ const std = @import("std");
 const c = @import("c.zig");
 
 const window = @import("window.zig");
+const globals = @import("globals.zig");
+
+const yellow_font_data = @embedFile("../assets/yellow_font.bmp");
 
 const Character = struct {
     x: u16,
@@ -58,8 +61,7 @@ const FontError = error{
     NotDivisibleBy16,
 };
 
-fn loadfont(fontfile: [*c]const u8, font: *Font) !void {
-    var image = c.SDL_LoadBMP(fontfile);
+fn loadfont(image: [*c]c.SDL_Surface, font: *Font) !void {
     defer c.SDL_FreeSurface(image);
 
     var surface_w = @as(u16, @intCast(image.*.w));
@@ -87,6 +89,7 @@ fn loadfont(fontfile: [*c]const u8, font: *Font) !void {
     }
     font.*.fallback = font.*.characters[CHAR_QUESTION];
     font.*.sheet = c.SDL_ConvertSurfaceFormat(image, c.SDL_GetWindowPixelFormat(window.window), 0);
+    _ = c.SDL_SetColorKey(font.*.sheet, c.SDL_TRUE, c.SDL_MapRGB(font.*.sheet.*.format, 0, 0, 0));
 }
 
 fn freefont(font: *Font) void {
@@ -95,7 +98,10 @@ fn freefont(font: *Font) void {
 }
 
 pub export fn fonts_load() c_int {
-    loadfont("FONT.BMP", &yellow_font) catch {
+    // FIXME: null check
+    var rwops = c.SDL_RWFromMem(@constCast(@ptrCast(&yellow_font_data[0])), yellow_font_data.len);
+    var image = c.SDL_LoadBMP_RW(rwops, c.SDL_TRUE);
+    loadfont(image, &yellow_font) catch {
         return -1;
     };
     return 0;
@@ -106,7 +112,7 @@ pub export fn fonts_free() void {
 }
 
 pub export fn SDL_Print_Text(text: [*c]const u8, x: c_int, y: c_int) void {
-    var dest: c.SDL_Rect = .{ .x = x + 16, .y = y, .w = 0, .h = 0 };
+    var dest: c.SDL_Rect = .{ .x = x + 16 - globals.g_scroll_px_offset, .y = y, .w = 0, .h = 0 };
 
     // Let's assume ASCII for now... original code was trying to do something with UTF-8, but had the font files have no support for that
     var index: usize = 0;
