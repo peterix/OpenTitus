@@ -33,8 +33,6 @@ const c = @import("c.zig");
 const window = @import("window.zig");
 const globals = @import("globals.zig");
 
-const yellow_font_data = @embedFile("../assets/yellow_font.bmp");
-
 const Character = struct {
     x: u16,
     y: u16,
@@ -53,6 +51,7 @@ const Font = struct {
 // TODO: shave pixels off some characters so they can be used in menus
 // TODO: add a 'character' for menu bullet
 // TODO: maybe load the font from the original SQZ file again?
+const yellow_font_data = @embedFile("../assets/yellow_font.bmp");
 var yellow_font: Font = undefined;
 const CHAR_QUESTION = 63;
 
@@ -89,7 +88,10 @@ fn loadfont(image: [*c]c.SDL_Surface, font: *Font) !void {
     }
     font.*.fallback = font.*.characters[CHAR_QUESTION];
     font.*.sheet = c.SDL_ConvertSurfaceFormat(image, c.SDL_GetWindowPixelFormat(window.window), 0);
-    _ = c.SDL_SetColorKey(font.*.sheet, c.SDL_TRUE, c.SDL_MapRGB(font.*.sheet.*.format, 0, 0, 0));
+
+    // TODO: good font with transparency...
+
+    // _ = c.SDL_SetColorKey(font.*.sheet, c.SDL_TRUE, c.SDL_MapRGB(font.*.sheet.*.format, 0, 0, 0));
 }
 
 fn freefont(font: *Font) void {
@@ -98,7 +100,6 @@ fn freefont(font: *Font) void {
 }
 
 pub export fn fonts_load() c_int {
-    // FIXME: null check
     var rwops = c.SDL_RWFromMem(@constCast(@ptrCast(&yellow_font_data[0])), yellow_font_data.len);
     var image = c.SDL_LoadBMP_RW(rwops, c.SDL_TRUE);
     loadfont(image, &yellow_font) catch {

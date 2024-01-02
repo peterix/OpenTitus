@@ -58,14 +58,6 @@ static SDL_Surface *sprite_from_cache(TITUS_level *level, TITUS_sprite *spr);
 static void display_sprite(TITUS_level *level, TITUS_sprite *spr);
 
 void DISPLAY_TILES(TITUS_level *level) {
-    //First of all: make the screen black, at least the lower part of the screen
-    SDL_Rect bottom_bar;
-    bottom_bar.x = 0;
-    bottom_bar.y = screen_height * 16;
-    bottom_bar.w = screen_width * 16;
-    bottom_bar.h = 200 - screen_height * 16;
-    window_clear(&bottom_bar);
-
     SDL_Rect src, dest;
     src.x = 0;
     src.y = 0;
@@ -75,27 +67,24 @@ void DISPLAY_TILES(TITUS_level *level) {
     dest.h = src.h;
 
     for (int x = -1; x < 21; x++) {
-        int tileX = BITMAP_X + x;
-        if(tileX < 0) {
-            SDL_FillRect(screen, &dest, SDL_MapRGB(screen->format, 0, 0, 0));
-            continue;
-        }
-        if(tileX >= level->width) {
-            SDL_FillRect(screen, &dest, SDL_MapRGB(screen->format, 0, 0, 0));
-            continue;
-        }
         for (int y = -1; y < 12; y++) {
             int tileY = BITMAP_Y + y;
-            dest.x = 16 + x * 16;
-            dest.y = y * 16 + 8;
+            bool zero_fill = false;
+            int tileX = BITMAP_X + x;
+            if(tileX < 0) {
+                tileX = 0;
+            }
+            if(tileX >= level->width) {
+                tileX = level->width - 1;
+            }
             if(tileY < 0) {
-                SDL_FillRect(screen, &dest, SDL_MapRGB(screen->format, 0, 0, 0));
-                continue;
+                tileY = 0;
             }
             if(tileY >= level->height) {
-                SDL_FillRect(screen, &dest, SDL_MapRGB(screen->format, 0, 0, 0));
-                continue;
+                tileY = level->height - 1;
             }
+            dest.x = 16 + x * 16;
+            dest.y = y * 16 + 8;
             unsigned char tile = level->tilemap[tileY][tileX];
             SDL_BlitSurface(level->tile[level->tile[tile].animation[tile_anim]].tiledata, &src, screen, &dest);
         }

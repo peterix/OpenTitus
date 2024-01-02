@@ -30,7 +30,7 @@ const sqz = @import("sqz.zig");
 const scroll = @import("scroll.zig");
 const keyboard = @import("keyboard.zig");
 const c = @import("c.zig");
-const game = @import("../game.zig");
+const game = @import("game.zig");
 const window = @import("window.zig");
 const elevators = @import("elevators.zig");
 
@@ -160,6 +160,8 @@ pub fn playtitus(constants: *const game.TITUS_constants, firstlevel: u16) c_int 
 fn playlevel(context: [*c]c.ScreenContext, level: *c.TITUS_level) c_int {
     var retval: c_int = 0;
     var firstrun = true;
+    globals.BITMAP_X = 0;
+
     while (true) {
         if (!firstrun) {
             c.draw_health_bars(level);

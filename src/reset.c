@@ -72,6 +72,7 @@ uint8_t RESET_LEVEL(ScreenContext *context, TITUS_level *level) {
         return 3;
     }
     if (level->levelid == 16) {
+        BITMAP_X = 0;
         NOSCROLL_FLAG = true;
         //Prepare Titus/Moktar
         updatesprite(level, &(player->sprite), 343, true);
@@ -143,13 +144,12 @@ uint8_t RESET_LEVEL(ScreenContext *context, TITUS_level *level) {
                         music_toggle();
                     } else if (event.key.keysym.scancode == KEY_FULLSCREEN) {
                         window_toggle_fullscreen();
-                    }
-                } else if (event.type == SDL_KEYUP) {
-                    if (event.key.keysym.scancode == KEY_RETURN || event.key.keysym.scancode == KEY_ENTER || event.key.keysym.scancode == KEY_SPACE) {
+                    } else if (event.key.keysym.scancode == KEY_RETURN || event.key.keysym.scancode == KEY_ENTER || event.key.keysym.scancode == KEY_SPACE) {
                         pass = true;
                         break;
                     }
                 }
+                
             }
 
         } while (!pass);
