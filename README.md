@@ -31,15 +31,15 @@ This is a fork that aims to modernize the codebase, clean everything up, fix bug
 
 ## Building:
 You need:
-* Some sort of compiler
-* Recent version of CMake
+* Some sort of compiler (Zig)
+* Recent version of Zig Build System
 * SDL and SDL_mixer libraries available and usable for development
 
 This should get things built and ready for testing/use:
 ```
 mkdir build
 cd build
-cmake .. -DCMAKE_INSTALL_PREFIX="../bin/"
+zig build --summary all
 make install
 ```
 
