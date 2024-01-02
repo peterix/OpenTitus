@@ -24,9 +24,6 @@
 
 /* elevators.h
  * Handles elevators.
- *
- * Global functions:
- * int MOVE_TRP(TITUS_level *level): Move elevators, is called by main game loop
  */
 
 #ifndef ELEVATORS_H
@@ -36,7 +33,7 @@
 #include "level.h"
 
 
-void MOVE_TRP(TITUS_level *level);
+void elevators_move(TITUS_level *level);
 
 
 #endif

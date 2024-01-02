@@ -24,9 +24,6 @@
 
 /* elevators.c
  * Handles elevators.
- *
- * Global functions:
- * int MOVE_TRP(TITUS_level *level): Move elevators, is called by main game loop
  */
 
 #include <stdio.h>
@@ -36,34 +33,33 @@
 #include "globals_old.h"
 #include "elevators.h"
 
-static void MTSBR(TITUS_elevator *elevator) {
-    elevator->counter++;
-    if (elevator->counter >= elevator->range) {
-        elevator->counter = 0;
-        elevator->sprite.speedX = 0 - elevator->sprite.speedX;
-        elevator->sprite.speedY = 0 - elevator->sprite.speedY;
-    }
-}
-
-void MOVE_TRP(TITUS_level *level) {
-    TITUS_elevator *elevator = level->elevator;
+void elevators_move(TITUS_level *level) {
+    TITUS_elevator *elevators = level->elevator;
     uint8_t i;
     for (i = 0; i < level->elevatorcount; i++) {
-        //Find elevators on the screen
-        if (elevator[i].enabled == false) {
+        TITUS_elevator *elevator = &elevators[i];
+        if (elevator->enabled == false) {
             continue;
         }
-        elevator[i].sprite.x += elevator[i].sprite.speedX;
-        elevator[i].sprite.y += elevator[i].sprite.speedY;
-        MTSBR(&(elevator[i]));
-        if (((elevator[i].sprite.x + 16 - (BITMAP_X << 4)) >= 0) && // +16: closer to center
-          ((elevator[i].sprite.x - 16 - (BITMAP_X << 4)) <= screen_width * 16) && // -16: closer to center
-          ((elevator[i].sprite.y - (BITMAP_Y << 4)) >= 0) &&
-          ((elevator[i].sprite.y - (BITMAP_Y << 4)) - 16 <= screen_height * 16)) {
-            elevator[i].sprite.invisible = false;
+
+        // move all elevators
+        elevator->sprite.x += elevator->sprite.speedX;
+        elevator->sprite.y += elevator->sprite.speedY;
+        elevator->counter++;
+        if (elevator->counter >= elevator->range) {
+            elevator->counter = 0;
+            elevator->sprite.speedX = 0 - elevator->sprite.speedX;
+            elevator->sprite.speedY = 0 - elevator->sprite.speedY;
+        }
+
+        // if elevators are out of the screen space, turn them invisible
+        if (((elevator->sprite.x + 16 - (BITMAP_X << 4)) >= 0) && // +16: closer to center
+          ((elevator->sprite.x - 16 - (BITMAP_X << 4)) <= screen_width * 16) && // -16: closer to center
+          ((elevator->sprite.y - (BITMAP_Y << 4)) >= 0) &&
+          ((elevator->sprite.y - (BITMAP_Y << 4)) - 16 <= screen_height * 16)) {
+            elevator->sprite.invisible = false;
         } else {
-            elevator[i].sprite.invisible = true; //Not necessary, but to mimic the original game
+            elevator->sprite.invisible = true; //Not necessary, but to mimic the original game
         }
     }
 }
-
