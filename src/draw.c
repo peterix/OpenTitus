@@ -91,7 +91,7 @@ void DISPLAY_TILES(TITUS_level *level) {
                 continue;
             }
             dest.x = 16 + x * 16;
-            dest.y = y * 16;
+            dest.y = y * 16 + 8;
             unsigned char tile = level->tilemap[tileY][tileX];
             SDL_BlitSurface(level->tile[level->tile[tile].animation[tile_anim]].tiledata, &src, screen, &dest);
         }
@@ -151,7 +151,7 @@ void display_sprite(TITUS_level *level, TITUS_sprite *spr) {
     } else {
         dest.x = spr->x + spr->spritedata->refwidth - spr->spritedata->data->w - (BITMAP_X << 4) + 16;
     }
-    dest.y = spr->y + spr->spritedata->refheight - spr->spritedata->data->h + 1 - (BITMAP_Y << 4);
+    dest.y = spr->y + spr->spritedata->refheight - spr->spritedata->data->h + 1 - (BITMAP_Y << 4) + 8;
 
     int screen_limit = screen_width + 2;
 
@@ -179,12 +179,14 @@ void display_sprite(TITUS_level *level, TITUS_sprite *spr) {
         src.h -= src.y;
         dest.y = 0;
     }
+    /*
     if (dest.x + src.w > screen_limit * 16) {
         src.w = screen_limit * 16 - dest.x;
     }
     if (dest.y + src.h > screen_height * 16) {
         src.h = screen_height * 16 - dest.y;
     }
+    */
 
     SDL_BlitSurface(image, &src, screen, &dest);
 
