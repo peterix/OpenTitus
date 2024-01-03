@@ -79,11 +79,35 @@ fn loadfont(image: [*c]c.SDL_Surface, font: *Font) !void {
         for (0..16) |x| {
             var xx = x * character_w;
             var yy = y * character_h;
-            var character = &font.characters[y * 16 + x];
-            character.x = @truncate(xx);
-            character.y = @truncate(yy);
-            character.w = @truncate(character_w);
-            character.h = @truncate(character_h);
+            var character: u8 = @as(u8, @truncate(y)) * 16 + @as(u8, @truncate(x));
+            var chardesc = &font.characters[character];
+            // FIXME: read the pixels, use a special color to use the font file as a source of this information
+            switch (character) {
+                'I', 'i', '!' => {
+                    chardesc.x = @truncate(xx + 2);
+                    chardesc.y = @truncate(yy);
+                    chardesc.w = @truncate(character_w - 4);
+                    chardesc.h = @truncate(character_h);
+                },
+                'J', 'j', '.' => {
+                    chardesc.x = @truncate(xx);
+                    chardesc.y = @truncate(yy);
+                    chardesc.w = @truncate(character_w - 2);
+                    chardesc.h = @truncate(character_h);
+                },
+                'C', 'c', 'E', 'e', 'F', 'f', 'L', 'l' => {
+                    chardesc.x = @truncate(xx);
+                    chardesc.y = @truncate(yy);
+                    chardesc.w = @truncate(character_w - 1);
+                    chardesc.h = @truncate(character_h);
+                },
+                else => {
+                    chardesc.x = @truncate(xx);
+                    chardesc.y = @truncate(yy);
+                    chardesc.w = @truncate(character_w);
+                    chardesc.h = @truncate(character_h);
+                },
+            }
         }
     }
     font.*.fallback = font.*.characters[CHAR_QUESTION];
@@ -112,20 +136,19 @@ pub export fn fonts_free() void {
     freefont(&yellow_font);
 }
 
+// TODO: add a way to determine font metrics for a string before rendering
 pub export fn SDL_Print_Text(text: [*c]const u8, x: c_int, y: c_int) void {
     var dest: c.SDL_Rect = .{ .x = x + 16 - globals.g_scroll_px_offset, .y = y, .w = 0, .h = 0 };
 
     // Let's assume ASCII for now... original code was trying to do something with UTF-8, but had the font files have no support for that
     var index: usize = 0;
-    while (text[index] != 0) : ({
-        index += 1;
-        dest.x += 8;
-    }) {
+    while (text[index] != 0) : (index += 1) {
         var character = text[index];
         var chardesc = yellow_font.characters[character];
         var src = c.SDL_Rect{ .x = chardesc.x, .y = chardesc.y, .w = chardesc.w, .h = chardesc.h };
         dest.w = chardesc.w;
         dest.h = chardesc.h;
         _ = c.SDL_BlitSurface(yellow_font.sheet, &src, window.screen, &dest);
+        dest.x += chardesc.w;
     }
 }
