@@ -120,10 +120,10 @@ void DISPLAY_SPRITES(TITUS_level *level) {
     display_sprite(level, &(level->player.sprite));
 
     if (GODMODE) {
-        SDL_Print_Text("GODMODE", 30 * 8, 0 * 12);
+        text_render("GODMODE", 30 * 8, 0 * 12, false);
     }
     if (NOCLIP) {
-        SDL_Print_Text("NOCLIP", 30 * 8, 1 * 12);
+        text_render("NOCLIP", 30 * 8, 1 * 12, false);
     }
 }
 
@@ -281,25 +281,27 @@ int viewstatus(TITUS_level *level, bool countbonus){
     window_clear(NULL);
 
     if (game == Titus) {
-        SDL_Print_Text("LEVEL", 13 * 8, 12 * 5);
-        SDL_Print_Text("EXTRA BONUS", 10 * 8, 10 * 12);
-        SDL_Print_Text("LIVES", 10 * 8, 11 * 12);
+        text_render("Level", 13 * 8, 12 * 5, false);
+        text_render("Extra Bonus", 10 * 8, 10 * 12, false);
+        text_render("Lives", 10 * 8, 11 * 12, false);
     } else if (game == Moktar) {
-        SDL_Print_Text("ETAPE", 13 * 8, 12 * 5);
-        SDL_Print_Text("EXTRA BONUS", 10 * 8, 10 * 12);
-        SDL_Print_Text("VIE", 10 * 8, 11 * 12);
+        text_render("Etape", 13 * 8, 12 * 5, false);
+        text_render("Extra Bonus", 10 * 8, 10 * 12, false);
+        text_render("Vie", 10 * 8, 11 * 12, false);
     }
 
 
     sprintf(tmpchars, "%d", level->levelnumber + 1);
-    SDL_Print_Text(tmpchars, 25 * 8 - strlen(tmpchars) * 8, 12 * 5);
+    text_render(tmpchars, 25 * 8 - strlen(tmpchars) * 8, 12 * 5, false);
 
-    SDL_Print_Text(leveltitle[level->levelnumber], 0, 12 * 5 + 16);
+    size_t title_width = text_width(leveltitle[level->levelnumber], false);
+    size_t position = (320 - title_width) / 2;
+    text_render(leveltitle[level->levelnumber], position, 12 * 5 + 16, false);
     sprintf(tmpchars, "%d", level->extrabonus);
-    SDL_Print_Text(tmpchars, 28 * 8 - strlen(tmpchars) * 8, 10 * 12);
+    text_render(tmpchars, 28 * 8 - strlen(tmpchars) * 8, 10 * 12, false);
 
     sprintf(tmpchars, "%d", level->lives);
-    SDL_Print_Text(tmpchars, 28 * 8 - strlen(tmpchars) * 8, 11 * 12);
+    text_render(tmpchars, 28 * 8 - strlen(tmpchars) * 8, 11 * 12, false);
 
     window_render();
 
@@ -312,14 +314,14 @@ int viewstatus(TITUS_level *level, bool countbonus){
             for (int i = 0; i < 10; i++) {
                 level->extrabonus--;
                 sprintf(tmpchars, "%2d", level->extrabonus);
-                SDL_Print_Text(tmpchars, 28 * 8 - strlen(tmpchars) * 8, 10 * 12);
+                text_render(tmpchars, 28 * 8 - strlen(tmpchars) * 8, 10 * 12, false);
                 window_render();
                 // 150 ms
                 SDL_Delay(150);
             }
             level->lives++;
             sprintf(tmpchars, "%d", level->lives);
-            SDL_Print_Text(tmpchars, 28 * 8 - strlen(tmpchars) * 8, 11 * 12);
+            text_render(tmpchars, 28 * 8 - strlen(tmpchars) * 8, 11 * 12, false);
             window_render();
             // 100 ms
             SDL_Delay(100);
@@ -447,15 +449,15 @@ int view_password(ScreenContext *context, TITUS_level *level, uint8_t level_inde
     g_scroll_px_offset = 0;
 
     if (game == Titus) {
-        SDL_Print_Text("LEVEL", 13 * 8, 13 * 8);
+        text_render("Level", 13 * 8, 13 * 8, false);
     } else if (game == Moktar) {
-        SDL_Print_Text("ETAPE", 13 * 8, 13 * 8);
+        text_render("Etape", 13 * 8, 13 * 8, false);
     }
     sprintf(tmpchars, "%d", level_index + 1);
-    SDL_Print_Text(tmpchars, 25 * 8 - strlen(tmpchars) * 8, 13 * 8);
+    text_render(tmpchars, 25 * 8 - strlen(tmpchars) * 8, 13 * 8, false);
 
-    SDL_Print_Text("CODE", 14 * 8, 10 * 8);
-    SDL_Print_Text(codeForLevel(level_index), 20 * 8, 10 * 8);
+    text_render("CODE", 14 * 8, 10 * 8, false);
+    text_render(codeForLevel(level_index), 20 * 8, 10 * 8, true);
 
     window_render();
     retval = waitforbutton();
@@ -495,59 +497,6 @@ int loadpixelformat(SDL_PixelFormat **pixelformat){
         (*pixelformat)->palette->colors[i].r = orig_palette_colour[i].r;
         (*pixelformat)->palette->colors[i].g = orig_palette_colour[i].g;
         (*pixelformat)->palette->colors[i].b = orig_palette_colour[i].b;
-    }
-
-    (*pixelformat)->BitsPerPixel = 8;
-    (*pixelformat)->BytesPerPixel = 1;
-
-    (*pixelformat)->Rloss = 0;
-    (*pixelformat)->Gloss = 0;
-    (*pixelformat)->Bloss = 0;
-    (*pixelformat)->Aloss = 0;
-
-    (*pixelformat)->Rshift = 0;
-    (*pixelformat)->Gshift = 0;
-    (*pixelformat)->Bshift = 0;
-    (*pixelformat)->Ashift = 0;
-
-    (*pixelformat)->Rmask = 0;
-    (*pixelformat)->Gmask = 0;
-    (*pixelformat)->Bmask = 0;
-    (*pixelformat)->Amask = 0;
-
-    //(*pixelformat)->colorkey = 0;
-    //(*pixelformat)->alpha = 255;
-
-    return (0);
-}
-
-int loadpixelformat_font(SDL_PixelFormat **pixelformat){
-    int i;
-
-    *pixelformat = (SDL_PixelFormat *)SDL_malloc(sizeof(SDL_PixelFormat));
-    if (*pixelformat == NULL) {
-        sprintf(lasterror, "Error: Not enough memory to initialize palette!\n");
-        return (TITUS_ERROR_NOT_ENOUGH_MEMORY);
-    }
-
-    (*pixelformat)->palette = (SDL_Palette *)SDL_malloc(sizeof(SDL_Palette));
-    if ((*pixelformat)->palette == NULL) {
-        sprintf(lasterror, "Error: Not enough memory to initialize palette!\n");
-        return (TITUS_ERROR_NOT_ENOUGH_MEMORY);
-    }
-
-    (*pixelformat)->palette->ncolors = 16;
-
-    (*pixelformat)->palette->colors = (SDL_Color *)SDL_malloc(sizeof(SDL_Color) * (*pixelformat)->palette->ncolors);
-    if ((*pixelformat)->palette->colors == NULL) {
-        sprintf(lasterror, "Error: Not enough memory to initialize palette!\n");
-        return (TITUS_ERROR_NOT_ENOUGH_MEMORY);
-    }
-
-    for (i = 0; i < (*pixelformat)->palette->ncolors; i++) {
-        (*pixelformat)->palette->colors[i].r = orig_palette_font_colour[i].r;
-        (*pixelformat)->palette->colors[i].g = orig_palette_font_colour[i].g;
-        (*pixelformat)->palette->colors[i].b = orig_palette_font_colour[i].b;
     }
 
     (*pixelformat)->BitsPerPixel = 8;

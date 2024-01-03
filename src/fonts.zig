@@ -35,8 +35,10 @@ const globals = @import("globals.zig");
 
 const Character = struct {
     x: u16,
+    x_mono: u16,
     y: u16,
     w: u16,
+    w_mono: u16,
     h: u16,
 };
 
@@ -82,23 +84,37 @@ fn loadfont(image: [*c]c.SDL_Surface, font: *Font) !void {
             var character: u8 = @as(u8, @truncate(y)) * 16 + @as(u8, @truncate(x));
             var chardesc = &font.characters[character];
             // FIXME: read the pixels, use a special color to use the font file as a source of this information
+            chardesc.x_mono = @truncate(xx);
+            chardesc.w_mono = @truncate(character_w);
             switch (character) {
-                'I', 'i', '!' => {
+                '1', ' ' => {
+                    chardesc.x = @truncate(xx + 1);
+                    chardesc.y = @truncate(yy);
+                    chardesc.w = @truncate(character_w - 3);
+                    chardesc.h = @truncate(character_h);
+                },
+                'I', '!', '|' => {
                     chardesc.x = @truncate(xx + 2);
                     chardesc.y = @truncate(yy);
                     chardesc.w = @truncate(character_w - 4);
                     chardesc.h = @truncate(character_h);
                 },
-                'J', 'j', '.' => {
+                'J', '.' => {
                     chardesc.x = @truncate(xx);
                     chardesc.y = @truncate(yy);
                     chardesc.w = @truncate(character_w - 2);
                     chardesc.h = @truncate(character_h);
                 },
-                'C', 'c', 'E', 'e', 'F', 'f', 'L', 'l' => {
+                'C', 'c', 'E', 'e', 'F', 'f', 'i', 'j', 'l', 'L', 'n', 'o', 's', 't', 'v', 'z', '{', '}' => {
                     chardesc.x = @truncate(xx);
                     chardesc.y = @truncate(yy);
                     chardesc.w = @truncate(character_w - 1);
+                    chardesc.h = @truncate(character_h);
+                },
+                '[', ']' => {
+                    chardesc.x = @truncate(xx + 1);
+                    chardesc.y = @truncate(yy);
+                    chardesc.w = @truncate(character_w - 2);
                     chardesc.h = @truncate(character_h);
                 },
                 else => {
@@ -137,7 +153,7 @@ pub export fn fonts_free() void {
 }
 
 // TODO: add a way to determine font metrics for a string before rendering
-pub export fn SDL_Print_Text(text: [*c]const u8, x: c_int, y: c_int) void {
+pub export fn text_render(text: [*c]const u8, x: c_int, y: c_int, monospace: bool) void {
     var dest: c.SDL_Rect = .{ .x = x + 16 - globals.g_scroll_px_offset, .y = y, .w = 0, .h = 0 };
 
     // Let's assume ASCII for now... original code was trying to do something with UTF-8, but had the font files have no support for that
@@ -145,10 +161,36 @@ pub export fn SDL_Print_Text(text: [*c]const u8, x: c_int, y: c_int) void {
     while (text[index] != 0) : (index += 1) {
         var character = text[index];
         var chardesc = yellow_font.characters[character];
-        var src = c.SDL_Rect{ .x = chardesc.x, .y = chardesc.y, .w = chardesc.w, .h = chardesc.h };
-        dest.w = chardesc.w;
-        dest.h = chardesc.h;
-        _ = c.SDL_BlitSurface(yellow_font.sheet, &src, window.screen, &dest);
-        dest.x += chardesc.w;
+        if (monospace) {
+            var src = c.SDL_Rect{ .x = chardesc.x_mono, .y = chardesc.y, .w = chardesc.w_mono, .h = chardesc.h };
+            dest.w = chardesc.w_mono;
+            dest.h = chardesc.h;
+            _ = c.SDL_BlitSurface(yellow_font.sheet, &src, window.screen, &dest);
+            dest.x += chardesc.w_mono;
+        } else {
+            var src = c.SDL_Rect{ .x = chardesc.x, .y = chardesc.y, .w = chardesc.w, .h = chardesc.h };
+            dest.w = chardesc.w;
+            dest.h = chardesc.h;
+            _ = c.SDL_BlitSurface(yellow_font.sheet, &src, window.screen, &dest);
+            dest.x += chardesc.w;
+        }
     }
+}
+
+// TODO: add a way to determine font metrics for a string before rendering
+pub export fn text_width(text: [*c]const u8, monospace: bool) usize {
+    var size: usize = 0;
+
+    // Let's assume ASCII for now... original code was trying to do something with UTF-8, but had the font files have no support for that
+    var index: usize = 0;
+    while (text[index] != 0) : (index += 1) {
+        var character = text[index];
+        var chardesc = yellow_font.characters[character];
+        if (monospace) {
+            size += chardesc.w_mono;
+        } else {
+            size += chardesc.w;
+        }
+    }
+    return size;
 }

@@ -299,7 +299,7 @@ int enterpassword(int levelcount){
 
     window_clear(NULL);
 
-    SDL_Print_Text("CODE", 111, 80);
+    text_render("CODE", 111, 80, false);
 
     while (i < 4) {
         SDL_Event event;
@@ -377,16 +377,21 @@ int enterpassword(int levelcount){
                 }
             }
         }
-        SDL_Print_Text(code, 159, 80);
+        text_render(code, 159, 80, true);
         window_render();
         SDL_Delay(1);
     }
 
     i = levelForCode(code);
     if (i != -1 && i < levelcount) {
-        SDL_Print_Text("LEVEL", 103, 104);
+        if (game == Titus) {
+            text_render("Level", 103, 104, false);
+        } else if (game == Moktar) {
+            text_render("Etape", 103, 104, false);
+        }
         sprintf(code, "%d", i + 1);
-        SDL_Print_Text(code, 199 - 8 * strlen(code), 104);
+        size_t code_width = text_width(code, false);
+        text_render(code, 199 - code_width, 104, false);
         window_render();
         retval = waitforbutton();
 
@@ -399,7 +404,7 @@ int enterpassword(int levelcount){
         return (i + 1);
     }
 
-    SDL_Print_Text("!  WRONG CODE  !", 87, 104);
+    text_render("!  WRONG CODE  !", 87, 104, false);
     window_render();
     retval = waitforbutton();
 

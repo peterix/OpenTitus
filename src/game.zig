@@ -115,27 +115,18 @@ fn viewintrotext() c_int {
     var rawtime = c.time(null);
     var timeinfo = c.localtime(&rawtime);
 
-    _ = std.fmt.bufPrint(&tmpstring, "YOU ARE STILL PLAYING MOKTAR IN {d} !!", .{timeinfo.*.tm_year + 1900}) catch {};
+    _ = std.fmt.bufPrint(&tmpstring, "     You are still playing Moktar in {d} !!", .{timeinfo.*.tm_year + 1900}) catch {};
 
-    fonts.SDL_Print_Text("     YEAAA . . .", 0, 5 * 12);
-    fonts.SDL_Print_Text(&tmpstring[0], 0, 6 * 12);
-    fonts.SDL_Print_Text(" PROGRAMMED IN 1991 ON AT .286 12MHZ.", 0, 12 * 12);
-    fonts.SDL_Print_Text("   . . . ENJOY MOKTAR ADVENTURE !!", 0, 13 * 12);
+    fonts.text_render("     YEAAA . . .", 0, 4 * 12, false);
+    fonts.text_render(&tmpstring[0], 0, 6 * 12, false);
+    fonts.text_render("     Programmed in 1991 on AT .286 12MHz.", 0, 11 * 12, false);
+    fonts.text_render("              . . . Enjoy Moktar Adventure !!", 0, 13 * 12, false);
 
     window.window_render();
 
     var retval = keyboard.waitforbutton();
     if (retval < 0)
         return retval;
-
-    fonts.SDL_Print_Text("     YEAAA . . .", 0, 5 * 12);
-    fonts.SDL_Print_Text(&tmpstring[0], 0, 6 * 12);
-    fonts.SDL_Print_Text("REPROGRAMMED IN 2011 ON X86_64 2.40 GHZ.", 0, 12 * 12);
-    fonts.SDL_Print_Text("   . . . ENJOY MOKTAR ADVENTURE !!", 0, 13 * 12);
-
-    window.window_render();
-
-    retval = keyboard.waitforbutton();
 
     settings.seen_intro = true;
 

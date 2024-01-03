@@ -28,7 +28,10 @@
 
 #pragma once
 
+#include <stdbool.h>
+
 int fonts_load(void);
 void fonts_free(void);
 
-void SDL_Print_Text(const char *text, int x, int y);
+void text_render(const char *text, int x, int y, bool monospace);
+size_t text_width(const char *text, bool monospace);

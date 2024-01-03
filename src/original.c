@@ -36,7 +36,6 @@
 
 SDL_Color orig_palette_colour[16];
 SDL_Color orig_palette_level_colour[16];
-SDL_Color orig_palette_font_colour[16];
 
 uint8_t spritewidth[SPRITECOUNT];
 uint8_t spriteheight[SPRITECOUNT];
@@ -577,104 +576,42 @@ void initoriginal() {
     orig_palette_level_colour[15].g = 8 * 4;
     orig_palette_level_colour[15].b = 0 * 4;
 
-    orig_palette_font_colour[0].r = 0 * 4; // Unused
-    orig_palette_font_colour[0].g = 63 * 4;
-    orig_palette_font_colour[0].b = 63 * 4;
-
-    orig_palette_font_colour[1].r = 0 * 4; // Black
-    orig_palette_font_colour[1].g = 0 * 4;
-    orig_palette_font_colour[1].b = 0 * 4;
-
-    orig_palette_font_colour[2].r = 63 * 4; // Unused
-    orig_palette_font_colour[2].g = 0 * 4;
-    orig_palette_font_colour[2].b = 0 * 4;
-
-    orig_palette_font_colour[3].r = 0 * 4; // Unused
-    orig_palette_font_colour[3].g = 63 * 4;
-    orig_palette_font_colour[3].b = 0 * 4;
-
-    orig_palette_font_colour[4].r = 0 * 4; // Unused
-    orig_palette_font_colour[4].g = 0 * 4;
-    orig_palette_font_colour[4].b = 63 * 4;
-
-    orig_palette_font_colour[5].r = 60 * 4; // Brightest yellow
-    orig_palette_font_colour[5].g = 60 * 4;
-    orig_palette_font_colour[5].b = 28 * 4;
-
-    orig_palette_font_colour[6].r = 60 * 4;
-    orig_palette_font_colour[6].g = 60 * 4;
-    orig_palette_font_colour[6].b = 12 * 4;
-
-    orig_palette_font_colour[7].r = 60 * 4;
-    orig_palette_font_colour[7].g = 56 * 4;
-    orig_palette_font_colour[7].b = 0 * 4;
-
-    orig_palette_font_colour[8].r = 56 * 4;
-    orig_palette_font_colour[8].g = 48 * 4;
-    orig_palette_font_colour[8].b = 0 * 4;
-
-    orig_palette_font_colour[9].r = 52 * 4;
-    orig_palette_font_colour[9].g = 44 * 4;
-    orig_palette_font_colour[9].b = 0 * 4;
-
-    orig_palette_font_colour[10].r = 52 * 4;
-    orig_palette_font_colour[10].g = 36 * 4;
-    orig_palette_font_colour[10].b = 0 * 4;
-
-    orig_palette_font_colour[11].r = 44 * 4;
-    orig_palette_font_colour[11].g = 36 * 4;
-    orig_palette_font_colour[11].b = 0 * 4;
-
-    orig_palette_font_colour[12].r = 36 * 4;
-    orig_palette_font_colour[12].g = 28 * 4;
-    orig_palette_font_colour[12].b = 0 * 4;
-
-    orig_palette_font_colour[13].r = 32 * 4;
-    orig_palette_font_colour[13].g = 24 * 4;
-    orig_palette_font_colour[13].b = 0 * 4;
-
-    orig_palette_font_colour[14].r = 24 * 4;
-    orig_palette_font_colour[14].g = 20 * 4;
-    orig_palette_font_colour[14].b = 0 * 4;
-
-    orig_palette_font_colour[15].r = 20 * 4; // Darkest yellow
-    orig_palette_font_colour[15].g = 16 * 4;
-    orig_palette_font_colour[15].b = 0 * 4;
-
-
     if (game == Titus) {
-        strcpy (leveltitle[0], "           ON THE FOXY TRAIL");
-        strcpy (leveltitle[1], "           LOOKING FOR CLUES");
-        strcpy (leveltitle[2], "           ROAD WORKS AHEAD");
-        strcpy (leveltitle[3], "           GOING UNDERGROUND");
-        strcpy (leveltitle[4], "          FLAMING CATACOMBES");
-        strcpy (leveltitle[5], "            COMING TO TOWN");
-        strcpy (leveltitle[6], "               FOXYS DEN");
-        strcpy (leveltitle[7], "       ON THE ROAD TO MARRAKESH");
-        strcpy (leveltitle[8], "         HOME OF THE PHARAOHS");
-        strcpy (leveltitle[9], "           DESERT EXPERIENCE");
-        strcpy (leveltitle[10], "             WALLS OF SAND");
-        strcpy (leveltitle[11], "           A BEACON OF HOPE");
-        strcpy (leveltitle[12], "             A PIPE DREAM");
-        strcpy (leveltitle[13], "              GOING HOME");
-        strcpy (leveltitle[14], "             JUST MARRIED");
+        strcpy (leveltitle[0], "On The Foxy Trail");
+        strcpy (leveltitle[1], "Looking For Clues");
+        strcpy (leveltitle[2], "Road Works Ahead");
+        strcpy (leveltitle[3], "Going Underground");
+        strcpy (leveltitle[4], "Flaming Catacombs");
+        strcpy (leveltitle[5], "Coming To Town");
+        strcpy (leveltitle[6], "Foxy's Den");
+        strcpy (leveltitle[7], "On The Road To Marrakesh");
+        strcpy (leveltitle[8], "Home Of The Pharaohs");
+        strcpy (leveltitle[9], "Desert Experience");
+        strcpy (leveltitle[10], "Walls Of Sand");
+        strcpy (leveltitle[11], "A Beacon Of Hope");
+        strcpy (leveltitle[12], "A Pipe Dream");
+        strcpy (leveltitle[13], "Going Home");
+        strcpy (leveltitle[14], "Just Married");
     } else if (game == Moktar) {
-        strcpy (leveltitle[0], "     A LA RECHERCHE DE LA ZOUBIDA");
-        strcpy (leveltitle[1], "          LES QUARTIERS CHICS");
-        strcpy (leveltitle[2], "           ATTENTION TRAVAUX");
-        strcpy (leveltitle[3], "         LES COULOIRS DU METRO");
-        strcpy (leveltitle[4], "       LES CATACOMBES INFERNALES");
-        strcpy (leveltitle[5], "         ARRIVEE DANS LA CITE");
-        strcpy (leveltitle[6], "       L IMMEUBLE DE LA ZOUBIDA");
-        strcpy (leveltitle[7], "      SOUS LE CHEMIN DE MARRAKECH");
-        strcpy (leveltitle[8], "            LA CITE ENFOUIE");
-        strcpy (leveltitle[9], "             DESERT PRIVE");
-        strcpy (leveltitle[10], "          LA VILLE DES SABLES");
-        strcpy (leveltitle[11], "            LE PHARE OUEST");
-        strcpy (leveltitle[12], "             UN BON TUYAU");
-        strcpy (leveltitle[13], "           DE RETOUR AU PAYS");
-        strcpy (leveltitle[14], "           DIRECTION BARBES");
-        strcpy (leveltitle[15], "              BIG BISOUS");
+        // FIXME: get someone who knows French to do localization.
+        // FIXME: separate 'game' from 'localization'. We can totally have Titus the Fox in French and Moktar in English.
+        // FIXME: add actual support for accents and stuff...
+        strcpy (leveltitle[0], "A LA RECHERCHE DE LA ZOUBIDA");
+        strcpy (leveltitle[1], "LES QUARTIERS CHICS");
+        strcpy (leveltitle[2], "ATTENTION TRAVAUX");
+        strcpy (leveltitle[3], "LES COULOIRS DU METRO"); // MÉTRO?
+        strcpy (leveltitle[4], "LES CATACOMBES INFERNALES");
+        strcpy (leveltitle[5], "ARRIVEE DANS LA CITE"); // ARRIVÉE?
+        strcpy (leveltitle[6], "L IMMEUBLE DE LA ZOUBIDA");
+        strcpy (leveltitle[7], "SOUS LE CHEMIN DE MARRAKECH");
+        strcpy (leveltitle[8], "LA CITE ENFOUIE");
+        strcpy (leveltitle[9], "DESERT PRIVE"); // DÉSERT PRIVÉ?
+        strcpy (leveltitle[10], "LA VILLE DES SABLES");
+        strcpy (leveltitle[11], "LE PHARE OUEST"); // LE PHARE DE L'OUEST?
+        strcpy (leveltitle[12], "UN BON TUYAU");
+        strcpy (leveltitle[13], "DE RETOUR AU PAYS");
+        strcpy (leveltitle[14], "DIRECTION BARBES");
+        strcpy (leveltitle[15], "BIG BISOUS");
     }
 }
 
