@@ -120,8 +120,6 @@ void CLOSE_SCREEN(ScreenContext *context) {
     uint16_t incY = rheight / (step_count * 2); //10
     uint8_t i;
     for (i = 0; i < step_count; i++) {
-        flip_screen(context, false); //quick flip TODO: move to other end of loop?
-
         //Clear top
         dest.x = 0;
         dest.y = 0;
@@ -149,6 +147,8 @@ void CLOSE_SCREEN(ScreenContext *context) {
         dest.w = i * incX;
         dest.h = screen_height * 16;
         window_clear(&dest);
+
+        flip_screen(context, false);
     }
 }
 
@@ -162,8 +162,6 @@ void OPEN_SCREEN(ScreenContext *context, TITUS_level *level) {
     uint16_t incY = rheight / (step_count * 2); //10
     uint8_t i;
     for (i = step_count - 1; i >= 2; i -= 2) {
-        flip_screen(context, false); //quick flip TODO: move to other end of loop?
-
         // draw all tiles
         DISPLAY_TILES(level);
 
@@ -194,5 +192,7 @@ void OPEN_SCREEN(ScreenContext *context, TITUS_level *level) {
         dest.w = i * incX;
         dest.h = screen_height * 16;
         window_clear(&dest);
+
+        flip_screen(context, false);
     }
 }
