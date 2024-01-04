@@ -29,9 +29,10 @@
 #pragma once
 
 #include <stdbool.h>
+#include <stdint.h>
 
 int fonts_load(void);
 void fonts_free(void);
 
 void text_render(const char *text, int x, int y, bool monospace);
-size_t text_width(const char *text, bool monospace);
+uint16_t text_width(const char *text, bool monospace);

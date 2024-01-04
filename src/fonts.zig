@@ -40,6 +40,7 @@ const Character = struct {
     w: u16,
     w_mono: u16,
     h: u16,
+    x_offset: i8,
 };
 
 const Font = struct {
@@ -86,11 +87,24 @@ fn loadfont(image: [*c]c.SDL_Surface, font: *Font) !void {
             // FIXME: read the pixels, use a special color to use the font file as a source of this information
             chardesc.x_mono = @truncate(xx);
             chardesc.w_mono = @truncate(character_w);
+            chardesc.x_offset = 0;
             switch (character) {
-                '1', ' ' => {
+                '1', ' ', '`' => {
                     chardesc.x = @truncate(xx + 1);
                     chardesc.y = @truncate(yy);
                     chardesc.w = @truncate(character_w - 3);
+                    chardesc.h = @truncate(character_h);
+                },
+                '\'' => {
+                    chardesc.x = @truncate(xx);
+                    chardesc.y = @truncate(yy);
+                    chardesc.w = @truncate(character_w - 3);
+                    chardesc.h = @truncate(character_h);
+                },
+                ',' => {
+                    chardesc.x = @truncate(xx);
+                    chardesc.y = @truncate(yy);
+                    chardesc.w = @truncate(character_w - 2);
                     chardesc.h = @truncate(character_h);
                 },
                 'I', '!', '|' => {
@@ -105,7 +119,7 @@ fn loadfont(image: [*c]c.SDL_Surface, font: *Font) !void {
                     chardesc.w = @truncate(character_w - 2);
                     chardesc.h = @truncate(character_h);
                 },
-                'C', 'c', 'E', 'e', 'F', 'f', 'i', 'j', 'l', 'L', 'n', 'o', 's', 't', 'v', 'z', '{', '}' => {
+                'C', 'c', 'E', 'e', 'F', 'f', 'i', 'j', 'l', 'L', 'n', 'o', 's', 't', 'v', 'z', '{', '}', '%', '(', ')' => {
                     chardesc.x = @truncate(xx);
                     chardesc.y = @truncate(yy);
                     chardesc.w = @truncate(character_w - 1);
@@ -116,6 +130,13 @@ fn loadfont(image: [*c]c.SDL_Surface, font: *Font) !void {
                     chardesc.y = @truncate(yy);
                     chardesc.w = @truncate(character_w - 2);
                     chardesc.h = @truncate(character_h);
+                },
+                'y' => {
+                    chardesc.x = @truncate(xx);
+                    chardesc.y = @truncate(yy);
+                    chardesc.w = @truncate(character_w);
+                    chardesc.h = @truncate(character_h);
+                    chardesc.x_offset = -1;
                 },
                 else => {
                     chardesc.x = @truncate(xx);
@@ -168,6 +189,7 @@ pub export fn text_render(text: [*c]const u8, x: c_int, y: c_int, monospace: boo
             _ = c.SDL_BlitSurface(yellow_font.sheet, &src, window.screen, &dest);
             dest.x += chardesc.w_mono;
         } else {
+            dest.x += chardesc.x_offset;
             var src = c.SDL_Rect{ .x = chardesc.x, .y = chardesc.y, .w = chardesc.w, .h = chardesc.h };
             dest.w = chardesc.w;
             dest.h = chardesc.h;
@@ -177,9 +199,8 @@ pub export fn text_render(text: [*c]const u8, x: c_int, y: c_int, monospace: boo
     }
 }
 
-// TODO: add a way to determine font metrics for a string before rendering
-pub export fn text_width(text: [*c]const u8, monospace: bool) usize {
-    var size: usize = 0;
+pub export fn text_width(text: [*c]const u8, monospace: bool) u16 {
+    var size: i17 = 0;
 
     // Let's assume ASCII for now... original code was trying to do something with UTF-8, but had the font files have no support for that
     var index: usize = 0;
@@ -189,8 +210,12 @@ pub export fn text_width(text: [*c]const u8, monospace: bool) usize {
         if (monospace) {
             size += chardesc.w_mono;
         } else {
+            size += chardesc.x_offset;
             size += chardesc.w;
         }
     }
-    return size;
+    if (size > 0) {
+        return @intCast(size);
+    }
+    return 0;
 }

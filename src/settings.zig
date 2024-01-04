@@ -10,7 +10,10 @@ pub const Settings = extern struct {
     devmode: bool = false,
     fullscreen: bool = false,
     music: bool = true,
-    volume: u8 = 128,
+    sound: bool = true,
+    volume_music: u8 = 128,
+    volume_sound: u8 = 128,
+    volume_master: u8 = 128,
     window_width: u16 = window.game_width * 3,
     window_height: u16 = window.game_height * 3,
     seen_intro: bool = false,
@@ -32,8 +35,14 @@ pub fn read(allocator: Allocator) !Settings {
     defer allocator.free(data);
     var parsed = try std.json.parseFromSlice(Settings, allocator, data, .{ .allocate = .alloc_always });
     var settings = parsed.value;
-    if (settings.volume > 128) {
-        settings.volume = 128;
+    if (settings.volume_music > 128) {
+        settings.volume_music = 128;
+    }
+    if (settings.volume_sound > 128) {
+        settings.volume_sound = 128;
+    }
+    if (settings.volume_master > 128) {
+        settings.volume_master = 128;
     }
     if (settings.window_width < window.game_width) {
         settings.window_width = window.game_width;

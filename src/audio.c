@@ -456,7 +456,7 @@ int audio_init(){
     sfx_init();
 
     OPL_SetCallback(0, TimerCallback, &sdl_player_data);
-    OPL_SDL_VOLUME = settings.volume;
+    OPL_SDL_VOLUME = settings.volume_master;
 
     return 0;
 }
@@ -686,7 +686,7 @@ void audio_set_volume(uint8_t volume) {
     if(volume > 128) {
         volume = 128;
     }
-    settings.volume = volume;
+    settings.volume_master = volume;
     OPL_SDL_VOLUME = volume;
 }
 uint8_t audio_get_volume() {

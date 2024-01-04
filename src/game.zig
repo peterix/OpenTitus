@@ -110,6 +110,8 @@ fn initGameType() !*const TITUS_constants {
     }
 }
 
+// TODO: this is a nice throwback in the original game, but maybe we could do something better.
+// Like replace the (missing) manual with an intro sequence to give the player some context.
 fn viewintrotext() c_int {
     var tmpstring: [41]u8 = .{};
     var rawtime = c.time(null);

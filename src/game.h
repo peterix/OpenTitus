@@ -15,8 +15,12 @@ struct _Settings {
     bool devmode;
     bool fullscreen;
     bool music;
-    uint8_t volume;
+    bool sound;
+    uint8_t volume_music;
+    uint8_t volume_sound;
+    uint8_t volume_master;
     uint16_t window_width;
     uint16_t window_height;
+    bool seen_intro;
 };
 extern Settings settings;

@@ -149,7 +149,7 @@ uint8_t RESET_LEVEL(ScreenContext *context, TITUS_level *level) {
                         break;
                     }
                 }
-                
+
             }
 
         } while (!pass);
