@@ -386,7 +386,7 @@ static void all_vox_zero()
 
 void TimerCallback(void *data)
 {
-    if (!settings.music) {
+    if (!settings->music) {
         return;
     }
     SDL_PLAYER    *sdlp = (SDL_PLAYER *)data;
@@ -456,7 +456,7 @@ int audio_init(){
     sfx_init();
 
     OPL_SetCallback(0, TimerCallback, &sdl_player_data);
-    OPL_SDL_VOLUME = settings.volume_master;
+    OPL_SDL_VOLUME = settings->volume_master;
 
     return 0;
 }
@@ -574,17 +574,17 @@ void music_select_song(int song_number) {
 }
 
 bool music_toggle() {
-    settings.music = !settings.music;
-    if(settings.music) {
+    settings->music = !settings->music;
+    if(settings->music) {
         OPL_SetCallback(0, TimerCallback, &sdl_player_data);
     }
-    return settings.music;
+    return settings->music;
 }
 
 void music_wait_to_finish() {
     SDL_Event event;
     bool waiting = true;
-    if (!settings.music) {
+    if (!settings->music) {
         return;
     }
     do {
@@ -612,7 +612,7 @@ void music_wait_to_finish() {
 }
 
 void music_restart_if_finished() {
-    if (settings.music) {
+    if (settings->music) {
         if (sdl_player_data.aad.cutsong == 0) {
             music_select_song(last_song);
         }
@@ -686,7 +686,7 @@ void audio_set_volume(uint8_t volume) {
     if(volume > 128) {
         volume = 128;
     }
-    settings.volume_master = volume;
+    settings->volume_master = volume;
     OPL_SDL_VOLUME = volume;
 }
 uint8_t audio_get_volume() {

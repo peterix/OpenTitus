@@ -246,22 +246,29 @@ int loadlevel(TITUS_level *level, unsigned char *leveldata, int leveldatasize, T
         offset += 26;
     }
 
-    level->bonuscount = 100;
+    level->bonuscapacity = 100;
+    level->bonuscount = 0;
+    level->bonuscollected = 0;
 
-    level->bonus = (TITUS_bonus *)SDL_malloc(sizeof(TITUS_bonus) * level->bonuscount);
+    level->tickcount = 0;
+
+    level->bonus = (TITUS_bonus *)SDL_malloc(sizeof(TITUS_bonus) * level->bonuscapacity);
     if (level->bonus == NULL) {
         sprintf(lasterror, "Error: Not enough memory to initialize level!\n");
         return (TITUS_ERROR_NOT_ENOUGH_MEMORY);
     }
 
     offset = level->height * level->width + 35082;
-    for (i = 0; i < level->bonuscount; i++) {
+    for (i = 0; i < level->bonuscapacity; i++) {
         level->bonus[i].x = leveldata[offset + 2];
         level->bonus[i].y = leveldata[offset + 3];
         level->bonus[i].exists = ((level->bonus[i].x != 0xFF) & (level->bonus[i].y != 0xFF));
         if (level->bonus[i].exists) {
             level->bonus[i].bonustile = leveldata[offset];
             level->bonus[i].replacetile = leveldata[offset + 1];
+            if (level->bonus[i].bonustile >= 255 - 2) {
+                level->bonuscount += 1;
+            }
             level->tilemap[level->bonus[i].y][level->bonus[i].x] = leveldata[offset + 0]; //Overwrite the actual tile
         }
         offset += 4;

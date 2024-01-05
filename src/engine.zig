@@ -33,6 +33,7 @@ const c = @import("c.zig");
 const game = @import("game.zig");
 const window = @import("window.zig");
 const elevators = @import("elevators.zig");
+const s = @import("settings.zig");
 
 const c_alloc = std.heap.c_allocator;
 
@@ -49,6 +50,7 @@ pub fn playtitus(constants: *const game.TITUS_constants, firstlevel: u16) c_int 
     var objects: [*c][*c]c.TITUS_objectdata = undefined;
     var object_count: u16 = 0;
 
+    // FIXME: this is persistent between levels... do not store it in the level
     level.lives = 2;
     level.extrabonus = 0;
 
@@ -126,6 +128,7 @@ pub fn playtitus(constants: *const game.TITUS_constants, firstlevel: u16) c_int 
             }
 
             if (globals.NEWLEVEL_FLAG) {
+                s.game_record_completion(level.levelnumber, level.bonuscollected, level.tickcount);
                 break;
             }
             if (globals.RESETLEVEL_FLAG == 1) {
@@ -184,6 +187,7 @@ fn playlevel(context: [*c]c.ScreenContext, level: *c.TITUS_level) c_int {
         scroll.scroll(level); //X- and Y-scrolling
         c.DISPLAY_TILES(level); //Draws tiles on the backbuffer
         c.DISPLAY_SPRITES(level); //Draws sprites on the backbuffer
+        level.tickcount += 1;
         retval = c.RESET_LEVEL(context, level); //Check terminate flags (finishlevel, gameover, death or theend)
         if (retval < 0) {
             return retval;

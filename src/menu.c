@@ -37,7 +37,6 @@
 #include "audio.h"
 #include "globals_old.h"
 #include "keyboard.h"
-#include "levelcodes.h"
 #include "game.h"
 
 // TODO: redo all UI
@@ -46,8 +45,6 @@
 // - Levels are unlocked by collecting the locks and the unlock state is persisted on disk instead of codes
 // - Add pause menu
 // - Esc opens pause menu instead of instant quit
-
-int enterpassword(int levelcount);
 
 int viewmenu(const char * menufile, int menuformat, int levelcount) {
     SDL_Surface *surface;
@@ -231,6 +228,8 @@ int viewmenu(const char * menufile, int menuformat, int levelcount) {
         break;
 
     case 1: //Password
+        // TODO: implement level select
+        /*
         retval = enterpassword(levelcount);
 
         if (retval < 0)
@@ -239,6 +238,7 @@ int viewmenu(const char * menufile, int menuformat, int levelcount) {
         if (retval > 0) {
             curlevel = retval;
         }
+        */
         selection = 0;
         menuloop = 1;
         goto beforemenuloop;
@@ -292,6 +292,7 @@ int viewmenu(const char * menufile, int menuformat, int levelcount) {
 
 }
 
+/*
 int enterpassword(int levelcount){
     int retval;
     char code[] = "____";
@@ -412,3 +413,4 @@ int enterpassword(int levelcount){
     window_render();
     return (retval);
 }
+*/

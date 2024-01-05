@@ -97,21 +97,21 @@ int move_player(ScreenContext *context, TITUS_level *level) {
         if (event.type == SDL_QUIT) {
             return TITUS_ERROR_QUIT;
         } else if (event.type == SDL_KEYDOWN) {
-            if (event.key.keysym.scancode == KEY_GODMODE && settings.devmode) {
+            if (event.key.keysym.scancode == KEY_GODMODE && settings->devmode) {
                 if (GODMODE) {
                     GODMODE = false;
                     NOCLIP = false;
                 } else {
                     GODMODE = true;
                 }
-            } else if (event.key.keysym.scancode == KEY_NOCLIP && settings.devmode) {
+            } else if (event.key.keysym.scancode == KEY_NOCLIP && settings->devmode) {
                 if (NOCLIP) {
                     NOCLIP = false;
                 } else {
                     NOCLIP = true;
                     GODMODE = true;
                 }
-            } else if (event.key.keysym.scancode == KEY_DEBUG && settings.devmode) {
+            } else if (event.key.keysym.scancode == KEY_DEBUG && settings->devmode) {
                 DISPLAYLOOPTIME = !DISPLAYLOOPTIME;
             } else if (event.key.keysym.scancode == KEY_MUSIC) {
                 music_toggle();
@@ -125,7 +125,7 @@ int move_player(ScreenContext *context, TITUS_level *level) {
     if (keystate[KEY_ESC]) {
         return TITUS_ERROR_QUIT;
     }
-    if(settings.devmode) {
+    if(settings->devmode) {
         if (keystate[KEY_F1] && (RESETLEVEL_FLAG == 0)) { //F1 = suicide
             CASE_DEAD_IM(level);
             RESETLEVEL_FLAG--;
@@ -882,6 +882,7 @@ static int CASE_BONUS(TITUS_level *level, uint8_t tileY, uint8_t tileX) {
     //If the bonus is 253-255, it's HP. Increase life!
     if (level->bonus[i].bonustile >= 255 - 2) {
         //Increase HP if tile number is >= 253
+        level->bonuscollected += 1;
         music_select_song(6);
         INC_ENERGY(level);
     }

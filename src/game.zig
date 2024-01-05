@@ -31,8 +31,9 @@ const engine = @import("engine.zig");
 const window = @import("window.zig");
 const keyboard = @import("keyboard.zig");
 const fonts = @import("fonts.zig");
-const levelcodes = @import("levelcodes.zig");
-const s = @import("settings.zig");
+
+const memory = @import("memory.zig");
+const Managed = memory.Managed;
 
 const TitusError = error{
     CannotDetermineGameType,
@@ -43,7 +44,15 @@ const TitusError = error{
 };
 
 pub export var game: c.GameType = undefined;
-pub export var settings: s.Settings = undefined;
+
+const s = @import("settings.zig");
+const Settings = s.Settings;
+pub var settings_mem: Managed(Settings) = undefined;
+pub export var settings: *Settings = undefined;
+
+const GameState = s.GameState;
+pub var game_state_mem: Managed(GameState) = undefined;
+pub var game_state: *GameState = undefined;
 
 pub const TITUS_constants = struct {
     levelfiles: [16][:0]const u8,
@@ -130,7 +139,7 @@ fn viewintrotext() c_int {
     if (retval < 0)
         return retval;
 
-    settings.seen_intro = true;
+    game_state.seen_intro = true;
 
     if (retval < 0)
         return retval;
@@ -146,7 +155,13 @@ pub fn run() !u8 {
 
     const c_alloc = std.heap.c_allocator;
 
-    settings = try s.read(c_alloc);
+    settings_mem = try Settings.read(c_alloc);
+    settings = &settings_mem.value;
+    defer settings_mem.deinit();
+
+    game_state_mem = try GameState.read(c_alloc);
+    game_state = &game_state_mem.value;
+    defer game_state_mem.deinit();
 
     if (c.SDL_Init(c.SDL_INIT_VIDEO | c.SDL_INIT_TIMER | c.SDL_INIT_AUDIO) != 0) {
         std.debug.print("Unable to initialize SDL: {s}\n", .{std.mem.span(c.SDL_GetError())});
@@ -163,7 +178,6 @@ pub fn run() !u8 {
     defer c.audio_free();
 
     c.initoriginal();
-    levelcodes.initCodes();
 
     if (c.fonts_load() != 0) {
         return TitusError.CannotInitFonts;
@@ -174,7 +188,7 @@ pub fn run() !u8 {
     var state: c_int = 1;
     var retval: c_int = 0;
 
-    if (!settings.seen_intro) {
+    if (!game_state.seen_intro) {
         if (state != 0) {
             retval = viewintrotext();
             if (retval < 0)
@@ -209,7 +223,8 @@ pub fn run() !u8 {
         }
     }
 
-    try s.write(c_alloc, settings);
+    try settings.write(c_alloc);
+    try game_state.write(c_alloc);
 
     // TODO: completely stop using this. it's not consistent across the codebase...
     var error_span = std.mem.span(@as([*c]u8, @ptrCast(&c.lasterror)));

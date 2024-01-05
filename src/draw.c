@@ -51,7 +51,6 @@
 #include "gates.h"
 #include "scroll.h"
 #include "audio.h"
-#include "levelcodes.h"
 
 static const int tick_delay = 29;
 static SDL_Surface *sprite_from_cache(TITUS_level *level, TITUS_sprite *spr);
@@ -456,8 +455,8 @@ int view_password(ScreenContext *context, TITUS_level *level, uint8_t level_inde
     sprintf(tmpchars, "%d", level_index + 1);
     text_render(tmpchars, 25 * 8 - strlen(tmpchars) * 8, 13 * 8, false);
 
-    text_render("CODE", 14 * 8, 10 * 8, false);
-    text_render(codeForLevel(level_index), 20 * 8, 10 * 8, true);
+    text_render("Unlocked!", 14 * 8, 10 * 8, false);
+    game_unlock_level(level_index, level->lives);
 
     window_render();
     retval = waitforbutton();

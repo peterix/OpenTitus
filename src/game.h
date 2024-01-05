@@ -21,6 +21,7 @@ struct _Settings {
     uint8_t volume_master;
     uint16_t window_width;
     uint16_t window_height;
-    bool seen_intro;
 };
-extern Settings settings;
+extern Settings* settings;
+
+void game_unlock_level(uint16_t level, int lives);

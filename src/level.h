@@ -218,6 +218,8 @@ struct _TITUS_level {
     //TITUS_object *finish_object; //Pointer to the required object to carry to finish; NULL if there is no such object
     SDL_PixelFormat *pixelformat; //Malloced
 
+    size_t tickcount;
+
     TITUS_player player;
 
     TITUS_object *object; //Malloced
@@ -225,7 +227,9 @@ struct _TITUS_level {
     TITUS_enemy *enemy; //Malloced
     size_t enemycount;
     TITUS_bonus *bonus; //Malloced
+    size_t bonuscapacity;
     size_t bonuscount;
+    size_t bonuscollected;
     TITUS_gate *gate; //Malloced
     size_t gatecount;
     TITUS_elevator *elevator; //Malloced
