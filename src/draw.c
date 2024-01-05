@@ -296,11 +296,14 @@ int viewstatus(TITUS_level *level, bool countbonus){
     size_t title_width = text_width(leveltitle[level->levelnumber], false);
     size_t position = (320 - title_width) / 2;
     text_render(leveltitle[level->levelnumber], position, 12 * 5 + 16, false);
+
     sprintf(tmpchars, "%d", level->extrabonus);
-    text_render(tmpchars, 28 * 8 - strlen(tmpchars) * 8, 10 * 12, false);
+    size_t extrabonus_width = text_width(tmpchars, true);
+    text_render(tmpchars, 28 * 8 - extrabonus_width, 10 * 12, true);
 
     sprintf(tmpchars, "%d", level->lives);
-    text_render(tmpchars, 28 * 8 - strlen(tmpchars) * 8, 11 * 12, false);
+    size_t lives_width = text_width(tmpchars, true);
+    text_render(tmpchars, 28 * 8 - lives_width, 11 * 12, true);
 
     window_render();
 
@@ -313,14 +316,16 @@ int viewstatus(TITUS_level *level, bool countbonus){
             for (int i = 0; i < 10; i++) {
                 level->extrabonus--;
                 sprintf(tmpchars, "%2d", level->extrabonus);
-                text_render(tmpchars, 28 * 8 - strlen(tmpchars) * 8, 10 * 12, false);
+                size_t extrabonus_width = text_width(tmpchars, true);
+                text_render(tmpchars, 28 * 8 - extrabonus_width, 10 * 12, true);
                 window_render();
                 // 150 ms
                 SDL_Delay(150);
             }
             level->lives++;
             sprintf(tmpchars, "%d", level->lives);
-            text_render(tmpchars, 28 * 8 - strlen(tmpchars) * 8, 11 * 12, false);
+            size_t lives_width = text_width(tmpchars, true);
+            text_render(tmpchars, 28 * 8 - lives_width, 11 * 12, true);
             window_render();
             // 100 ms
             SDL_Delay(100);
