@@ -23,13 +23,8 @@ fn build_opl(b: *std.Build, target: CrossTarget, optimize: std.builtin.Mode) *St
 
     lib.addCSourceFiles(&.{
         "opl/src/opl.c",
-        "opl/src/opl_linux.c",
-        "opl/src/opl_obsd.c",
         "opl/src/opl_queue.c",
         "opl/src/opl_sdl.c",
-        "opl/src/opl_timer.c",
-        "opl/src/opl_win32.c",
-        "opl/src/ioperm_sys.c",
         "opl/src/opl3.c",
     },
     // NOTE: the use of bit shifts of negative numbers is quite extensive, so we disable ubsan shooting us in the foot with those...
