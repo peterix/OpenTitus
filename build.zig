@@ -22,22 +22,21 @@ fn build_opl(b: *std.Build, target: CrossTarget, optimize: std.builtin.Mode) *St
     });
 
     lib.addCSourceFiles(&.{
-        "opl/src/opl.c",
-        "opl/src/opl_queue.c",
-        "opl/src/opl_sdl.c",
-        "opl/src/opl3.c",
+        "opl/opl.c",
+        "opl/opl_queue.c",
+        "opl/opl_sdl.c",
+        "opl/opl3.c",
     },
     // NOTE: the use of bit shifts of negative numbers is quite extensive, so we disable ubsan shooting us in the foot with those...
     // FIXME: remove the UB-ness
     &.{
         "-fno-sanitize=shift",
     });
-    lib.addIncludePath(std.build.LazyPath.relative("opl/include/"));
-    lib.addIncludePath(std.build.LazyPath.relative("opl/src/"));
+    lib.addIncludePath(std.build.LazyPath.relative("opl/"));
     lib.c_std = C_STANDARD;
     lib.linkLibC();
     lib.linkSystemLibrary("SDL2_mixer");
-    lib.installHeadersDirectory("opl/include/", "");
+    lib.installHeader("opl/opl.h", "opl.h");
     return lib;
 }
 

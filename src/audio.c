@@ -22,20 +22,16 @@
 #include "globals_old.h"
 #include "game.h"
 #include "tituserror.h"
-#include "opl/opl.h"
+#include "opl.h"
 #include <assert.h>
 
 #define ADLIB_DATA_COUNT 10
 #define ADLIB_INSTRUMENT_COUNT 20
 #define ADLIB_SFX_COUNT 14
 
-#define FREQ_RATE 44100
-
 #define MUS_OFFSET 0
 #define INS_OFFSET 352
 #define SFX_OFFSET 1950
-
-#define ADLIB_PORT 0x388
 
 unsigned char opera[] = {0,0,1,2,3,4,5,8,9,0xA,0xB,0xC,0xD,0x10,0x11,0x12,0x13,0x14,0x15};
 unsigned char voxp[] = {1,2,3,7,8,9,13,17,15,18,14};
@@ -96,17 +92,12 @@ extern uint8_t OPL_SDL_VOLUME;
 
 SDL_PLAYER sdl_player_data;
 
-static void updatechip(int reg, int val)
-{
-    OPL_WriteRegister(reg, val);
-}
-
 static void insmaker(unsigned char *insdata, int channel) {
-    updatechip(0x60 + channel, insdata[0]); //Attack Rate / Decay Rate
-    updatechip(0x80 + channel, insdata[1]); //Sustain Level / Release Rate
-    updatechip(0x40 + channel, insdata[2]); //Key scaling level / Operator output level
-    updatechip(0x20 + channel, insdata[3]); //Amp Mod / Vibrato / EG type / Key Scaling / Multiple
-    updatechip(0xE0 + channel, insdata[4]); //Wave type
+    OPL_WriteRegister(0x60 + channel, insdata[0]); //Attack Rate / Decay Rate
+    OPL_WriteRegister(0x80 + channel, insdata[1]); //Sustain Level / Release Rate
+    OPL_WriteRegister(0x40 + channel, insdata[2]); //Key scaling level / Operator output level
+    OPL_WriteRegister(0x20 + channel, insdata[3]); //Amp Mod / Vibrato / EG type / Key Scaling / Multiple
+    OPL_WriteRegister(0xE0 + channel, insdata[4]); //Wave type
 }
 
 static int load_file(const char *filename, unsigned char **raw_data);
@@ -161,7 +152,7 @@ static int fillchip(ADLIB_DATA *aad)
                 if (tmp2 <= 13)
                     tmp2 += 3;
                 tmp2 = opera[tmp2];
-                updatechip(0x40 + tmp2, tmp1);
+                OPL_WriteRegister(0x40 + tmp2, tmp1);
                 break;
 
             case 2: //Change tempo
@@ -194,7 +185,7 @@ static int fillchip(ADLIB_DATA *aad)
                         aad->perc_stat = aad->perc_stat | tmp1;                //   clear a bit from perc_stat
                         tmp1 = ~(tmp1) & 0xFF;                                 //
                         aad->perc_stat = aad->perc_stat & tmp1;                //
-                        updatechip(0xBD, aad->perc_stat); //update perc_stat
+                        OPL_WriteRegister(0xBD, aad->perc_stat); //update perc_stat
                     }
                 }
                 tmp2 = voxp[aad->vox[i]];
@@ -204,7 +195,7 @@ static int fillchip(ADLIB_DATA *aad)
                 insmaker(aad->instrument[i]->op[0], tmp2);
                 if (aad->vox[i] < 7) {
                     insmaker(aad->instrument[i]->op[1], tmp2 - 3);
-                    updatechip(0xC0 + aad->vox[i], aad->instrument[i]->fb_alg);
+                    OPL_WriteRegister(0xC0 + aad->vox[i], aad->instrument[i]->fb_alg);
                 }
                 break;
 
@@ -262,13 +253,13 @@ static int fillchip(ADLIB_DATA *aad)
         //Play note
         if (gamme[aad->freq[i]] != 0) {
             if (aad->instrument[i]->vox == 0xFE) { //Play a frequence
-                updatechip(0xA0 + aad->vox[i], (unsigned char)(gamme[aad->freq[i]] & 0xFF)); //Output lower 8 bits of frequence
+                OPL_WriteRegister(0xA0 + aad->vox[i], (unsigned char)(gamme[aad->freq[i]] & 0xFF)); //Output lower 8 bits of frequence
                 if (aad->lie_late[i] != 1) {
-                    updatechip(0xB0 + aad->vox[i], 0); //Silence the channel
+                    OPL_WriteRegister(0xB0 + aad->vox[i], 0); //Silence the channel
                 }
                 tmp1 = (aad->octave[i] + 2) & 0x07; //Octave (3 bits)
                 tmp2 = (unsigned char)((gamme[aad->freq[i]] >> 8) & 0x03); //Frequency (higher 2 bits)
-                updatechip(0xB0 + aad->vox[i], 0x20 + (tmp1 << 2) + tmp2); //Voices the channel, and output octave and last bits of frequency
+                OPL_WriteRegister(0xB0 + aad->vox[i], 0x20 + (tmp1 << 2) + tmp2); //Voices the channel, and output octave and last bits of frequency
                 aad->lie_late[i] = aad->lie[i];
 
             } else { //Play a perc instrument
@@ -285,7 +276,7 @@ static int fillchip(ADLIB_DATA *aad)
                     insmaker(aad->instrument[i]->op[0], tmp2);
                     if (aad->vox[i] < 7) {
                         insmaker(aad->instrument[i]->op[1], tmp2 - 3);
-                        updatechip(0xC0 + aad->vox[i], aad->instrument[i]->fb_alg);
+                        OPL_WriteRegister(0xC0 + aad->vox[i], aad->instrument[i]->fb_alg);
                     }
 
                     //Similar to escape, oct = 1 (change volume)
@@ -297,16 +288,16 @@ static int fillchip(ADLIB_DATA *aad)
                     if (tmp2 <= 13)
                         tmp2 += 3;
                     tmp2 = opera[tmp2];
-                    updatechip(0x40 + tmp2, tmp1);
+                    OPL_WriteRegister(0x40 + tmp2, tmp1);
                 }
                 tmpC = 0x10 >> ((signed int)aad->vox[i] - 6);
-                updatechip(0xBD, aad->perc_stat & ~tmpC); //Output perc_stat with one bit removed
+                OPL_WriteRegister(0xBD, aad->perc_stat & ~tmpC); //Output perc_stat with one bit removed
                 if (aad->vox[i] == 6) {
-                    updatechip(0xA6, 0x57); //
-                    updatechip(0xB6, 0);    // Output the perc sound
-                    updatechip(0xB6, 5);    //
+                    OPL_WriteRegister(0xA6, 0x57); //
+                    OPL_WriteRegister(0xB6, 0);    // Output the perc sound
+                    OPL_WriteRegister(0xB6, 5);    //
                 }
-                updatechip(0xBD, aad->perc_stat); //Output perc_stat
+                OPL_WriteRegister(0xBD, aad->perc_stat); //Output perc_stat
             }
         } else {
             aad->lie_late[i] = aad->lie[i];
@@ -357,30 +348,30 @@ static void all_vox_zero()
 {
     int i;
     for (i = 0xB0; i < 0xB9; i++)
-        updatechip(i, 0); //Clear voice, octave and upper bits of frequence
+        OPL_WriteRegister(i, 0); //Clear voice, octave and upper bits of frequence
     for (i = 0xA0; i < 0xB9; i++)
-        updatechip(i, 0); //Clear lower byte of frequence
+        OPL_WriteRegister(i, 0); //Clear lower byte of frequence
 
-    updatechip(0x08, 0x00);
-    updatechip(0xBD, 0x00);
-    updatechip(0x40, 0x3F);
-    updatechip(0x41, 0x3F);
-    updatechip(0x42, 0x3F);
-    updatechip(0x43, 0x3F);
-    updatechip(0x44, 0x3F);
-    updatechip(0x45, 0x3F);
-    updatechip(0x48, 0x3F);
-    updatechip(0x49, 0x3F);
-    updatechip(0x4A, 0x3F);
-    updatechip(0x4B, 0x3F);
-    updatechip(0x4C, 0x3F);
-    updatechip(0x4D, 0x3F);
-    updatechip(0x50, 0x3F);
-    updatechip(0x51, 0x3F);
-    updatechip(0x52, 0x3F);
-    updatechip(0x53, 0x3F);
-    updatechip(0x54, 0x3F);
-    updatechip(0x55, 0x3F);
+    OPL_WriteRegister(0x08, 0x00);
+    OPL_WriteRegister(0xBD, 0x00);
+    OPL_WriteRegister(0x40, 0x3F);
+    OPL_WriteRegister(0x41, 0x3F);
+    OPL_WriteRegister(0x42, 0x3F);
+    OPL_WriteRegister(0x43, 0x3F);
+    OPL_WriteRegister(0x44, 0x3F);
+    OPL_WriteRegister(0x45, 0x3F);
+    OPL_WriteRegister(0x48, 0x3F);
+    OPL_WriteRegister(0x49, 0x3F);
+    OPL_WriteRegister(0x4A, 0x3F);
+    OPL_WriteRegister(0x4B, 0x3F);
+    OPL_WriteRegister(0x4C, 0x3F);
+    OPL_WriteRegister(0x4D, 0x3F);
+    OPL_WriteRegister(0x50, 0x3F);
+    OPL_WriteRegister(0x51, 0x3F);
+    OPL_WriteRegister(0x52, 0x3F);
+    OPL_WriteRegister(0x53, 0x3F);
+    OPL_WriteRegister(0x54, 0x3F);
+    OPL_WriteRegister(0x55, 0x3F);
 }
 
 
@@ -397,7 +388,6 @@ void TimerCallback(void *data)
     // Schedule the next timer callback.
     // Delay is original 13.75 ms
     OPL_SetCallback(13750, TimerCallback, sdlp);
-
 }
 
 int audio_init(){
@@ -439,13 +429,16 @@ int audio_init(){
         }
     }
 
-    OPL_SetSampleRate(FREQ_RATE);
+    OPL_SetSampleRate(44100);
 
-    if (!OPL_Init(ADLIB_PORT))
+    if (!OPL_Init(0x388))
     {
         fprintf(stderr, "Unable to initialise OPL layer\n");
         exit(-1);
     }
+
+    // This makes no difference, but specifying 1 (OPL3) does break the music
+    OPL_InitRegisters(0);
 
     sdl_player_data.aad.data_size = load_file("music.bin", &(sdl_player_data.aad.data));
     if (sdl_player_data.aad.data_size < 0) {
@@ -650,7 +643,7 @@ void sfx_play(int fx_number){
     SDL_LockAudio();
     insmaker(aad->sfx[fx_number].op[0], 0x13); //Channel 6 operator 1
     insmaker(aad->sfx[fx_number].op[1], 0x10); //Channel 6 operator 2
-    updatechip(0xC6, aad->sfx[fx_number].fb_alg); //Channel 6 (Feedback/Algorithm)
+    OPL_WriteRegister(0xC6, aad->sfx[fx_number].fb_alg); //Channel 6 (Feedback/Algorithm)
     SDL_UnlockAudio();
 }
 
@@ -659,11 +652,11 @@ void sfx_driver() {
         return;
     }
     ADLIB_DATA *aad = &(sdl_player_data.aad);
-    updatechip(0xBD, 0xEF & aad->perc_stat);
-    updatechip(0xA6, 0x57);
-    updatechip(0xB6, 1);
-    updatechip(0xB6, 5);
-    updatechip(0xBD, 0x10 | aad->perc_stat);
+    OPL_WriteRegister(0xBD, 0xEF & aad->perc_stat);
+    OPL_WriteRegister(0xA6, 0x57);
+    OPL_WriteRegister(0xB6, 1);
+    OPL_WriteRegister(0xB6, 5);
+    OPL_WriteRegister(0xBD, 0x10 | aad->perc_stat);
     sfx_time--;
     if (sfx_time == 0) {
         sfx_stop();
@@ -674,10 +667,10 @@ void sfx_stop() {
     unsigned char tmpins1[] = {0xF5, 0x7F, 0x00, 0x11, 0x00};
     unsigned char tmpins2[] = {0xF8, 0xFF, 0x04, 0x30, 0x00};
     SDL_LockAudio();
-    updatechip(0xB6, 32);
+    OPL_WriteRegister(0xB6, 32);
     insmaker(tmpins1, 0x13); //Channel 6 operator 1
     insmaker(tmpins2, 0x10); //Channel 6 operator 2
-    updatechip(0xC6, 0x08); //Channel 6 (Feedback/Algorithm)
+    OPL_WriteRegister(0xC6, 0x08); //Channel 6 (Feedback/Algorithm)
     SDL_UnlockAudio();
     sfx_on = false;
 }

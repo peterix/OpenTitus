@@ -26,7 +26,7 @@
 
 #include "opl3.h"
 
-#include "../include/opl/opl.h"
+#include "opl.h"
 #include "opl_internal.h"
 
 #include "opl_queue.h"
@@ -221,7 +221,7 @@ static void OPL_Mix_Callback(void *udata, Uint8 *buffer, int len)
     }
 }
 
-static void OPL_SDL_Shutdown(void)
+void OPL_SDL_Shutdown(void)
 {
     Mix_HookMusic(NULL, NULL);
 
@@ -233,14 +233,6 @@ static void OPL_SDL_Shutdown(void)
         free(mix_buffer);
         sdl_was_initialized = 0;
     }
-
-/*
-    if (opl_chip != NULL)
-    {
-        OPLDestroy(opl_chip);
-        opl_chip = NULL;
-    }
-    */
 
     if (callback_mutex != NULL)
     {
@@ -279,7 +271,7 @@ static unsigned int GetSliceSize(void)
     return 1024;
 }
 
-static int OPL_SDL_Init(unsigned int port_base)
+int OPL_SDL_Init(unsigned int port_base)
 {
     // Check if SDL_mixer has been opened already
     // If not, we must initialize it now
@@ -355,7 +347,7 @@ static int OPL_SDL_Init(unsigned int port_base)
     return 1;
 }
 
-static unsigned int OPL_SDL_PortRead(opl_port_t port)
+unsigned int OPL_SDL_PortRead(opl_port_t port)
 {
     unsigned int result = 0;
 
@@ -440,7 +432,7 @@ static void WriteRegister(unsigned int reg_num, unsigned int value)
     }
 }
 
-static void OPL_SDL_PortWrite(opl_port_t port, unsigned int value)
+void OPL_SDL_PortWrite(opl_port_t port, unsigned int value)
 {
     if (port == OPL_REGISTER_PORT)
     {
@@ -456,8 +448,7 @@ static void OPL_SDL_PortWrite(opl_port_t port, unsigned int value)
     }
 }
 
-static void OPL_SDL_SetCallback(uint64_t us, opl_callback_t callback,
-                                void *data)
+void OPL_SDL_SetCallback(uint64_t us, opl_callback_t callback, void *data)
 {
     SDL_LockMutex(callback_queue_mutex);
     OPL_Queue_Push(callback_queue, callback, data,
@@ -465,47 +456,31 @@ static void OPL_SDL_SetCallback(uint64_t us, opl_callback_t callback,
     SDL_UnlockMutex(callback_queue_mutex);
 }
 
-static void OPL_SDL_ClearCallbacks(void)
+void OPL_SDL_ClearCallbacks(void)
 {
     SDL_LockMutex(callback_queue_mutex);
     OPL_Queue_Clear(callback_queue);
     SDL_UnlockMutex(callback_queue_mutex);
 }
 
-static void OPL_SDL_Lock(void)
+void OPL_SDL_Lock(void)
 {
     SDL_LockMutex(callback_mutex);
 }
 
-static void OPL_SDL_Unlock(void)
+void OPL_SDL_Unlock(void)
 {
     SDL_UnlockMutex(callback_mutex);
 }
 
-static void OPL_SDL_SetPaused(int paused)
+void OPL_SDL_SetPaused(int paused)
 {
     opl_sdl_paused = paused;
 }
 
-static void OPL_SDL_AdjustCallbacks(float factor)
+void OPL_SDL_AdjustCallbacks(float factor)
 {
     SDL_LockMutex(callback_queue_mutex);
     OPL_Queue_AdjustCallbacks(callback_queue, current_time, factor);
     SDL_UnlockMutex(callback_queue_mutex);
 }
-
-opl_driver_t opl_sdl_driver =
-{
-    "SDL",
-    OPL_SDL_Init,
-    OPL_SDL_Shutdown,
-    OPL_SDL_PortRead,
-    OPL_SDL_PortWrite,
-    OPL_SDL_SetCallback,
-    OPL_SDL_ClearCallbacks,
-    OPL_SDL_Lock,
-    OPL_SDL_Unlock,
-    OPL_SDL_SetPaused,
-    OPL_SDL_AdjustCallbacks,
-};
-

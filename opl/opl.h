@@ -105,11 +105,6 @@ unsigned int OPL_ReadStatus(void);
 
 void OPL_WriteRegister(int reg, int value);
 
-// Perform a detection sequence to determine that an
-// OPL chip is present.
-
-opl_init_result_t OPL_Detect(void);
-
 // Initialize all registers, performed on startup.
 
 void OPL_InitRegisters(int opl3);

@@ -18,7 +18,7 @@
 #ifndef OPL_QUEUE_H
 #define OPL_QUEUE_H
 
-#include "../include/opl/opl.h"
+#include "opl.h"
 
 typedef struct opl_callback_queue_s opl_callback_queue_t;
 
