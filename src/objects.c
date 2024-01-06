@@ -413,14 +413,14 @@ int loadobjects(TITUS_objectdata ***objects, uint16_t *count) {
     *count = ORIG_OBJECT_COUNT;
     *objects = (TITUS_objectdata **)SDL_malloc(sizeof(TITUS_objectdata *) * ORIG_OBJECT_COUNT);
     if ((*objects) == NULL) {
-        sprintf(lasterror, "Error: Not enough memory to load objects!\n");
+        fprintf(stderr, "Error: Not enough memory to load objects!\n");
         return (TITUS_ERROR_NOT_ENOUGH_MEMORY);
     }
 
     for (i = 0; i < ORIG_OBJECT_COUNT; i++) {
         (*objects)[i] = (TITUS_objectdata *)SDL_malloc(sizeof(TITUS_objectdata)); // * ORIG_OBJECT_COUNT);
         if ((*objects)[i] == NULL) {
-            sprintf(lasterror, "Error: Not enough memory to load objects!\n");
+            fprintf(stderr, "Error: Not enough memory to load objects!\n");
             return (TITUS_ERROR_NOT_ENOUGH_MEMORY);
         }
         (*objects)[i]->maxspeedY = object_maxspeedY[i];

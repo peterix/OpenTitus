@@ -226,11 +226,5 @@ pub fn run() !u8 {
     try settings.write(c_alloc);
     try game_state.write(c_alloc);
 
-    // TODO: completely stop using this. it's not consistent across the codebase...
-    var error_span = std.mem.span(@as([*c]u8, @ptrCast(&c.lasterror)));
-    if (error_span.len > 0) {
-        std.debug.print("{s}\n", .{error_span});
-        return 1;
-    }
     return 0;
 }

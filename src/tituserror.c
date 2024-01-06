@@ -1,1 +1,0 @@
-char lasterror[200];

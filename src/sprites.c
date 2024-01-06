@@ -103,7 +103,7 @@ int loadsprites(TITUS_spritedata ***sprites, unsigned char * spritedata, int spr
     *count = SPRITECOUNT;
     *sprites = (TITUS_spritedata **)SDL_malloc(sizeof(TITUS_spritedata *) * SPRITECOUNT);
     if ((*sprites) == NULL) {
-        sprintf(lasterror, "Error: Not enough memory to load sprites!\n");
+        fprintf(stderr, "Error: Not enough memory to load sprites!\n");
         return (TITUS_ERROR_NOT_ENOUGH_MEMORY);
     }
 
@@ -112,7 +112,7 @@ int loadsprites(TITUS_spritedata ***sprites, unsigned char * spritedata, int spr
         // For some reason, it requires some more space in order to free properly
         (*sprites)[i] = (TITUS_spritedata *)SDL_malloc(sizeof(TITUS_spritedata) * 2);
         if ((*sprites)[i] == NULL) {
-            sprintf(lasterror, "Error: Not enough memory to load sprites!\n");
+            fprintf(stderr, "Error: Not enough memory to load sprites!\n");
             return (TITUS_ERROR_NOT_ENOUGH_MEMORY);
         }
         (*sprites)[i]->data = SDL_LoadSprite(spritedata, spritewidth[i], spriteheight[i], offset, pixelformat);
@@ -150,14 +150,14 @@ int initspritecache(TITUS_spritecache *spritecache, uint16_t count, uint16_t tmp
 
     spritecache->spritebuffer = (TITUS_spritebuffer **)SDL_malloc(sizeof(TITUS_spritebuffer *) * spritecache->count);
     if (spritecache->spritebuffer == NULL) {
-        sprintf(lasterror, "Error: Not enough memory to initialize sprite buffer!\n");
+        fprintf(stderr, "Error: Not enough memory to initialize sprite buffer!\n");
         return (TITUS_ERROR_NOT_ENOUGH_MEMORY);
     }
 
     for (i = 0; i < spritecache->count; i++) {
         spritecache->spritebuffer[i] = (TITUS_spritebuffer *)SDL_malloc(sizeof(TITUS_spritebuffer));
         if (spritecache->spritebuffer[i] == NULL) {
-            sprintf(lasterror, "Error: Not enough memory to load sprites!\n");
+            fprintf(stderr, "Error: Not enough memory to load sprites!\n");
             return (TITUS_ERROR_NOT_ENOUGH_MEMORY);
         }
         spritecache->spritebuffer[i]->data = NULL;

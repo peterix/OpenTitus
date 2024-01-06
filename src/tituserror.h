@@ -34,5 +34,3 @@
 #define TITUS_ERROR_INVALID_FILE -4
 #define TITUS_ERROR_SDL_ERROR -5
 #define TITUS_ERROR_OTHER -6
-extern char lasterror[200];
-

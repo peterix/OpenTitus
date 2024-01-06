@@ -479,13 +479,13 @@ int loadpixelformat(SDL_PixelFormat **pixelformat){
 
     *pixelformat = (SDL_PixelFormat *)SDL_malloc(sizeof(SDL_PixelFormat));
     if (*pixelformat == NULL) {
-        sprintf(lasterror, "Error: Not enough memory to initialize palette!\n");
+        fprintf(stderr, "Error: Not enough memory to initialize palette!\n");
         return (TITUS_ERROR_NOT_ENOUGH_MEMORY);
     }
 
     (*pixelformat)->palette = (SDL_Palette *)SDL_malloc(sizeof(SDL_Palette));
     if ((*pixelformat)->palette == NULL) {
-        sprintf(lasterror, "Error: Not enough memory to initialize palette!\n");
+        fprintf(stderr, "Error: Not enough memory to initialize palette!\n");
         return (TITUS_ERROR_NOT_ENOUGH_MEMORY);
     }
 
@@ -493,7 +493,7 @@ int loadpixelformat(SDL_PixelFormat **pixelformat){
 
     (*pixelformat)->palette->colors = (SDL_Color *)SDL_malloc(sizeof(SDL_Color) * (*pixelformat)->palette->ncolors);
     if ((*pixelformat)->palette->colors == NULL) {
-        sprintf(lasterror, "Error: Not enough memory to initialize palette!\n");
+        fprintf(stderr, "Error: Not enough memory to initialize palette!\n");
         return (TITUS_ERROR_NOT_ENOUGH_MEMORY);
     }
 

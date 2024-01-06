@@ -409,13 +409,13 @@ int audio_init(){
         seg_reduction = 1301;
         ifp = fopen("music.bin", "rb");
         if (ifp == NULL) {
-            sprintf(lasterror, "Error: music.bin not found!\n");
+            fprintf(stderr, "Error: music.bin not found!\n");
             return (TITUS_ERROR_FILE_NOT_FOUND);
         } else {
             fseek(ifp, 0L, SEEK_END);
             in_len = ftell(ifp);
             if (in_len != 18749) {
-                sprintf(lasterror, "Error: music.bin is invalid!\n");
+                fprintf(stderr, "Error: music.bin is invalid!\n");
                 fclose (ifp);
                 return (TITUS_ERROR_INVALID_FILE);
             }
@@ -425,13 +425,13 @@ int audio_init(){
         seg_reduction = 1345;
         ifp = fopen("music.bin", "rb");
         if (ifp == NULL) {
-            sprintf(lasterror, "Error: music.bin not found!\n");
+            fprintf(stderr, "Error: music.bin not found!\n");
             return (TITUS_ERROR_FILE_NOT_FOUND);
         } else {
             fseek(ifp, 0L, SEEK_END);
             in_len = ftell(ifp);
             if (in_len != 18184) {
-                sprintf(lasterror, "Error: music.bin is invalid!\n");
+                fprintf(stderr, "Error: music.bin is invalid!\n");
                 fclose (ifp);
                 return (TITUS_ERROR_INVALID_FILE);
             }

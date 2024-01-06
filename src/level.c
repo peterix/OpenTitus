@@ -70,13 +70,13 @@ int loadlevel(TITUS_level *level, unsigned char *leveldata, int leveldatasize, T
 
     level->tilemap = (unsigned char **)SDL_malloc(sizeof(unsigned char *) * pre_size);
     if (level->tilemap == NULL) {
-        sprintf(lasterror, "Error: Not enough memory to initialize level!\n");
+        fprintf(stderr, "Error: Not enough memory to initialize level!\n");
         return (TITUS_ERROR_NOT_ENOUGH_MEMORY);
     }
     for (i = 0; i < pre_size; i++) {
         level->tilemap[i] = (unsigned char *)SDL_malloc(sizeof(unsigned char) * level->width);
         if (level->tilemap[i] == NULL) {
-            sprintf(lasterror, "Error: Not enough memory to initialize level!\n");
+            fprintf(stderr, "Error: Not enough memory to initialize level!\n");
             return (TITUS_ERROR_NOT_ENOUGH_MEMORY);
         }
         level->height++;
@@ -132,7 +132,7 @@ int loadlevel(TITUS_level *level, unsigned char *leveldata, int leveldatasize, T
 
     level->object = (TITUS_object *)SDL_malloc(sizeof(TITUS_object) * pre_size);
     if (level->object == NULL) {
-        sprintf(lasterror, "Error: Not enough memory to initialize level!\n");
+        fprintf(stderr, "Error: Not enough memory to initialize level!\n");
         return (TITUS_ERROR_NOT_ENOUGH_MEMORY);
     }
     level->objectcount = pre_size;
@@ -151,7 +151,7 @@ int loadlevel(TITUS_level *level, unsigned char *leveldata, int leveldatasize, T
 
     level->enemy = (TITUS_enemy *)SDL_malloc(sizeof(TITUS_enemy) * pre_size);
     if (level->enemy == NULL) {
-        sprintf(lasterror, "Error: Not enough memory to initialize level!\n");
+        fprintf(stderr, "Error: Not enough memory to initialize level!\n");
         return (TITUS_ERROR_NOT_ENOUGH_MEMORY);
     }
     level->enemycount = pre_size;
@@ -254,7 +254,7 @@ int loadlevel(TITUS_level *level, unsigned char *leveldata, int leveldatasize, T
 
     level->bonus = (TITUS_bonus *)SDL_malloc(sizeof(TITUS_bonus) * level->bonuscapacity);
     if (level->bonus == NULL) {
-        sprintf(lasterror, "Error: Not enough memory to initialize level!\n");
+        fprintf(stderr, "Error: Not enough memory to initialize level!\n");
         return (TITUS_ERROR_NOT_ENOUGH_MEMORY);
     }
 
@@ -278,7 +278,7 @@ int loadlevel(TITUS_level *level, unsigned char *leveldata, int leveldatasize, T
 
     level->gate = (TITUS_gate *)SDL_malloc(sizeof(TITUS_gate) * level->gatecount);
     if (level->gate == NULL) {
-        sprintf(lasterror, "Error: Not enough memory to initialize level!\n");
+        fprintf(stderr, "Error: Not enough memory to initialize level!\n");
         return (TITUS_ERROR_NOT_ENOUGH_MEMORY);
     }
 
@@ -301,7 +301,7 @@ int loadlevel(TITUS_level *level, unsigned char *leveldata, int leveldatasize, T
 
     level->elevator = (TITUS_elevator *)SDL_malloc(sizeof(TITUS_elevator) * pre_size);
     if (level->elevator == NULL) {
-        sprintf(lasterror, "Error: Not enough memory to initialize level!\n");
+        fprintf(stderr, "Error: Not enough memory to initialize level!\n");
         return (TITUS_ERROR_NOT_ENOUGH_MEMORY);
     }
     level->elevatorcount = pre_size;
@@ -346,7 +346,7 @@ int loadlevel(TITUS_level *level, unsigned char *leveldata, int leveldatasize, T
 
     level->trash = (TITUS_sprite *)SDL_malloc(sizeof(TITUS_sprite) * pre_size);
     if (level->trash == NULL) {
-        sprintf(lasterror, "Error: Not enough memory to initialize level!\n");
+        fprintf(stderr, "Error: Not enough memory to initialize level!\n");
         return (TITUS_ERROR_NOT_ENOUGH_MEMORY);
     }
     level->trashcount = pre_size;
