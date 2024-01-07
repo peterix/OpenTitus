@@ -70,7 +70,6 @@ static void DOWN_ANIMATION(TITUS_sprite *sprite) {
 void MOVE_NMI(TITUS_level *level) {
     TITUS_sprite *bullet;
     int j;
-    uint8_t hflag;
     for (int i = 0; i < level->enemycount; i++) {
 
         TITUS_enemy *enemy = &level->enemy[i];
@@ -366,7 +365,7 @@ void MOVE_NMI(TITUS_level *level) {
                 } else {
                     j = 1; //moving right
                 }
-                hflag = get_horizflag(level, (enemySprite->y >> 4) - 1, (enemySprite->x >> 4) + j);
+                enum HFLAG hflag = get_horizflag(level, (enemySprite->y >> 4) - 1, (enemySprite->x >> 4) + j);
                 if ((hflag == HFLAG_WALL) ||
                   (hflag == HFLAG_DEADLY) ||
                   (hflag == HFLAG_PADLOCK)) { //Next tile is wall, change direction
@@ -502,7 +501,7 @@ void MOVE_NMI(TITUS_level *level) {
                 } else {
                     j = 1; //moving right
                 }
-                hflag = get_horizflag(level, (enemySprite->y >> 4) - 1, (enemySprite->x >> 4) + j);
+                enum HFLAG hflag = get_horizflag(level, (enemySprite->y >> 4) - 1, (enemySprite->x >> 4) + j);
                 if ((hflag == HFLAG_WALL) ||
                   (hflag == HFLAG_DEADLY) ||
                   (hflag == HFLAG_PADLOCK)) { //Next tile is wall, change direction
@@ -602,7 +601,7 @@ void MOVE_NMI(TITUS_level *level) {
                 } else {
                     j = 1; //moving right
                 }
-                hflag = get_horizflag(level, (enemySprite->y >> 4) - 1, (enemySprite->x >> 4) + j);
+                enum HFLAG hflag = get_horizflag(level, (enemySprite->y >> 4) - 1, (enemySprite->x >> 4) + j);
                 if ((hflag == HFLAG_WALL) ||
                   (hflag == HFLAG_DEADLY) ||
                   (hflag == HFLAG_PADLOCK)) { //Next tile is wall, change direction
@@ -710,7 +709,7 @@ void MOVE_NMI(TITUS_level *level) {
                 } else {
                     j = 1; //moving right
                 }
-                hflag = get_horizflag(level, (enemySprite->y >> 4) - 1, (enemySprite->x >> 4) + j);
+                enum HFLAG hflag = get_horizflag(level, (enemySprite->y >> 4) - 1, (enemySprite->x >> 4) + j);
                 if ((hflag == HFLAG_WALL) ||
                   (hflag == HFLAG_DEADLY) ||
                   (hflag == HFLAG_PADLOCK)) { //Next tile is wall, change direction
@@ -776,7 +775,7 @@ void MOVE_NMI(TITUS_level *level) {
                     }
                 }
                 enemySprite->y = enemySprite->y & 0xFFF0;
-                hflag = get_horizflag(level, (enemySprite->y >> 4) - 1, enemySprite->x >> 4);
+                enum HFLAG hflag = get_horizflag(level, (enemySprite->y >> 4) - 1, enemySprite->x >> 4);
                 if ((hflag == HFLAG_WALL) ||
                   (hflag == HFLAG_DEADLY) ||
                   (hflag == HFLAG_PADLOCK)) { //Next tile is wall, change direction

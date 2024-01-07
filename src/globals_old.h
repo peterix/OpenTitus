@@ -66,49 +66,51 @@
 #define MAX_X 4
 #define MAX_Y 12
 #define MAP_LIMIT_Y -1
-#define S_LINES 12
-#define S_COLUMNS 20
-#define LIMIT_TIMER 22
-#define ALERT_X 32
 #define screen_width 20
 #define screen_height 12
 #define FIRST_OBJET 30
 #define FIRST_NMI 101
 #define MAXIMUM_BONUS 100
 #define MAXIMUM_ENERGY 16
-#define MAXIMUM_DTRP 4
 #define GESTION_X 40
 #define GESTION_Y 20
 #define MAX_SPEED_DEAD 20
 
-#define HFLAG_NOWALL 0
-#define HFLAG_WALL 1
-#define HFLAG_BONUS 2
-#define HFLAG_DEADLY 3
-#define HFLAG_CODE 4
-#define HFLAG_PADLOCK 5
-#define HFLAG_LEVEL14 6
+enum HFLAG : uint8_t {
+    HFLAG_NOWALL = 0,
+    HFLAG_WALL = 1,
+    HFLAG_BONUS = 2,
+    HFLAG_DEADLY = 3,
+    HFLAG_CODE = 4,
+    HFLAG_PADLOCK = 5,
+    HFLAG_LEVEL14 = 6
+};
 
-#define FFLAG_NOFLOOR 0
-#define FFLAG_FLOOR 1
-#define FFLAG_SSFLOOR 2
-#define FFLAG_SFLOOR 3
-#define FFLAG_VSFLOOR 4
-#define FFLAG_DROP 5
-#define FFLAG_LADDER 6
-#define FFLAG_BONUS 7
-#define FFLAG_WATER 8
-#define FFLAG_FIRE 9
-#define FFLAG_SPIKES 10
-#define FFLAG_CODE 11
-#define FFLAG_PADLOCK 12
-#define FFLAG_LEVEL14 13
+enum FFLAG : uint8_t {
+    FFLAG_NOFLOOR = 0,
+    FFLAG_FLOOR = 1,
+    FFLAG_SSFLOOR = 2,
+    FFLAG_SFLOOR = 3,
+    FFLAG_VSFLOOR = 4,
+    FFLAG_DROP = 5,
+    FFLAG_LADDER = 6,
+    FFLAG_BONUS = 7,
+    FFLAG_WATER = 8,
+    FFLAG_FIRE = 9,
+    FFLAG_SPIKES = 10,
+    FFLAG_CODE = 11,
+    FFLAG_PADLOCK = 12,
+    FFLAG_LEVEL14 = 13
+};
 
-#define CFLAG_NOCEILING 0
-#define CFLAG_CEILING 1
-#define CFLAG_LADDER 2
-#define CFLAG_PADLOCK 3
-#define CFLAG_DEADLY 4
+enum CFLAG : uint8_t {
+    CFLAG_NOCEILING = 0,
+    CFLAG_CEILING = 1,
+    CFLAG_LADDER = 2,
+    CFLAG_PADLOCK = 3,
+    CFLAG_DEADLY = 4
+};
+
 
 typedef struct {
     bool enabled;

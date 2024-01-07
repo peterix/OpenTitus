@@ -44,7 +44,9 @@ void move_objects(TITUS_level *level) {
     if (GRAVITY_FLAG == 0) return; //Skip execution if there are no active objects
 
     TITUS_object *off_object;
-    uint8_t i, hflag, fflag, max_speed;
+    enum HFLAG hflag;
+    enum FFLAG fflag;
+    uint8_t i, max_speed;
     int16_t tileX, tileY, speed, j;
     bool obj_vs_sprite;
     int8_t reduction, tile_count;

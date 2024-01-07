@@ -269,7 +269,7 @@ void CLEAR_DATA(TITUS_level *level) {
 
 }
 
-int clearsprite(TITUS_sprite *spr){
+void clearsprite(TITUS_sprite *spr){
     spr->enabled = false;
     spr->x = 0;
     spr->y = 0;

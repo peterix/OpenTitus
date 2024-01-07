@@ -372,7 +372,7 @@ void freelevel(TITUS_level *level){
     free (level->trash);
 }
 
-uint8_t get_horizflag(TITUS_level *level, int16_t tileY, int16_t tileX) {
+enum HFLAG get_horizflag(TITUS_level *level, int16_t tileY, int16_t tileX) {
     if ((tileX < 0) ||
       (tileX >= level->width)) {
         return HFLAG_WALL;
@@ -384,7 +384,7 @@ uint8_t get_horizflag(TITUS_level *level, int16_t tileY, int16_t tileX) {
     }
 }
 
-uint8_t get_floorflag(TITUS_level *level, int16_t tileY, int16_t tileX) {
+enum FFLAG get_floorflag(TITUS_level *level, int16_t tileY, int16_t tileX) {
     if ((tileX < 0) ||
       (tileX >= level->width)) {
         return FFLAG_FLOOR;
@@ -396,7 +396,7 @@ uint8_t get_floorflag(TITUS_level *level, int16_t tileY, int16_t tileX) {
     }
 }
 
-uint8_t get_ceilflag(TITUS_level *level, int16_t tileY, int16_t tileX) {
+enum CFLAG get_ceilflag(TITUS_level *level, int16_t tileY, int16_t tileX) {
     if ((tileY < 0) ||
       (tileY >= level->height) ||
       (tileX < 0) ||

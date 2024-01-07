@@ -31,6 +31,7 @@
 #include "SDL2/SDL.h"
 #include <stdbool.h>
 #include <stdint.h>
+#include "globals_old.h"
 
 typedef struct _TITUS_tile TITUS_tile;
 typedef struct _TITUS_sprite TITUS_sprite;
@@ -50,9 +51,9 @@ struct _TITUS_tile {
     SDL_Surface *tiledata; //Malloced
     uint8_t animation[3]; //Index to animation tiles
     bool animated;
-    uint8_t horizflag;
-    uint8_t floorflag;
-    uint8_t ceilflag;
+    enum HFLAG horizflag;
+    enum FFLAG floorflag;
+    enum CFLAG ceilflag;
     uint8_t current; //Index of the current (animated) tile
 };
 
@@ -241,6 +242,6 @@ struct _TITUS_level {
 
 int loadlevel(TITUS_level *level, unsigned char *leveldata, int leveldatasize, TITUS_spritedata **spritedata, TITUS_spritecache *spritecache, TITUS_objectdata **objectdata);
 void freelevel(TITUS_level *level);
-uint8_t get_horizflag(TITUS_level *level, int16_t tileY, int16_t tileX);
-uint8_t get_floorflag(TITUS_level *level, int16_t tileY, int16_t tileX);
-uint8_t get_ceilflag(TITUS_level *level, int16_t tileY, int16_t tileX);
+enum HFLAG get_horizflag(TITUS_level *level, int16_t tileY, int16_t tileX);
+enum FFLAG get_floorflag(TITUS_level *level, int16_t tileY, int16_t tileX);
+enum CFLAG get_ceilflag(TITUS_level *level, int16_t tileY, int16_t tileX);

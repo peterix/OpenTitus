@@ -43,12 +43,12 @@
 #include "window.h"
 
 static void TAKE_BLK_AND_YTEST(ScreenContext *context, TITUS_level *level, int16_t tileY, uint8_t tileX);
-static void BLOCK_YYPRGD(TITUS_level *level, uint8_t ceil, uint8_t tileY, uint8_t tileX);
-static void BLOCK_XXPRG(ScreenContext *context, TITUS_level *level, uint8_t horiz, uint8_t tileY, uint8_t tileX);
+static void BLOCK_YYPRGD(TITUS_level *level, enum CFLAG cflag, uint8_t tileY, uint8_t tileX);
+static void BLOCK_XXPRG(ScreenContext *context, TITUS_level *level, enum HFLAG hflag, uint8_t tileY, uint8_t tileX);
 static void XACCELERATION(TITUS_player *player, int16_t maxspeed);
 static void YACCELERATION(TITUS_player *player, int16_t maxspeed);
 static void DECELERATION(TITUS_player *player);
-static void BLOCK_YYPRG(ScreenContext *context, TITUS_level *level, uint8_t floor, uint8_t floor_above, uint8_t tileY, uint8_t tileX);
+static void BLOCK_YYPRG(ScreenContext *context, TITUS_level *level, enum FFLAG floor, enum FFLAG floor_above, uint8_t tileY, uint8_t tileX);
 static int CASE_BONUS(TITUS_level *level, uint8_t tileY, uint8_t tileX);
 static void CASE_PASS(ScreenContext *context, TITUS_level *level, uint8_t viewlevel, uint8_t tileY, uint8_t tileX);
 static void CASE_SECU(TITUS_level *level, uint8_t tileY, uint8_t tileX);
@@ -405,7 +405,7 @@ void BRK_COLLISION(ScreenContext *context, TITUS_level *level) { //Collision det
     int16_t colltest;
     uint8_t left_tileX;
     bool first;
-    uint8_t hflag;
+    enum HFLAG hflag;
 
     tileX = (player->sprite.x >> 4);
     tileY = (player->sprite.y >> 4) - 1;
@@ -498,9 +498,7 @@ static void TAKE_BLK_AND_YTEST(ScreenContext *context, TITUS_level *level, int16
     POCKET_FLAG = false;
     PRIER_FLAG = false;
     LADDER_FLAG = false;
-    uint8_t horiz, ceil;
     int8_t change;
-    uint8_t floor, floor_above;
     if ((player->sprite.y <= MAP_LIMIT_Y) || (tileY < -1)) { //if player is too high (<= -1), skip test
         ARAB_TOMBE(level);
         YFALL = 0xFF;
@@ -514,8 +512,8 @@ static void TAKE_BLK_AND_YTEST(ScreenContext *context, TITUS_level *level, int16
     if (tileY == -1) { //In order to fall down in the right chamber if jumping above level 8
         tileY = 0;
     }
-    floor = get_floorflag(level, tileY + 1, tileX);
-    floor_above = get_floorflag(level, tileY, tileX);
+    enum FFLAG floor = get_floorflag(level, tileY + 1, tileX);
+    enum FFLAG floor_above = get_floorflag(level, tileY, tileX);
 
     if ((LAST_ORDER & 0x0F) != 2) { //2=SAUTER
         BLOCK_YYPRG(context, level, floor, floor_above, tileY + 1, tileX); //Player versus floor
@@ -524,10 +522,11 @@ static void TAKE_BLK_AND_YTEST(ScreenContext *context, TITUS_level *level, int16
     if ((tileY < 1) || (player->sprite.speedY > 0)) {
         return;
     }
-    horiz = get_horizflag(level, tileY, tileX);
-    ceil = get_ceilflag(level, tileY - 1, tileX);
-    BLOCK_YYPRGD(level, ceil, tileY - 1, tileX); //Player versus ceiling
 
+    enum CFLAG cflag = get_ceilflag(level, tileY - 1, tileX);
+    BLOCK_YYPRGD(level, cflag, tileY - 1, tileX); //Player versus ceiling
+
+    enum HFLAG horiz = get_horizflag(level, tileY, tileX);
     if (((horiz == HFLAG_WALL) || (horiz == HFLAG_DEADLY) || (horiz == HFLAG_PADLOCK)) && //Step on a hard tile?
       (player->sprite.y > MAP_LIMIT_Y + 1)) {
         if (player->sprite.speedX > 0) {
@@ -550,19 +549,18 @@ static void TAKE_BLK_AND_YTEST(ScreenContext *context, TITUS_level *level, int16
     }
 }
 
-static void BLOCK_YYPRGD(TITUS_level *level, uint8_t ceil, uint8_t tileY, uint8_t tileX) {
+static void BLOCK_YYPRGD(TITUS_level *level, enum CFLAG cflag, uint8_t tileY, uint8_t tileX) {
     TITUS_player *player = &(level->player);
     TITUS_object *object;
-    uint8_t hflag;
-    //Action on different ceiling flags
-    switch (ceil) {
 
-    case 0: //No ceiling
+    //Action on different ceiling flags
+    switch (cflag) {
+    case CFLAG_NOCEILING:
         break;
 
-    case 1: //Ceiling
-    case 4: //Deadly
-        if ((ceil == 4) && !GODMODE) {
+    case CFLAG_CEILING:
+    case CFLAG_DEADLY:
+        if ((cflag == CFLAG_DEADLY) && !GODMODE) {
             CASE_DEAD_IM(level);
         } else if (player->sprite.speedY != 0) {
             //Stop movement
@@ -578,7 +576,7 @@ static void BLOCK_YYPRGD(TITUS_level *level, uint8_t ceil, uint8_t tileY, uint8_
                 if (object != NULL) {
                     tileX = object->sprite.x >> 4;
                     tileY = object->sprite.y >> 4;
-                    hflag = get_horizflag(level, tileY, tileX);
+                    enum HFLAG hflag = get_horizflag(level, tileY, tileX);
                     if ((hflag == HFLAG_WALL) || (hflag == HFLAG_DEADLY) || (hflag == HFLAG_PADLOCK)) {
                         tileX--;
                         hflag = get_horizflag(level, tileY, tileX);
@@ -593,36 +591,35 @@ static void BLOCK_YYPRGD(TITUS_level *level, uint8_t ceil, uint8_t tileY, uint8_
         }
         break;
 
-    case 2: //Ladder
+    case CFLAG_LADDER:
         if ((player->sprite.speedY < 0) && (player->sprite.speedX == 0)) {
             SAUT_COUNT = 10;
             LADDER_FLAG = true;
         }
         break;
 
-    case 3: //Padlock
+    case CFLAG_PADLOCK:
         CASE_SECU(level, tileY, tileX);
         break;
 
-    //case 4: on case 1
     }
 }
 
-static void BLOCK_XXPRG(ScreenContext *context, TITUS_level *level, uint8_t horiz, uint8_t tileY, uint8_t tileX) {
+static void BLOCK_XXPRG(ScreenContext *context, TITUS_level *level, enum HFLAG hflag, uint8_t tileY, uint8_t tileX) {
     //Action on different horizontal flags
-    switch (horiz) {
-    case 0: //No wall
+    switch (hflag) {
+    case HFLAG_NOWALL:
         break;
 
-    case 1: //Wall
+    case HFLAG_WALL:
         ARAB_BLOCKX(level);
         break;
 
-    case 2: //HP
+    case HFLAG_BONUS:
         CASE_BONUS(level, tileY, tileX);
         break;
 
-    case 3: //Unknown, looks deadly
+    case HFLAG_DEADLY:
         if (!GODMODE) {
             CASE_DEAD_IM(level);
         } else {
@@ -630,15 +627,15 @@ static void BLOCK_XXPRG(ScreenContext *context, TITUS_level *level, uint8_t hori
         }
         break;
 
-    case 4: //Level code
+    case HFLAG_CODE:
         CASE_PASS(context, level, level->levelnumber, tileY, tileX);
         break;
 
-    case 5: //Padlock
+    case HFLAG_PADLOCK:
         CASE_SECU(level, tileY, tileX);
         break;
 
-    case 6: //Level 14 code
+    case HFLAG_LEVEL14:
         CASE_PASS(context, level, 14 - 1, tileY, tileX);
         break;
     }
@@ -745,36 +742,36 @@ static void YACCELERATION(TITUS_player *player, int16_t maxspeed) {
 }
 
 
-static void BLOCK_YYPRG(ScreenContext *context, TITUS_level *level, uint8_t floor, uint8_t floor_above, uint8_t tileY, uint8_t tileX) {
+static void BLOCK_YYPRG(ScreenContext *context, TITUS_level *level, enum FFLAG floor, enum FFLAG floor_above, uint8_t tileY, uint8_t tileX) {
     //Action on different floor flags
     TITUS_player *player = &(level->player);
     uint8_t order;
     switch (floor) {
 
-    case 0: //No floor
+    case FFLAG_NOFLOOR: //No floor
         ARAB_TOMBE_F();
         break;
 
-    case 1: //Floor
+    case FFLAG_FLOOR: //Floor
         ARAB_BLOCK_YU(player);
         break;
 
-    case 2: //Slightly slippery floor
+    case FFLAG_SSFLOOR: //Slightly slippery floor
         ARAB_BLOCK_YU(player);
         player->GLISSE = 1;
         break;
 
-    case 3: //Slippery floor
+    case FFLAG_SFLOOR: //Slippery floor
         ARAB_BLOCK_YU(player);
         player->GLISSE = 2;
         break;
 
-    case 4: //Very slippery floor
+    case FFLAG_VSFLOOR: //Very slippery floor
         ARAB_BLOCK_YU(player);
         player->GLISSE = 3;
         break;
 
-    case 5: //Drop-through if kneestanding
+    case FFLAG_DROP: //Drop-through if kneestanding
         player->GLISSE = 0;
         if (CROSS_FLAG == 0) {
             ARAB_BLOCK_YU(player);
@@ -783,7 +780,7 @@ static void BLOCK_YYPRG(ScreenContext *context, TITUS_level *level, uint8_t floo
         }
         break;
 
-    case 6: //Ladder
+    case FFLAG_LADDER: //Ladder
         //Fall if hit
         //Skip if walking/crawling
         if (CHOC_FLAG != 0) {
@@ -821,13 +818,13 @@ static void BLOCK_YYPRG(ScreenContext *context, TITUS_level *level, uint8_t floo
         LADDER_FLAG = true;
         break;
 
-    case 7:
+    case FFLAG_BONUS:
         CASE_BONUS(level, tileY, tileX);
         break;
 
-    case 8:
-    case 9:
-    case 10:
+    case FFLAG_WATER:
+    case FFLAG_FIRE:
+    case FFLAG_SPIKES:
         if (!GODMODE) {
             CASE_DEAD_IM(level);
         } else {
@@ -835,15 +832,15 @@ static void BLOCK_YYPRG(ScreenContext *context, TITUS_level *level, uint8_t floo
         }
         break;
 
-    case 11:
+    case FFLAG_CODE:
         CASE_PASS(context, level, level->levelnumber, tileY, tileX);
         break;
 
-    case 12:
+    case FFLAG_PADLOCK:
         CASE_SECU(level, tileY, tileX);
         break;
 
-    case 13:
+    case FFLAG_LEVEL14:
         CASE_PASS(context, level, 14 - 1, tileY, tileX);
         break;
     }
@@ -873,7 +870,7 @@ static int CASE_BONUS(TITUS_level *level, uint8_t tileY, uint8_t tileX) {
     //Handle bonuses. Increase energy if HP, and change the bonus tile to normal tile
     uint16_t i = 0;
     do { //Is the bonus in the list?
-        if (i >= MAXIMUM_BONUS) {
+        if (i >= level->bonuscapacity) {
             return false; //Bonus not found
         }
         i++;

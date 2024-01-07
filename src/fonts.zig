@@ -49,11 +49,6 @@ const Font = struct {
     fallback: Character,
 };
 
-// TODO: handle errors
-// TODO: embed the assets in the binary...
-// TODO: shave pixels off some characters so they can be used in menus
-// TODO: add a 'character' for menu bullet
-// TODO: maybe load the font from the original SQZ file again?
 const yellow_font_data = @embedFile("../assets/yellow_font.bmp");
 var yellow_font: Font = undefined;
 const CHAR_QUESTION = 63;
@@ -173,7 +168,6 @@ pub export fn fonts_free() void {
     freefont(&yellow_font);
 }
 
-// TODO: add a way to determine font metrics for a string before rendering
 pub export fn text_render(text: [*c]const u8, x: c_int, y: c_int, monospace: bool) void {
     var dest: c.SDL_Rect = .{ .x = x + 16 - globals.g_scroll_px_offset, .y = y, .w = 0, .h = 0 };
 

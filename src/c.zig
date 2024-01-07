@@ -13,7 +13,6 @@ pub usingnamespace @cImport({
     @cInclude("reset.h");
     @cInclude("menu.h");
     @cInclude("gates.h");
-    @cInclude("elevators.h");
     @cInclude("objects.h");
     @cInclude("enemies.h");
     @cInclude("viewimage.h");
