@@ -37,6 +37,7 @@
 #include "original.h"
 #include "common.h"
 #include "game.h"
+#include "gates.h"
 #include "audio.h"
 #include "objects.h"
 #include "sprites.h"
@@ -77,6 +78,7 @@ void handle_player_input(TITUS_player *player, const uint8_t* keystate) {
 }
 
 int credits_screen();
+int viewstatus(TITUS_level *level, bool countbonus);
 
 int move_player(ScreenContext *context, TITUS_level *level) {
     //Part 1: Check keyboard input
@@ -905,11 +907,15 @@ static int CASE_BONUS(TITUS_level *level, uint8_t tileY, uint8_t tileX) {
     return true; //No problems, bonus handling done correctly!
 }
 
+int view_password(enum GameType game, TITUS_level *level, uint8_t level_index);
+
 static void CASE_PASS(ScreenContext *context, TITUS_level *level, uint8_t level_index, uint8_t tileY, uint8_t tileX) {
     //Codelamp
     music_select_song(7);
     if (CASE_BONUS(level, tileY, tileX)) { //if the bonus is found in the bonus list
-        view_password(context, level, level_index);
+        CLOSE_SCREEN(context);
+        view_password(game, level, level_index);
+        OPEN_SCREEN(context, level);
     }
 }
 

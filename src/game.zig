@@ -25,15 +25,35 @@
 
 const std = @import("std");
 
+// NOTE: force-imported modules
+pub fn refAllDecls(comptime T: type) void {
+    inline for (comptime std.meta.declarations(T)) |decl| {
+        _ = &@field(T, decl.name);
+    }
+}
+const credits = @import("ui/credits.zig");
+comptime {
+    refAllDecls(credits);
+}
+const view_password = @import("ui/view_password.zig");
+comptime {
+    refAllDecls(view_password);
+}
+
+const intro_text = @import("ui/intro_text.zig");
+const menu = @import("ui/menu.zig");
+const image = @import("ui/image.zig");
+const fonts = @import("ui/fonts.zig");
+const ImageFile = image.ImageFile;
+
 const c = @import("c.zig");
 const globals = @import("globals.zig");
 const engine = @import("engine.zig");
 const window = @import("window.zig");
 const keyboard = @import("keyboard.zig");
-const fonts = @import("fonts.zig");
 
 const memory = @import("memory.zig");
-const Managed = memory.Managed;
+const ManagedJSON = memory.ManagedJSON;
 
 const TitusError = error{
     CannotDetermineGameType,
@@ -47,54 +67,82 @@ pub export var game: c.GameType = undefined;
 
 const s = @import("settings.zig");
 const Settings = s.Settings;
-pub var settings_mem: Managed(Settings) = undefined;
+pub var settings_mem: ManagedJSON(Settings) = undefined;
 pub export var settings: *Settings = undefined;
 
 const GameState = s.GameState;
-pub var game_state_mem: Managed(GameState) = undefined;
+pub var game_state_mem: ManagedJSON(GameState) = undefined;
 pub var game_state: *GameState = undefined;
 
+pub const LevelDescriptor = struct {
+    filename: []const u8,
+    title: []const u8,
+};
+
 pub const TITUS_constants = struct {
-    levelfiles: [16][:0]const u8,
-    levelcount: u16,
-    tituslogofile: [:0]const u8,
-    tituslogoformat: c_int,
-    titusintrofile: [:0]const u8,
-    titusintroformat: c_int,
-    titusmenufile: [:0]const u8,
-    titusmenuformat: c_int,
-    titusfinishfile: [:0]const u8,
-    titusfinishformat: c_int,
-    spritefile: [:0]const u8,
+    levelfiles: []const LevelDescriptor,
+    logo: ImageFile,
+    intro: ImageFile,
+    menu: ImageFile,
+    finish: ?ImageFile,
+    sprites: []const u8,
 };
 
 const titus_consts: TITUS_constants = .{
-    .levelfiles = .{ "LEVEL0.SQZ", "LEVELJ.SQZ", "LEVEL1.SQZ", "LEVEL2.SQZ", "LEVEL3.SQZ", "LEVEL4.SQZ", "LEVEL5.SQZ", "LEVEL6.SQZ", "LEVEL7.SQZ", "LEVEL8.SQZ", "LEVEL9.SQZ", "LEVELB.SQZ", "LEVELC.SQZ", "LEVELE.SQZ", "LEVELG.SQZ", "" },
-    .levelcount = 15,
-    .tituslogofile = "TITUS.SQZ",
-    .tituslogoformat = 2,
-    .titusintrofile = "TITRE.SQZ",
-    .titusintroformat = 2,
-    .titusmenufile = "MENU.SQZ",
-    .titusmenuformat = 2,
-    .titusfinishfile = "LEVELA.SQZ",
-    .titusfinishformat = 0,
-    .spritefile = "SPREXP.SQZ",
+    .levelfiles = &[15]LevelDescriptor{
+        .{ .filename = "LEVEL0.SQZ", .title = "On The Foxy Trail" },
+        .{ .filename = "LEVELJ.SQZ", .title = "Looking For Clues" },
+        .{ .filename = "LEVEL1.SQZ", .title = "Road Works Ahead" },
+        .{ .filename = "LEVEL2.SQZ", .title = "Going Underground" },
+        .{ .filename = "LEVEL3.SQZ", .title = "Flaming Catacombs" },
+        .{ .filename = "LEVEL4.SQZ", .title = "Coming To Town" },
+        .{ .filename = "LEVEL5.SQZ", .title = "Foxy's Den" },
+        .{ .filename = "LEVEL6.SQZ", .title = "On The Road To Marrakesh" },
+        .{ .filename = "LEVEL7.SQZ", .title = "Home Of The Pharaohs" },
+        .{ .filename = "LEVEL8.SQZ", .title = "Desert Experience" },
+        .{ .filename = "LEVEL9.SQZ", .title = "Walls Of Sand" },
+        .{ .filename = "LEVELB.SQZ", .title = "A Beacon Of Hope" },
+        .{ .filename = "LEVELC.SQZ", .title = "A Pipe Dream" },
+        .{ .filename = "LEVELE.SQZ", .title = "Going Home" },
+        .{ .filename = "LEVELG.SQZ", .title = "Just Married" },
+    },
+    .logo = .{ .filename = "TITUS.SQZ", .format = .LinearPalette256 },
+    .intro = .{ .filename = "TITRE.SQZ", .format = .LinearPalette256 },
+    .menu = .{ .filename = "MENU.SQZ", .format = .LinearPalette256 },
+    .finish = .{ .filename = "LEVELA.SQZ", .format = .PlanarGreyscale16 },
+    .sprites = "SPREXP.SQZ",
 };
 
 const moktar_consts: TITUS_constants = .{
-    .levelfiles = .{ "LEVEL0.SQZ", "LEVELJ.SQZ", "LEVEL1.SQZ", "LEVEL2.SQZ", "LEVEL3.SQZ", "LEVEL4.SQZ", "LEVEL5.SQZ", "LEVEL6.SQZ", "LEVEL7.SQZ", "LEVEL8.SQZ", "LEVEL9.SQZ", "LEVELB.SQZ", "LEVELC.SQZ", "LEVELE.SQZ", "LEVELF.SQZ", "LEVELG.SQZ" },
-    .levelcount = 16,
-    .tituslogofile = "TITUS.SQZ",
-    .tituslogoformat = 2,
-    .titusintrofile = "TITRE.SQZ",
-    .titusintroformat = 2,
-    .titusmenufile = "MENU.SQZ",
-    .titusmenuformat = 2,
-    .titusfinishfile = "",
-    .titusfinishformat = 0,
-    .spritefile = "SPRITES.SQZ",
+    .levelfiles = &[16]LevelDescriptor{
+        // FIXME: get someone who knows French to do localization.
+        // FIXME: separate 'game' from 'localization'. We can totally have Titus the Fox in French and Moktar in English.
+        // FIXME: add actual support for accents and stuff...
+        .{ .filename = "LEVEL0.SQZ", .title = "A LA RECHERCHE DE LA ZOUBIDA" },
+        .{ .filename = "LEVELJ.SQZ", .title = "LES QUARTIERS CHICS" },
+        .{ .filename = "LEVEL1.SQZ", .title = "ATTENTION TRAVAUX" },
+        .{ .filename = "LEVEL2.SQZ", .title = "LES COULOIRS DU METRO" }, // MÉTRO?
+        .{ .filename = "LEVEL3.SQZ", .title = "LES CATACOMBES INFERNALES" },
+        .{ .filename = "LEVEL4.SQZ", .title = "ARRIVEE DANS LA CITE" }, // ARRIVÉE?
+        .{ .filename = "LEVEL5.SQZ", .title = "L IMMEUBLE DE LA ZOUBIDA" },
+        .{ .filename = "LEVEL6.SQZ", .title = "SOUS LE CHEMIN DE MARRAKECH" },
+        .{ .filename = "LEVEL7.SQZ", .title = "LA CITE ENFOUIE" },
+        .{ .filename = "LEVEL8.SQZ", .title = "DESERT PRIVE" }, // DÉSERT PRIVÉ?
+        .{ .filename = "LEVEL9.SQZ", .title = "LA VILLE DES SABLES" },
+        .{ .filename = "LEVELB.SQZ", .title = "LE PHARE OUEST" }, // LE PHARE DE L'OUEST?
+        .{ .filename = "LEVELC.SQZ", .title = "UN BON TUYAU" },
+        .{ .filename = "LEVELE.SQZ", .title = "DE RETOUR AU PAYS" },
+        .{ .filename = "LEVELF.SQZ", .title = "DIRECTION BARBES" },
+        .{ .filename = "LEVELG.SQZ", .title = "BIG BISOUS" },
+    },
+    .logo = .{ .filename = "TITUS.SQZ", .format = .LinearPalette256 },
+    .intro = .{ .filename = "TITRE.SQZ", .format = .LinearPalette256 },
+    .menu = .{ .filename = "MENU.SQZ", .format = .LinearPalette256 },
+    .finish = null,
+    .sprites = "SPRITES.SQZ",
 };
+
+pub var constants: *const TITUS_constants = undefined;
 
 fn isFileOpenable(path: []const u8) bool {
     if (std.fs.cwd().openFile(path, .{})) |file| {
@@ -108,10 +156,10 @@ fn isFileOpenable(path: []const u8) bool {
 }
 
 fn initGameType() !*const TITUS_constants {
-    if (isFileOpenable(titus_consts.spritefile)) {
+    if (isFileOpenable(titus_consts.sprites)) {
         game = c.Titus;
         return &titus_consts;
-    } else if (isFileOpenable(moktar_consts.spritefile)) {
+    } else if (isFileOpenable(moktar_consts.sprites)) {
         game = c.Moktar;
         return &moktar_consts;
     } else {
@@ -119,103 +167,25 @@ fn initGameType() !*const TITUS_constants {
     }
 }
 
-// TODO: this is a nice throwback in the original game, but maybe we could do something better.
-// Like replace the (missing) manual with an intro sequence to give the player some context.
-fn viewintrotext() c_int {
-    var tmpstring: [41]u8 = .{};
-    var rawtime = c.time(null);
-    var timeinfo = c.localtime(&rawtime);
-
-    _ = std.fmt.bufPrint(&tmpstring, "     You are still playing Moktar in {d} !!", .{timeinfo.*.tm_year + 1900}) catch {};
-
-    fonts.text_render("     YEAAA . . .", 0, 4 * 12, false);
-    fonts.text_render(&tmpstring[0], 0, 6 * 12, false);
-    fonts.text_render("     Programmed in 1991 on AT .286 12MHz.", 0, 11 * 12, false);
-    fonts.text_render("              . . . Enjoy Moktar Adventure !!", 0, 13 * 12, false);
-
-    window.window_render();
-
-    var retval = keyboard.waitforbutton();
-    if (retval < 0)
-        return retval;
-
-    game_state.seen_intro = true;
-
-    if (retval < 0)
-        return retval;
-
-    return (0);
-}
-
-fn text_render_columns(left: []const u8, right: []const u8, y: c_int, monospace: bool) void {
-    const margin = 5 * 8;
-    const width_right = fonts.text_width(&right[0], monospace);
-
-    fonts.text_render(&left[0], margin, y, monospace);
-    fonts.text_render(&right[0], 320 - margin - width_right, y, monospace);
-}
-
-fn text_render_center(text: []const u8, y: c_int, monospace: bool) void {
-    const width = fonts.text_width(&text[0], monospace);
-    const x = 160 - width / 2;
-    fonts.text_render(&text[0], x, y, monospace);
-}
-
-// TODO: check for the actual names, some accented characters may have been lost because of technical limitations
-const credits: [8][2][:0]const u8 = .{
-    .{ "IBM Engineer", "Eric Zmiro" }, // Éric?
-    .{ "Musics", "Christophe Fevre" },
-    .{ "The Sleeper", "Gil Espeche" },
-    .{ "Background", "Francis Fournier" },
-    .{ "Sprites", "Stephane Beaufils" },
-    .{ "Game Designer", "Florent Moreau" },
-    .{ "Amiga Version", "Carlo Perconti" },
-    .{ "Funny Friend", "Carole Delannoy" },
-};
-
-pub export fn credits_screen() c_int {
-    var last_song = c.music_get_last_song();
-    c.music_select_song(9);
-
-    // TODO: have a way for the event loop to re-run this rendering code
-    window.window_clear(null);
-    const monospace = false;
-    var y: c_int = 2 * 12;
-    for (credits, 0..) |credits_line, index| {
-        _ = index;
-        text_render_columns(credits_line[0], credits_line[1], y, monospace);
-        y += 13;
-    }
-    y += 2 * 12 + 6 - 8;
-    text_render_center("Thanks to", y, monospace);
-    y += 12 + 6;
-    text_render_center("Cristelle, Ana Luisa, Corinne and Manou.", y, monospace);
-    window.window_render();
-
-    var retval = keyboard.waitforbutton();
-    if (retval < 0)
-        return retval;
-
-    if (retval < 0)
-        return retval;
-
-    c.music_select_song(last_song);
-    return (0);
-}
-
 pub fn run() !u8 {
     // FIXME: report the missing files to the user in a better way than erroring into a terminal? dialog box if available?
-    const constants = try initGameType();
+    constants = try initGameType();
 
     globals.reset();
 
-    const c_alloc = std.heap.c_allocator;
+    var gpa = std.heap.GeneralPurposeAllocator(.{}){};
+    const allocator = gpa.allocator();
+    defer {
+        const deinit_status = gpa.deinit();
+        //fail test; can't try in defer as defer is executed after we return
+        if (deinit_status == .leak) @panic("Memory leaked!");
+    }
 
-    settings_mem = try Settings.read(c_alloc);
+    settings_mem = try Settings.read(allocator);
     settings = &settings_mem.value;
     defer settings_mem.deinit();
 
-    game_state_mem = try GameState.read(c_alloc);
+    game_state_mem = try GameState.read(allocator);
     game_state = &game_state_mem.value;
     defer game_state_mem.deinit();
 
@@ -235,10 +205,10 @@ pub fn run() !u8 {
 
     c.initoriginal();
 
-    if (c.fonts_load() != 0) {
+    if (fonts.fonts_load() != 0) {
         return TitusError.CannotInitFonts;
     }
-    defer c.fonts_free();
+    defer fonts.fonts_free();
 
     // View the menu when the main loop starts
     var state: c_int = 1;
@@ -246,14 +216,20 @@ pub fn run() !u8 {
 
     if (!game_state.seen_intro) {
         if (state != 0) {
-            retval = viewintrotext();
+            retval = intro_text.viewintrotext();
             if (retval < 0)
                 state = 0;
+            game_state.seen_intro = true;
         }
     }
 
     if (state != 0) {
-        retval = c.viewimage(constants.*.tituslogofile, constants.*.tituslogoformat, 0, 4000);
+        retval = try image.viewImageFile(
+            constants.*.logo,
+            .FadeInFadeOut,
+            4000,
+            allocator,
+        );
         if (retval < 0)
             state = 0;
     }
@@ -261,26 +237,37 @@ pub fn run() !u8 {
     c.music_select_song(15);
 
     if (state != 0) {
-        retval = c.viewimage(constants.*.titusintrofile, constants.*.titusintroformat, 0, 6500);
+        retval = try image.viewImageFile(
+            constants.*.intro,
+            .FadeInFadeOut,
+            6500,
+            allocator,
+        );
         if (retval < 0)
             state = 0;
     }
 
     while (state != 0) {
-        retval = c.viewmenu(constants.*.titusmenufile, constants.*.titusmenuformat, constants.*.levelcount);
+        retval = try menu.viewMenu(
+            constants.*.menu,
+            allocator,
+        );
 
         if (retval <= 0)
             state = 0;
 
-        if (state != 0 and (retval <= constants.*.levelcount)) {
-            retval = engine.playtitus(constants, @as(u16, @intCast(retval - 1)));
+        if (state != 0 and (retval <= constants.*.levelfiles.len)) {
+            retval = engine.playtitus(
+                @as(u16, @intCast(retval - 1)),
+                allocator,
+            );
             if (retval < 0)
                 state = 0;
         }
     }
 
-    try settings.write(c_alloc);
-    try game_state.write(c_alloc);
+    try settings.write(allocator);
+    try game_state.write(allocator);
 
     return 0;
 }

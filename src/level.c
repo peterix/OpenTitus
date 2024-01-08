@@ -32,7 +32,6 @@
 #include "SDL2/SDL.h"
 #include "sqz.h"
 #include "game.h"
-#include "fonts.h"
 #include "window.h"
 #include "tituserror.h"
 #include "original.h"

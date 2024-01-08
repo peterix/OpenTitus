@@ -27,12 +27,10 @@
  *
  * Global functions:
  * void DISPLAY_TILES(): Draw map tiles
- * int viewstatus(TITUS_level *level, bool countbonus): View status screen (F4)
- * void flip_screen(bool slow): Flips the screen and a short delay
+  * void flip_screen(bool slow): Flips the screen and a short delay
  * void INIT_SCREENM(TITUS_level *level): Initialize screen
  * void draw_health_bars(TITUS_level *level): Draw energy
  * void fadeout(): Fade the screen to black
- * int view_password(TITUS_level *level, uint8_t level_index): Display the password
  */
 
 #include <stdio.h>
@@ -118,12 +116,14 @@ void DISPLAY_SPRITES(TITUS_level *level) {
     display_sprite(level, &(level->player.sprite2));
     display_sprite(level, &(level->player.sprite));
 
+    /*
     if (GODMODE) {
         text_render("GODMODE", 30 * 8, 0 * 12, false);
     }
     if (NOCLIP) {
         text_render("NOCLIP", 30 * 8, 1 * 12, false);
     }
+    */
 }
 
 void display_sprite(TITUS_level *level, TITUS_sprite *spr) {
@@ -274,74 +274,6 @@ void flip_screen(ScreenContext * context, bool slow) {
     }
 }
 
-int viewstatus(TITUS_level *level, bool countbonus){
-    int retval;
-    char tmpchars[10];
-    window_clear(NULL);
-
-    if (game == Titus) {
-        text_render("Level", 13 * 8, 12 * 5, false);
-        text_render("Extra Bonus", 10 * 8, 10 * 12, false);
-        text_render("Lives", 10 * 8, 11 * 12, false);
-    } else if (game == Moktar) {
-        text_render("Etape", 13 * 8, 12 * 5, false);
-        text_render("Extra Bonus", 10 * 8, 10 * 12, false);
-        text_render("Vie", 10 * 8, 11 * 12, false);
-    }
-
-
-    sprintf(tmpchars, "%d", level->levelnumber + 1);
-    text_render(tmpchars, 25 * 8 - strlen(tmpchars) * 8, 12 * 5, false);
-
-    size_t title_width = text_width(leveltitle[level->levelnumber], false);
-    size_t position = (320 - title_width) / 2;
-    text_render(leveltitle[level->levelnumber], position, 12 * 5 + 16, false);
-
-    sprintf(tmpchars, "%d", level->extrabonus);
-    size_t extrabonus_width = text_width(tmpchars, true);
-    text_render(tmpchars, 28 * 8 - extrabonus_width, 10 * 12, true);
-
-    sprintf(tmpchars, "%d", level->lives);
-    size_t lives_width = text_width(tmpchars, true);
-    text_render(tmpchars, 28 * 8 - lives_width, 11 * 12, true);
-
-    window_render();
-
-    if (countbonus && (level->extrabonus >= 10)) {
-        retval = waitforbutton();
-        if (retval < 0) {
-            return retval;
-        }
-        while (level->extrabonus >= 10) {
-            for (int i = 0; i < 10; i++) {
-                level->extrabonus--;
-                sprintf(tmpchars, "%2d", level->extrabonus);
-                size_t extrabonus_width = text_width(tmpchars, true);
-                text_render(tmpchars, 28 * 8 - extrabonus_width, 10 * 12, true);
-                window_render();
-                // 150 ms
-                SDL_Delay(150);
-            }
-            level->lives++;
-            sprintf(tmpchars, "%d", level->lives);
-            size_t lives_width = text_width(tmpchars, true);
-            text_render(tmpchars, 28 * 8 - lives_width, 11 * 12, true);
-            window_render();
-            // 100 ms
-            SDL_Delay(100);
-        }
-    }
-
-    retval = waitforbutton();
-    if (retval < 0)
-        return retval;
-
-    window_clear(NULL);
-    window_render();
-
-    return (0);
-}
-
 void INIT_SCREENM(ScreenContext *context, TITUS_level *level) {
     CLOSE_SCREEN(context);
     BITMAP_X = 0;
@@ -437,39 +369,6 @@ void fadeout() {
     }
     SDL_FreeSurface(image);
 
-}
-
-int view_password(ScreenContext *context, TITUS_level *level, uint8_t level_index) {
-    //Display the password !
-    char tmpchars[10];
-    int retval;
-
-    CLOSE_SCREEN(context);
-    window_clear(NULL);
-    window_render();
-    short int saved_value = g_scroll_px_offset;
-    g_scroll_px_offset = 0;
-
-    if (game == Titus) {
-        text_render("Level", 13 * 8, 13 * 8, false);
-    } else if (game == Moktar) {
-        text_render("Etape", 13 * 8, 13 * 8, false);
-    }
-    sprintf(tmpchars, "%d", level_index + 1);
-    text_render(tmpchars, 25 * 8 - strlen(tmpchars) * 8, 13 * 8, false);
-
-    text_render("Unlocked!", 14 * 8, 10 * 8, false);
-    game_unlock_level(level_index, level->lives);
-
-    window_render();
-    retval = waitforbutton();
-    g_scroll_px_offset = saved_value;
-    if (retval < 0)
-        return retval;
-
-    //paint();
-    OPEN_SCREEN(context, level);
-    return (0);
 }
 
 int loadpixelformat(SDL_PixelFormat **pixelformat){

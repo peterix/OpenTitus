@@ -11,11 +11,9 @@ pub usingnamespace @cImport({
     @cInclude("player.h");
     @cInclude("draw.h");
     @cInclude("reset.h");
-    @cInclude("menu.h");
     @cInclude("gates.h");
     @cInclude("objects.h");
     @cInclude("enemies.h");
-    @cInclude("viewimage.h");
     @cInclude("audio.h");
     @cInclude("globals_old.h");
     @cInclude("game.h");

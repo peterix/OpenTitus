@@ -65,8 +65,6 @@ extern int16_t anim_moktar[ORIG_ANIM_MAX];
 extern int16_t anim_smoke[ORIG_ANIM_MAX];
 extern int16_t COEUR_POS[ORIG_ANIM_MAX * 2];
 
-extern char leveltitle[16][41];
-
 #define ORIG_OBJECT_COUNT 71
 extern uint8_t object_maxspeedY[ORIG_OBJECT_COUNT];
 extern bool object_support[ORIG_OBJECT_COUNT]; //not support/support

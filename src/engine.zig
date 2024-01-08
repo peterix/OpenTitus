@@ -35,9 +35,11 @@ const window = @import("window.zig");
 const elevators = @import("elevators.zig");
 const s = @import("settings.zig");
 
-const c_alloc = std.heap.c_allocator;
+const status = @import("ui/status.zig");
+const image = @import("ui/image.zig");
+const ImageFormat = image.ImageFormat;
 
-pub fn playtitus(constants: *const game.TITUS_constants, firstlevel: u16) c_int {
+pub fn playtitus(firstlevel: u16, allocator: std.mem.Allocator) c_int {
     var context: c.ScreenContext = undefined;
     c.screencontext_reset(&context);
 
@@ -60,14 +62,14 @@ pub fn playtitus(constants: *const game.TITUS_constants, firstlevel: u16) c_int 
     }
     defer c.freepixelformat(&(level.pixelformat));
 
-    var spritedata = sqz.unSQZ2(constants.*.spritefile, c_alloc) catch {
-        std.debug.print("Failed to uncompress sprites file: {s}\n", .{constants.*.spritefile});
+    var spritedata = sqz.unSQZ2(game.constants.*.sprites, allocator) catch {
+        std.debug.print("Failed to uncompress sprites file: {s}\n", .{game.constants.*.sprites});
         return -1;
     };
 
     // TODO: same as unSQZ()
     retval = c.loadsprites(&sprites, &spritedata[0], @intCast(spritedata.len), level.pixelformat, &sprite_count);
-    c_alloc.free(spritedata);
+    allocator.free(spritedata);
     if (retval < 0) {
         return retval;
     }
@@ -88,15 +90,16 @@ pub fn playtitus(constants: *const game.TITUS_constants, firstlevel: u16) c_int 
     defer c.freeobjects(&objects, object_count);
 
     level.levelnumber = firstlevel;
-    while (level.levelnumber < constants.*.levelcount) : (level.levelnumber += 1) {
+    while (level.levelnumber < game.constants.*.levelfiles.len) : (level.levelnumber += 1) {
         level.levelid = c.getlevelid(level.levelnumber);
-        var leveldata = sqz.unSQZ2(constants.*.levelfiles[@as(usize, @intCast(level.levelnumber))], c_alloc) catch {
+        const level_index = @as(usize, @intCast(level.levelnumber));
+        var leveldata = sqz.unSQZ2(game.constants.*.levelfiles[level_index].filename, allocator) catch {
             std.debug.print("Failed to uncompress level file: {}\n", .{level.levelnumber});
             return 1;
         };
 
         retval = c.loadlevel(&level, &leveldata[0], @intCast(leveldata.len), sprites, &(spritecache), objects);
-        c_alloc.free(leveldata);
+        allocator.free(leveldata);
         if (retval < 0) {
             return retval;
         }
@@ -110,7 +113,7 @@ pub fn playtitus(constants: *const game.TITUS_constants, firstlevel: u16) c_int 
             globals.NOCLIP = false;
             globals.DISPLAYLOOPTIME = false;
 
-            retval = c.viewstatus(&level, first);
+            retval = status.viewstatus(&level, first);
             first = false;
             if (retval < 0) {
                 return retval;
@@ -153,10 +156,14 @@ pub fn playtitus(constants: *const game.TITUS_constants, firstlevel: u16) c_int 
             // return retval;
         }
     }
-    if (c.game == c.Titus) {
-        retval = c.viewimage(constants.*.titusfinishfile, constants.*.titusfinishformat, 1, 0);
-        if (retval < 0)
+    if (game.constants.*.finish != null) {
+        const finish = game.constants.*.finish.?;
+        retval = image.viewImageFile(finish, .FadeOut, 0, allocator) catch {
+            return -1;
+        };
+        if (retval < 0) {
             return retval;
+        }
     }
 
     return (0);

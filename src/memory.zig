@@ -6,7 +6,7 @@ const innerParse = std.json.innerParse;
 const innerParseFromValue = std.json.innerParseFromValue;
 const Value = std.json.Value;
 
-pub fn Managed(comptime T: type) type {
+pub fn ManagedJSON(comptime T: type) type {
     return struct {
         value: T,
         arena: *std.heap.ArenaAllocator,

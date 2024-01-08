@@ -54,8 +54,6 @@ int16_t anim_moktar[ORIG_ANIM_MAX];
 int16_t anim_smoke[ORIG_ANIM_MAX];
 int16_t COEUR_POS[ORIG_ANIM_MAX * 2];
 
-char leveltitle[16][41];
-
 uint8_t object_maxspeedY[ORIG_OBJECT_COUNT];
 bool object_support[ORIG_OBJECT_COUNT]; //not support/support
 bool object_bounce[ORIG_OBJECT_COUNT]; //not bounce/bounce against floor + player bounces (ball, all spring, yellow stone, squeezed ball, skateboard)
@@ -575,44 +573,6 @@ void initoriginal() {
     orig_palette_level_colour[15].r = 48 * 4;
     orig_palette_level_colour[15].g = 8 * 4;
     orig_palette_level_colour[15].b = 0 * 4;
-
-    if (game == Titus) {
-        strcpy (leveltitle[0], "On The Foxy Trail");
-        strcpy (leveltitle[1], "Looking For Clues");
-        strcpy (leveltitle[2], "Road Works Ahead");
-        strcpy (leveltitle[3], "Going Underground");
-        strcpy (leveltitle[4], "Flaming Catacombs");
-        strcpy (leveltitle[5], "Coming To Town");
-        strcpy (leveltitle[6], "Foxy's Den");
-        strcpy (leveltitle[7], "On The Road To Marrakesh");
-        strcpy (leveltitle[8], "Home Of The Pharaohs");
-        strcpy (leveltitle[9], "Desert Experience");
-        strcpy (leveltitle[10], "Walls Of Sand");
-        strcpy (leveltitle[11], "A Beacon Of Hope");
-        strcpy (leveltitle[12], "A Pipe Dream");
-        strcpy (leveltitle[13], "Going Home");
-        strcpy (leveltitle[14], "Just Married");
-    } else if (game == Moktar) {
-        // FIXME: get someone who knows French to do localization.
-        // FIXME: separate 'game' from 'localization'. We can totally have Titus the Fox in French and Moktar in English.
-        // FIXME: add actual support for accents and stuff...
-        strcpy (leveltitle[0], "A LA RECHERCHE DE LA ZOUBIDA");
-        strcpy (leveltitle[1], "LES QUARTIERS CHICS");
-        strcpy (leveltitle[2], "ATTENTION TRAVAUX");
-        strcpy (leveltitle[3], "LES COULOIRS DU METRO"); // MÉTRO?
-        strcpy (leveltitle[4], "LES CATACOMBES INFERNALES");
-        strcpy (leveltitle[5], "ARRIVEE DANS LA CITE"); // ARRIVÉE?
-        strcpy (leveltitle[6], "L IMMEUBLE DE LA ZOUBIDA");
-        strcpy (leveltitle[7], "SOUS LE CHEMIN DE MARRAKECH");
-        strcpy (leveltitle[8], "LA CITE ENFOUIE");
-        strcpy (leveltitle[9], "DESERT PRIVE"); // DÉSERT PRIVÉ?
-        strcpy (leveltitle[10], "LA VILLE DES SABLES");
-        strcpy (leveltitle[11], "LE PHARE OUEST"); // LE PHARE DE L'OUEST?
-        strcpy (leveltitle[12], "UN BON TUYAU");
-        strcpy (leveltitle[13], "DE RETOUR AU PAYS");
-        strcpy (leveltitle[14], "DIRECTION BARBES");
-        strcpy (leveltitle[15], "BIG BISOUS");
-    }
 }
 
 uint16_t getlevelid(uint16_t levelnumber) {

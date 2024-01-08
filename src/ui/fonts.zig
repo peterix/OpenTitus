@@ -28,10 +28,10 @@
 
 const std = @import("std");
 
-const c = @import("c.zig");
+const c = @import("../c.zig");
 
-const window = @import("window.zig");
-const globals = @import("globals.zig");
+const window = @import("../window.zig");
+const globals = @import("../globals.zig");
 
 const Character = struct {
     x: u16,
@@ -49,7 +49,7 @@ const Font = struct {
     fallback: Character,
 };
 
-const yellow_font_data = @embedFile("../assets/yellow_font.bmp");
+const yellow_font_data = @embedFile("yellow_font.bmp");
 var yellow_font: Font = undefined;
 const CHAR_QUESTION = 63;
 
@@ -168,13 +168,25 @@ pub export fn fonts_free() void {
     freefont(&yellow_font);
 }
 
-pub export fn text_render(text: [*c]const u8, x: c_int, y: c_int, monospace: bool) void {
+pub fn text_render_columns(left: []const u8, right: []const u8, y: c_int, monospace: bool) void {
+    const margin = 5 * 8;
+    const width_right = text_width(right, monospace);
+
+    text_render(left, margin, y, monospace);
+    text_render(right, 320 - margin - width_right, y, monospace);
+}
+
+pub fn text_render_center(text: []const u8, y: c_int, monospace: bool) void {
+    const width = text_width(text, monospace);
+    const x = 160 - width / 2;
+    text_render(text, x, y, monospace);
+}
+
+pub fn text_render(text: []const u8, x: c_int, y: c_int, monospace: bool) void {
     var dest: c.SDL_Rect = .{ .x = x + 16 - globals.g_scroll_px_offset, .y = y, .w = 0, .h = 0 };
 
     // Let's assume ASCII for now... original code was trying to do something with UTF-8, but had the font files have no support for that
-    var index: usize = 0;
-    while (text[index] != 0) : (index += 1) {
-        var character = text[index];
+    for (text) |character| {
         var chardesc = yellow_font.characters[character];
         if (monospace) {
             var src = c.SDL_Rect{ .x = chardesc.x_mono, .y = chardesc.y, .w = chardesc.w_mono, .h = chardesc.h };
@@ -193,13 +205,11 @@ pub export fn text_render(text: [*c]const u8, x: c_int, y: c_int, monospace: boo
     }
 }
 
-pub export fn text_width(text: [*c]const u8, monospace: bool) u16 {
+pub fn text_width(text: []const u8, monospace: bool) u16 {
     var size: i17 = 0;
 
     // Let's assume ASCII for now... original code was trying to do something with UTF-8, but had the font files have no support for that
-    var index: usize = 0;
-    while (text[index] != 0) : (index += 1) {
-        var character = text[index];
+    for (text) |character| {
         var chardesc = yellow_font.characters[character];
         if (monospace) {
             size += chardesc.w_mono;

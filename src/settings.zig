@@ -5,20 +5,18 @@ const game = @import("game.zig");
 const c = @import("c.zig");
 
 const memory = @import("memory.zig");
-const Managed = memory.Managed;
+const ManagedJSON = memory.ManagedJSON;
 const JsonList = memory.JsonList;
 
 const Allocator = std.mem.Allocator;
 
 const settings_file_name = "settings.json";
-const titus_file_name = "titus.json";
-const moktar_file_name = "moktar.json";
 
 fn game_file_name() []const u8 {
     if (game.game == c.Titus) {
-        return titus_file_name;
+        return "titus.json";
     } else {
-        return moktar_file_name;
+        return "moktar.json";
     }
 }
 
@@ -33,7 +31,7 @@ pub const Settings = extern struct {
     window_width: u16 = window.game_width * 3,
     window_height: u16 = window.game_height * 3,
 
-    pub fn make_new(allocator: Allocator) !Managed(Settings) {
+    pub fn make_new(allocator: Allocator) !ManagedJSON(Settings) {
         var seed: u32 = undefined;
         try std.os.getrandom(std.mem.asBytes(&seed));
         var arena = try allocator.create(std.heap.ArenaAllocator);
@@ -42,10 +40,10 @@ pub const Settings = extern struct {
         arena.* = std.heap.ArenaAllocator.init(allocator);
         errdefer arena.deinit();
 
-        return Managed(Settings){ .value = Settings{}, .arena = arena };
+        return ManagedJSON(Settings){ .value = Settings{}, .arena = arena };
     }
 
-    pub fn read(allocator: Allocator) !Managed(Settings) {
+    pub fn read(allocator: Allocator) !ManagedJSON(Settings) {
         var arena = try allocator.create(std.heap.ArenaAllocator);
         errdefer allocator.destroy(arena);
 
@@ -82,11 +80,12 @@ pub const Settings = extern struct {
         if (settings.window_height < window.game_height) {
             settings.window_height = window.game_height;
         }
-        return Managed(Settings){ .value = settings, .arena = arena };
+        return ManagedJSON(Settings){ .value = settings, .arena = arena };
     }
 
     pub fn write(self: *Settings, allocator: Allocator) !void {
         var data = try std.json.stringifyAlloc(allocator, self, .{ .whitespace = .indent_4, .emit_null_optional_fields = false });
+        defer allocator.free(data);
         try std.fs.cwd().writeFile(settings_file_name, data);
     }
 };
@@ -125,7 +124,7 @@ pub const GameState = struct {
     seen_intro: bool = false,
     seed: u32 = 0,
 
-    pub fn make_new(allocator: Allocator) !Managed(GameState) {
+    pub fn make_new(allocator: Allocator) !ManagedJSON(GameState) {
         var seed: u32 = undefined;
         try std.os.getrandom(std.mem.asBytes(&seed));
         var arena = std.heap.ArenaAllocator.init(allocator);
@@ -134,10 +133,10 @@ pub const GameState = struct {
             .seed = seed,
             .seen_intro = false,
         };
-        return Managed(GameState){ .value = game_state, .arena = &arena };
+        return ManagedJSON(GameState){ .value = game_state, .arena = &arena };
     }
 
-    pub fn read(allocator: Allocator) !Managed(GameState) {
+    pub fn read(allocator: Allocator) !ManagedJSON(GameState) {
         const data = std.fs.cwd().readFileAlloc(allocator, game_file_name(), 20000) catch |err| {
             switch (err) {
                 error.FileNotFound => {
@@ -173,16 +172,17 @@ pub const GameState = struct {
         for (game_state.levels.list.items, 0..) |*entry, level_index| {
             _ = LevelEntry.validate(entry, game_state.seed, @truncate(level_index));
         }
-        return Managed(GameState){ .arena = arena, .value = game_state };
+        return ManagedJSON(GameState){ .arena = arena, .value = game_state };
     }
 
     pub fn write(self: *GameState, allocator: Allocator) !void {
         var data = try std.json.stringifyAlloc(allocator, self, .{ .whitespace = .indent_4, .emit_null_optional_fields = false });
+        defer allocator.free(data);
         try std.fs.cwd().writeFile(game_file_name(), data);
     }
 };
 
-// FIXME: called from C...
+// FIXME: called from C... so we can't use a good allocator.
 // FIXME: this is kinda ugly... to manipulate the values, we need to know the wrapper
 const c_alloc = std.heap.c_allocator;
 
