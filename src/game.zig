@@ -1,5 +1,5 @@
 //
-// Copyright (C) 2008 - 2011 The OpenTitus team
+// Copyright (C) 2008 - 2024 The OpenTitus team
 //
 // Authors:
 // Eirik Stople
@@ -40,20 +40,20 @@ comptime {
     refAllDecls(view_password);
 }
 
-const intro_text = @import("ui/intro_text.zig");
-const menu = @import("ui/menu.zig");
-const image = @import("ui/image.zig");
 const fonts = @import("ui/fonts.zig");
+const image = @import("ui/image.zig");
 const ImageFile = image.ImageFile;
+const intro_text = @import("ui/intro_text.zig");
+const keyboard = @import("ui/keyboard.zig");
+const menu = @import("ui/menu.zig");
 
 const c = @import("c.zig");
 const globals = @import("globals.zig");
 const engine = @import("engine.zig");
 const window = @import("window.zig");
-const keyboard = @import("keyboard.zig");
 
-const memory = @import("memory.zig");
-const ManagedJSON = memory.ManagedJSON;
+const json = @import("json.zig");
+const ManagedJSON = json.ManagedJSON;
 
 const TitusError = error{
     CannotDetermineGameType,
@@ -79,6 +79,7 @@ pub const LevelDescriptor = struct {
     title: []const u8,
 };
 
+// TODO: merge this with the 'original.{c,h}' stuff. It's basically the same kind of thing
 pub const TITUS_constants = struct {
     levelfiles: []const LevelDescriptor,
     logo: ImageFile,

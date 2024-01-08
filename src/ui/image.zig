@@ -1,5 +1,5 @@
 //
-// Copyright (C) 2008 - 2011 The OpenTitus team
+// Copyright (C) 2008 - 2024 The OpenTitus team
 //
 // Authors:
 // Eirik Stople
@@ -173,7 +173,7 @@ pub const DisplayMode = enum(c_int) {
 };
 
 const window = @import("../window.zig");
-const keyboard = @import("../keyboard.zig");
+const keyboard = @import("keyboard.zig");
 
 pub fn viewImageFile(file: ImageFile, display_mode: DisplayMode, delay: c_int, allocator: std.mem.Allocator) !c_int {
     const fade_time: c_uint = 1000;

@@ -1,5 +1,5 @@
 //
-// Copyright (C) 2008 - 2011 The OpenTitus team
+// Copyright (C) 2008 - 2024 The OpenTitus team
 //
 // Authors:
 // Eirik Stople
@@ -25,9 +25,9 @@
 
 const std = @import("std");
 
-const c = @import("c.zig");
-const globals = @import("globals.zig");
-const window = @import("window.zig");
+const c = @import("../c.zig");
+const globals = @import("../globals.zig");
+const window = @import("../window.zig");
 
 pub export fn waitforbutton() c_int {
     var event: c.SDL_Event = undefined;

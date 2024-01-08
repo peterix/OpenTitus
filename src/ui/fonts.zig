@@ -1,8 +1,9 @@
 //
-// Copyright (C) 2008 - 2011 The OpenTitus team
+// Copyright (C) 2008 - 2024 The OpenTitus team
 //
 // Authors:
 // Eirik Stople
+// Petr Mrázek
 //
 // "Titus the Fox: To Marrakech and Back" (1992) and
 // "Lagaf': Les Aventures de Moktar - Vol 1: La Zoubida" (1991)
@@ -20,10 +21,6 @@
 // WITHOUT  ANY  WARRANTY;  without   even  the  implied  warranty  of
 // MERCHANTABILITY or  FITNESS FOR A PARTICULAR PURPOSE.   See the GNU
 // General Public License for more details.
-//
-
-// fonts.zig
-// Font functions
 //
 
 const std = @import("std");

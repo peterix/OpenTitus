@@ -1,5 +1,5 @@
 //
-// Copyright (C) 2008 - 2011 The OpenTitus team
+// Copyright (C) 2008 - 2024 The OpenTitus team
 //
 // Authors:
 // Eirik Stople
@@ -28,16 +28,15 @@ const std = @import("std");
 const globals = @import("globals.zig");
 const sqz = @import("sqz.zig");
 const scroll = @import("scroll.zig");
-const keyboard = @import("keyboard.zig");
 const c = @import("c.zig");
 const game = @import("game.zig");
 const window = @import("window.zig");
 const elevators = @import("elevators.zig");
 const s = @import("settings.zig");
 
-const status = @import("ui/status.zig");
 const image = @import("ui/image.zig");
-const ImageFormat = image.ImageFormat;
+const keyboard = @import("ui/keyboard.zig");
+const status = @import("ui/status.zig");
 
 pub fn playtitus(firstlevel: u16, allocator: std.mem.Allocator) c_int {
     var context: c.ScreenContext = undefined;
