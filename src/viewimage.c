@@ -201,6 +201,7 @@ int viewimage(const char * imagefile, int imageformat, int displayformat, int de
                         case SDL_WINDOWEVENT_SIZE_CHANGED:
                         case SDL_WINDOWEVENT_MAXIMIZED:
                         case SDL_WINDOWEVENT_RESTORED:
+                        case SDL_WINDOWEVENT_EXPOSED:
                             window_render();
                         default:
                             break;
