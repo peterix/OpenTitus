@@ -120,6 +120,10 @@ int move_player(ScreenContext *context, TITUS_level *level) {
             } else if (event.key.keysym.scancode == KEY_Q) {
                 if (mods & (KMOD_ALT | KMOD_CTRL)) {
                     credits_screen();
+                    if (level->extrabonus >= 10) {
+                        level->extrabonus -= 10;
+                        level->lives += 1;
+                    }
                 }
             } else if (event.key.keysym.scancode == KEY_M) {
                 if (mods & (KMOD_ALT | KMOD_CTRL)) {
