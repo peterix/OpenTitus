@@ -44,7 +44,6 @@
 #include "common.h"
 #include "tituserror.h"
 #include "original.h"
-#include "fonts.h"
 #include "keyboard.h"
 #include "gates.h"
 #include "scroll.h"
@@ -92,6 +91,7 @@ void DISPLAY_TILES(TITUS_level *level) {
 //Loop through all sprites, and draw the sprites that should be visible on the screen (NOT by using the visible flag, it uses the coordinates)
 //If the flash bit is set, the first 3 planes will be 0, the last plane will be normal (colour & 0x01, odd colors gets white, even colours gets black)
 
+void text_render_c(const char *text, int x, int y, bool monospace);
 
 void DISPLAY_SPRITES(TITUS_level *level) {
     int16_t i;
@@ -116,14 +116,13 @@ void DISPLAY_SPRITES(TITUS_level *level) {
     display_sprite(level, &(level->player.sprite2));
     display_sprite(level, &(level->player.sprite));
 
-    /*
+    // FIXME: remove `text_render_c` when porting to zig
     if (GODMODE) {
-        text_render("GODMODE", 30 * 8, 0 * 12, false);
+        text_render_c("GODMODE", 30 * 8, 0 * 12, false);
     }
     if (NOCLIP) {
-        text_render("NOCLIP", 30 * 8, 1 * 12, false);
+        text_render_c("NOCLIP", 30 * 8, 1 * 12, false);
     }
-    */
 }
 
 void display_sprite(TITUS_level *level, TITUS_sprite *spr) {

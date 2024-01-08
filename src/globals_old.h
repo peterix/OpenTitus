@@ -188,4 +188,3 @@ extern SPRITE sprites[256];
 
 extern SPRITEDATA spritedata[256];
 
-extern uint16_t level_code[16];

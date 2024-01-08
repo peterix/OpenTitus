@@ -202,6 +202,10 @@ pub fn text_render(text: []const u8, x: c_int, y: c_int, monospace: bool) void {
     }
 }
 
+pub export fn text_render_c(text: [*c]u8, x: c_int, y: c_int, monospace: bool) void {
+    text_render(std.mem.span(text), x, y, monospace);
+}
+
 pub fn text_width(text: []const u8, monospace: bool) u16 {
     var size: i17 = 0;
 

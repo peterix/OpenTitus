@@ -30,28 +30,76 @@ const window = @import("../window.zig");
 const keyboard = @import("keyboard.zig");
 const game = @import("../game.zig");
 const fonts = @import("fonts.zig");
+const globals = @import("../globals.zig");
 
+const Rect = struct {
+    x: u16,
+    y: u16,
+    w: u16,
+    h: u16,
+};
+
+// FIXME: deduplicate these two...
 // TODO: return the rect this has drawn over and blank it in the next iteration
-fn draw_extrabonus(level: *c.TITUS_level) void {
+fn draw_extrabonus(level: *c.TITUS_level, last_bounds: ?Rect) Rect {
+    if (last_bounds != null) {
+        var rect = c.SDL_Rect{
+            // FIXME: move all UI screens to an overlay that's independent from the scroll buffer madness
+            .x = last_bounds.?.x,
+            .y = last_bounds.?.y,
+            .w = last_bounds.?.w,
+            .h = last_bounds.?.h,
+        };
+        window.window_clear(&rect);
+    }
     var tmpchars: [10]u8 = .{};
     var extrabonus = std.fmt.bufPrint(&tmpchars, "{d}", .{level.extrabonus}) catch {
         unreachable;
     };
     var extrabonus_width = fonts.text_width(extrabonus, true);
     fonts.text_render(extrabonus, 28 * 8 - extrabonus_width, 10 * 12, true);
+    const bounds = Rect{
+        .x = 28 * 8 - extrabonus_width + 16,
+        .y = 10 * 12,
+        .w = extrabonus_width,
+        .h = 12,
+    };
+    return bounds;
 }
 
 // TODO: return the rect this has drawn over and blank it in the next iteration
-fn draw_lives(level: *c.TITUS_level) void {
+fn draw_lives(level: *c.TITUS_level, last_bounds: ?Rect) Rect {
+    if (last_bounds != null) {
+        var rect = c.SDL_Rect{
+            // FIXME: move all UI screens to an overlay that's independent from the scroll buffer madness
+            .x = last_bounds.?.x,
+            .y = last_bounds.?.y,
+            .w = last_bounds.?.w,
+            .h = last_bounds.?.h,
+        };
+        _ = c.SDL_FillRect(window.screen, &rect, 0);
+    }
     var tmpchars: [10]u8 = .{};
     var lives = std.fmt.bufPrint(&tmpchars, "{d}", .{level.lives}) catch {
         unreachable;
     };
     var lives_width = fonts.text_width(lives, true);
+
     fonts.text_render(lives, 28 * 8 - lives_width, 11 * 12, true);
+    const bounds = Rect{
+        .x = 28 * 8 - lives_width + 16,
+        .y = 11 * 12,
+        .w = lives_width,
+        .h = 12,
+    };
+    return bounds;
 }
 
 pub export fn viewstatus(level: *c.TITUS_level, countbonus: bool) c_int {
+    var saved_x_offset = globals.g_scroll_px_offset;
+    globals.g_scroll_px_offset = 0;
+    defer globals.g_scroll_px_offset = saved_x_offset;
+
     var retval: c_int = undefined;
     var tmpchars: [10]u8 = .{};
     window.window_clear(null);
@@ -82,8 +130,8 @@ pub export fn viewstatus(level: *c.TITUS_level, countbonus: bool) c_int {
         fonts.text_render(title, position, 12 * 5 + 16, false);
     }
 
-    draw_extrabonus(level);
-    draw_lives(level);
+    var last_extrabonus = draw_extrabonus(level, null);
+    var last_lives = draw_lives(level, null);
 
     window.window_render();
 
@@ -95,13 +143,13 @@ pub export fn viewstatus(level: *c.TITUS_level, countbonus: bool) c_int {
         while (level.extrabonus >= 10) {
             for (0..10) |_| {
                 level.extrabonus -= 1;
-                draw_extrabonus(level);
+                last_extrabonus = draw_extrabonus(level, last_extrabonus);
                 window.window_render();
                 // 150 ms
                 c.SDL_Delay(150);
             }
             level.lives += 1;
-            draw_lives(level);
+            last_lives = draw_lives(level, last_lives);
             window.window_render();
             // 100 ms
             c.SDL_Delay(100);
