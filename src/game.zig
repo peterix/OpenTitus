@@ -174,6 +174,7 @@ const credits: [8][2][:0]const u8 = .{
 };
 
 pub export fn credits_screen() c_int {
+    var last_song = c.music_get_last_song();
     c.music_select_song(9);
 
     // TODO: have a way for the event loop to re-run this rendering code
@@ -198,6 +199,7 @@ pub export fn credits_screen() c_int {
     if (retval < 0)
         return retval;
 
+    c.music_select_song(last_song);
     return (0);
 }
 

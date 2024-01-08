@@ -81,7 +81,7 @@ typedef struct {
     ADLIB_DATA aad;
 } SDL_PLAYER;
 
-uint8_t last_song;
+uint8_t last_song = 0;
 uint16_t seg_reduction;
 
 bool sfx_on;
@@ -464,6 +464,10 @@ void audio_free(){
     }
 
     SDL_CloseAudio();
+}
+
+int music_get_last_song() {
+    return last_song;
 }
 
 void music_select_song(int song_number) {
