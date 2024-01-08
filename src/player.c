@@ -76,6 +76,8 @@ void handle_player_input(TITUS_player *player, const uint8_t* keystate) {
     player->action_pressed = keystate[KEY_SPACE];
 }
 
+int credits_screen();
+
 int move_player(ScreenContext *context, TITUS_level *level) {
     //Part 1: Check keyboard input
     //Part 2: Determine the player's action, and execute action dependent code
@@ -93,10 +95,12 @@ int move_player(ScreenContext *context, TITUS_level *level) {
     SDL_PumpEvents(); //Update keyboard state
     keystate = SDL_GetKeyboardState(NULL);
 
+    // TODO: add the crazy credits screen that converts your extra bonuses to a life
     while(SDL_PollEvent(&event)) { //Check all events
         if (event.type == SDL_QUIT) {
             return TITUS_ERROR_QUIT;
         } else if (event.type == SDL_KEYDOWN) {
+            SDL_Keymod mods = SDL_GetModState();
             if (event.key.keysym.scancode == KEY_GODMODE && settings->devmode) {
                 if (GODMODE) {
                     GODMODE = false;
@@ -113,8 +117,14 @@ int move_player(ScreenContext *context, TITUS_level *level) {
                 }
             } else if (event.key.keysym.scancode == KEY_DEBUG && settings->devmode) {
                 DISPLAYLOOPTIME = !DISPLAYLOOPTIME;
-            } else if (event.key.keysym.scancode == KEY_MUSIC) {
-                music_toggle();
+            } else if (event.key.keysym.scancode == KEY_Q) {
+                if (mods & (KMOD_ALT | KMOD_CTRL)) {
+                    credits_screen();
+                }
+            } else if (event.key.keysym.scancode == KEY_M) {
+                if (mods & (KMOD_ALT | KMOD_CTRL)) {
+                    music_cycle();
+                }
             } else if (event.key.keysym.scancode == KEY_P) {
                 pause = true;
             } else if (event.key.keysym.scancode == KEY_FULLSCREEN) {
@@ -125,12 +135,11 @@ int move_player(ScreenContext *context, TITUS_level *level) {
     if (keystate[KEY_ESC]) {
         return TITUS_ERROR_QUIT;
     }
+    if (keystate[KEY_F1] && (RESETLEVEL_FLAG == 0)) {
+        RESETLEVEL_FLAG = 2;
+        return 0;
+    }
     if(settings->devmode) {
-        if (keystate[KEY_F1] && (RESETLEVEL_FLAG == 0)) { //F1 = suicide
-            CASE_DEAD_IM(level);
-            RESETLEVEL_FLAG--;
-            return 0;
-        }
         if (keystate[KEY_F2]) { //F2 = game over
             GAMEOVER_FLAG = true;
             return 0;
@@ -349,6 +358,9 @@ void DEC_LIFE (TITUS_level *level) {
     if (level->lives == 0) {
         GAMEOVER_FLAG = true;
     }
+    else {
+        LOSELIFE_FLAG = true;
+    }
 }
 
 void CASE_DEAD_IM (TITUS_level *level) {
@@ -382,8 +394,6 @@ int t_pause (ScreenContext *context, TITUS_level *level) {
             } else if (event.type == SDL_KEYDOWN) {
                 if (event.key.keysym.scancode == KEY_ESC) {
                     return TITUS_ERROR_QUIT;
-                } else if (event.key.keysym.scancode == KEY_MUSIC) {
-                    music_toggle();
                 } else if (event.key.keysym.scancode == KEY_P) {
                     return 0;
                 } else if (event.key.keysym.scancode == KEY_FULLSCREEN) {

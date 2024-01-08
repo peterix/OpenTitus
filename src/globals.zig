@@ -32,6 +32,7 @@ pub const TileCoord = i16;
 pub const PixelCoord = i16;
 
 pub export var RESETLEVEL_FLAG: u8 = 0;
+pub export var LOSELIFE_FLAG: bool = false;
 
 // triggers a game over
 pub export var GAMEOVER_FLAG: bool = false;

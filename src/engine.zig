@@ -131,13 +131,15 @@ pub fn playtitus(constants: *const game.TITUS_constants, firstlevel: u16) c_int 
                 s.game_record_completion(level.levelnumber, level.bonuscollected, level.tickcount);
                 break;
             }
-            if (globals.RESETLEVEL_FLAG == 1) {
+            if (globals.LOSELIFE_FLAG) {
                 if (level.lives == 0) {
                     globals.GAMEOVER_FLAG = true;
                 } else {
                     level.lives -= 1;
                     death(&context, &level);
                 }
+            } else if (globals.RESETLEVEL_FLAG == 1) {
+                death(&context, &level);
             }
 
             if (globals.GAMEOVER_FLAG) {
@@ -163,7 +165,6 @@ pub fn playtitus(constants: *const game.TITUS_constants, firstlevel: u16) c_int 
 fn playlevel(context: [*c]c.ScreenContext, level: *c.TITUS_level) c_int {
     var retval: c_int = 0;
     var firstrun = true;
-    globals.BITMAP_X = 0;
 
     while (true) {
         if (!firstrun) {

@@ -31,11 +31,11 @@
 #include "SDL2/SDL.h"
 #include <stdbool.h>
 
-#define KEY_F1 SDL_SCANCODE_F1 //Loose a life
-#define KEY_F2 SDL_SCANCODE_F2 //Game over
-#define KEY_F3 SDL_SCANCODE_F3 //Game over
-#define KEY_E SDL_SCANCODE_E //Display energy
-#define KEY_F4 SDL_SCANCODE_F4 //Status page
+#define KEY_F1 SDL_SCANCODE_F1 // Loose a life
+#define KEY_F2 SDL_SCANCODE_F2 // Game over
+#define KEY_F3 SDL_SCANCODE_F3 // Next level
+#define KEY_E SDL_SCANCODE_E   // Display energy
+#define KEY_F4 SDL_SCANCODE_F4 // Status page
 
 #define KEY_LEFT SDL_SCANCODE_LEFT
 #define KEY_A SDL_SCANCODE_A
@@ -56,10 +56,11 @@
 #define KEY_RETURN SDL_SCANCODE_RETURN //Return
 #define KEY_ESC SDL_SCANCODE_ESCAPE //Quit
 #define KEY_P SDL_SCANCODE_P //Toggle pause
+#define KEY_Q SDL_SCANCODE_Q //Credits madness
+#define KEY_M SDL_SCANCODE_M //Cycle through all the music
 #define KEY_NOCLIP SDL_SCANCODE_N //Toggle noclip
 #define KEY_GODMODE SDL_SCANCODE_G //Toggle godmode
 #define KEY_DEBUG SDL_SCANCODE_D //Toggle debug mode
-#define KEY_MUSIC SDL_SCANCODE_F3 //Toggle music
 #define KEY_FULLSCREEN SDL_SCANCODE_F11 //Toggle fullscreen
 
 #define TEST_ZONE 4
@@ -123,6 +124,8 @@ typedef struct {
 } SPRITEDATA;
 
 extern uint8_t RESETLEVEL_FLAG;
+extern bool LOSELIFE_FLAG;
+
 extern bool GAMEOVER_FLAG; //triggers a game over
 extern uint8_t BAR_FLAG; //timer for health bar
 extern bool X_FLAG; //true if left or right key is pressed

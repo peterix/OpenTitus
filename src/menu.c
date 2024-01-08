@@ -161,9 +161,7 @@ int viewmenu(const char * menufile, int menuformat, int levelcount) {
                     SDL_FreeSurface(image);
                     return (-1);
                 }
-                if (event.key.keysym.scancode == KEY_MUSIC) {
-                    music_toggle();
-                } else if (event.key.keysym.scancode == KEY_FULLSCREEN) {
+                if (event.key.keysym.scancode == KEY_FULLSCREEN) {
                     window_toggle_fullscreen();
                 }
             }
@@ -206,9 +204,7 @@ int viewmenu(const char * menufile, int menuformat, int levelcount) {
                     selection = 1;
                 if (event.key.keysym.scancode == KEY_RETURN || event.key.keysym.scancode == KEY_ENTER || event.key.keysym.scancode == KEY_SPACE)
                     menuloop = 0;
-                if (event.key.keysym.scancode == KEY_MUSIC) {
-                    music_toggle();
-                } else if (event.key.keysym.scancode == KEY_FULLSCREEN) {
+                if (event.key.keysym.scancode == KEY_FULLSCREEN) {
                     window_toggle_fullscreen();
                 }
             }
@@ -264,9 +260,7 @@ int viewmenu(const char * menufile, int menuformat, int levelcount) {
                     SDL_FreeSurface(image);
                     return (-1);
                 }
-                if (event.key.keysym.scancode == KEY_MUSIC) {
-                    music_toggle();
-                } else if (event.key.keysym.scancode == KEY_FULLSCREEN) {
+                if (event.key.keysym.scancode == KEY_FULLSCREEN) {
                     window_toggle_fullscreen();
                 }
                 // TODO: add a way to activate devmode from here (cheat code style using state machine)
@@ -371,9 +365,7 @@ int enterpassword(int levelcount){
                     return (-1);
                 }
 
-                if (event.key.keysym.scancode == KEY_MUSIC) {
-                    music_toggle();
-                } else if (event.key.keysym.scancode == KEY_FULLSCREEN) {
+                if (event.key.keysym.scancode == KEY_FULLSCREEN) {
                     window_toggle_fullscreen();
                 }
             }

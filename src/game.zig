@@ -147,6 +147,60 @@ fn viewintrotext() c_int {
     return (0);
 }
 
+fn text_render_columns(left: []const u8, right: []const u8, y: c_int, monospace: bool) void {
+    const margin = 5 * 8;
+    const width_right = fonts.text_width(&right[0], monospace);
+
+    fonts.text_render(&left[0], margin, y, monospace);
+    fonts.text_render(&right[0], 320 - margin - width_right, y, monospace);
+}
+
+fn text_render_center(text: []const u8, y: c_int, monospace: bool) void {
+    const width = fonts.text_width(&text[0], monospace);
+    const x = 160 - width / 2;
+    fonts.text_render(&text[0], x, y, monospace);
+}
+
+// TODO: check for the actual names, some accented characters may have been lost because of technical limitations
+const credits: [8][2][:0]const u8 = .{
+    .{ "IBM Engineer", "Eric Zmiro" }, // Éric?
+    .{ "Musics", "Christophe Fevre" },
+    .{ "The Sleeper", "Gil Espeche" },
+    .{ "Background", "Francis Fournier" },
+    .{ "Sprites", "Stephane Beaufils" },
+    .{ "Game Designer", "Florent Moreau" },
+    .{ "Amiga Version", "Carlo Perconti" },
+    .{ "Funny Friend", "Carole Delannoy" },
+};
+
+pub export fn credits_screen() c_int {
+    c.music_select_song(9);
+
+    // TODO: have a way for the event loop to re-run this rendering code
+    window.window_clear(null);
+    const monospace = false;
+    var y: c_int = 2 * 12;
+    for (credits, 0..) |credits_line, index| {
+        _ = index;
+        text_render_columns(credits_line[0], credits_line[1], y, monospace);
+        y += 13;
+    }
+    y += 2 * 12 + 6 - 8;
+    text_render_center("Thanks to", y, monospace);
+    y += 12 + 6;
+    text_render_center("Cristelle, Ana Luisa, Corinne and Manou.", y, monospace);
+    window.window_render();
+
+    var retval = keyboard.waitforbutton();
+    if (retval < 0)
+        return retval;
+
+    if (retval < 0)
+        return retval;
+
+    return (0);
+}
+
 pub fn run() !u8 {
     // FIXME: report the missing files to the user in a better way than erroring into a terminal? dialog box if available?
     const constants = try initGameType();

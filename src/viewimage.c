@@ -151,9 +151,7 @@ int viewimage(const char * imagefile, int imageformat, int displayformat, int de
                         fadeoutskip = 255 - image_alpha;
                     }
 
-                    if (event.key.keysym.scancode == KEY_MUSIC) {
-                        music_toggle();
-                    } else if (event.key.keysym.scancode == KEY_FULLSCREEN) {
+                    if (event.key.keysym.scancode == KEY_FULLSCREEN) {
                         window_toggle_fullscreen();
                     }
 
@@ -192,9 +190,7 @@ int viewimage(const char * imagefile, int imageformat, int displayformat, int de
                     if (event.key.keysym.scancode == KEY_RETURN || event.key.keysym.scancode == KEY_ENTER || event.key.keysym.scancode == KEY_SPACE)
                         activedelay = 0;
 
-                    if (event.key.keysym.scancode == KEY_MUSIC) {
-                        music_toggle();
-                    } else if (event.key.keysym.scancode == KEY_FULLSCREEN) {
+                    if (event.key.keysym.scancode == KEY_FULLSCREEN) {
                         window_toggle_fullscreen();
                     }
                 }
@@ -233,9 +229,7 @@ int viewimage(const char * imagefile, int imageformat, int displayformat, int de
                         SDL_FreeSurface(surface);
                         return (-1);
                     }
-                    if (event.key.keysym.scancode == KEY_MUSIC) {
-                        music_toggle();
-                    } else if (event.key.keysym.scancode == KEY_FULLSCREEN) {
+                    if (event.key.keysym.scancode == KEY_FULLSCREEN) {
                         window_toggle_fullscreen();
                     }
                 }
@@ -283,9 +277,7 @@ int viewimage(const char * imagefile, int imageformat, int displayformat, int de
                         SDL_FreeSurface(surface);
                         return (-1);
                     }
-                    if (event.key.keysym.scancode == KEY_MUSIC) {
-                        music_toggle();
-                    } else if (event.key.keysym.scancode == KEY_FULLSCREEN) {
+                    if (event.key.keysym.scancode == KEY_FULLSCREEN) {
                         window_toggle_fullscreen();
                     }
                 }

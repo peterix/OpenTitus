@@ -140,8 +140,6 @@ uint8_t RESET_LEVEL(ScreenContext *context, TITUS_level *level) {
                 } else if (event.type == SDL_KEYDOWN) {
                     if (event.key.keysym.scancode == KEY_ESC) {
                         return TITUS_ERROR_QUIT;
-                    } else if (event.key.keysym.scancode == KEY_MUSIC) {
-                        music_toggle();
                     } else if (event.key.keysym.scancode == KEY_FULLSCREEN) {
                         window_toggle_fullscreen();
                     } else if (event.key.keysym.scancode == KEY_RETURN || event.key.keysym.scancode == KEY_ENTER || event.key.keysym.scancode == KEY_SPACE) {
@@ -226,12 +224,12 @@ void CLEAR_DATA(TITUS_level *level) {
     PRIER_FLAG = 0;
     SAUT_FLAG = 0;
     CROSS_FLAG = 0;
-    GRAVITY_FLAG = 0;
     FURTIF_FLAG = 0;
     CHOC_FLAG = 0;
     KICK_FLAG = 0;
     SEECHOC_FLAG = 0;
     RESETLEVEL_FLAG = 0;
+    LOSELIFE_FLAG = 0;
     GAMEOVER_FLAG = false;
     NEWLEVEL_FLAG = false;
     INVULNERABLE_FLAG = 0;
@@ -244,22 +242,7 @@ void CLEAR_DATA(TITUS_level *level) {
     g_scroll_px_offset = 0;
     YFALL = 0;
 
-    TAPISFLY_FLAG = 0;
-    CROSS_FLAG = 0;
     GRAVITY_FLAG = 4;
-    LADDER_FLAG = false;
-    FURTIF_FLAG = 0;
-    KICK_FLAG = 0;
-    CHOC_FLAG = 0;
-    FUME_FLAG = 0;
-    DROP_FLAG = 0;
-    CARRY_FLAG = 0;
-    NOSCROLL_FLAG = 0;
-    GAMEOVER_FLAG = 0;
-    NEWLEVEL_FLAG = false;
-    RESETLEVEL_FLAG = 0;
-    INVULNERABLE_FLAG = 0;
-    TAUPE_FLAG = 0;
     SENSX = 0;
     LAST_ORDER = 0;
 
@@ -286,7 +269,6 @@ void clearsprite(TITUS_sprite *spr){
     spr->droptobottom = false;
     spr->killing = false;
     spr->invisible = false;
-    return (0);
 }
 
 

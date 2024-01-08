@@ -566,6 +566,19 @@ void music_select_song(int song_number) {
     SDL_PauseAudio(0); //perhaps unneccessary
 }
 
+void music_cycle() {
+    if(!settings->music) {
+        return;
+    }
+    static int song_nr = 0;
+    if (song_nr > 15) {
+        song_nr = 0;
+    }
+    fprintf(stderr, "Playing song %d\n", song_nr);
+    music_select_song(song_nr);
+    song_nr += 1;
+}
+
 bool music_toggle() {
     settings->music = !settings->music;
     if(settings->music) {
@@ -593,8 +606,6 @@ void music_wait_to_finish() {
                     // FIXME: handle this better
                     // return TITUS_ERROR_QUIT;
                     return;
-                } else if (event.key.keysym.scancode == KEY_MUSIC) {
-                    waiting = music_toggle();
                 }
             }
         }

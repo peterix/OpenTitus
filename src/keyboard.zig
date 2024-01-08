@@ -44,15 +44,13 @@ pub export fn waitforbutton() c_int {
                 if (event.key.keysym.scancode == c.SDL_SCANCODE_ESCAPE)
                     waiting = -1;
 
-                if (event.key.keysym.scancode == c.KEY_MUSIC) {
-                    _ = c.music_toggle();
-                } else if (event.key.keysym.scancode == c.KEY_FULLSCREEN) {
+                if (event.key.keysym.scancode == c.KEY_FULLSCREEN) {
                     window.window_toggle_fullscreen();
                 }
             }
             if (event.type == c.SDL_WINDOWEVENT) {
                 switch (event.window.event) {
-                    c.SDL_WINDOWEVENT_RESIZED, c.SDL_WINDOWEVENT_SIZE_CHANGED, c.SDL_WINDOWEVENT_MAXIMIZED, c.SDL_WINDOWEVENT_RESTORED => {
+                    c.SDL_WINDOWEVENT_RESIZED, c.SDL_WINDOWEVENT_SIZE_CHANGED, c.SDL_WINDOWEVENT_MAXIMIZED, c.SDL_WINDOWEVENT_RESTORED, c.SDL_WINDOWEVENT_EXPOSED => {
                         window.window_render();
                     },
                     else => {},

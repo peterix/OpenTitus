@@ -415,9 +415,7 @@ void fadeout() {
                     // FIXME: handle this better
                     return;
                 }
-                if (event.key.keysym.scancode == KEY_MUSIC) {
-                    music_toggle();
-                } else if (event.key.keysym.scancode == KEY_FULLSCREEN) {
+                if (event.key.keysym.scancode == KEY_FULLSCREEN) {
                     window_toggle_fullscreen();
                 }
             }
