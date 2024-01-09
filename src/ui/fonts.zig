@@ -180,7 +180,7 @@ pub fn text_render_center(text: []const u8, y: c_int, monospace: bool) void {
 }
 
 pub fn text_render(text: []const u8, x: c_int, y: c_int, monospace: bool) void {
-    var dest: c.SDL_Rect = .{ .x = x + 16 - globals.g_scroll_px_offset, .y = y, .w = 0, .h = 0 };
+    var dest: c.SDL_Rect = .{ .x = x, .y = y, .w = 0, .h = 0 };
 
     // Let's assume ASCII for now... original code was trying to do something with UTF-8, but had the font files have no support for that
     for (text) |character| {

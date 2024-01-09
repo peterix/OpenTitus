@@ -59,7 +59,7 @@ fn draw_extrabonus(level: *c.TITUS_level, last_bounds: ?Rect) Rect {
     var extrabonus_width = fonts.text_width(extrabonus, true);
     fonts.text_render(extrabonus, 28 * 8 - extrabonus_width, 10 * 12, true);
     const bounds = Rect{
-        .x = 28 * 8 - extrabonus_width + 16,
+        .x = 28 * 8 - extrabonus_width,
         .y = 10 * 12,
         .w = extrabonus_width,
         .h = 12,
@@ -87,7 +87,7 @@ fn draw_lives(level: *c.TITUS_level, last_bounds: ?Rect) Rect {
 
     fonts.text_render(lives, 28 * 8 - lives_width, 11 * 12, true);
     const bounds = Rect{
-        .x = 28 * 8 - lives_width + 16,
+        .x = 28 * 8 - lives_width,
         .y = 11 * 12,
         .w = lives_width,
         .h = 12,
@@ -96,10 +96,6 @@ fn draw_lives(level: *c.TITUS_level, last_bounds: ?Rect) Rect {
 }
 
 pub export fn viewstatus(level: *c.TITUS_level, countbonus: bool) c_int {
-    var saved_x_offset = globals.g_scroll_px_offset;
-    globals.g_scroll_px_offset = 0;
-    defer globals.g_scroll_px_offset = saved_x_offset;
-
     var retval: c_int = undefined;
     var tmpchars: [10]u8 = .{};
     window.window_clear(null);
@@ -127,7 +123,7 @@ pub export fn viewstatus(level: *c.TITUS_level, countbonus: bool) c_int {
         var title = constants.levelfiles[level.levelnumber].title;
         var title_width = fonts.text_width(title, false);
         var position = (320 - title_width) / 2;
-        fonts.text_render(title, position, 12 * 5 + 16, false);
+        fonts.text_render(title, position, 12 * 5, false);
     }
 
     var last_extrabonus = draw_extrabonus(level, null);

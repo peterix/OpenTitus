@@ -101,7 +101,7 @@ pub fn window_init() !void {
         renderer = null;
     }
 
-    screen = c.SDL_CreateRGBSurfaceWithFormat(0, game_width + 32, game_height, 32, c.SDL_GetWindowPixelFormat(window));
+    screen = c.SDL_CreateRGBSurfaceWithFormat(0, game_width, game_height, 32, c.SDL_GetWindowPixelFormat(window));
     if (screen == null) {
         std.debug.print("Unable to create screen surface: {s}\n", .{c.SDL_GetError()});
         return WindowError.Other;
@@ -134,7 +134,7 @@ pub export fn window_render() void {
     // FIXME: process error.
     _ = c.SDL_RenderClear(renderer);
     var src: c.SDL_Rect = undefined;
-    src.x = 16 - globals.g_scroll_px_offset;
+    src.x = 0;
     src.y = 0;
     src.w = game_width;
     src.h = game_height;

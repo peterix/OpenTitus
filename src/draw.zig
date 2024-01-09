@@ -51,7 +51,7 @@ pub export fn DISPLAY_TILES(level: *c.TITUS_level) void {
         while (y < 12) : (y += 1) {
             const tileY = @as(usize, @intCast(std.math.clamp(globals.BITMAP_Y + y, 0, level.height - 1)));
             const tileX = @as(usize, @intCast(std.math.clamp(globals.BITMAP_X + x, 0, level.width - 1)));
-            dest.x = 16 + x * 16;
+            dest.x = x * 16 + globals.g_scroll_px_offset;
             dest.y = y * 16 + 8;
             const tile = level.tilemap[tileY][tileX];
             _ = c.SDL_BlitSurface(level.tile[level.tile[tile].animation[globals.tile_anim]].tiledata, &src, window.screen, &dest);
@@ -99,9 +99,9 @@ fn display_sprite(level: *c.TITUS_level, spr: *allowzero c.TITUS_sprite) void {
 
     var dest: c.SDL_Rect = undefined;
     if (!spr.flipped) {
-        dest.x = spr.x - spr.spritedata.*.refwidth - (globals.BITMAP_X * 16) + 16;
+        dest.x = spr.x - spr.spritedata.*.refwidth - (globals.BITMAP_X * 16) + globals.g_scroll_px_offset;
     } else {
-        dest.x = spr.x + spr.spritedata.*.refwidth - spr.spritedata.*.data.*.w - (globals.BITMAP_X * 16) + 16;
+        dest.x = spr.x + spr.spritedata.*.refwidth - spr.spritedata.*.data.*.w - (globals.BITMAP_X * 16) + globals.g_scroll_px_offset;
     }
     dest.y = spr.y + spr.spritedata.*.refheight - spr.spritedata.*.data.*.h + 1 - (globals.BITMAP_Y * 16) + 8;
 
@@ -134,12 +134,12 @@ fn display_sprite(level: *c.TITUS_level, spr: *allowzero c.TITUS_sprite) void {
         src.h -= src.y;
         dest.y = 0;
     }
-    // if (dest.x + src.w > screen_limit * 16) {
-    //     src.w = screen_limit * 16 - dest.x;
-    // }
-    // if (dest.y + src.h > screen_height * 16) {
-    //     src.h = screen_height * 16 - dest.y;
-    // }
+    if (dest.x + src.w > screen_limit * 16) {
+        src.w = screen_limit * 16 - dest.x;
+    }
+    if (dest.y + src.h > globals.screen_height * 16) {
+        src.h = globals.screen_height * 16 - dest.y;
+    }
 
     _ = c.SDL_BlitSurface(image, &src, window.screen, &dest);
 

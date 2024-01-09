@@ -59,7 +59,7 @@ pub fn viewMenu(file: ImageFile, allocator: std.mem.Allocator) !c_int {
     };
 
     var dest = c.SDL_Rect{
-        .x = 16,
+        .x = 0,
         .y = 0,
         .w = menu.*.w,
         .h = menu.*.h,
@@ -90,9 +90,9 @@ pub fn viewMenu(file: ImageFile, allocator: std.mem.Allocator) !c_int {
         sel[1].h = 8;
     }
     sel_dest[0] = sel[0];
-    sel_dest[0].x += 16;
+    //sel_dest[0].x += 16;
     sel_dest[1] = sel[1];
-    sel_dest[1].x += 16;
+    //sel_dest[1].x += 16;
 
     tick_start = c.SDL_GetTicks();
 

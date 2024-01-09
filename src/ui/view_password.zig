@@ -40,10 +40,6 @@ pub export fn view_password(game: c.GameType, level: *c.TITUS_level, level_index
     window.window_clear(null);
     window.window_render();
 
-    // FIXME: this should not be necessary
-    var saved_value = globals.g_scroll_px_offset;
-    globals.g_scroll_px_offset = 0;
-
     if (game == c.Titus) {
         fonts.text_render("Level", 13 * 8, 13 * 8, false);
     } else if (game == c.Moktar) {
@@ -61,7 +57,7 @@ pub export fn view_password(game: c.GameType, level: *c.TITUS_level, level_index
 
     window.window_render();
     retval = keyboard.waitforbutton();
-    globals.g_scroll_px_offset = saved_value;
+
     if (retval < 0)
         return retval;
 

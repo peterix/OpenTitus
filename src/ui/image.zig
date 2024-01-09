@@ -190,7 +190,7 @@ pub fn viewImageFile(file: ImageFile, display_mode: DisplayMode, delay: c_int, a
     };
 
     var dest = c.SDL_Rect{
-        .x = 16,
+        .x = 0,
         .y = 0,
         .w = image_surface.*.w,
         .h = image_surface.*.h,

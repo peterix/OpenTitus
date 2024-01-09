@@ -103,7 +103,7 @@ void draw_health_bars(TITUS_level *level) {
     if(BAR_FLAG <= 0) {
         return;
     }
-    uint8_t offset = 96 + 16 - g_scroll_px_offset;
+    uint8_t offset = 96;
     uint8_t i;
     SDL_Rect dest;
     for (i = 0; i < level->player.hp; i++) { //Draw big bars (4px*16px, spacing 4px)
