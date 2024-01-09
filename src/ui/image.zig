@@ -89,7 +89,7 @@ pub const ImageFile = struct {
 ///
 /// Example use:
 ///
-///     var menudata = try sqz.unSQZ2(menufile, allocator);
+///     var menudata = try sqz.unSQZ(menufile, allocator);
 ///     var image_memory = try image.loadImage(menudata, format, allocator);
 ///     defer image_memory.deinit();
 pub fn loadImage(data: []u8, format: ImageFormat, allocator: std.mem.Allocator) !ManagedSurface {
@@ -178,7 +178,7 @@ const keyboard = @import("keyboard.zig");
 pub fn viewImageFile(file: ImageFile, display_mode: DisplayMode, delay: c_int, allocator: std.mem.Allocator) !c_int {
     const fade_time: c_uint = 1000;
 
-    var image_data = try sqz.unSQZ2(file.filename, allocator);
+    var image_data = try sqz.unSQZ(file.filename, allocator);
     var image_memory = try loadImage(image_data, file.format, allocator);
     defer image_memory.deinit();
     var image_surface = image_memory.value;

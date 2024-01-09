@@ -62,13 +62,19 @@ pub fn playtitus(firstlevel: u16, allocator: std.mem.Allocator) c_int {
     }
     defer c.freepixelformat(&(level.pixelformat));
 
-    var spritedata = sqz.unSQZ2(game.constants.*.sprites, allocator) catch {
+    var spritedata = sqz.unSQZ(game.constants.*.sprites, allocator) catch {
         std.debug.print("Failed to uncompress sprites file: {s}\n", .{game.constants.*.sprites});
         return -1;
     };
 
     // TODO: same as unSQZ()
-    retval = c.loadsprites(&sprites, &spritedata[0], @intCast(spritedata.len), level.pixelformat, &sprite_count);
+    retval = c.loadsprites(
+        &sprites,
+        &spritedata[0],
+        @intCast(spritedata.len),
+        level.pixelformat,
+        &sprite_count,
+    );
     allocator.free(spritedata);
     if (retval < 0) {
         return retval;
@@ -93,7 +99,10 @@ pub fn playtitus(firstlevel: u16, allocator: std.mem.Allocator) c_int {
     while (level.levelnumber < game.constants.*.levelfiles.len) : (level.levelnumber += 1) {
         level.levelid = c.getlevelid(level.levelnumber);
         const level_index = @as(usize, @intCast(level.levelnumber));
-        var leveldata = sqz.unSQZ2(game.constants.*.levelfiles[level_index].filename, allocator) catch {
+        var leveldata = sqz.unSQZ(
+            game.constants.*.levelfiles[level_index].filename,
+            allocator,
+        ) catch {
             std.debug.print("Failed to uncompress level file: {}\n", .{level.levelnumber});
             return 1;
         };
@@ -169,7 +178,12 @@ pub fn playtitus(firstlevel: u16, allocator: std.mem.Allocator) c_int {
     }
     if (game.constants.*.finish != null) {
         const finish = game.constants.*.finish.?;
-        retval = image.viewImageFile(finish, .FadeOut, 0, allocator) catch {
+        retval = image.viewImageFile(
+            finish,
+            .FadeOut,
+            0,
+            allocator,
+        ) catch {
             return -1;
         };
         if (retval < 0) {
