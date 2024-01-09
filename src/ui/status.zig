@@ -28,7 +28,7 @@ const std = @import("std");
 const c = @import("../c.zig");
 const window = @import("../window.zig");
 const keyboard = @import("keyboard.zig");
-const game = @import("../game.zig");
+const data = @import("../data.zig");
 const fonts = @import("fonts.zig");
 const globals = @import("../globals.zig");
 
@@ -100,11 +100,11 @@ pub export fn viewstatus(level: *c.TITUS_level, countbonus: bool) c_int {
     var tmpchars: [10]u8 = .{};
     window.window_clear(null);
 
-    if (game.game == c.Titus) {
+    if (data.game == c.Titus) {
         fonts.text_render("Level", 13 * 8, 12 * 5, false);
         fonts.text_render("Extra Bonus", 10 * 8, 10 * 12, false);
         fonts.text_render("Lives", 10 * 8, 11 * 12, false);
-    } else if (game.game == c.Moktar) {
+    } else if (data.game == c.Moktar) {
         fonts.text_render("Etape", 13 * 8, 12 * 5, false);
         fonts.text_render("Extra Bonus", 10 * 8, 10 * 12, false);
         fonts.text_render("Vie", 10 * 8, 11 * 12, false);
@@ -119,7 +119,7 @@ pub export fn viewstatus(level: *c.TITUS_level, countbonus: bool) c_int {
     }
 
     {
-        var constants = game.constants;
+        var constants = data.constants;
         var title = constants.levelfiles[level.levelnumber].title;
         var title_width = fonts.text_width(title, false);
         var position = (320 - title_width) / 2;

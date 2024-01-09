@@ -30,6 +30,7 @@ const window = @import("../window.zig");
 const keyboard = @import("keyboard.zig");
 const fonts = @import("fonts.zig");
 const globals = @import("../globals.zig");
+const data = @import("../data.zig");
 const game = @import("../game.zig");
 const game_state = @import("../game_state.zig");
 
@@ -44,9 +45,9 @@ pub export fn view_password(level: *c.TITUS_level, level_index: u8) c_int {
     // TODO: maybe we can print the level name here?
 
     // TODO: replace with proper localization
-    if (game.game == c.Titus) {
+    if (data.game == c.Titus) {
         fonts.text_render("Level", 13 * 8, 13 * 8, false);
-    } else if (game.game == c.Moktar) {
+    } else if (data.game == c.Moktar) {
         fonts.text_render("Etape", 13 * 8, 13 * 8, false);
     }
 

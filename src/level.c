@@ -48,7 +48,15 @@ static int loadint16(unsigned char c1, unsigned char c2){
     return (int)tmpint;
 }
 
-int loadlevel(TITUS_level *level, unsigned char *leveldata, int leveldatasize, TITUS_spritedata **spritedata, TITUS_spritecache *spritecache, TITUS_objectdata **objectdata){
+int loadlevel(
+    TITUS_level *level,
+    unsigned char *leveldata,
+    int leveldatasize,
+    TITUS_spritedata **spritedata,
+    TITUS_spritecache *spritecache,
+    TITUS_objectdata **objectdata,
+    SDL_Color *levelcolor
+){
     int i;
     int j;
     unsigned int offset;
@@ -83,9 +91,9 @@ int loadlevel(TITUS_level *level, unsigned char *leveldata, int leveldatasize, T
             level->tilemap[i][j] = leveldata[i * level->width + j];
     }
 
-    level->pixelformat->palette->colors[14].r = orig_palette_level_colour[level->levelnumber].r;
-    level->pixelformat->palette->colors[14].g = orig_palette_level_colour[level->levelnumber].g;
-    level->pixelformat->palette->colors[14].b = orig_palette_level_colour[level->levelnumber].b;
+    level->pixelformat->palette->colors[14].r = levelcolor->r;
+    level->pixelformat->palette->colors[14].g = levelcolor->g;
+    level->pixelformat->palette->colors[14].b = levelcolor->b;
 
     offset = level->height * level->width;
     j = 256; //j is used for "last tile with animation flag"

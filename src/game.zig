@@ -25,6 +25,8 @@
 
 const std = @import("std");
 
+const c = @import("c.zig");
+
 // NOTE: force-imported modules
 pub fn refAllDecls(comptime T: type) void {
     inline for (comptime std.meta.declarations(T)) |decl| {
@@ -47,7 +49,7 @@ const intro_text = @import("ui/intro_text.zig");
 const keyboard = @import("ui/keyboard.zig");
 const menu = @import("ui/menu.zig");
 
-const c = @import("c.zig");
+const data = @import("data.zig");
 const globals = @import("globals.zig");
 const engine = @import("engine.zig");
 const window = @import("window.zig");
@@ -61,14 +63,11 @@ comptime {
 }
 
 const TitusError = error{
-    CannotDetermineGameType,
     CannotReadConfig,
     CannotInitSDL,
     CannotInitAudio,
     CannotInitFonts,
 };
-
-pub export var game: c.GameType = undefined;
 
 const s = @import("settings.zig");
 const Settings = s.Settings;
@@ -82,104 +81,8 @@ pub var game_state: *GameState = undefined;
 
 pub var allocator: std.mem.Allocator = undefined;
 
-pub const LevelDescriptor = struct {
-    filename: []const u8,
-    title: []const u8,
-};
-
-// TODO: merge this with the 'original.{c,h}' stuff. It's basically the same kind of thing
-pub const TITUS_constants = struct {
-    levelfiles: []const LevelDescriptor,
-    logo: ImageFile,
-    intro: ImageFile,
-    menu: ImageFile,
-    finish: ?ImageFile,
-    sprites: []const u8,
-};
-
-// FIXME: add a way to specify custom games? mods? levels?
-const titus_consts: TITUS_constants = .{
-    .levelfiles = &[15]LevelDescriptor{
-        .{ .filename = "LEVEL0.SQZ", .title = "On The Foxy Trail" },
-        .{ .filename = "LEVELJ.SQZ", .title = "Looking For Clues" },
-        .{ .filename = "LEVEL1.SQZ", .title = "Road Works Ahead" },
-        .{ .filename = "LEVEL2.SQZ", .title = "Going Underground" },
-        .{ .filename = "LEVEL3.SQZ", .title = "Flaming Catacombs" },
-        .{ .filename = "LEVEL4.SQZ", .title = "Coming To Town" },
-        .{ .filename = "LEVEL5.SQZ", .title = "Foxy's Den" },
-        .{ .filename = "LEVEL6.SQZ", .title = "On The Road To Marrakesh" },
-        .{ .filename = "LEVEL7.SQZ", .title = "Home Of The Pharaohs" },
-        .{ .filename = "LEVEL8.SQZ", .title = "Desert Experience" },
-        .{ .filename = "LEVEL9.SQZ", .title = "Walls Of Sand" },
-        .{ .filename = "LEVELB.SQZ", .title = "A Beacon Of Hope" },
-        .{ .filename = "LEVELC.SQZ", .title = "A Pipe Dream" },
-        .{ .filename = "LEVELE.SQZ", .title = "Going Home" },
-        .{ .filename = "LEVELG.SQZ", .title = "Just Married" },
-    },
-    .logo = .{ .filename = "TITUS.SQZ", .format = .LinearPalette256 },
-    .intro = .{ .filename = "TITRE.SQZ", .format = .LinearPalette256 },
-    .menu = .{ .filename = "MENU.SQZ", .format = .LinearPalette256 },
-    .finish = .{ .filename = "LEVELA.SQZ", .format = .PlanarGreyscale16 },
-    .sprites = "SPREXP.SQZ",
-};
-
-const moktar_consts: TITUS_constants = .{
-    .levelfiles = &[16]LevelDescriptor{
-        // FIXME: get someone who knows French to do localization.
-        // FIXME: separate 'game' from 'localization'. We can totally have Titus the Fox in French and Moktar in English.
-        // FIXME: add actual support for accents and stuff...
-        .{ .filename = "LEVEL0.SQZ", .title = "A LA RECHERCHE DE LA ZOUBIDA" },
-        .{ .filename = "LEVELJ.SQZ", .title = "LES QUARTIERS CHICS" },
-        .{ .filename = "LEVEL1.SQZ", .title = "ATTENTION TRAVAUX" },
-        .{ .filename = "LEVEL2.SQZ", .title = "LES COULOIRS DU METRO" }, // MÉTRO?
-        .{ .filename = "LEVEL3.SQZ", .title = "LES CATACOMBES INFERNALES" },
-        .{ .filename = "LEVEL4.SQZ", .title = "ARRIVEE DANS LA CITE" }, // ARRIVÉE?
-        .{ .filename = "LEVEL5.SQZ", .title = "L IMMEUBLE DE LA ZOUBIDA" },
-        .{ .filename = "LEVEL6.SQZ", .title = "SOUS LE CHEMIN DE MARRAKECH" },
-        .{ .filename = "LEVEL7.SQZ", .title = "LA CITE ENFOUIE" },
-        .{ .filename = "LEVEL8.SQZ", .title = "DESERT PRIVE" }, // DÉSERT PRIVÉ?
-        .{ .filename = "LEVEL9.SQZ", .title = "LA VILLE DES SABLES" },
-        .{ .filename = "LEVELB.SQZ", .title = "LE PHARE OUEST" }, // LE PHARE DE L'OUEST?
-        .{ .filename = "LEVELC.SQZ", .title = "UN BON TUYAU" },
-        .{ .filename = "LEVELE.SQZ", .title = "DE RETOUR AU PAYS" },
-        .{ .filename = "LEVELF.SQZ", .title = "DIRECTION BARBES" },
-        .{ .filename = "LEVELG.SQZ", .title = "BIG BISOUS" },
-    },
-    .logo = .{ .filename = "TITUS.SQZ", .format = .LinearPalette256 },
-    .intro = .{ .filename = "TITRE.SQZ", .format = .LinearPalette256 },
-    .menu = .{ .filename = "MENU.SQZ", .format = .LinearPalette256 },
-    .finish = null,
-    .sprites = "SPRITES.SQZ",
-};
-
-pub var constants: *const TITUS_constants = undefined;
-
-fn isFileOpenable(path: []const u8) bool {
-    if (std.fs.cwd().openFile(path, .{})) |file| {
-        file.close();
-        return true;
-    } else |_| {
-        // NOTE: we assume that any issue opening the file means it's not present
-        // TODO: catch all the other errors that aren't 'FileNotFound' and report them?
-        return false;
-    }
-}
-
-fn initGameType() !*const TITUS_constants {
-    if (isFileOpenable(titus_consts.sprites)) {
-        game = c.Titus;
-        return &titus_consts;
-    } else if (isFileOpenable(moktar_consts.sprites)) {
-        game = c.Moktar;
-        return &moktar_consts;
-    } else {
-        return TitusError.CannotDetermineGameType;
-    }
-}
-
 pub fn run() !u8 {
-    // FIXME: report the missing files to the user in a better way than erroring into a terminal? dialog box if available?
-    constants = try initGameType();
+    try data.init();
 
     globals.reset();
 
@@ -234,7 +137,7 @@ pub fn run() !u8 {
 
     if (state != 0) {
         retval = try image.viewImageFile(
-            constants.*.logo,
+            data.constants.*.logo,
             .FadeInFadeOut,
             4000,
             allocator,
@@ -247,7 +150,7 @@ pub fn run() !u8 {
 
     if (state != 0) {
         retval = try image.viewImageFile(
-            constants.*.intro,
+            data.constants.*.intro,
             .FadeInFadeOut,
             6500,
             allocator,
@@ -258,14 +161,14 @@ pub fn run() !u8 {
 
     while (state != 0) {
         retval = try menu.viewMenu(
-            constants.*.menu,
+            data.constants.*.menu,
             allocator,
         );
 
         if (retval <= 0)
             state = 0;
 
-        if (state != 0 and (retval <= constants.*.levelfiles.len)) {
+        if (state != 0 and (retval <= data.constants.*.levelfiles.len)) {
             retval = engine.playtitus(
                 @as(u16, @intCast(retval - 1)),
                 allocator,

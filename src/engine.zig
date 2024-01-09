@@ -29,7 +29,7 @@ const globals = @import("globals.zig");
 const sqz = @import("sqz.zig");
 const scroll = @import("scroll.zig");
 const c = @import("c.zig");
-const game = @import("game.zig");
+const data = @import("data.zig");
 const window = @import("window.zig");
 const elevators = @import("elevators.zig");
 const game_state = @import("game_state.zig");
@@ -56,14 +56,10 @@ pub fn playtitus(firstlevel: u16, allocator: std.mem.Allocator) c_int {
     level.lives = 2;
     level.extrabonus = 0;
 
-    retval = c.loadpixelformat(&(level.pixelformat));
-    if (retval < 0) {
-        return retval;
-    }
-    defer c.freepixelformat(&(level.pixelformat));
+    level.pixelformat = &data.titus_pixelformat;
 
-    var spritedata = sqz.unSQZ(game.constants.*.sprites, allocator) catch {
-        std.debug.print("Failed to uncompress sprites file: {s}\n", .{game.constants.*.sprites});
+    var spritedata = sqz.unSQZ(data.constants.*.sprites, allocator) catch {
+        std.debug.print("Failed to uncompress sprites file: {s}\n", .{data.constants.*.sprites});
         return -1;
     };
 
@@ -96,18 +92,26 @@ pub fn playtitus(firstlevel: u16, allocator: std.mem.Allocator) c_int {
     defer c.freeobjects(&objects, object_count);
 
     level.levelnumber = firstlevel;
-    while (level.levelnumber < game.constants.*.levelfiles.len) : (level.levelnumber += 1) {
+    while (level.levelnumber < data.constants.*.levelfiles.len) : (level.levelnumber += 1) {
         level.levelid = c.getlevelid(level.levelnumber);
         const level_index = @as(usize, @intCast(level.levelnumber));
         var leveldata = sqz.unSQZ(
-            game.constants.*.levelfiles[level_index].filename,
+            data.constants.*.levelfiles[level_index].filename,
             allocator,
         ) catch {
             std.debug.print("Failed to uncompress level file: {}\n", .{level.levelnumber});
             return 1;
         };
 
-        retval = c.loadlevel(&level, &leveldata[0], @intCast(leveldata.len), sprites, &(spritecache), objects);
+        retval = c.loadlevel(
+            &level,
+            &leveldata[0],
+            @intCast(leveldata.len),
+            sprites,
+            &(spritecache),
+            objects,
+            @constCast(&data.constants.levelfiles[level.levelnumber].color),
+        );
         allocator.free(leveldata);
         if (retval < 0) {
             return retval;
@@ -176,8 +180,8 @@ pub fn playtitus(firstlevel: u16, allocator: std.mem.Allocator) c_int {
             // return retval;
         }
     }
-    if (game.constants.*.finish != null) {
-        const finish = game.constants.*.finish.?;
+    if (data.constants.*.finish != null) {
+        const finish = data.constants.*.finish.?;
         retval = image.viewImageFile(
             finish,
             .FadeOut,

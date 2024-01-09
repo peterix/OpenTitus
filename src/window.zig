@@ -28,9 +28,10 @@ const std = @import("std");
 const c = @import("c.zig");
 const globals = @import("globals.zig");
 const game = @import("game.zig");
+const data = @import("data.zig");
 
 pub fn getGameTitle() [*c]const u8 {
-    switch (game.game) {
+    switch (data.game) {
         c.Titus => {
             return "OpenTitus";
         },

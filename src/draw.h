@@ -51,6 +51,3 @@ void flip_screen(ScreenContext *context, bool slow);
 
 void draw_tiles(TITUS_level *level);
 void draw_sprites(TITUS_level *level);
-
-int loadpixelformat(SDL_PixelFormat **pixelformat);
-void freepixelformat(SDL_PixelFormat **pixelformat);

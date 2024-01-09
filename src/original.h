@@ -37,9 +37,6 @@
 void initoriginal();
 uint16_t getlevelid(uint16_t levelnumber);
 
-extern SDL_Color orig_palette_colour[16];
-extern SDL_Color orig_palette_level_colour[16];
-
 #define SPRITECOUNT 356
 extern uint8_t spritewidth[SPRITECOUNT];
 extern uint8_t spriteheight[SPRITECOUNT];

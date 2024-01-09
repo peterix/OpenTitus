@@ -27,6 +27,7 @@ const std = @import("std");
 
 const window = @import("window.zig");
 const game = @import("game.zig");
+const data = @import("data.zig");
 const c = @import("c.zig");
 
 const json = @import("json.zig");
@@ -35,8 +36,10 @@ const JsonList = json.JsonList;
 
 const Allocator = std.mem.Allocator;
 
+// FIXME: this shares a large amount of code with settings.zig... factor it out?
+
 fn game_file_name() []const u8 {
-    if (game.game == c.Titus) {
+    if (data.game == c.Titus) {
         return "titus.json";
     } else {
         return "moktar.json";
@@ -98,7 +101,7 @@ pub const GameState = struct {
     }
 
     pub fn read(allocator: Allocator) !ManagedJSON(GameState) {
-        const data = std.fs.cwd().readFileAlloc(
+        const bytes = std.fs.cwd().readFileAlloc(
             allocator,
             game_file_name(),
             20000,
@@ -117,14 +120,14 @@ pub const GameState = struct {
             }
             return GameState.make_new(allocator);
         };
-        defer allocator.free(data);
+        defer allocator.free(bytes);
 
         var arena = try allocator.create(std.heap.ArenaAllocator);
         arena.* = std.heap.ArenaAllocator.init(allocator);
         var game_state = std.json.parseFromSliceLeaky(
             GameState,
             arena.allocator(),
-            data,
+            bytes,
             .{
                 .allocate = .alloc_always,
                 .ignore_unknown_fields = true,
@@ -150,9 +153,9 @@ pub const GameState = struct {
     }
 
     pub fn write(self: *GameState, allocator: Allocator) !void {
-        var data = try std.json.stringifyAlloc(allocator, self, .{ .whitespace = .indent_4, .emit_null_optional_fields = false });
-        defer allocator.free(data);
-        try std.fs.cwd().writeFile(game_file_name(), data);
+        var bytes = try std.json.stringifyAlloc(allocator, self, .{ .whitespace = .indent_4, .emit_null_optional_fields = false });
+        defer allocator.free(bytes);
+        try std.fs.cwd().writeFile(game_file_name(), bytes);
     }
 };
 

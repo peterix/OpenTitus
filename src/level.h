@@ -237,7 +237,7 @@ struct _TITUS_level {
 
 };
 
-int loadlevel(TITUS_level *level, unsigned char *leveldata, int leveldatasize, TITUS_spritedata **spritedata, TITUS_spritecache *spritecache, TITUS_objectdata **objectdata);
+int loadlevel(TITUS_level *level, unsigned char *leveldata, int leveldatasize, TITUS_spritedata **spritedata, TITUS_spritecache *spritecache, TITUS_objectdata **objectdata, SDL_Color *levelcolor);
 void freelevel(TITUS_level *level);
 enum HFLAG get_horizflag(TITUS_level *level, int16_t tileY, int16_t tileX);
 enum FFLAG get_floorflag(TITUS_level *level, int16_t tileY, int16_t tileX);
