@@ -85,7 +85,7 @@ struct _TITUS_spritedata {
     uint8_t collwidth;
     int16_t refheight;
     uint8_t refwidth;
-    TITUS_spritebuffer *spritebuffer[1]; //Not malloced
+    TITUS_spritebuffer *spritebuffer[2]; //Not malloced
 };
 
 struct _TITUS_spritebuffer {

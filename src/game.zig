@@ -55,6 +55,11 @@ const window = @import("window.zig");
 const json = @import("json.zig");
 const ManagedJSON = json.ManagedJSON;
 
+const draw = @import("draw.zig");
+comptime {
+    refAllDecls(draw);
+}
+
 const TitusError = error{
     CannotDetermineGameType,
     CannotReadConfig,
