@@ -55,20 +55,39 @@ const FontError = error{
     NotDivisibleBy16,
 };
 
-fn loadfont(image: [*c]c.SDL_Surface, font: *Font) !void {
+fn print_sdl_error(comptime format: []const u8) void {
+    var buffer: [1024:0]u8 = undefined;
+    var errstr = c.SDL_GetErrorMsg(&buffer, 1024);
+    var span = std.mem.span(errstr);
+    std.log.err(format, .{span});
+}
+
+fn loadfont(image: *c.SDL_Surface, font: *Font) !void {
     defer c.SDL_FreeSurface(image);
 
-    var surface_w = @as(u16, @intCast(image.*.w));
-    var surface_h = @as(u16, @intCast(image.*.h));
+    const surface_w = @as(u16, @intCast(image.*.w));
     if (@rem(surface_w, 16) != 0) {
-        return FontError.NotDivisibleBy16;
-    }
-    if (@rem(surface_h, 16) != 0) {
+        std.log.err("Font width is not divisible by 16.", .{});
         return FontError.NotDivisibleBy16;
     }
 
-    var character_w = @divTrunc(surface_w, 16);
-    var character_h = @divTrunc(surface_h, 16);
+    const surface_h = @as(u16, @intCast(image.*.h));
+    if (@rem(surface_h, 16) != 0) {
+        std.log.err("Font height is not divisible by 16.", .{});
+        return FontError.NotDivisibleBy16;
+    }
+
+    const sheet = c.SDL_ConvertSurfaceFormat(image, c.SDL_GetWindowPixelFormat(window.window), 0);
+    if (sheet == null) {
+        print_sdl_error("Cannot convert font surface: {s}");
+        return FontError.CannotLoad;
+    }
+
+    font.*.fallback = font.*.characters[CHAR_QUESTION];
+    font.*.sheet = sheet;
+
+    const character_w = @divTrunc(surface_w, 16);
+    const character_h = @divTrunc(surface_h, 16);
 
     for (0..16) |y| {
         for (0..16) |x| {
@@ -139,8 +158,6 @@ fn loadfont(image: [*c]c.SDL_Surface, font: *Font) !void {
             }
         }
     }
-    font.*.fallback = font.*.characters[CHAR_QUESTION];
-    font.*.sheet = c.SDL_ConvertSurfaceFormat(image, c.SDL_GetWindowPixelFormat(window.window), 0);
 
     // TODO: good font with transparency...
 
@@ -152,13 +169,18 @@ fn freefont(font: *Font) void {
     font.*.sheet = null;
 }
 
-pub export fn fonts_load() c_int {
+pub fn fonts_load() !void {
     var rwops = c.SDL_RWFromMem(@constCast(@ptrCast(&yellow_font_data[0])), yellow_font_data.len);
+    if (rwops == null) {
+        print_sdl_error("Could not load font: {s}");
+        return FontError.CannotLoad;
+    }
     var image = c.SDL_LoadBMP_RW(rwops, c.SDL_TRUE);
-    loadfont(image, &yellow_font) catch {
-        return -1;
-    };
-    return 0;
+    if (image == null) {
+        print_sdl_error("Could not load font: {s}");
+        return FontError.CannotLoad;
+    }
+    try loadfont(image, &yellow_font);
 }
 
 pub export fn fonts_free() void {
@@ -200,10 +222,6 @@ pub fn text_render(text: []const u8, x: c_int, y: c_int, monospace: bool) void {
             dest.x += chardesc.w;
         }
     }
-}
-
-pub export fn text_render_c(text: [*c]u8, x: c_int, y: c_int, monospace: bool) void {
-    text_render(std.mem.span(text), x, y, monospace);
 }
 
 pub fn text_width(text: []const u8, monospace: bool) u16 {

@@ -183,6 +183,17 @@ pub export fn animate_tiles() void {
     }
 }
 
+pub fn scrollToPlayer(level: *c.TITUS_level) void {
+    globals.BITMAP_X = 0;
+    globals.BITMAP_Y = 0;
+
+    globals.g_scroll_y = true;
+    globals.g_scroll_x = true;
+    while (globals.g_scroll_y or globals.g_scroll_x) {
+        scroll(level);
+    }
+}
+
 pub export fn scroll(level: *c.TITUS_level) void {
     animate_tiles();
     //Scroll

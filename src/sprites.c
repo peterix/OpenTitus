@@ -180,7 +180,7 @@ void freespritecache(TITUS_spritecache *spritecache) {
     free (spritecache->spritebuffer);
 }
 
-
+// FIXME: maybe we can have one big tile map surface just like we have one big font surface
 SDL_Surface * SDL_LoadTile(unsigned char * first, int i, SDL_PixelFormat * pixelformat){
     SDL_Surface *surface = NULL;
     SDL_Surface *surface2 = NULL;
@@ -191,6 +191,7 @@ SDL_Surface * SDL_LoadTile(unsigned char * first, int i, SDL_PixelFormat * pixel
     copypixelformat(surface->format, pixelformat);
 
     tmpchar = (char *)surface->pixels;
+    // Planar 16 color loading here, see uiimage.zig for example of it working.
     for (j = i; j < i + 0x20; j++) {
         for (k = 7; k >= 0; k--) {
             *tmpchar = (first[j] >> k) & 0x01;
@@ -327,30 +328,15 @@ void updatesprite(TITUS_level *level, TITUS_sprite *spr, int16_t number, bool cl
         spr->droptobottom = false;
         spr->killing = false;
     }
-/*
-    SDL_FreeSurface(spr->buffer);
-    spr->buffer = copysurface(spr->spritedata->data, spr->flipped, spr->flash);
-    spr->flipped_last = spr->flipped;
-    spr->flash_last = spr->flash;
-*/
     spr->invisible = false;
 }
 
-int copysprite(TITUS_level *level, TITUS_sprite *dest, TITUS_sprite *src){
+void copysprite(TITUS_level *level, TITUS_sprite *dest, TITUS_sprite *src){
     dest->number = src->number;
     dest->spritedata = level->spritedata[src->number];
     dest->enabled = src->enabled;
     dest->flipped = src->flipped;
     dest->flash = src->flash;
     dest->visible = src->visible;
-    if (dest->enabled) {
-        //SDL_FreeSurface(dest->buffer);
-        //dest->buffer = copysurface(dest->spritedata->data, dest->flipped, dest->flash);
-    } else {
-        //dest->buffer = NULL;
-    }
-//    dest->flipped_last = dest->flipped;
-//    dest->flash_last = dest->flash;
     dest->invisible = false;
-    return (0);
 }

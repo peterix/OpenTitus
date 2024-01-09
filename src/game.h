@@ -23,5 +23,3 @@ struct _Settings {
     uint16_t window_height;
 };
 extern Settings* settings;
-
-void game_unlock_level(uint16_t level, int lives);

@@ -32,7 +32,8 @@ const c = @import("c.zig");
 const game = @import("game.zig");
 const window = @import("window.zig");
 const elevators = @import("elevators.zig");
-const s = @import("settings.zig");
+const game_state = @import("game_state.zig");
+const draw = @import("draw.zig");
 
 const image = @import("ui/image.zig");
 const keyboard = @import("ui/keyboard.zig");
@@ -120,8 +121,12 @@ pub fn playtitus(firstlevel: u16, allocator: std.mem.Allocator) c_int {
 
             c.music_select_song(c.LEVEL_MUSIC[level.levelid]);
 
-            c.INIT_SCREENM(&context, &level); //Todo: comment, DOCUMENTED! (reset_level_simplified)
-            c.DISPLAY_TILES(&level);
+            // scroll to where the player is while 'closing' and 'opening' the screen to obscure the sudden change
+            c.CLOSE_SCREEN(&context);
+            scroll.scrollToPlayer(&level);
+            c.OPEN_SCREEN(&context, &level);
+
+            draw.draw_tiles(&level);
             c.flip_screen(&context, true);
 
             retval = playlevel(&context, &level);
@@ -130,7 +135,14 @@ pub fn playtitus(firstlevel: u16, allocator: std.mem.Allocator) c_int {
             }
 
             if (globals.NEWLEVEL_FLAG) {
-                s.game_record_completion(level.levelnumber, level.bonuscollected, level.tickcount);
+                game_state.record_completion(
+                    allocator,
+                    level.levelnumber,
+                    level.bonuscollected,
+                    level.tickcount,
+                ) catch |err| {
+                    std.log.err("Could not record level completion: {}", .{err});
+                };
                 break;
             }
             if (globals.LOSELIFE_FLAG) {
@@ -174,7 +186,7 @@ fn playlevel(context: [*c]c.ScreenContext, level: *c.TITUS_level) c_int {
 
     while (true) {
         if (!firstrun) {
-            c.draw_health_bars(level);
+            draw.draw_health_bars(level);
             c.music_restart_if_finished();
             c.flip_screen(context, true);
         }
@@ -192,8 +204,8 @@ fn playlevel(context: [*c]c.ScreenContext, level: *c.TITUS_level) c_int {
         c.CROSSING_GATE(context, level); //Check and handle level completion, and if the player does a kneestand on a secret entrance
         c.SPRITES_ANIMATION(level); //Animate player and objects
         scroll.scroll(level); //X- and Y-scrolling
-        c.DISPLAY_TILES(level); //Draws tiles on the backbuffer
-        c.DISPLAY_SPRITES(level); //Draws sprites on the backbuffer
+        draw.draw_tiles(level);
+        draw.draw_sprites(level);
         level.tickcount += 1;
         retval = c.RESET_LEVEL(context, level); //Check terminate flags (finishlevel, gameover, death or theend)
         if (retval < 0) {
@@ -214,9 +226,9 @@ fn death(context: [*c]c.ScreenContext, level: *c.TITUS_level) void {
     c.updatesprite(level, &(player.sprite), 13, true); //Death
     player.sprite.speedY = 15;
     for (0..60) |_| {
-        c.DISPLAY_TILES(level);
+        draw.draw_tiles(level);
         //TODO! GRAVITY();
-        c.DISPLAY_SPRITES(level);
+        draw.draw_sprites(level);
         c.flip_screen(context, true);
         player.sprite.speedY -= 1;
         if (player.sprite.speedY < -16) {
@@ -243,8 +255,8 @@ fn gameover(context: [*c]c.ScreenContext, level: *c.TITUS_level) void {
     player.sprite3.x = @as(i16, globals.BITMAP_X << 4) + (window.game_width + 120 - 2);
     player.sprite3.y = @as(i16, globals.BITMAP_Y << 4) + 100;
     for (0..31) |_| {
-        c.DISPLAY_TILES(level);
-        c.DISPLAY_SPRITES(level);
+        draw.draw_tiles(level);
+        draw.draw_sprites(level);
         c.flip_screen(context, true);
         player.sprite2.x += 8;
         player.sprite3.x -= 8;

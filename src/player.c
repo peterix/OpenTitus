@@ -382,10 +382,10 @@ int t_pause (ScreenContext *context, TITUS_level *level) {
     TITUS_sprite tmp;
     //tmp.buffer = NULL;
 
-    DISPLAY_TILES(level); //Draw tiles
+    draw_tiles(level); //Draw tiles
     copysprite(level, &(tmp), &(player->sprite));
     updatesprite(level, &(player->sprite), 29, true); //Pause tile
-    DISPLAY_SPRITES(level); //Draw sprites
+    draw_sprites(level); //Draw sprites
     flip_screen(context, true); //Display it
     copysprite(level, &(player->sprite), &(tmp)); //Reset player sprite
 
@@ -907,14 +907,14 @@ static int CASE_BONUS(TITUS_level *level, uint8_t tileY, uint8_t tileX) {
     return true; //No problems, bonus handling done correctly!
 }
 
-int view_password(enum GameType game, TITUS_level *level, uint8_t level_index);
+int view_password(TITUS_level *level, uint8_t level_index);
 
 static void CASE_PASS(ScreenContext *context, TITUS_level *level, uint8_t level_index, uint8_t tileY, uint8_t tileX) {
     //Codelamp
     music_select_song(7);
     if (CASE_BONUS(level, tileY, tileX)) { //if the bonus is found in the bonus list
         CLOSE_SCREEN(context);
-        view_password(game, level, level_index);
+        view_password(level, level_index);
         OPEN_SCREEN(context, level);
     }
 }
@@ -937,10 +937,11 @@ static void CASE_SECU(TITUS_level *level, uint8_t tileY, uint8_t tileX) {
 void INC_ENERGY(TITUS_level *level) {
     TITUS_player *player = &(level->player);
     BAR_FLAG = 50;
-    player->hp++;
-    if (player->hp > MAXIMUM_ENERGY) {
-        player->hp = MAXIMUM_ENERGY;
-        level->extrabonus++;
+    if (player->hp == MAXIMUM_ENERGY) {
+        level->extrabonus += 1;
+    }
+    else {
+        player->hp++;
     }
 }
 
@@ -948,9 +949,11 @@ void DEC_ENERGY(TITUS_level *level) {
     TITUS_player *player = &(level->player);
     BAR_FLAG = 50;
     if (RESETLEVEL_FLAG == 0) {
-        player->hp--;
-        if (player->hp < 0) {
-            player->hp = 0;
+        if (player->hp > 0)
+        {
+            player->hp--;
+        }
+        if(player->hp == 0) {
             DEC_LIFE(level);
         }
     }

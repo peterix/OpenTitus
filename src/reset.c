@@ -94,8 +94,8 @@ uint8_t RESET_LEVEL(ScreenContext *context, TITUS_level *level) {
             player->sprite2.x -= 3;
             MOVE_HIM(level, &(player->sprite2));
             //View all
-            DISPLAY_TILES(level);
-            DISPLAY_SPRITES(level);
+            draw_tiles(level);
+            draw_sprites(level);
             flip_screen(context, true);
         } while (player->sprite2.x > player->sprite.x + 28);
         //Lovers in one sprite
@@ -109,8 +109,8 @@ uint8_t RESET_LEVEL(ScreenContext *context, TITUS_level *level) {
         for (i = 0; i < 16; i++) {
             MOVE_HIM(level, &(player->sprite));
             scroll(level);
-            DISPLAY_TILES(level);
-            DISPLAY_SPRITES(level);
+            draw_tiles(level);
+            draw_sprites(level);
             flip_screen(context, true);
             player->sprite.y++;
         }
@@ -128,8 +128,8 @@ uint8_t RESET_LEVEL(ScreenContext *context, TITUS_level *level) {
             heart++;
 
             scroll(level);
-            DISPLAY_TILES(level);
-            DISPLAY_SPRITES(level);
+            draw_tiles(level);
+            draw_sprites(level);
             flip_screen(context, true);
 
             SDL_PumpEvents(); //Update keyboard state
@@ -161,8 +161,8 @@ uint8_t RESET_LEVEL(ScreenContext *context, TITUS_level *level) {
         player->sprite3.x = (BITMAP_X << 4) + (320+120-2);
         player->sprite3.y = (BITMAP_Y << 4) + 100;
         for (i = 0; i < 31; i++) {
-            DISPLAY_TILES(level);
-            DISPLAY_SPRITES(level);
+            draw_tiles(level);
+            draw_sprites(level);
             flip_screen(context, true);
             player->sprite.x += 8;
             player->sprite3.x -= 8;

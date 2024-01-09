@@ -26,11 +26,8 @@
  * Draw functions
  *
  * Global functions:
- * void DISPLAY_TILES(): Draw map tiles
   * void flip_screen(bool slow): Flips the screen and a short delay
- * void INIT_SCREENM(TITUS_level *level): Initialize screen
- * void draw_health_bars(TITUS_level *level): Draw energy
- * void fadeout(): Fade the screen to black
+  * void fadeout(): Fade the screen to black
  */
 
 #include <stdio.h>
@@ -85,42 +82,6 @@ void flip_screen(ScreenContext * context, bool slow) {
     else {
         SDL_Delay(10);
         screencontext_reset(context);
-    }
-}
-
-void INIT_SCREENM(ScreenContext *context, TITUS_level *level) {
-    CLOSE_SCREEN(context);
-    BITMAP_X = 0;
-    BITMAP_Y = 0;
-    do {
-        scroll(level);
-    } while (g_scroll_y || g_scroll_x);
-    OPEN_SCREEN(context, level);
-}
-
-void draw_health_bars(TITUS_level *level) {
-    subto0(&(BAR_FLAG));
-    if(BAR_FLAG <= 0) {
-        return;
-    }
-    uint8_t offset = 96;
-    uint8_t i;
-    SDL_Rect dest;
-    for (i = 0; i < level->player.hp; i++) { //Draw big bars (4px*16px, spacing 4px)
-        dest.x = offset;
-        dest.y = 9;
-        dest.w = 4;
-        dest.h = 16;
-        SDL_FillRect(screen, &dest, SDL_MapRGB(screen->format, 255, 255, 255));
-        offset += 8;
-    }
-    for (i = 0; i < MAXIMUM_ENERGY - level->player.hp; i++) { //Draw small bars (4px*4px, spacing 4px)
-        dest.x = offset;
-        dest.y = 15;
-        dest.w = 4;
-        dest.h = 4;
-        SDL_FillRect(screen, &dest, SDL_MapRGB(screen->format, 255, 255, 255));
-        offset += 8;
     }
 }
 
@@ -231,9 +192,6 @@ int loadpixelformat(SDL_PixelFormat **pixelformat){
     (*pixelformat)->Gmask = 0;
     (*pixelformat)->Bmask = 0;
     (*pixelformat)->Amask = 0;
-
-    //(*pixelformat)->colorkey = 0;
-    //(*pixelformat)->alpha = 255;
 
     return (0);
 }

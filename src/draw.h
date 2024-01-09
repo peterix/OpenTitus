@@ -26,11 +26,8 @@
  * Draw functions
  *
  * Global functions:
- * void DISPLAY_TILES(): Draw map tiles
-  * void flip_screen(bool slow): Flips the screen and a short delay
- * void INIT_SCREENM(TITUS_level *level): Initialize screen
- * void draw_health_bars(TITUS_level *level): Draw energy
- * void fadeout(): Fade the screen to black
+   * void flip_screen(bool slow): Flips the screen and a short delay
+  * void fadeout(): Fade the screen to black
   */
 
 #pragma once
@@ -53,11 +50,9 @@ void screencontext_initial(ScreenContext * context);
 void screencontext_advance_29(ScreenContext * context);
 void flip_screen(ScreenContext *context, bool slow);
 
-void DISPLAY_TILES(TITUS_level *level);
+void draw_tiles(TITUS_level *level);
+void draw_sprites(TITUS_level *level);
 
-void INIT_SCREENM(ScreenContext *context, TITUS_level *level);
-void draw_health_bars(TITUS_level *level);
-void DISPLAY_SPRITES(TITUS_level *level);
 void fadeout();
 int loadpixelformat(SDL_PixelFormat **pixelformat);
 void freepixelformat(SDL_PixelFormat **pixelformat);

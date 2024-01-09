@@ -30,19 +30,23 @@ const window = @import("../window.zig");
 const keyboard = @import("keyboard.zig");
 const fonts = @import("fonts.zig");
 const globals = @import("../globals.zig");
-const g = @import("../game.zig");
-const settings = @import("../settings.zig");
+const game = @import("../game.zig");
+const game_state = @import("../game_state.zig");
 
-pub export fn view_password(game: c.GameType, level: *c.TITUS_level, level_index: u8) c_int {
+// FIXME: this does not hold any allocator... nor can it find one easily.
+
+pub export fn view_password(level: *c.TITUS_level, level_index: u8) c_int {
     var tmpchars: [10]u8 = .{};
     var retval: c_int = undefined;
 
     window.window_clear(null);
-    window.window_render();
 
-    if (game == c.Titus) {
+    // TODO: maybe we can print the level name here?
+
+    // TODO: replace with proper localization
+    if (game.game == c.Titus) {
         fonts.text_render("Level", 13 * 8, 13 * 8, false);
-    } else if (game == c.Moktar) {
+    } else if (game.game == c.Moktar) {
         fonts.text_render("Etape", 13 * 8, 13 * 8, false);
     }
 
@@ -53,7 +57,13 @@ pub export fn view_password(game: c.GameType, level: *c.TITUS_level, level_index
     fonts.text_render(level_index_, 25 * 8 - level_index_width, 13 * 8, false);
 
     fonts.text_render("Unlocked!", 14 * 8, 10 * 8, false);
-    settings.game_unlock_level(level_index, level.lives);
+    game_state.unlock_level(
+        game.allocator,
+        level_index,
+        level.lives,
+    ) catch |err| {
+        std.log.err("Could not record level unlock: {}", .{err});
+    };
 
     window.window_render();
     retval = keyboard.waitforbutton();

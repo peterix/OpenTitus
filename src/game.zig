@@ -75,9 +75,12 @@ const Settings = s.Settings;
 pub var settings_mem: ManagedJSON(Settings) = undefined;
 pub export var settings: *Settings = undefined;
 
-const GameState = s.GameState;
+const gs = @import("game_state.zig");
+const GameState = gs.GameState;
 pub var game_state_mem: ManagedJSON(GameState) = undefined;
 pub var game_state: *GameState = undefined;
+
+pub var allocator: std.mem.Allocator = undefined;
 
 pub const LevelDescriptor = struct {
     filename: []const u8,
@@ -94,6 +97,7 @@ pub const TITUS_constants = struct {
     sprites: []const u8,
 };
 
+// FIXME: add a way to specify custom games? mods? levels?
 const titus_consts: TITUS_constants = .{
     .levelfiles = &[15]LevelDescriptor{
         .{ .filename = "LEVEL0.SQZ", .title = "On The Foxy Trail" },
@@ -180,12 +184,13 @@ pub fn run() !u8 {
     globals.reset();
 
     var gpa = std.heap.GeneralPurposeAllocator(.{}){};
-    const allocator = gpa.allocator();
     defer {
         const deinit_status = gpa.deinit();
-        //fail test; can't try in defer as defer is executed after we return
         if (deinit_status == .leak) @panic("Memory leaked!");
     }
+    // FIXME: stop this. We only do this because the control flow travels through C,
+    //        so we need a global to pass the allocator around.
+    allocator = gpa.allocator();
 
     settings_mem = try Settings.read(allocator);
     settings = &settings_mem.value;
@@ -211,9 +216,7 @@ pub fn run() !u8 {
 
     c.initoriginal();
 
-    if (fonts.fonts_load() != 0) {
-        return TitusError.CannotInitFonts;
-    }
+    try fonts.fonts_load();
     defer fonts.fonts_free();
 
     // View the menu when the main loop starts

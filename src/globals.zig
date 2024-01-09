@@ -38,7 +38,7 @@ pub export var LOSELIFE_FLAG: bool = false;
 pub export var GAMEOVER_FLAG: bool = false;
 
 // timer for health bar
-export var BAR_FLAG: u8 = 0;
+pub export var BAR_FLAG: u8 = 0;
 
 // true if left or right key is pressed
 export var X_FLAG: bool = false;

@@ -17,4 +17,5 @@ pub usingnamespace @cImport({
     @cInclude("globals_old.h");
     @cInclude("game.h");
     @cInclude("time.h");
+    @cInclude("common.h");
 });

@@ -115,7 +115,7 @@ void CLOSE_SCREEN(ScreenContext *context) {
     SDL_Rect dest;
     uint8_t step_count = 10;
     uint16_t rwidth = 320; //TODO: make this global
-    uint16_t rheight = 192;
+    uint16_t rheight = 200;
     uint16_t incX = rwidth / (step_count * 2);  //16
     uint16_t incY = rheight / (step_count * 2); //10
     uint8_t i;
@@ -157,13 +157,13 @@ void OPEN_SCREEN(ScreenContext *context, TITUS_level *level) {
     SDL_Rect dest;
     int8_t step_count = 10;
     uint16_t rwidth = 320; //TODO: make this global
-    uint16_t rheight = 192;
+    uint16_t rheight = 200;
     uint16_t incX = rwidth / (step_count * 2);  //16
     uint16_t incY = rheight / (step_count * 2); //10
     uint8_t i;
     for (i = step_count - 1; i >= 2; i -= 2) {
         // draw all tiles
-        DISPLAY_TILES(level);
+        draw_tiles(level);
 
         //Clear top
         dest.x = 0;

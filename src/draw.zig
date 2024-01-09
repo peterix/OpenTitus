@@ -31,7 +31,7 @@ const fonts = @import("ui/fonts.zig");
 
 const tick_delay = 29;
 
-pub export fn DISPLAY_TILES(level: *c.TITUS_level) void {
+pub export fn draw_tiles(level: *c.TITUS_level) void {
     const src = c.SDL_Rect{
         .x = 0,
         .y = 0,
@@ -59,7 +59,9 @@ pub export fn DISPLAY_TILES(level: *c.TITUS_level) void {
     }
 }
 
-pub export fn DISPLAY_SPRITES(level: *c.TITUS_level) void {
+pub export fn draw_sprites(level: *c.TITUS_level) void {
+    // FIXME: this was for some reason originally drawing from last to first
+    // zig makes it a bit harder to do that, so I flipped the order here
     for (0..level.elevatorcount) |i| {
         display_sprite(level, &level.elevator[i].sprite);
     }
@@ -147,6 +149,7 @@ fn display_sprite(level: *c.TITUS_level, spr: *allowzero c.TITUS_sprite) void {
     spr.flash = false;
 }
 
+// FIXME: this should really be in sprites? or in some sprite cache module?
 fn sprite_from_cache(level: *c.TITUS_level, spr: *allowzero c.TITUS_sprite) *c.SDL_Surface {
     var cache = level.spritecache;
     var spritedata = level.spritedata[@as(usize, @intCast(spr.number))];
@@ -194,5 +197,43 @@ fn sprite_from_cache(level: *c.TITUS_level, spr: *allowzero c.TITUS_sprite) *c.S
             spritedata.*.spritebuffer[index] = spritebuffer;
         }
         return spritedata.*.spritebuffer[index].*.data;
+    }
+}
+
+pub fn draw_health_bars(level: *c.TITUS_level) void {
+    c.subto0(&globals.BAR_FLAG);
+    if (window.screen == null) {
+        return;
+    }
+
+    const white = c.SDL_MapRGB(window.screen.?.format, 255, 255, 255);
+    if (globals.BAR_FLAG <= 0) {
+        return;
+    }
+    var offset: u8 = 96;
+
+    //Draw big bars (4px*16px, spacing 4px)
+    for (0..level.player.hp) |_| {
+        const dest = c.SDL_Rect{
+            .x = offset,
+            .y = 9,
+            .w = 4,
+            .h = 16,
+        };
+
+        _ = c.SDL_FillRect(window.screen, &dest, white);
+        offset += 8;
+    }
+
+    //Draw small bars (4px*4px, spacing 4px)
+    for (0..@as(usize, c.MAXIMUM_ENERGY) - level.player.hp) |_| {
+        const dest = c.SDL_Rect{
+            .x = offset,
+            .y = 15,
+            .w = 4,
+            .h = 3,
+        };
+        _ = c.SDL_FillRect(window.screen, &dest, white);
+        offset += 8;
     }
 }

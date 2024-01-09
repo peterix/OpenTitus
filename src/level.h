@@ -66,10 +66,7 @@ struct _TITUS_sprite {
     bool visible; //On screen or not on screen (above/below/left/right)
     bool flash;
     bool flipped;
-    //bool flash_last;
-    //bool flipped_last;
     bool enabled;
-    //SDL_Surface *buffer; //Malloced
     TITUS_spritedata *spritedata;
     uint8_t UNDER; //0: big spring, 1: small spring because of another object on top, 2: small spring because player on top
     TITUS_sprite *ONTOP; //Object on top of the spring
@@ -189,7 +186,7 @@ struct _TITUS_player {
     unsigned char animcycle;
     int16_t cageX;
     int16_t cageY;
-    int16_t hp;
+    uint16_t hp;
     int16_t initX;
     int16_t initY;
     unsigned char inithp;
