@@ -42,10 +42,6 @@ pub fn viewMenu(file: ImageFile, allocator: std.mem.Allocator) !c_int {
     var selection: usize = 0;
     var curlevel: c_int = 1;
 
-    var fade_time: c_uint = 1000;
-    var tick_start: c_uint = 0;
-    var image_alpha: c_uint = 0;
-
     var menudata = try sqz.unSQZ(file.filename, allocator);
     var image_memory = try image.loadImage(menudata, file.format, allocator);
     defer image_memory.deinit();
@@ -94,7 +90,10 @@ pub fn viewMenu(file: ImageFile, allocator: std.mem.Allocator) !c_int {
     sel_dest[1] = sel[1];
     //sel_dest[1].x += 16;
 
-    tick_start = c.SDL_GetTicks();
+    // FIXME: move to draw.zig
+    var fade_time: c_uint = 1000;
+    var image_alpha: c_uint = 0;
+    var tick_start: c_uint = c.SDL_GetTicks();
 
     while (image_alpha < 255) { //Fade in
         var event: c.SDL_Event = undefined;

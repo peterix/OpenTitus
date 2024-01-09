@@ -63,24 +63,24 @@ pub export fn draw_sprites(level: *c.TITUS_level) void {
     // FIXME: this was for some reason originally drawing from last to first
     // zig makes it a bit harder to do that, so I flipped the order here
     for (0..level.elevatorcount) |i| {
-        display_sprite(level, &level.elevator[i].sprite);
+        draw_sprite(level, &level.elevator[i].sprite);
     }
 
     for (0..level.trashcount) |i| {
-        display_sprite(level, &level.trash[i]);
+        draw_sprite(level, &level.trash[i]);
     }
 
     for (0..level.enemycount) |i| {
-        display_sprite(level, &level.enemy[i].sprite);
+        draw_sprite(level, &level.enemy[i].sprite);
     }
 
     for (0..level.objectcount) |i| {
-        display_sprite(level, &level.object[i].sprite);
+        draw_sprite(level, &level.object[i].sprite);
     }
 
-    display_sprite(level, &level.player.sprite3);
-    display_sprite(level, &level.player.sprite2);
-    display_sprite(level, &level.player.sprite);
+    draw_sprite(level, &level.player.sprite3);
+    draw_sprite(level, &level.player.sprite2);
+    draw_sprite(level, &level.player.sprite);
 
     if (globals.GODMODE) {
         fonts.text_render("GODMODE", 30 * 8, 0 * 12, true);
@@ -90,7 +90,7 @@ pub export fn draw_sprites(level: *c.TITUS_level) void {
     }
 }
 
-fn display_sprite(level: *c.TITUS_level, spr: *allowzero c.TITUS_sprite) void {
+fn draw_sprite(level: *c.TITUS_level, spr: *allowzero c.TITUS_sprite) void {
     if (!spr.enabled) {
         return;
     }
@@ -112,8 +112,8 @@ fn display_sprite(level: *c.TITUS_level, spr: *allowzero c.TITUS_sprite) void {
     if ((dest.x >= screen_limit * 16) or //Right for the screen
         (dest.x + spr.spritedata.*.data.*.w < 0) or //Left for the screen
         (dest.y + spr.spritedata.*.data.*.h < 0) or //Above the screen
-        (dest.y >= globals.screen_height * 16))
-    { //Below the screen
+        (dest.y >= globals.screen_height * 16)) //Below the screen
+    {
         return;
     }
 
@@ -136,6 +136,7 @@ fn display_sprite(level: *c.TITUS_level, spr: *allowzero c.TITUS_sprite) void {
         src.h -= src.y;
         dest.y = 0;
     }
+
     if (dest.x + src.w > screen_limit * 16) {
         src.w = screen_limit * 16 - dest.x;
     }
@@ -235,5 +236,56 @@ pub fn draw_health_bars(level: *c.TITUS_level) void {
         };
         _ = c.SDL_FillRect(window.screen, &dest, white);
         offset += 8;
+    }
+}
+
+pub fn fadeout() void {
+    const fade_time: c_uint = 1000;
+
+    var rect = c.SDL_Rect{
+        .x = 0,
+        .y = 0,
+        .w = window.game_width,
+        .h = window.game_height,
+    };
+
+    var image = c.SDL_ConvertSurface(window.screen, window.screen.?.format, c.SDL_SWSURFACE);
+    defer c.SDL_FreeSurface(image);
+
+    var tick_start = c.SDL_GetTicks();
+    var image_alpha: c_uint = 0;
+    while (image_alpha < 255) //Fade to black
+    {
+        var event: c.SDL_Event = undefined;
+        if (c.SDL_PollEvent(&event) == 0) {
+            if (event.type == c.SDL_QUIT) {
+                // FIXME: handle this better
+                return;
+            }
+
+            if (event.type == c.SDL_KEYDOWN) {
+                if (event.key.keysym.scancode == c.SDL_SCANCODE_ESCAPE) {
+                    // FIXME: handle this better
+                    return;
+                }
+                if (event.key.keysym.scancode == c.KEY_FULLSCREEN) {
+                    window.window_toggle_fullscreen();
+                }
+            }
+        }
+
+        image_alpha = (c.SDL_GetTicks() - tick_start) * 256 / fade_time;
+
+        if (image_alpha > 255) {
+            image_alpha = 255;
+        }
+
+        _ = c.SDL_SetSurfaceAlphaMod(image, 255 - @as(u8, @truncate(image_alpha)));
+        _ = c.SDL_SetSurfaceBlendMode(image, c.SDL_BLENDMODE_BLEND);
+        window.window_clear(null);
+        _ = c.SDL_BlitSurface(image, &rect, window.screen, &rect);
+        window.window_render();
+
+        c.SDL_Delay(1);
     }
 }

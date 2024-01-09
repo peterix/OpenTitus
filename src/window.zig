@@ -133,15 +133,14 @@ pub export fn window_render() void {
     var frame = c.SDL_CreateTextureFromSurface(renderer, screen);
     // FIXME: process error.
     _ = c.SDL_RenderClear(renderer);
-    var src: c.SDL_Rect = undefined;
-    src.x = 0;
-    src.y = 0;
-    src.w = game_width;
-    src.h = game_height;
-    var dst = src;
-    dst.x = 0;
+    var rect = c.SDL_Rect{
+        .x = 0,
+        .y = 0,
+        .w = game_width,
+        .h = game_height,
+    };
     // FIXME: process error.
-    _ = c.SDL_RenderCopy(renderer, frame, &src, &dst);
+    _ = c.SDL_RenderCopy(renderer, frame, &rect, &rect);
     c.SDL_RenderPresent(renderer);
     c.SDL_DestroyTexture(frame);
 }

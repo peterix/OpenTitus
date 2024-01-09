@@ -88,7 +88,11 @@ pub const Settings = extern struct {
             Settings,
             arena.allocator(),
             data,
-            .{ .allocate = .alloc_always },
+            .{
+                .allocate = .alloc_always,
+                .ignore_unknown_fields = true,
+                .duplicate_field_behavior = .use_last,
+            },
         ) catch |err| {
             std.log.err("Could not read settings: {}, starting with defaults.", .{err});
             return Settings.make_new(arena.allocator());

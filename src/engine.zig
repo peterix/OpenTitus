@@ -278,5 +278,5 @@ fn gameover(context: [*c]c.ScreenContext, level: *c.TITUS_level) void {
     if (keyboard.waitforbutton() < 0)
         return;
 
-    c.fadeout();
+    draw.fadeout();
 }

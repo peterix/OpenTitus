@@ -27,7 +27,6 @@
  *
  * Global functions:
    * void flip_screen(bool slow): Flips the screen and a short delay
-  * void fadeout(): Fade the screen to black
   */
 
 #pragma once
@@ -53,6 +52,5 @@ void flip_screen(ScreenContext *context, bool slow);
 void draw_tiles(TITUS_level *level);
 void draw_sprites(TITUS_level *level);
 
-void fadeout();
 int loadpixelformat(SDL_PixelFormat **pixelformat);
 void freepixelformat(SDL_PixelFormat **pixelformat);

@@ -85,67 +85,6 @@ void flip_screen(ScreenContext * context, bool slow) {
     }
 }
 
-void fadeout() {
-    SDL_Surface *image;
-    SDL_Event event;
-    unsigned int fade_time = 1000;
-    unsigned int tick_start = 0;
-    unsigned int image_alpha = 0;
-    SDL_Rect src, dest;
-
-    src.x = 0;
-    src.y = 0;
-    src.w = screen->w;
-    src.h = screen->h;
-
-    dest.x = 0;
-    dest.y = 0;
-    dest.w = screen->w;
-    dest.h = screen->h;
-
-    image = SDL_ConvertSurface(screen, screen->format, SDL_SWSURFACE);
-
-    SDL_BlitSurface(screen, &src, image, &dest);
-    tick_start = SDL_GetTicks();
-    while (image_alpha < 255) //Fade to black
-    {
-        if (SDL_PollEvent(&event)) {
-            if (event.type == SDL_QUIT) {
-                SDL_FreeSurface(image);
-                // FIXME: handle this better
-                return;
-            }
-
-            if (event.type == SDL_KEYDOWN) {
-                if (event.key.keysym.scancode == SDL_SCANCODE_ESCAPE) {
-                    SDL_FreeSurface(image);
-                    // FIXME: handle this better
-                    return;
-                }
-                if (event.key.keysym.scancode == KEY_FULLSCREEN) {
-                    window_toggle_fullscreen();
-                }
-            }
-        }
-
-        image_alpha = (SDL_GetTicks() - tick_start) * 256 / fade_time;
-
-        if (image_alpha > 255) {
-            image_alpha = 255;
-        }
-
-        SDL_SetSurfaceAlphaMod(image, 255 - image_alpha);
-        SDL_SetSurfaceBlendMode(image, SDL_BLENDMODE_BLEND);
-        window_clear(NULL);
-        SDL_BlitSurface(image, &src, screen, &dest);
-        window_render();
-
-        SDL_Delay(1);
-    }
-    SDL_FreeSurface(image);
-
-}
-
 int loadpixelformat(SDL_PixelFormat **pixelformat){
     int i;
 
