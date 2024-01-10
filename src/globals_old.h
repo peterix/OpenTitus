@@ -172,6 +172,7 @@ extern int8_t SENSX; //1: walk right, 0: stand still, -1: walk left, triggers th
 extern uint8_t SAUT_COUNT; //Incremented from 0 to 3 when accelerating while jumping, stop acceleration upwards if >= 3
 extern bool NOSCROLL_FLAG;
 extern bool NEWLEVEL_FLAG; //Finish a level
+extern bool SKIPLEVEL_FLAG; //Finish a level
 extern uint8_t TAUPE_FLAG; //Used for enemies walking and popping up
 extern uint8_t TAPISWAIT_FLAG; //Flying carpet state
 extern uint8_t SEECHOC_FLAG; //Counter when hit

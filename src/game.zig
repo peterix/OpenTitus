@@ -160,7 +160,7 @@ pub fn run() !u8 {
     }
 
     while (state != 0) {
-        var curlevel = try menu.viewMenu(
+        var curlevel = try menu.view_menu(
             data.constants.*.menu,
             allocator,
         );

@@ -93,7 +93,7 @@ export var INVULNERABLE_FLAG: u8 = 0;
 export var TAPISFLY_FLAG: u8 = 0;
 
 //When non-zero, fall through certain floors (after key down)
-export var CROSS_FLAG: u8 = 0;
+pub export var CROSS_FLAG: u8 = 0;
 
 //When zero, skip object gravity function
 export var GRAVITY_FLAG: u8 = 0;
@@ -155,6 +155,9 @@ pub export var NOSCROLL_FLAG: bool = false;
 //Finish a level
 pub export var NEWLEVEL_FLAG: bool = false;
 
+//Skip a level without recording completion (cheat)
+pub export var SKIPLEVEL_FLAG: bool = false;
+
 //Used for enemies walking and popping up
 export var TAUPE_FLAG: u8 = 0;
 
@@ -168,7 +171,7 @@ export var SEECHOC_FLAG: u8 = 0;
 export var boss_lives: u8 = 0;
 
 //True if the boss is alive
-export var boss_alive: bool = false;
+pub export var boss_alive: bool = false;
 
 //If true, the player will not interfere with the enemies
 pub export var GODMODE: bool = false;

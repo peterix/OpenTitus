@@ -24,14 +24,10 @@
 
 /* draw.h
  * Draw functions
- *
- * Global functions:
-   * void flip_screen(bool slow): Flips the screen and a short delay
-  */
+ */
 
 #pragma once
 
-#include "SDL2/SDL.h"
 #include "level.h"
 
 #include <stdbool.h>
@@ -45,8 +41,6 @@ struct _ScreenContext {
 typedef struct _ScreenContext ScreenContext;
 
 void screencontext_reset(ScreenContext * context);
-void screencontext_initial(ScreenContext * context);
-void screencontext_advance_29(ScreenContext * context);
 void flip_screen(ScreenContext *context, bool slow);
 
 void draw_tiles(TITUS_level *level);

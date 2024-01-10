@@ -31,6 +31,42 @@ const fonts = @import("ui/fonts.zig");
 
 const tick_delay = 29;
 
+pub export fn screencontext_reset(context: *c.ScreenContext) void {
+    context.* = std.mem.zeroInit(c.ScreenContext, .{});
+}
+
+fn screencontext_initial(context: *c.ScreenContext) void {
+    var initial_clock = c.SDL_GetTicks();
+    context.TARGET_CLOCK = initial_clock + tick_delay;
+    context.started = true;
+    c.SDL_Delay(tick_delay);
+    context.LAST_CLOCK = c.SDL_GetTicks();
+    context.TARGET_CLOCK += tick_delay;
+}
+
+fn screencontext_advance_29(context: *c.ScreenContext) void {
+    if (!context.started) {
+        screencontext_initial(context);
+        return;
+    }
+    var now = c.SDL_GetTicks();
+    if (context.TARGET_CLOCK > now) {
+        c.SDL_Delay(context.TARGET_CLOCK - now);
+    }
+    context.LAST_CLOCK = c.SDL_GetTicks();
+    context.TARGET_CLOCK = context.LAST_CLOCK + tick_delay;
+}
+
+pub export fn flip_screen(context: *c.ScreenContext, slow: bool) void {
+    window.window_render();
+    if (slow) {
+        screencontext_advance_29(context);
+    } else {
+        c.SDL_Delay(10);
+        screencontext_reset(context);
+    }
+}
+
 pub export fn draw_tiles(level: *c.TITUS_level) void {
     const src = c.SDL_Rect{
         .x = 0,

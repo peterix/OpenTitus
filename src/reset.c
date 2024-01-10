@@ -232,6 +232,7 @@ void CLEAR_DATA(TITUS_level *level) {
     LOSELIFE_FLAG = 0;
     GAMEOVER_FLAG = false;
     NEWLEVEL_FLAG = false;
+    SKIPLEVEL_FLAG = false;
     INVULNERABLE_FLAG = 0;
     POCKET_FLAG = 0;
     SAUT_COUNT = 0;

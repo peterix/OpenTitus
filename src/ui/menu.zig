@@ -42,7 +42,7 @@ const ImageFile = image.ImageFile;
 // - Add pause menu
 // - Esc opens pause menu instead of instant quit
 
-pub fn viewMenu(file: ImageFile, allocator: std.mem.Allocator) !?usize {
+pub fn view_menu(file: ImageFile, allocator: std.mem.Allocator) !?usize {
     var selection: usize = 0;
 
     var menudata = try sqz.unSQZ(file.filename, allocator);
@@ -156,7 +156,7 @@ pub fn viewMenu(file: ImageFile, allocator: std.mem.Allocator) !?usize {
                             break :MENULOOP;
                         },
                         1 => {
-                            curlevel = select_level();
+                            curlevel = try select_level(allocator);
                             if (curlevel != null) {
                                 break :MENULOOP;
                             }
@@ -196,8 +196,58 @@ pub fn viewMenu(file: ImageFile, allocator: std.mem.Allocator) !?usize {
     return curlevel;
 }
 
-fn select_level() ?usize {
+fn select_level(allocator: std.mem.Allocator) !?usize {
+    const LevelSelect = struct {
+        unlocked: bool,
+        text: []const u8,
+        font: *fonts.Font,
+        width: u16,
+        y: c_int,
+    };
+    var level_list = try std.ArrayList(LevelSelect).initCapacity(allocator, data.constants.levelfiles.len);
+    defer level_list.deinit();
+
     var selection: usize = 0;
+    var max_width: c_int = 0;
+
+    for (data.constants.levelfiles, 0..) |level, i| {
+        const y: c_int = @intCast(i * 13);
+        const known = game.game_state.isKnown(i);
+        if (!known) {
+            const width = fonts.Gray.metrics("...", false);
+            if (width > max_width) {
+                max_width = width;
+            }
+            level_list.append(LevelSelect{
+                .unlocked = false,
+                .text = "...",
+                .font = &fonts.Gray,
+                .width = width,
+                .y = y,
+            }) catch {
+                // already inited up to capacity, this is fine
+                unreachable;
+            };
+            break;
+        }
+        const unlocked = game.game_state.isUnlocked(i);
+        const font = if (unlocked) &fonts.Gold else &fonts.Gray;
+        const width = font.metrics(level.title, false);
+        if (width > max_width) {
+            max_width = width;
+        }
+        level_list.append(LevelSelect{
+            .unlocked = unlocked,
+            .text = level.title,
+            .font = font,
+            .width = width,
+            .y = y,
+        }) catch {
+            // already inited up to capacity, this is fine
+            unreachable;
+        };
+    }
+
     while (true) {
         var event: c.SDL_Event = undefined;
         if (c.SDL_PollEvent(&event) != c.SDL_FALSE) {
@@ -210,7 +260,7 @@ fn select_level() ?usize {
                     return null;
                 }
                 if (event.key.keysym.scancode == c.SDL_SCANCODE_DOWN) {
-                    if (selection < data.constants.levelfiles.len - 1) {
+                    if (selection < level_list.items.len - 1) {
                         selection += 1;
                     }
                 }
@@ -231,22 +281,19 @@ fn select_level() ?usize {
             }
         }
 
+        // TODO: render this nicer...
         window.window_clear(null);
-        for (data.constants.levelfiles, 0..) |level, i| {
-            const unlocked = game.game_state.isUnlocked(i);
-            const text_font = if (unlocked) &fonts.Gold else &fonts.Gray;
-            const y: c_int = @intCast(i * 13);
+        for (level_list.items, 0..) |level, i| {
             if (selection == i) {
-                const width = text_font.metrics(level.title, false);
-                const x = 160 - width / 2;
-                text_font.render(level.title, x, y, false);
+                const x = 160 - level.width / 2;
+                level.font.render(level.text, x, level.y, false);
                 const left = ">";
                 const right = "<";
-                const left_width = text_font.metrics(left, false);
-                fonts.Gold.render(left, x - 4 - left_width, y, false);
-                fonts.Gold.render(right, x + width + 4, y, false);
+                const left_width = fonts.Gold.metrics(left, false);
+                fonts.Gold.render(left, x - 4 - left_width, level.y, false);
+                fonts.Gold.render(right, x + level.width + 4, level.y, false);
             } else {
-                text_font.render_center(level.title, y, false);
+                level.font.render_center(level.text, level.y, false);
             }
         }
         window.window_render();

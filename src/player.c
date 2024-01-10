@@ -152,6 +152,7 @@ int move_player(ScreenContext *context, TITUS_level *level) {
         }
         if (keystate[KEY_F3]) { //F3 = skip to next level
             NEWLEVEL_FLAG = true;
+            SKIPLEVEL_FLAG = true;
         }
     }
     

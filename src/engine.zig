@@ -34,6 +34,7 @@ const window = @import("window.zig");
 const elevators = @import("elevators.zig");
 const game_state = @import("game_state.zig");
 const draw = @import("draw.zig");
+const gates = @import("gates.zig");
 
 const image = @import("ui/image.zig");
 const keyboard = @import("ui/keyboard.zig");
@@ -135,19 +136,26 @@ pub fn playtitus(firstlevel: u16, allocator: std.mem.Allocator) c_int {
             c.music_select_song(c.LEVEL_MUSIC[level.levelid]);
 
             // scroll to where the player is while 'closing' and 'opening' the screen to obscure the sudden change
-            c.CLOSE_SCREEN(&context);
+            gates.CLOSE_SCREEN(&context);
             scroll.scrollToPlayer(&level);
-            c.OPEN_SCREEN(&context, &level);
+            gates.OPEN_SCREEN(&context, &level);
 
             draw.draw_tiles(&level);
-            c.flip_screen(&context, true);
+            draw.flip_screen(&context, true);
+
+            game_state.visit_level(
+                allocator,
+                level.levelnumber,
+            ) catch |err| {
+                std.log.err("Could not record level entry: {}", .{err});
+            };
 
             retval = playlevel(&context, &level);
             if (retval < 0) {
                 return retval;
             }
 
-            if (globals.NEWLEVEL_FLAG) {
+            if (globals.NEWLEVEL_FLAG and !globals.SKIPLEVEL_FLAG) {
                 game_state.record_completion(
                     allocator,
                     level.levelnumber,
@@ -206,7 +214,7 @@ fn playlevel(context: [*c]c.ScreenContext, level: *c.TITUS_level) c_int {
         if (!firstrun) {
             draw.draw_health_bars(level);
             c.music_restart_if_finished();
-            c.flip_screen(context, true);
+            draw.flip_screen(context, true);
         }
         firstrun = false;
         globals.IMAGE_COUNTER = (globals.IMAGE_COUNTER + 1) & 0x0FFF; //Cycle from 0 to 0x0FFF
@@ -247,7 +255,7 @@ fn death(context: [*c]c.ScreenContext, level: *c.TITUS_level) void {
         draw.draw_tiles(level);
         //TODO! GRAVITY();
         draw.draw_sprites(level);
-        c.flip_screen(context, true);
+        draw.flip_screen(context, true);
         player.sprite.speedY -= 1;
         if (player.sprite.speedY < -16) {
             player.sprite.speedY = -16;
@@ -275,7 +283,7 @@ fn gameover(context: [*c]c.ScreenContext, level: *c.TITUS_level) void {
     for (0..31) |_| {
         draw.draw_tiles(level);
         draw.draw_sprites(level);
-        c.flip_screen(context, true);
+        draw.flip_screen(context, true);
         player.sprite2.x += 8;
         player.sprite3.x -= 8;
     }

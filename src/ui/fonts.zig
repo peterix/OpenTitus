@@ -40,7 +40,7 @@ const Character = struct {
     x_offset: i8 = 0,
 };
 
-const Font = struct {
+pub const Font = struct {
     sheet: *c.SDL_Surface,
     characters: [256]Character,
     fallback: Character,

@@ -159,10 +159,16 @@ pub const GameState = struct {
     }
 
     pub fn isUnlocked(self: *GameState, level: usize) bool {
+        if (level == 0) {
+            return true;
+        }
         if (level >= self.levels.list.items.len) {
             return false;
         }
         return self.levels.list.items[level].unlocked and self.levels.list.items[level].valid;
+    }
+    pub fn isKnown(self: *GameState, level: usize) bool {
+        return level == 0 or level < self.levels.list.items.len;
     }
 };
 
@@ -184,6 +190,14 @@ fn ensure_entry(allocator: std.mem.Allocator, level: u16) !*LevelEntry {
         entry.* = LevelEntry{};
     }
     return entry;
+}
+
+pub fn visit_level(allocator: std.mem.Allocator, level: u16) !void {
+    var internal_allocator = game.game_state_mem.arena.*.allocator();
+    var entry = try ensure_entry(internal_allocator, level);
+    entry.stamp(game.game_state.seed, level);
+
+    try game.game_state.write(allocator);
 }
 
 pub fn unlock_level(allocator: std.mem.Allocator, level: u16, lives: c_int) !void {
