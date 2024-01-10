@@ -244,8 +244,8 @@ var titus_colors: [16]c.SDL_Color = .{
     .{ .r = 12 * 4, .g = 12 * 4, .b = 28 * 4, .a = 255 },
     .{ .r = 24 * 4, .g = 24 * 4, .b = 40 * 4, .a = 255 },
     .{ .r = 32 * 4, .g = 32 * 4, .b = 48 * 4, .a = 255 },
-    // I think this is only used by 16 bit colour images (TITREEGA.SQZ and MENUEGA.SQZ),
-    // on levels this color is replaced with orig_palette_level_colour[levelnr]
+    // on levels this color is replaced with a level specific color
+    // FIXME: @RESEARCH it's not clear how is this original color supposed to be used...
     .{ .r = 0 * 4, .g = 16 * 4, .b = 0 * 4, .a = 255 },
     .{ .r = 8 * 4, .g = 8 * 4, .b = 24 * 4, .a = 255 },
 };

@@ -29,6 +29,10 @@ const c = @import("../c.zig");
 const sqz = @import("../sqz.zig");
 const image = @import("image.zig");
 const window = @import("../window.zig");
+const data = @import("../data.zig");
+const game = @import("../game.zig");
+const fonts = @import("fonts.zig");
+const draw = @import("../draw.zig");
 const ImageFile = image.ImageFile;
 
 // TODO: redo all UI
@@ -38,9 +42,8 @@ const ImageFile = image.ImageFile;
 // - Add pause menu
 // - Esc opens pause menu instead of instant quit
 
-pub fn viewMenu(file: ImageFile, allocator: std.mem.Allocator) !c_int {
+pub fn viewMenu(file: ImageFile, allocator: std.mem.Allocator) !?usize {
     var selection: usize = 0;
-    var curlevel: c_int = 1;
 
     var menudata = try sqz.unSQZ(file.filename, allocator);
     var image_memory = try image.loadImage(menudata, file.format, allocator);
@@ -64,7 +67,7 @@ pub fn viewMenu(file: ImageFile, allocator: std.mem.Allocator) !c_int {
     var sel: [2]c.SDL_Rect = undefined;
     var sel_dest: [2]c.SDL_Rect = undefined;
 
-    if (c.game == c.Titus) {
+    if (data.game == c.Titus) {
         sel[0].x = 120;
         sel[0].y = 160;
         sel[0].w = 8;
@@ -74,7 +77,7 @@ pub fn viewMenu(file: ImageFile, allocator: std.mem.Allocator) !c_int {
         sel[1].y = 173;
         sel[1].w = 8;
         sel[1].h = 8;
-    } else if (c.game == c.Moktar) {
+    } else if (data.game == c.Moktar) {
         sel[0].x = 130;
         sel[0].y = 167;
         sel[0].w = 8;
@@ -95,16 +98,17 @@ pub fn viewMenu(file: ImageFile, allocator: std.mem.Allocator) !c_int {
     var image_alpha: c_uint = 0;
     var tick_start: c_uint = c.SDL_GetTicks();
 
-    while (image_alpha < 255) { //Fade in
+    // Fade in
+    while (image_alpha < 255) {
         var event: c.SDL_Event = undefined;
         if (c.SDL_PollEvent(&event) != c.SDL_FALSE) {
             if (event.type == c.SDL_QUIT) {
-                return (-1);
+                return null;
             }
 
             if (event.type == c.SDL_KEYDOWN) {
                 if (event.key.keysym.scancode == c.SDL_SCANCODE_ESCAPE) {
-                    return (-1);
+                    return null;
                 }
                 if (event.key.keysym.scancode == c.KEY_FULLSCREEN) {
                     window.window_toggle_fullscreen();
@@ -128,17 +132,18 @@ pub fn viewMenu(file: ImageFile, allocator: std.mem.Allocator) !c_int {
         c.SDL_Delay(1);
     }
 
+    var curlevel: ?usize = null;
     // View the menu
     MENULOOP: while (true) {
         var event: c.SDL_Event = undefined;
         if (c.SDL_PollEvent(&event) != c.SDL_FALSE) {
             if (event.type == c.SDL_QUIT) {
-                return (-1);
+                return null;
             }
 
             if (event.type == c.SDL_KEYDOWN) {
                 if (event.key.keysym.scancode == c.SDL_SCANCODE_ESCAPE) {
-                    return (-1);
+                    return null;
                 }
                 if (event.key.keysym.scancode == c.SDL_SCANCODE_UP)
                     selection = 0;
@@ -146,9 +151,15 @@ pub fn viewMenu(file: ImageFile, allocator: std.mem.Allocator) !c_int {
                     selection = 1;
                 if (event.key.keysym.scancode == c.KEY_RETURN or event.key.keysym.scancode == c.KEY_ENTER or event.key.keysym.scancode == c.KEY_SPACE) {
                     switch (selection) {
-                        0 => break :MENULOOP,
+                        0 => {
+                            curlevel = 0;
+                            break :MENULOOP;
+                        },
                         1 => {
-                            // TODO: implement level select sub-menu
+                            curlevel = select_level();
+                            if (curlevel != null) {
+                                break :MENULOOP;
+                            }
                             // retval = enterpassword(levelcount);
 
                             // if (retval < 0)
@@ -157,8 +168,9 @@ pub fn viewMenu(file: ImageFile, allocator: std.mem.Allocator) !c_int {
                             // if (retval > 0) {
                             //     curlevel = retval;
                             // }
-                            selection = 0;
+                            // selection = 0;
                         },
+                        // TODO: implement options menu
                         else => {
                             unreachable;
                         },
@@ -180,40 +192,64 @@ pub fn viewMenu(file: ImageFile, allocator: std.mem.Allocator) !c_int {
     }
 
     // Close the menu
-    tick_start = c.SDL_GetTicks();
-    image_alpha = 0;
-    while (image_alpha < 255) { //Fade out
+    draw.fadeout();
+    return curlevel;
+}
+
+fn select_level() ?usize {
+    var selection: usize = 0;
+    while (true) {
         var event: c.SDL_Event = undefined;
         if (c.SDL_PollEvent(&event) != c.SDL_FALSE) {
             if (event.type == c.SDL_QUIT) {
-                return (-1);
+                return null;
             }
 
             if (event.type == c.SDL_KEYDOWN) {
                 if (event.key.keysym.scancode == c.SDL_SCANCODE_ESCAPE) {
-                    return (-1);
+                    return null;
                 }
+                if (event.key.keysym.scancode == c.SDL_SCANCODE_DOWN) {
+                    if (selection < data.constants.levelfiles.len - 1) {
+                        selection += 1;
+                    }
+                }
+                if (event.key.keysym.scancode == c.SDL_SCANCODE_UP) {
+                    if (selection > 0) {
+                        selection -= 1;
+                    }
+                }
+                if (event.key.keysym.scancode == c.SDL_SCANCODE_RETURN) {
+                    if (game.game_state.isUnlocked(selection)) {
+                        return selection;
+                    } else {}
+                }
+
                 if (event.key.keysym.scancode == c.KEY_FULLSCREEN) {
                     window.window_toggle_fullscreen();
                 }
-                // TODO: add a way to activate devmode from here (cheat code style using state machine)
             }
         }
 
-        image_alpha = (c.SDL_GetTicks() - tick_start) * 256 / fade_time;
-
-        if (image_alpha > 255)
-            image_alpha = 255;
-
         window.window_clear(null);
-        _ = c.SDL_SetSurfaceBlendMode(menu, c.SDL_BLENDMODE_BLEND);
-        _ = c.SDL_SetSurfaceAlphaMod(menu, 255 - @as(u8, @truncate(image_alpha)));
-        _ = c.SDL_BlitSurface(menu, &src, window.screen, &dest);
-        _ = c.SDL_FillRect(window.screen, &sel_dest[0], 0); //SDL_MapRGB(surface->format, 0, 0, 0));
-        _ = c.SDL_BlitSurface(menu, &sel[0], window.screen, &sel_dest[selection]);
+        for (data.constants.levelfiles, 0..) |level, i| {
+            const unlocked = game.game_state.isUnlocked(i);
+            const text_font = if (unlocked) &fonts.Gold else &fonts.Gray;
+            const y: c_int = @intCast(i * 13);
+            if (selection == i) {
+                const width = text_font.metrics(level.title, false);
+                const x = 160 - width / 2;
+                text_font.render(level.title, x, y, false);
+                const left = ">";
+                const right = "<";
+                const left_width = text_font.metrics(left, false);
+                fonts.Gold.render(left, x - 4 - left_width, y, false);
+                fonts.Gold.render(right, x + width + 4, y, false);
+            } else {
+                text_font.render_center(level.title, y, false);
+            }
+        }
         window.window_render();
         c.SDL_Delay(1);
     }
-
-    return (curlevel);
 }

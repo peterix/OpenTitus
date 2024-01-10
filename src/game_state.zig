@@ -157,6 +157,13 @@ pub const GameState = struct {
         defer allocator.free(bytes);
         try std.fs.cwd().writeFile(game_file_name(), bytes);
     }
+
+    pub fn isUnlocked(self: *GameState, level: usize) bool {
+        if (level >= self.levels.list.items.len) {
+            return false;
+        }
+        return self.levels.list.items[level].unlocked and self.levels.list.items[level].valid;
+    }
 };
 
 fn ensure_entry(allocator: std.mem.Allocator, level: u16) !*LevelEntry {

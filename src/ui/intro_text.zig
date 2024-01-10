@@ -41,10 +41,10 @@ pub fn viewintrotext() c_int {
         unreachable;
     };
 
-    fonts.text_render("     YEAAA . . .", 0, 4 * 12, false);
-    fonts.text_render(year, 0, 6 * 12, false);
-    fonts.text_render("     Programmed in 1991 on AT .286 12MHz.", 0, 11 * 12, false);
-    fonts.text_render("              . . . Enjoy Moktar Adventure !!", 0, 13 * 12, false);
+    fonts.Gold.render("     YEAAA . . .", 0, 4 * 12, false);
+    fonts.Gold.render(year, 0, 6 * 12, false);
+    fonts.Gold.render("     Programmed in 1991 on AT .286 12MHz.", 0, 11 * 12, false);
+    fonts.Gold.render("              . . . Enjoy Moktar Adventure !!", 0, 13 * 12, false);
 
     window.window_render();
 

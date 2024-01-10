@@ -31,23 +31,110 @@ const window = @import("../window.zig");
 const globals = @import("../globals.zig");
 
 const Character = struct {
-    x: u16,
-    x_mono: u16,
-    y: u16,
-    w: u16,
-    w_mono: u16,
-    h: u16,
-    x_offset: i8,
+    x: u16 = 0,
+    x_mono: u16 = 0,
+    y: u16 = 0,
+    w: u16 = 0,
+    w_mono: u16 = 0,
+    h: u16 = 0,
+    x_offset: i8 = 0,
 };
 
 const Font = struct {
-    sheet: [*c]c.SDL_Surface,
+    sheet: *c.SDL_Surface,
     characters: [256]Character,
     fallback: Character,
+
+    fn init(self: *Font, data: []const u8) !void {
+        var rwops = c.SDL_RWFromMem(@constCast(@ptrCast(&data[0])), @intCast(data.len));
+        if (rwops == null) {
+            print_sdl_error("Could not load font: {s}");
+            return FontError.CannotLoad;
+        }
+        var image = c.SDL_LoadBMP_RW(rwops, c.SDL_TRUE);
+        if (image == null) {
+            print_sdl_error("Could not load font: {s}");
+            return FontError.CannotLoad;
+        }
+        try loadfont(image, self);
+    }
+    fn deinit(self: *Font) void {
+        c.SDL_FreeSurface(self.sheet);
+    }
+
+    pub fn render_columns(self: *Font, left: []const u8, right: []const u8, y: c_int, monospace: bool) void {
+        const margin = 5 * 8;
+        const width_right = metrics(self, right, monospace);
+
+        render(self, left, margin, y, monospace);
+        render(self, right, 320 - margin - width_right, y, monospace);
+    }
+
+    pub fn render_center(self: *Font, text: []const u8, y: c_int, monospace: bool) void {
+        const width = metrics(self, text, monospace);
+        const x = 160 - width / 2;
+        render(self, text, x, y, monospace);
+    }
+
+    pub fn render(self: *Font, text: []const u8, x: c_int, y: c_int, monospace: bool) void {
+        var dest: c.SDL_Rect = .{ .x = x, .y = y, .w = 0, .h = 0 };
+
+        // Let's assume ASCII for now... original code was trying to do something with UTF-8, but had the font files have no support for that
+        for (text) |character| {
+            var chardesc = self.characters[character];
+            if (monospace) {
+                var src = c.SDL_Rect{ .x = chardesc.x_mono, .y = chardesc.y, .w = chardesc.w_mono, .h = chardesc.h };
+                dest.w = chardesc.w_mono;
+                dest.h = chardesc.h;
+                _ = c.SDL_BlitSurface(self.sheet, &src, window.screen, &dest);
+                dest.x += chardesc.w_mono;
+            } else {
+                dest.x += chardesc.x_offset;
+                var src = c.SDL_Rect{ .x = chardesc.x, .y = chardesc.y, .w = chardesc.w, .h = chardesc.h };
+                dest.w = chardesc.w;
+                dest.h = chardesc.h;
+                _ = c.SDL_BlitSurface(self.sheet, &src, window.screen, &dest);
+                dest.x += chardesc.w;
+            }
+        }
+    }
+
+    pub fn metrics(self: *Font, text: []const u8, monospace: bool) u16 {
+        var size: i17 = 0;
+
+        // Let's assume ASCII for now... original code was trying to do something with UTF-8, but had the font files have no support for that
+        for (text) |character| {
+            var chardesc = self.characters[character];
+            if (monospace) {
+                size += chardesc.w_mono;
+            } else {
+                size += chardesc.x_offset;
+                size += chardesc.w;
+            }
+        }
+        if (size > 0) {
+            return @intCast(size);
+        }
+        return 0;
+    }
 };
 
-const yellow_font_data = @embedFile("yellow_font.bmp");
-var yellow_font: Font = undefined;
+const gold_font_data = @embedFile("gold_font.bmp");
+pub var Gold: Font = undefined;
+
+const gray_font_data = @embedFile("gray_font.bmp");
+pub var Gray: Font = undefined;
+
+pub fn fonts_load() !void {
+    try Gold.init(gold_font_data);
+    try Gray.init(gray_font_data);
+}
+
+pub fn fonts_free() void {
+    Gold.deinit();
+    Gray.deinit();
+}
+
 const CHAR_QUESTION = 63;
 
 const FontError = error{
@@ -162,83 +249,4 @@ fn loadfont(image: *c.SDL_Surface, font: *Font) !void {
     // TODO: good font with transparency...
 
     // _ = c.SDL_SetColorKey(font.*.sheet, c.SDL_TRUE, c.SDL_MapRGB(font.*.sheet.*.format, 0, 0, 0));
-}
-
-fn freefont(font: *Font) void {
-    c.SDL_FreeSurface(font.*.sheet);
-    font.*.sheet = null;
-}
-
-pub fn fonts_load() !void {
-    var rwops = c.SDL_RWFromMem(@constCast(@ptrCast(&yellow_font_data[0])), yellow_font_data.len);
-    if (rwops == null) {
-        print_sdl_error("Could not load font: {s}");
-        return FontError.CannotLoad;
-    }
-    var image = c.SDL_LoadBMP_RW(rwops, c.SDL_TRUE);
-    if (image == null) {
-        print_sdl_error("Could not load font: {s}");
-        return FontError.CannotLoad;
-    }
-    try loadfont(image, &yellow_font);
-}
-
-pub export fn fonts_free() void {
-    freefont(&yellow_font);
-}
-
-pub fn text_render_columns(left: []const u8, right: []const u8, y: c_int, monospace: bool) void {
-    const margin = 5 * 8;
-    const width_right = text_width(right, monospace);
-
-    text_render(left, margin, y, monospace);
-    text_render(right, 320 - margin - width_right, y, monospace);
-}
-
-pub fn text_render_center(text: []const u8, y: c_int, monospace: bool) void {
-    const width = text_width(text, monospace);
-    const x = 160 - width / 2;
-    text_render(text, x, y, monospace);
-}
-
-pub fn text_render(text: []const u8, x: c_int, y: c_int, monospace: bool) void {
-    var dest: c.SDL_Rect = .{ .x = x, .y = y, .w = 0, .h = 0 };
-
-    // Let's assume ASCII for now... original code was trying to do something with UTF-8, but had the font files have no support for that
-    for (text) |character| {
-        var chardesc = yellow_font.characters[character];
-        if (monospace) {
-            var src = c.SDL_Rect{ .x = chardesc.x_mono, .y = chardesc.y, .w = chardesc.w_mono, .h = chardesc.h };
-            dest.w = chardesc.w_mono;
-            dest.h = chardesc.h;
-            _ = c.SDL_BlitSurface(yellow_font.sheet, &src, window.screen, &dest);
-            dest.x += chardesc.w_mono;
-        } else {
-            dest.x += chardesc.x_offset;
-            var src = c.SDL_Rect{ .x = chardesc.x, .y = chardesc.y, .w = chardesc.w, .h = chardesc.h };
-            dest.w = chardesc.w;
-            dest.h = chardesc.h;
-            _ = c.SDL_BlitSurface(yellow_font.sheet, &src, window.screen, &dest);
-            dest.x += chardesc.w;
-        }
-    }
-}
-
-pub fn text_width(text: []const u8, monospace: bool) u16 {
-    var size: i17 = 0;
-
-    // Let's assume ASCII for now... original code was trying to do something with UTF-8, but had the font files have no support for that
-    for (text) |character| {
-        var chardesc = yellow_font.characters[character];
-        if (monospace) {
-            size += chardesc.w_mono;
-        } else {
-            size += chardesc.x_offset;
-            size += chardesc.w;
-        }
-    }
-    if (size > 0) {
-        return @intCast(size);
-    }
-    return 0;
 }

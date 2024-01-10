@@ -60,22 +60,20 @@ pub export fn draw_tiles(level: *c.TITUS_level) void {
 }
 
 pub export fn draw_sprites(level: *c.TITUS_level) void {
-    // FIXME: this was for some reason originally drawing from last to first
-    // zig makes it a bit harder to do that, so I flipped the order here
     for (0..level.elevatorcount) |i| {
-        draw_sprite(level, &level.elevator[i].sprite);
+        draw_sprite(level, &level.elevator[level.elevatorcount - 1 - i].sprite);
     }
 
     for (0..level.trashcount) |i| {
-        draw_sprite(level, &level.trash[i]);
+        draw_sprite(level, &level.trash[level.trashcount - 1 - i]);
     }
 
     for (0..level.enemycount) |i| {
-        draw_sprite(level, &level.enemy[i].sprite);
+        draw_sprite(level, &level.enemy[level.enemycount - 1 - i].sprite);
     }
 
     for (0..level.objectcount) |i| {
-        draw_sprite(level, &level.object[i].sprite);
+        draw_sprite(level, &level.object[level.objectcount - 1 - i].sprite);
     }
 
     draw_sprite(level, &level.player.sprite3);
@@ -83,10 +81,10 @@ pub export fn draw_sprites(level: *c.TITUS_level) void {
     draw_sprite(level, &level.player.sprite);
 
     if (globals.GODMODE) {
-        fonts.text_render("GODMODE", 30 * 8, 0 * 12, true);
+        fonts.Gold.render("GODMODE", 30 * 8, 0 * 12, true);
     }
     if (globals.NOCLIP) {
-        fonts.text_render("NOCLIP", 30 * 8, 1 * 12, true);
+        fonts.Gold.render("NOCLIP", 30 * 8, 1 * 12, true);
     }
 }
 

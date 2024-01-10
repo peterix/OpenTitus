@@ -56,8 +56,8 @@ fn draw_extrabonus(level: *c.TITUS_level, last_bounds: ?Rect) Rect {
     var extrabonus = std.fmt.bufPrint(&tmpchars, "{d}", .{level.extrabonus}) catch {
         unreachable;
     };
-    var extrabonus_width = fonts.text_width(extrabonus, true);
-    fonts.text_render(extrabonus, 28 * 8 - extrabonus_width, 10 * 12, true);
+    var extrabonus_width = fonts.Gold.metrics(extrabonus, true);
+    fonts.Gold.render(extrabonus, 28 * 8 - extrabonus_width, 10 * 12, true);
     const bounds = Rect{
         .x = 28 * 8 - extrabonus_width,
         .y = 10 * 12,
@@ -83,9 +83,9 @@ fn draw_lives(level: *c.TITUS_level, last_bounds: ?Rect) Rect {
     var lives = std.fmt.bufPrint(&tmpchars, "{d}", .{level.lives}) catch {
         unreachable;
     };
-    var lives_width = fonts.text_width(lives, true);
+    var lives_width = fonts.Gold.metrics(lives, true);
 
-    fonts.text_render(lives, 28 * 8 - lives_width, 11 * 12, true);
+    fonts.Gold.render(lives, 28 * 8 - lives_width, 11 * 12, true);
     const bounds = Rect{
         .x = 28 * 8 - lives_width,
         .y = 11 * 12,
@@ -101,29 +101,29 @@ pub export fn viewstatus(level: *c.TITUS_level, countbonus: bool) c_int {
     window.window_clear(null);
 
     if (data.game == c.Titus) {
-        fonts.text_render("Level", 13 * 8, 12 * 5, false);
-        fonts.text_render("Extra Bonus", 10 * 8, 10 * 12, false);
-        fonts.text_render("Lives", 10 * 8, 11 * 12, false);
+        fonts.Gold.render("Level", 13 * 8, 12 * 5, false);
+        fonts.Gold.render("Extra Bonus", 10 * 8, 10 * 12, false);
+        fonts.Gold.render("Lives", 10 * 8, 11 * 12, false);
     } else if (data.game == c.Moktar) {
-        fonts.text_render("Etape", 13 * 8, 12 * 5, false);
-        fonts.text_render("Extra Bonus", 10 * 8, 10 * 12, false);
-        fonts.text_render("Vie", 10 * 8, 11 * 12, false);
+        fonts.Gold.render("Etape", 13 * 8, 12 * 5, false);
+        fonts.Gold.render("Extra Bonus", 10 * 8, 10 * 12, false);
+        fonts.Gold.render("Vie", 10 * 8, 11 * 12, false);
     }
 
     {
         const levelnumber = std.fmt.bufPrint(&tmpchars, "{d}", .{level.levelnumber + 1}) catch {
             return -1;
         };
-        var levelnumber_width = fonts.text_width(levelnumber, false);
-        fonts.text_render(levelnumber, 25 * 8 - levelnumber_width, 12 * 5, false);
+        var levelnumber_width = fonts.Gold.metrics(levelnumber, false);
+        fonts.Gold.render(levelnumber, 25 * 8 - levelnumber_width, 12 * 5, false);
     }
 
     {
         var constants = data.constants;
         var title = constants.levelfiles[level.levelnumber].title;
-        var title_width = fonts.text_width(title, false);
+        var title_width = fonts.Gold.metrics(title, false);
         var position = (320 - title_width) / 2;
-        fonts.text_render(title, position, 12 * 5, false);
+        fonts.Gold.render(title, position, 12 * 5, false);
     }
 
     var last_extrabonus = draw_extrabonus(level, null);

@@ -43,7 +43,6 @@
 #include "original.h"
 #include "keyboard.h"
 #include "gates.h"
-#include "scroll.h"
 #include "audio.h"
 
 static const int tick_delay = 29;

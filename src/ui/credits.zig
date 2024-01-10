@@ -52,13 +52,13 @@ pub export fn credits_screen() c_int {
     var y: c_int = 2 * 12;
     for (credits, 0..) |credits_line, index| {
         _ = index;
-        fonts.text_render_columns(credits_line[0], credits_line[1], y, monospace);
+        fonts.Gold.render_columns(credits_line[0], credits_line[1], y, monospace);
         y += 13;
     }
     y += 2 * 12 + 6 - 8;
-    fonts.text_render_center("Thanks to", y, monospace);
+    fonts.Gold.render_center("Thanks to", y, monospace);
     y += 12 + 6;
-    fonts.text_render_center("Cristelle, Ana Luisa, Corinne and Manou.", y, monospace);
+    fonts.Gold.render_center("Cristelle, Ana Luisa, Corinne and Manou.", y, monospace);
     window.window_render();
 
     var retval = keyboard.waitforbutton();

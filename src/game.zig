@@ -160,17 +160,17 @@ pub fn run() !u8 {
     }
 
     while (state != 0) {
-        retval = try menu.viewMenu(
+        var curlevel = try menu.viewMenu(
             data.constants.*.menu,
             allocator,
         );
 
-        if (retval <= 0)
+        if (curlevel == null)
             state = 0;
 
-        if (state != 0 and (retval <= data.constants.*.levelfiles.len)) {
+        if (state != 0 and (curlevel.? < data.constants.*.levelfiles.len)) {
             retval = engine.playtitus(
-                @as(u16, @intCast(retval - 1)),
+                @truncate(curlevel.?),
                 allocator,
             );
             if (retval < 0)
