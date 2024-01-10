@@ -227,7 +227,7 @@ fn playlevel(context: [*c]c.ScreenContext, level: *c.TITUS_level) c_int {
         c.MOVE_NMI(level); //Move enemies
         c.MOVE_TRASH(level); //Move enemy throwed objects
         c.SET_NMI(level); //Handle enemies on the screen
-        c.CROSSING_GATE(context, level); //Check and handle level completion, and if the player does a kneestand on a secret entrance
+        gates.CROSSING_GATE(context, level); //Check and handle level completion, and if the player does a kneestand on a secret entrance
         c.SPRITES_ANIMATION(level); //Animate player and objects
         scroll.scroll(level); //X- and Y-scrolling
         draw.draw_tiles(level);
@@ -265,7 +265,7 @@ fn death(context: [*c]c.ScreenContext, level: *c.TITUS_level) void {
 
     c.music_wait_to_finish();
     c.music_select_song(0);
-    c.CLOSE_SCREEN(context);
+    gates.CLOSE_SCREEN(context);
 }
 
 fn gameover(context: [*c]c.ScreenContext, level: *c.TITUS_level) void {
