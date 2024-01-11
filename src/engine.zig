@@ -155,15 +155,17 @@ pub fn playtitus(firstlevel: u16, allocator: std.mem.Allocator) c_int {
                 return retval;
             }
 
-            if (globals.NEWLEVEL_FLAG and !globals.SKIPLEVEL_FLAG) {
-                game_state.record_completion(
-                    allocator,
-                    level.levelnumber,
-                    level.bonuscollected,
-                    level.tickcount,
-                ) catch |err| {
-                    std.log.err("Could not record level completion: {}", .{err});
-                };
+            if (globals.NEWLEVEL_FLAG) {
+                if (!globals.SKIPLEVEL_FLAG) {
+                    game_state.record_completion(
+                        allocator,
+                        level.levelnumber,
+                        level.bonuscollected,
+                        level.tickcount,
+                    ) catch |err| {
+                        std.log.err("Could not record level completion: {}", .{err});
+                    };
+                }
                 break;
             }
             if (globals.LOSELIFE_FLAG) {
