@@ -67,30 +67,35 @@ pub export fn flip_screen(context: *c.ScreenContext, slow: bool) void {
     }
 }
 
-pub export fn draw_tiles(level: *c.TITUS_level) void {
-    const src = c.SDL_Rect{
-        .x = 0,
-        .y = 0,
-        .w = 16,
-        .h = 16,
-    };
-    var dest = c.SDL_Rect{
-        .x = undefined,
-        .y = undefined,
-        .w = 16,
-        .h = 16,
-    };
+// We use this to fill the whole 320x200 space in most cases instead of not drawing the bottom 8 pixels
+// TODO: actual vertical smooth scrolling instead of this coarse stuff and half-tile workarounds
+fn get_y_offset() u8 {
+    return if (globals.BITMAP_Y == 0) 0 else 8;
+}
 
+pub export fn draw_tiles(level: *c.TITUS_level) void {
+    const y_offset = get_y_offset();
     var x: i16 = -1;
     while (x < 21) : (x += 1) {
+        const checkX = globals.BITMAP_X + x;
+        if (checkX < 0 or checkX >= level.width) {
+            continue;
+        }
+        const tileX = @as(usize, @intCast(checkX));
         var y: i16 = -1;
-        while (y < 12) : (y += 1) {
-            const tileY = @as(usize, @intCast(std.math.clamp(globals.BITMAP_Y + y, 0, level.height - 1)));
-            const tileX = @as(usize, @intCast(std.math.clamp(globals.BITMAP_X + x, 0, level.width - 1)));
+        while (y < 13) : (y += 1) {
+            const checkY = globals.BITMAP_Y + y;
+            if (checkY < 0 or checkY >= level.height) {
+                continue;
+            }
+            const tileY = @as(usize, @intCast(checkY));
+
+            var dest: c.SDL_Rect = undefined;
             dest.x = x * 16 + globals.g_scroll_px_offset;
-            dest.y = y * 16 + 8;
+            dest.y = y * 16 + y_offset;
             const tile = level.tilemap[tileY][tileX];
-            _ = c.SDL_BlitSurface(level.tile[level.tile[tile].animation[globals.tile_anim]].tiledata, &src, window.screen, &dest);
+            const surface = level.tile[level.tile[tile].animation[globals.tile_anim]].tiledata;
+            _ = c.SDL_BlitSurface(surface, null, window.screen, &dest);
         }
     }
 }
@@ -139,11 +144,9 @@ fn draw_sprite(level: *c.TITUS_level, spr: *allowzero c.TITUS_sprite) void {
     } else {
         dest.x = spr.x + spr.spritedata.*.refwidth - spr.spritedata.*.data.*.w - (globals.BITMAP_X * 16) + globals.g_scroll_px_offset;
     }
-    dest.y = spr.y + spr.spritedata.*.refheight - spr.spritedata.*.data.*.h + 1 - (globals.BITMAP_Y * 16) + 8;
+    dest.y = spr.y + spr.spritedata.*.refheight - spr.spritedata.*.data.*.h + 1 - (globals.BITMAP_Y * 16) + get_y_offset();
 
-    var screen_limit: c_int = globals.screen_width + 2;
-
-    if ((dest.x >= screen_limit * 16) or //Right for the screen
+    if ((dest.x >= globals.screen_width * 16) or //Right for the screen
         (dest.x + spr.spritedata.*.data.*.w < 0) or //Left for the screen
         (dest.y + spr.spritedata.*.data.*.h < 0) or //Above the screen
         (dest.y >= globals.screen_height * 16)) //Below the screen
@@ -151,7 +154,12 @@ fn draw_sprite(level: *c.TITUS_level, spr: *allowzero c.TITUS_sprite) void {
         return;
     }
 
-    var image = sprite_from_cache(level, spr);
+    var image = sprite_from_cache(level, spr) catch {
+        _ = c.SDL_FillRect(window.screen, &dest, c.SDL_MapRGB(window.screen.?.format, 255, 180, 128));
+        spr.visible = true;
+        spr.flash = false;
+        return;
+    };
 
     var src = c.SDL_Rect{
         .x = 0,
@@ -160,32 +168,55 @@ fn draw_sprite(level: *c.TITUS_level, spr: *allowzero c.TITUS_sprite) void {
         .h = image.h,
     };
 
-    if (dest.x < 0) {
-        src.x = 0 - dest.x;
-        src.w -= src.x;
-        dest.x = 0;
-    }
-    if (dest.y < 0) {
-        src.y = 0 - dest.y;
-        src.h -= src.y;
-        dest.y = 0;
-    }
-
-    if (dest.x + src.w > screen_limit * 16) {
-        src.w = screen_limit * 16 - dest.x;
-    }
-    if (dest.y + src.h > globals.screen_height * 16) {
-        src.h = globals.screen_height * 16 - dest.y;
-    }
-
     _ = c.SDL_BlitSurface(image, &src, window.screen, &dest);
 
     spr.visible = true;
     spr.flash = false;
 }
 
+// Takes the original 16 color surface and gives you a render optimized surface
+// that is flipped the right way and has the flash effect applied.
+fn copysurface(original: *c.SDL_Surface, flip: bool, flash: bool) !*c.SDL_Surface {
+    var surface = c.SDL_ConvertSurface(original, original.format, original.flags);
+    if (surface == null)
+        return error.FailedToConvertSurface;
+    defer c.SDL_FreeSurface(surface);
+
+    _ = c.SDL_SetColorKey(surface, c.SDL_TRUE | c.SDL_RLEACCEL, 0); //Set transparent colour
+
+    const orig_pixels = @as([*]i8, @ptrCast(original.pixels));
+    const pitch: usize = @intCast(original.pitch);
+    const w: usize = @intCast(original.w);
+    const h: usize = @intCast(original.h);
+
+    var dest_pixels = @as([*]i8, @ptrCast(surface.*.pixels));
+    if (flip) {
+        for (0..pitch) |i| {
+            for (0..h) |j| {
+                dest_pixels[j * pitch + i] = orig_pixels[j * pitch + (pitch - i - 1)];
+            }
+        }
+    } else {
+        for (0..pitch * h) |i| {
+            dest_pixels[i] = orig_pixels[i];
+        }
+    }
+
+    if (flash) {
+        // TODO: add support for other pixel formats
+        for (0..w * h) |i| {
+            // 0: Transparent
+            if (dest_pixels[i] != 0) {
+                dest_pixels[i] = dest_pixels[i] & 0x01;
+            }
+        }
+    }
+    var surface2 = c.SDL_ConvertSurfaceFormat(surface, c.SDL_GetWindowPixelFormat(window.window), 0);
+    return (surface2);
+}
+
 // FIXME: this should really be in sprites? or in some sprite cache module?
-fn sprite_from_cache(level: *c.TITUS_level, spr: *allowzero c.TITUS_sprite) *c.SDL_Surface {
+fn sprite_from_cache(level: *c.TITUS_level, spr: *allowzero c.TITUS_sprite) !*c.SDL_Surface {
     var cache = level.spritecache;
     var spritedata = level.spritedata[@as(usize, @intCast(spr.number))];
 
@@ -200,33 +231,39 @@ fn sprite_from_cache(level: *c.TITUS_level, spr: *allowzero c.TITUS_sprite) *c.S
                 if ((spritebuffer.?.spritedata == spritedata) and
                     (spritebuffer.?.index == index + 2))
                 {
-                    return spritebuffer.?.data; //Already in buffer
+                    //Already in buffer
+                    return spritebuffer.?.data;
                 }
             }
         }
         //Not found, load into buffer
         cache.*.cycle2 += 1;
-        if (cache.*.cycle2 >= cache.*.count) { //The last 3 buffer surfaces is temporary (reserved for flash)
+        //The last 3 buffer surfaces is temporary (reserved for flash)
+        if (cache.*.cycle2 >= cache.*.count) {
             cache.*.cycle2 = cache.*.count - cache.*.tmpcount;
         }
         spritebuffer = cache.*.spritebuffer[cache.*.cycle2];
-        c.SDL_FreeSurface(spritebuffer.?.data); //Free old surface
-        spritebuffer.?.data = c.copysurface(spritedata.*.data, spr.flipped, spr.flash);
+        //Free old surface
+        c.SDL_FreeSurface(spritebuffer.?.data);
+        spritebuffer.?.data = try copysurface(spritedata.*.data, spr.flipped, spr.flash);
         spritebuffer.?.spritedata = spritedata;
         spritebuffer.?.index = index + 2;
         return spritebuffer.?.data;
     } else {
         if (spritedata.*.spritebuffer[index] == null) {
             cache.*.cycle += 1;
-            if (cache.*.cycle + cache.*.tmpcount >= cache.*.count) { //The last 3 buffer surfaces is temporary (reserved for flash)
+            //The last 3 buffer surfaces is temporary (reserved for flash)
+            if (cache.*.cycle + cache.*.tmpcount >= cache.*.count) {
                 cache.*.cycle = 0;
             }
             spritebuffer = cache.*.spritebuffer[cache.*.cycle];
             if (spritebuffer.?.spritedata != null) {
-                spritebuffer.?.spritedata.*.spritebuffer[spritebuffer.?.index] = null; //Remove old link
+                //Remove old link
+                spritebuffer.?.spritedata.*.spritebuffer[spritebuffer.?.index] = null;
             }
-            c.SDL_FreeSurface(spritebuffer.?.data); //Free old surface
-            spritebuffer.?.data = c.copysurface(spritedata.*.data, spr.flipped, spr.flash);
+            //Free old surface
+            c.SDL_FreeSurface(spritebuffer.?.data);
+            spritebuffer.?.data = try copysurface(spritedata.*.data, spr.flipped, spr.flash);
             spritebuffer.?.spritedata = spritedata;
             spritebuffer.?.index = index;
             spritedata.*.spritebuffer[index] = spritebuffer;

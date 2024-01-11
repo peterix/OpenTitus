@@ -1,6 +1,5 @@
 pub usingnamespace @cImport({
     @cInclude("SDL2/SDL.h");
-    @cInclude("sqz.h");
     @cInclude("window.h");
     @cInclude("tituserror.h");
     @cInclude("original.h");

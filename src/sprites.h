@@ -34,7 +34,6 @@
 #include <stdbool.h>
 #include <stdint.h>
 
-SDL_Surface * copysurface(SDL_Surface * original, bool flip, bool flash);
 SDL_Surface * SDL_LoadSprite(unsigned char * first, char width, char height, unsigned int offset, SDL_PixelFormat * pixelformat);
 int loadsprites(TITUS_spritedata ***sprites, unsigned char * spritedata, int spritedatasize, SDL_PixelFormat * pixelformat, uint16_t *count);
 SDL_Surface * SDL_LoadTile(unsigned char * first, int i, SDL_PixelFormat * pixelformat);

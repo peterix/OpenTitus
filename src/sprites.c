@@ -30,47 +30,11 @@
 //#include <stdlib.h>
 #include "SDL2/SDL.h"
 #include "sprites.h"
-#include "sqz.h"
 #include "game.h"
 #include "original.h"
 #include "tituserror.h"
 #include "globals_old.h"
 #include "window.h"
-
-SDL_Surface * copysurface(SDL_Surface * original, bool flip, bool flash){
-    int i, j;
-
-    SDL_Surface *surface = SDL_ConvertSurface(original, original->format, original->flags);
-    SDL_Surface *surface2 = NULL;
-    if (surface == NULL)
-        return NULL;
-
-    SDL_SetColorKey(surface, SDL_TRUE|SDL_RLEACCEL, 0); //Set transparent colour
-
-    char *orig_pixels = (char*) original->pixels;
-    char *dest_pixels = (char*) surface->pixels;
-
-    if (flip) {
-        for (i = 0; i < original->pitch; i++)
-            for (j = 0; j < original->h; j++)
-                dest_pixels[j * original->pitch + i] = orig_pixels[j * original->pitch + (original->pitch - i - 1)];
-    } else {
-        for (i = 0; i < original->pitch * original->h; i++)
-            dest_pixels[i] = orig_pixels[i];
-    }
-
-    if (flash) {
-        for (i = 0; i < surface->w * surface->h; i++) { //TODO: add support for other pixel formats
-            if (dest_pixels[i] != 0) { //0: Transparent
-                dest_pixels[i] = dest_pixels[i] & 0x01;
-            }
-        }
-    }
-    surface2 = SDL_ConvertSurfaceFormat(surface, SDL_GetWindowPixelFormat(window), 0);
-    SDL_FreeSurface(surface);
-    return(surface2);
-}
-
 
 SDL_Surface * SDL_LoadSprite(unsigned char * first, char width, char height, unsigned int offset, SDL_PixelFormat * pixelformat){
     SDL_Surface *surface = NULL;

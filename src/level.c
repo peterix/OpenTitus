@@ -30,7 +30,6 @@
 #include <stdlib.h>
 #include <string.h>
 #include "SDL2/SDL.h"
-#include "sqz.h"
 #include "game.h"
 #include "window.h"
 #include "tituserror.h"
