@@ -123,7 +123,7 @@ pub export fn viewstatus(level: *c.TITUS_level, countbonus: bool) c_int {
         var title = constants.levelfiles[level.levelnumber].title;
         var title_width = fonts.Gold.metrics(title, false);
         var position = (320 - title_width) / 2;
-        fonts.Gold.render(title, position, 12 * 5, false);
+        fonts.Gold.render(title, position, 12 * 6, false);
     }
 
     var last_extrabonus = draw_extrabonus(level, null);
