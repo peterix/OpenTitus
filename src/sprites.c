@@ -74,7 +74,7 @@ int loadsprites(TITUS_spritedata ***sprites, unsigned char * spritedata, int spr
     for (i = 0; i < SPRITECOUNT; i++) {
         // FIXME: possible overflow when accessing these?
         // For some reason, it requires some more space in order to free properly
-        (*sprites)[i] = (TITUS_spritedata *)SDL_malloc(sizeof(TITUS_spritedata) * 2);
+        (*sprites)[i] = (TITUS_spritedata *)SDL_malloc(sizeof(TITUS_spritedata));
         if ((*sprites)[i] == NULL) {
             fprintf(stderr, "Error: Not enough memory to load sprites!\n");
             return (TITUS_ERROR_NOT_ENOUGH_MEMORY);
