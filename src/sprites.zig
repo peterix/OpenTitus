@@ -29,6 +29,7 @@ const std = @import("std");
 const c = @import("c.zig");
 const window = @import("window.zig");
 
+// TODO: the sprite cache doesn't have to be global anymore once we aren't passing through C code.
 pub var sprite_cache: SpriteCache = undefined;
 
 fn load_sprite(data: []const u8, width: u8, height: u8, offset: usize, pixelformat: *c.SDL_PixelFormat) !*c.SDL_Surface {
