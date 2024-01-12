@@ -103,24 +103,24 @@ pub export fn draw_tiles(level: *c.TITUS_level) void {
 
 pub export fn draw_sprites(level: *c.TITUS_level) void {
     for (0..level.elevatorcount) |i| {
-        draw_sprite(level, &level.elevator[level.elevatorcount - 1 - i].sprite);
+        draw_sprite(&level.elevator[level.elevatorcount - 1 - i].sprite);
     }
 
     for (0..level.trashcount) |i| {
-        draw_sprite(level, &level.trash[level.trashcount - 1 - i]);
+        draw_sprite(&level.trash[level.trashcount - 1 - i]);
     }
 
     for (0..level.enemycount) |i| {
-        draw_sprite(level, &level.enemy[level.enemycount - 1 - i].sprite);
+        draw_sprite(&level.enemy[level.enemycount - 1 - i].sprite);
     }
 
     for (0..level.objectcount) |i| {
-        draw_sprite(level, &level.object[level.objectcount - 1 - i].sprite);
+        draw_sprite(&level.object[level.objectcount - 1 - i].sprite);
     }
 
-    draw_sprite(level, &level.player.sprite3);
-    draw_sprite(level, &level.player.sprite2);
-    draw_sprite(level, &level.player.sprite);
+    draw_sprite(&level.player.sprite3);
+    draw_sprite(&level.player.sprite2);
+    draw_sprite(&level.player.sprite);
 
     if (globals.GODMODE) {
         fonts.Gold.render("GODMODE", 30 * 8, 0 * 12, true);
@@ -130,7 +130,7 @@ pub export fn draw_sprites(level: *c.TITUS_level) void {
     }
 }
 
-fn draw_sprite(level: *c.TITUS_level, spr: *allowzero c.TITUS_sprite) void {
+fn draw_sprite(spr: *allowzero c.TITUS_sprite) void {
     if (!spr.enabled) {
         return;
     }
@@ -155,7 +155,11 @@ fn draw_sprite(level: *c.TITUS_level, spr: *allowzero c.TITUS_sprite) void {
         return;
     }
 
-    var image = sprites.sprite_cache.getSprite(level, spr) catch {
+    var image = sprites.sprite_cache.getSprite(.{
+        .number = spr.*.number,
+        .flip = spr.*.flipped,
+        .flash = spr.*.flash,
+    }) catch {
         _ = c.SDL_FillRect(window.screen, &dest, c.SDL_MapRGB(window.screen.?.format, 255, 180, 128));
         spr.visible = true;
         spr.flash = false;

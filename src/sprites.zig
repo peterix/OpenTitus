@@ -27,7 +27,6 @@
 
 const std = @import("std");
 const c = @import("c.zig");
-const window = @import("window.zig");
 
 // TODO: the sprite cache doesn't have to be global anymore once we aren't passing through C code.
 pub var sprite_cache: SpriteCache = undefined;
@@ -76,8 +75,9 @@ pub fn deinit(sprites: []c.TITUS_spritedata) void {
     }
 }
 
+// TODO: maybe this should be initialized with the desired pixel format instead of reaching out to `window`
 pub const SpriteCache = struct {
-    const Key = struct {
+    pub const Key = struct {
         number: i16,
         flip: bool,
         flash: bool,
@@ -87,10 +87,14 @@ pub const SpriteCache = struct {
 
     allocator: std.mem.Allocator,
     hashmap: HashMap,
+    pixelformat: c.SDL_PixelFormatEnum,
+    sprites: []c.TITUS_spritedata,
 
-    pub fn init(self: *SpriteCache, allocator: std.mem.Allocator) !void {
+    pub fn init(self: *SpriteCache, sprites: []c.TITUS_spritedata, pixelformat: c.SDL_PixelFormatEnum, allocator: std.mem.Allocator) !void {
         self.allocator = allocator;
         self.hashmap = HashMap.init(allocator);
+        self.pixelformat = pixelformat;
+        self.sprites = sprites;
     }
     pub fn deinit(self: *SpriteCache) void {
         var iter = self.hashmap.iterator();
@@ -102,7 +106,7 @@ pub const SpriteCache = struct {
 
     // Takes the original 16 color surface and gives you a render optimized surface
     // that is flipped the right way and has the flash effect applied.
-    fn copysurface(original: *c.SDL_Surface, flip: bool, flash: bool) !*c.SDL_Surface {
+    fn copysurface(self: *SpriteCache, original: *c.SDL_Surface, flip: bool, flash: bool) !*c.SDL_Surface {
         var surface = c.SDL_ConvertSurface(original, original.format, original.flags);
         if (surface == null)
             return error.FailedToConvertSurface;
@@ -137,18 +141,17 @@ pub const SpriteCache = struct {
                 }
             }
         }
-        var surface2 = c.SDL_ConvertSurfaceFormat(surface, c.SDL_GetWindowPixelFormat(window.window), 0);
+        var surface2 = c.SDL_ConvertSurfaceFormat(surface, self.pixelformat, 0);
         return (surface2);
     }
 
-    pub fn getSprite(self: *SpriteCache, level: *c.TITUS_level, spr: *allowzero c.TITUS_sprite) !*c.SDL_Surface {
-        var spritedata = &level.spritedata[@as(usize, @intCast(spr.number))];
+    pub fn getSprite(self: *SpriteCache, key: Key) !*c.SDL_Surface {
+        var spritedata = &self.sprites[@as(usize, @intCast(key.number))];
 
-        const key = Key{ .number = spr.number, .flip = spr.flipped, .flash = spr.flash };
         if (self.hashmap.get(key)) |surface| {
             return surface;
         }
-        var new_surface = try copysurface(spritedata.*.data, spr.flipped, spr.flash);
+        var new_surface = try copysurface(self, spritedata.*.data, key.flip, key.flash);
         try self.hashmap.put(key, new_surface);
         return new_surface;
     }

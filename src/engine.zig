@@ -75,7 +75,8 @@ pub fn playtitus(firstlevel: u16, allocator: std.mem.Allocator) c_int {
     };
     defer spr.deinit(&sprites);
 
-    spr.sprite_cache.init(allocator) catch |err| {
+    const pixelformat = c.SDL_GetWindowPixelFormat(window.window);
+    spr.sprite_cache.init(&sprites, pixelformat, allocator) catch |err| {
         std.debug.print("Failed to initialize sprite cache: {}\n", .{err});
         return -1;
     };
