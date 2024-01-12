@@ -75,7 +75,6 @@ pub fn deinit(sprites: []c.TITUS_spritedata) void {
     }
 }
 
-// TODO: maybe this should be initialized with the desired pixel format instead of reaching out to `window`
 pub const SpriteCache = struct {
     pub const Key = struct {
         number: i16,
@@ -90,7 +89,12 @@ pub const SpriteCache = struct {
     pixelformat: c.SDL_PixelFormatEnum,
     sprites: []c.TITUS_spritedata,
 
-    pub fn init(self: *SpriteCache, sprites: []c.TITUS_spritedata, pixelformat: c.SDL_PixelFormatEnum, allocator: std.mem.Allocator) !void {
+    pub fn init(
+        self: *SpriteCache,
+        sprites: []c.TITUS_spritedata,
+        pixelformat: c.SDL_PixelFormatEnum,
+        allocator: std.mem.Allocator,
+    ) !void {
         self.allocator = allocator;
         self.hashmap = HashMap.init(allocator);
         self.pixelformat = pixelformat;
