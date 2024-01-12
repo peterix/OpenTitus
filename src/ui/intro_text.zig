@@ -32,14 +32,16 @@ const fonts = @import("fonts.zig");
 
 // TODO: this is a nice throwback in the original game, but maybe we could do something better.
 // Like replace the (missing) manual with an intro sequence to give the player some context.
-pub fn viewintrotext() c_int {
-    var tmpstring: [41]u8 = .{};
+pub fn viewintrotext(allocator: std.mem.Allocator) !c_int {
     var rawtime = c.time(null);
     var timeinfo = c.localtime(&rawtime);
 
-    var year = std.fmt.bufPrint(&tmpstring, "     You are still playing Moktar in {d} !!", .{timeinfo.*.tm_year + 1900}) catch {
-        unreachable;
-    };
+    var year = try std.fmt.allocPrint(
+        allocator,
+        "     You are still playing Moktar in {d} !!",
+        .{timeinfo.*.tm_year + 1900},
+    );
+    defer allocator.free(year);
 
     fonts.Gold.render("     YEAAA . . .", 0, 4 * 12, false);
     fonts.Gold.render(year, 0, 6 * 12, false);

@@ -112,7 +112,7 @@ pub fn run() !u8 {
     try window.window_init();
 
     if (c.audio_init() != 0) {
-        std.debug.print("Unable to initialize Audio...\n", .{});
+        std.debug.print("Unable to initialize Audio...", .{});
         return TitusError.CannotInitAudio;
     }
     defer c.audio_free();
@@ -128,10 +128,15 @@ pub fn run() !u8 {
 
     if (!game_state.seen_intro) {
         if (state != 0) {
-            retval = intro_text.viewintrotext();
-            if (retval < 0)
+            retval = intro_text.viewintrotext(allocator) catch |err| VALUE: {
+                std.debug.print("Unable to view intro screen: {}", .{err});
+                break :VALUE -1;
+            };
+            if (retval < 0) {
                 state = 0;
-            game_state.seen_intro = true;
+            } else {
+                game_state.seen_intro = true;
+            }
         }
     }
 

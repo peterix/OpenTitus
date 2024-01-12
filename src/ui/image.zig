@@ -85,6 +85,25 @@ pub const ImageFile = struct {
     format: ImageFormat,
 };
 
+pub fn load_planar_16color(data: []const u8, width: u16, height: u16, surface: *c.SDL_Surface) ![]const u8 {
+    const groupsize = ((@as(u16, width) * @as(u16, height)) >> 3);
+    if (data.len < groupsize * 4) {
+        return error.NotEnoughData;
+    }
+    var tmpchar = @as([*c]u8, @ptrCast(surface.*.pixels));
+    for (0..groupsize) |i| {
+        for (0..8) |j| {
+            const jj: u3 = 7 - @as(u3, @truncate(j));
+            tmpchar.* = (data[i] >> jj) & 0x01;
+            tmpchar.* += (data[i + groupsize] >> jj << 1) & 0x02;
+            tmpchar.* += (data[i + groupsize * 2] >> jj << 2) & 0x04;
+            tmpchar.* += (data[i + groupsize * 3] >> jj << 3) & 0x08;
+            tmpchar += 1;
+        }
+    }
+    return data[groupsize * 4 ..];
+}
+
 /// `data` is consumed - deallocated using the supplied `allocator`
 ///
 /// Example use:
@@ -109,19 +128,7 @@ pub fn loadImage(data: []const u8, format: ImageFormat, allocator: std.mem.Alloc
                 palette.*.colors[i].b = @truncate(i * 16);
             }
             palette.*.ncolors = 16;
-
-            const groupsize = ((320 * 200) >> 3);
-            var tmpchar = @as([*c]u8, @ptrCast(surface.*.pixels));
-            for (0..groupsize) |i| {
-                for (0..8) |j| {
-                    const jj: u3 = 7 - @as(u3, @truncate(j));
-                    tmpchar.* = (data[i] >> jj) & 0x01;
-                    tmpchar.* += (data[i + groupsize] >> jj << 1) & 0x02;
-                    tmpchar.* += (data[i + groupsize * 2] >> jj << 2) & 0x04;
-                    tmpchar.* += (data[i + groupsize * 3] >> jj << 3) & 0x08;
-                    tmpchar += 1;
-                }
-            }
+            _ = try load_planar_16color(data, 320, 200, surface);
         },
 
         .PlanarEGA16 => {
@@ -133,18 +140,7 @@ pub fn loadImage(data: []const u8, format: ImageFormat, allocator: std.mem.Alloc
             }
             palette.*.ncolors = 16;
 
-            const groupsize = ((320 * 200) >> 3);
-            var tmpchar = @as([*c]u8, @ptrCast(surface.*.pixels));
-            for (0..groupsize) |i| {
-                for (0..8) |j| {
-                    const jj: u3 = 7 - @as(u3, @truncate(j));
-                    tmpchar.* = (data[i] >> jj) & 0x01;
-                    tmpchar.* += (data[i + groupsize] >> jj << 1) & 0x02;
-                    tmpchar.* += (data[i + groupsize * 2] >> jj << 2) & 0x04;
-                    tmpchar.* += (data[i + groupsize * 3] >> jj << 3) & 0x08;
-                    tmpchar += 1;
-                }
-            }
+            _ = try load_planar_16color(data, 320, 200, surface);
         },
 
         .LinearPalette256 => {

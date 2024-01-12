@@ -33,8 +33,10 @@
 #include <stdbool.h>
 #include <stdint.h>
 
-SDL_Surface * SDL_LoadTile(unsigned char * first, int i, SDL_PixelFormat * pixelformat);
-int copypixelformat(SDL_PixelFormat * destformat, SDL_PixelFormat * srcformat);
+// TODO: port level.c to get rid of these
+SDL_Surface * load_tile_c(unsigned char * first, int i, SDL_PixelFormat * pixelformat);
+void flush_sprite_cache_c();
+void copypixelformat(SDL_PixelFormat * destformat, SDL_PixelFormat * srcformat);
 void updatesprite(TITUS_level *level, TITUS_sprite *spr, int16_t number, bool clearflags);
 void copysprite(TITUS_level *level, TITUS_sprite *dest, TITUS_sprite *src);
 

@@ -27,45 +27,42 @@
 
 const std = @import("std");
 const c = @import("c.zig");
+const image = @import("ui/image.zig");
+const window = @import("window.zig");
 
 // TODO: the sprite cache doesn't have to be global anymore once we aren't passing through C code.
 pub var sprite_cache: SpriteCache = undefined;
 
-fn load_sprite(data: []const u8, width: u8, height: u8, offset: usize, pixelformat: *c.SDL_PixelFormat) !*c.SDL_Surface {
-    var surface = c.SDL_CreateRGBSurface(c.SDL_SWSURFACE, width, height, pixelformat.BitsPerPixel, pixelformat.Rmask, pixelformat.Gmask, pixelformat.Bmask, pixelformat.Amask);
-    if (surface == null) {
-        return error.OutOfMemory;
-    }
-    _ = c.copypixelformat(surface.*.format, pixelformat);
-
-    // TODO: this is duplicated with a few other places that load planar 16 color images
-    //       for example, image view and main menu
-    //       So, just have a common function...
-    const groupsize = ((@as(u16, width) * @as(u16, height)) >> 3);
-    var tmpchar = @as([*c]u8, @ptrCast(surface.*.pixels));
-    for (offset..offset + groupsize) |i| {
-        for (0..8) |j| {
-            const jj: u3 = 7 - @as(u3, @truncate(j));
-            tmpchar.* = (data[i] >> jj) & 0x01;
-            tmpchar.* += (data[i + groupsize] >> jj << 1) & 0x02;
-            tmpchar.* += (data[i + groupsize * 2] >> jj << 2) & 0x04;
-            tmpchar.* += (data[i + groupsize * 3] >> jj << 3) & 0x08;
-            tmpchar += 1;
-        }
-    }
-    return surface;
+pub export fn flush_sprite_cache_c() void {
+    sprite_cache.evictAll();
 }
 
 pub fn init(allocator: std.mem.Allocator, sprites: *[c.SPRITECOUNT]c.TITUS_spritedata, spritedata: []const u8, pixelformat: *c.SDL_PixelFormat) !void {
     defer allocator.free(spritedata);
-    var offset: usize = 0;
+    var remaining_data = spritedata;
     for (0..c.SPRITECOUNT) |i| {
-        sprites[i].data = try load_sprite(spritedata, c.spritewidth[i], c.spriteheight[i], offset, pixelformat);
+        const width = c.spritewidth[i];
+        const height = c.spriteheight[i];
+        var surface = c.SDL_CreateRGBSurface(
+            c.SDL_SWSURFACE,
+            width,
+            height,
+            pixelformat.BitsPerPixel,
+            pixelformat.Rmask,
+            pixelformat.Gmask,
+            pixelformat.Bmask,
+            pixelformat.Amask,
+        );
+        if (surface == null) {
+            return error.OutOfMemory;
+        }
+        _ = copypixelformat(surface.*.format, pixelformat);
+        remaining_data = try image.load_planar_16color(remaining_data, width, height, surface);
+        sprites[i].data = surface;
         sprites[i].collheight = c.spritecollheight[i];
         sprites[i].collwidth = c.spritecollwidth[i];
         sprites[i].refheight = 0 - (@as(i16, c.spriterefheight[i]) - c.spriteheight[i]);
         sprites[i].refwidth = c.spriterefwidth[i];
-        offset += (@as(usize, c.spritewidth[i]) * @as(usize, c.spriteheight[i])) >> 1;
     }
 }
 
@@ -73,6 +70,64 @@ pub fn deinit(sprites: []c.TITUS_spritedata) void {
     for (sprites) |*sprite| {
         c.SDL_FreeSurface(sprite.data);
     }
+}
+
+pub export fn load_tile_c(data: [*c]const u8, offset: c_int, pixelformat: *c.SDL_PixelFormat) *c.SDL_Surface {
+    const uoffset = @as(usize, @intCast(offset));
+    var slice = data[uoffset .. uoffset + 16 * 16 * 4];
+    var surface = load_tile(slice, pixelformat) catch {
+        @panic("Exploded while loading tiles from C code... port the C code.");
+    };
+    return surface;
+}
+
+// FIXME: maybe we can have one big tile map surface just like we have one big font surface
+fn load_tile(data: []const u8, pixelformat: *c.SDL_PixelFormat) !*c.SDL_Surface {
+    const width = 16;
+    const height = 16;
+    var surface = c.SDL_CreateRGBSurface(c.SDL_SWSURFACE, width, height, 8, 0, 0, 0, 0);
+    if (surface == null) {
+        return error.OutOfMemory;
+    }
+    defer c.SDL_FreeSurface(surface);
+
+    copypixelformat(surface.*.format, pixelformat);
+    _ = try image.load_planar_16color(data, width, height, surface);
+    var surface2 = c.SDL_ConvertSurfaceFormat(surface, c.SDL_GetWindowPixelFormat(window.window), 0);
+    if (surface2 == 0) {
+        return error.OutOfMemory;
+    }
+    return (surface2);
+}
+
+// FIXME: maybe this doesn't belong here?
+pub export fn copypixelformat(destformat: *c.SDL_PixelFormat, srcformat: *c.SDL_PixelFormat) void {
+    if (srcformat.palette != null) {
+        destformat.palette.*.ncolors = srcformat.palette.*.ncolors;
+        for (0..@intCast(destformat.palette.*.ncolors)) |i| {
+            destformat.palette.*.colors[i].r = srcformat.palette.*.colors[i].r;
+            destformat.palette.*.colors[i].g = srcformat.palette.*.colors[i].g;
+            destformat.palette.*.colors[i].b = srcformat.palette.*.colors[i].b;
+        }
+    }
+
+    destformat.BitsPerPixel = srcformat.BitsPerPixel;
+    destformat.BytesPerPixel = srcformat.BytesPerPixel;
+
+    destformat.Rloss = srcformat.Rloss;
+    destformat.Gloss = srcformat.Gloss;
+    destformat.Bloss = srcformat.Bloss;
+    destformat.Aloss = srcformat.Aloss;
+
+    destformat.Rshift = srcformat.Rshift;
+    destformat.Gshift = srcformat.Gshift;
+    destformat.Bshift = srcformat.Bshift;
+    destformat.Ashift = srcformat.Ashift;
+
+    destformat.Rmask = srcformat.Rmask;
+    destformat.Gmask = srcformat.Gmask;
+    destformat.Bmask = srcformat.Bmask;
+    destformat.Amask = srcformat.Amask;
 }
 
 pub const SpriteCache = struct {
@@ -159,4 +214,32 @@ pub const SpriteCache = struct {
         try self.hashmap.put(key, new_surface);
         return new_surface;
     }
+
+    pub fn evictAll(self: *SpriteCache) void {
+        self.hashmap.clearAndFree();
+    }
 };
+
+pub export fn updatesprite(level: *c.TITUS_level, spr: *c.TITUS_sprite, number: i16, clearflags: bool) void {
+    spr.number = number;
+    spr.spritedata = &level.spritedata[@intCast(number)];
+    spr.enabled = true;
+    if (clearflags) {
+        spr.flipped = false;
+        spr.flash = false;
+        spr.visible = false;
+        spr.droptobottom = false;
+        spr.killing = false;
+    }
+    spr.invisible = false;
+}
+
+pub export fn copysprite(level: *c.TITUS_level, dest: *c.TITUS_sprite, src: *c.TITUS_sprite) void {
+    dest.number = src.number;
+    dest.spritedata = &level.spritedata[@intCast(src.number)];
+    dest.enabled = src.enabled;
+    dest.flipped = src.flipped;
+    dest.flash = src.flash;
+    dest.visible = src.visible;
+    dest.invisible = false;
+}

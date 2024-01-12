@@ -96,7 +96,7 @@ int loadlevel(
     offset = level->height * level->width;
     j = 256; //j is used for "last tile with animation flag"
     for (i = 0; i < 256; i++) {
-        level->tile[i].tiledata = SDL_LoadTile(leveldata, offset + i * 128, level->pixelformat);
+        level->tile[i].tiledata = load_tile_c(leveldata, offset + i * 128, level->pixelformat);
         level->tile[i].current = i;
         level->tile[i].horizflag = leveldata[offset + 32768 + i] & 0xFF;
         level->tile[i].floorflag = leveldata[offset + 32768 + 256 + i] & 0xFF;
@@ -340,11 +340,18 @@ int loadlevel(
     offset = level->height * level->width + 33776;
     ALTITUDE_ZERO = loadint16(leveldata[offset + 1], leveldata[offset + 0]); // + 12;
     offset = level->height * level->width + 35482;
+    // FIXME, @Research: There seems to be no XLIMIT in some levels in the original game, where we have XLIMIT here
+    //                   So find where it is in the file, read it and use it so we don't have weird XLIMIT issues
+    //                   in levels where this problem doesn't belong...
     XLIMIT = loadint16(leveldata[offset + 1], leveldata[offset + 0]); // + 20;
+    // fprintf(stderr, "XLIMIT is set at %d\n", XLIMIT);
     XLIMIT_BREACHED = false;
     for (i = 0; i < SPRITECOUNT; i++) {
         copypixelformat(level->spritedata[i].data->format, level->pixelformat);
     }
+    // FIXME: replace with sprites.sprite_cache.evictAll();
+    // Or just store the cache in the level again.
+    flush_sprite_cache_c();
 
     pre_size = 4; //level->trashcount
 

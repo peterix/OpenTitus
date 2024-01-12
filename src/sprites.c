@@ -36,64 +36,6 @@
 #include "globals_old.h"
 #include "window.h"
 
-// FIXME: maybe we can have one big tile map surface just like we have one big font surface
-SDL_Surface * SDL_LoadTile(unsigned char * first, int i, SDL_PixelFormat * pixelformat){
-    SDL_Surface *surface = NULL;
-    SDL_Surface *surface2 = NULL;
-    char *tmpchar;
-    int j, k;
-    surface = SDL_CreateRGBSurface(SDL_SWSURFACE, 16, 16, 8, 0, 0, 0, 0);
-
-    copypixelformat(surface->format, pixelformat);
-
-    tmpchar = (char *)surface->pixels;
-    // Planar 16 color loading here, see uiimage.zig for example of it working.
-    for (j = i; j < i + 0x20; j++) {
-        for (k = 7; k >= 0; k--) {
-            *tmpchar = (first[j] >> k) & 0x01;
-            *tmpchar += (first[j + 0x20] >> k << 1) & 0x02;
-            *tmpchar += (first[j + 0x40] >> k << 2) & 0x04;
-            *tmpchar += (first[j + 0x60] >> k << 3) & 0x08;
-            tmpchar++;
-        }
-    }
-    surface2 = SDL_ConvertSurfaceFormat(surface, SDL_GetWindowPixelFormat(window), 0);
-    SDL_FreeSurface(surface);
-    return(surface2);
-}
-
-int copypixelformat(SDL_PixelFormat * destformat, SDL_PixelFormat * srcformat) {
-    if (srcformat->palette != NULL) {
-        destformat->palette->ncolors = srcformat->palette->ncolors;
-        for (int i = 0; i < destformat->palette->ncolors; i++) {
-            destformat->palette->colors[i].r = srcformat->palette->colors[i].r;
-            destformat->palette->colors[i].g = srcformat->palette->colors[i].g;
-            destformat->palette->colors[i].b = srcformat->palette->colors[i].b;
-        }
-    }
-
-    destformat->BitsPerPixel = srcformat->BitsPerPixel;
-    destformat->BytesPerPixel = srcformat->BytesPerPixel;
-
-    destformat->Rloss = srcformat->Rloss;
-    destformat->Gloss = srcformat->Gloss;
-    destformat->Bloss = srcformat->Bloss;
-    destformat->Aloss = srcformat->Aloss;
-
-    destformat->Rshift = srcformat->Rshift;
-    destformat->Gshift = srcformat->Gshift;
-    destformat->Bshift = srcformat->Bshift;
-    destformat->Ashift = srcformat->Ashift;
-
-    destformat->Rmask = srcformat->Rmask;
-    destformat->Gmask = srcformat->Gmask;
-    destformat->Bmask = srcformat->Bmask;
-    destformat->Amask = srcformat->Amask;
-
-    //destformat->colorkey = srcformat->colorkey;
-    //destformat->alpha = srcformat->alpha;
-}
-
 static void animate_sprite(TITUS_level *level, TITUS_sprite *spr) {
     if (!spr->visible) return; //Not on screen?
     if (!spr->enabled) return;
@@ -167,28 +109,4 @@ void SPRITES_ANIMATION(TITUS_level *level) {
     for (i = 0; i < level->elevatorcount; i++) {
         animate_sprite(level, &(level->elevator[i].sprite));
     }
-}
-
-void updatesprite(TITUS_level *level, TITUS_sprite *spr, int16_t number, bool clearflags){
-    spr->number = number;
-    spr->spritedata = &level->spritedata[number];
-    spr->enabled = true;
-    if (clearflags) {
-        spr->flipped = false;
-        spr->flash = false;
-        spr->visible = false;
-        spr->droptobottom = false;
-        spr->killing = false;
-    }
-    spr->invisible = false;
-}
-
-void copysprite(TITUS_level *level, TITUS_sprite *dest, TITUS_sprite *src){
-    dest->number = src->number;
-    dest->spritedata = &level->spritedata[src->number];
-    dest->enabled = src->enabled;
-    dest->flipped = src->flipped;
-    dest->flash = src->flash;
-    dest->visible = src->visible;
-    dest->invisible = false;
 }

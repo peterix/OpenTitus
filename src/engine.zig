@@ -247,7 +247,7 @@ fn death(context: [*c]c.ScreenContext, level: *c.TITUS_level) void {
 
     c.music_select_song(1);
     _ = c.FORCE_POSE(level);
-    c.updatesprite(level, &(player.sprite), 13, true); //Death
+    spr.updatesprite(level, &(player.sprite), 13, true); //Death
     player.sprite.speedY = 15;
     for (0..60) |_| {
         draw.draw_tiles(level);
@@ -270,12 +270,12 @@ fn gameover(context: [*c]c.ScreenContext, level: *c.TITUS_level) void {
     var player = &(level.player);
 
     c.music_select_song(2);
-    c.updatesprite(level, &(player.sprite), 13, true); //Death
-    c.updatesprite(level, &(player.sprite2), 333, true); //Game
+    spr.updatesprite(level, &(player.sprite), 13, true); //Death
+    spr.updatesprite(level, &(player.sprite2), 333, true); //Game
     player.sprite2.x = @as(i16, globals.BITMAP_X << 4) - (120 - 2);
     player.sprite2.y = @as(i16, globals.BITMAP_Y << 4) + 100;
     //over
-    c.updatesprite(level, &(player.sprite3), 334, true); //Over
+    spr.updatesprite(level, &(player.sprite3), 334, true); //Over
     player.sprite3.x = @as(i16, globals.BITMAP_X << 4) + (window.game_width + 120 - 2);
     player.sprite3.y = @as(i16, globals.BITMAP_Y << 4) + 100;
     for (0..31) |_| {
