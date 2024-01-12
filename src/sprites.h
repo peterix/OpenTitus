@@ -26,24 +26,16 @@
  * Sprite functions
  */
 
-#ifndef SPRITES_H
-#define SPRITES_H
-
+#pragma once
 #include "SDL2/SDL.h"
+
 #include "level.h"
 #include <stdbool.h>
 #include <stdint.h>
 
-SDL_Surface * SDL_LoadSprite(unsigned char * first, char width, char height, unsigned int offset, SDL_PixelFormat * pixelformat);
-int loadsprites(TITUS_spritedata ***sprites, unsigned char * spritedata, int spritedatasize, SDL_PixelFormat * pixelformat, uint16_t *count);
 SDL_Surface * SDL_LoadTile(unsigned char * first, int i, SDL_PixelFormat * pixelformat);
 int copypixelformat(SDL_PixelFormat * destformat, SDL_PixelFormat * srcformat);
-void freesprites(TITUS_spritedata ***sprites, uint16_t count);
 void updatesprite(TITUS_level *level, TITUS_sprite *spr, int16_t number, bool clearflags);
 void copysprite(TITUS_level *level, TITUS_sprite *dest, TITUS_sprite *src);
-int initspritecache(TITUS_spritecache *spritecache, uint16_t count, uint16_t tmpcount);
-void freespritecache(TITUS_spritecache *spritecache);
+
 void SPRITES_ANIMATION(TITUS_level *level);
-
-#endif
-

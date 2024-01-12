@@ -28,6 +28,7 @@ const c = @import("c.zig");
 const globals = @import("globals.zig");
 const window = @import("window.zig");
 const fonts = @import("ui/fonts.zig");
+const sprites = @import("sprites.zig");
 
 const tick_delay = 29;
 
@@ -154,7 +155,7 @@ fn draw_sprite(level: *c.TITUS_level, spr: *allowzero c.TITUS_sprite) void {
         return;
     }
 
-    var image = sprite_from_cache(level, spr) catch {
+    var image = sprites.sprite_cache.getSprite(level, spr) catch {
         _ = c.SDL_FillRect(window.screen, &dest, c.SDL_MapRGB(window.screen.?.format, 255, 180, 128));
         spr.visible = true;
         spr.flash = false;
@@ -172,104 +173,6 @@ fn draw_sprite(level: *c.TITUS_level, spr: *allowzero c.TITUS_sprite) void {
 
     spr.visible = true;
     spr.flash = false;
-}
-
-// Takes the original 16 color surface and gives you a render optimized surface
-// that is flipped the right way and has the flash effect applied.
-fn copysurface(original: *c.SDL_Surface, flip: bool, flash: bool) !*c.SDL_Surface {
-    var surface = c.SDL_ConvertSurface(original, original.format, original.flags);
-    if (surface == null)
-        return error.FailedToConvertSurface;
-    defer c.SDL_FreeSurface(surface);
-
-    _ = c.SDL_SetColorKey(surface, c.SDL_TRUE | c.SDL_RLEACCEL, 0); //Set transparent colour
-
-    const orig_pixels = @as([*]i8, @ptrCast(original.pixels));
-    const pitch: usize = @intCast(original.pitch);
-    const w: usize = @intCast(original.w);
-    const h: usize = @intCast(original.h);
-
-    var dest_pixels = @as([*]i8, @ptrCast(surface.*.pixels));
-    if (flip) {
-        for (0..pitch) |i| {
-            for (0..h) |j| {
-                dest_pixels[j * pitch + i] = orig_pixels[j * pitch + (pitch - i - 1)];
-            }
-        }
-    } else {
-        for (0..pitch * h) |i| {
-            dest_pixels[i] = orig_pixels[i];
-        }
-    }
-
-    if (flash) {
-        // TODO: add support for other pixel formats
-        for (0..w * h) |i| {
-            // 0: Transparent
-            if (dest_pixels[i] != 0) {
-                dest_pixels[i] = dest_pixels[i] & 0x01;
-            }
-        }
-    }
-    var surface2 = c.SDL_ConvertSurfaceFormat(surface, c.SDL_GetWindowPixelFormat(window.window), 0);
-    return (surface2);
-}
-
-// FIXME: this should really be in sprites? or in some sprite cache module?
-fn sprite_from_cache(level: *c.TITUS_level, spr: *allowzero c.TITUS_sprite) !*c.SDL_Surface {
-    var cache = level.spritecache;
-    var spritedata = level.spritedata[@as(usize, @intCast(spr.number))];
-
-    var spritebuffer: ?*c.TITUS_spritebuffer = null;
-    var index: u8 = if (spr.flipped) 1 else 0;
-
-    if (spr.flash) {
-        var i: u16 = cache.*.count - cache.*.tmpcount;
-        while (i < cache.*.count) : (i += 1) {
-            spritebuffer = cache.*.spritebuffer[i];
-            if (spritebuffer != null) {
-                if ((spritebuffer.?.spritedata == spritedata) and
-                    (spritebuffer.?.index == index + 2))
-                {
-                    //Already in buffer
-                    return spritebuffer.?.data;
-                }
-            }
-        }
-        //Not found, load into buffer
-        cache.*.cycle2 += 1;
-        //The last 3 buffer surfaces is temporary (reserved for flash)
-        if (cache.*.cycle2 >= cache.*.count) {
-            cache.*.cycle2 = cache.*.count - cache.*.tmpcount;
-        }
-        spritebuffer = cache.*.spritebuffer[cache.*.cycle2];
-        //Free old surface
-        c.SDL_FreeSurface(spritebuffer.?.data);
-        spritebuffer.?.data = try copysurface(spritedata.*.data, spr.flipped, spr.flash);
-        spritebuffer.?.spritedata = spritedata;
-        spritebuffer.?.index = index + 2;
-        return spritebuffer.?.data;
-    } else {
-        if (spritedata.*.spritebuffer[index] == null) {
-            cache.*.cycle += 1;
-            //The last 3 buffer surfaces is temporary (reserved for flash)
-            if (cache.*.cycle + cache.*.tmpcount >= cache.*.count) {
-                cache.*.cycle = 0;
-            }
-            spritebuffer = cache.*.spritebuffer[cache.*.cycle];
-            if (spritebuffer.?.spritedata != null) {
-                //Remove old link
-                spritebuffer.?.spritedata.*.spritebuffer[spritebuffer.?.index] = null;
-            }
-            //Free old surface
-            c.SDL_FreeSurface(spritebuffer.?.data);
-            spritebuffer.?.data = try copysurface(spritedata.*.data, spr.flipped, spr.flash);
-            spritebuffer.?.spritedata = spritedata;
-            spritebuffer.?.index = index;
-            spritedata.*.spritebuffer[index] = spritebuffer;
-        }
-        return spritedata.*.spritebuffer[index].*.data;
-    }
 }
 
 pub fn draw_health_bars(level: *c.TITUS_level) void {

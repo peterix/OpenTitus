@@ -92,7 +92,7 @@ pub const ImageFile = struct {
 ///     var menudata = try sqz.unSQZ(menufile, allocator);
 ///     var image_memory = try image.loadImage(menudata, format, allocator);
 ///     defer image_memory.deinit();
-pub fn loadImage(data: []u8, format: ImageFormat, allocator: std.mem.Allocator) !ManagedSurface {
+pub fn loadImage(data: []const u8, format: ImageFormat, allocator: std.mem.Allocator) !ManagedSurface {
     defer allocator.free(data);
 
     // FIXME: handle this returning null

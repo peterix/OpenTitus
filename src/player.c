@@ -1474,12 +1474,12 @@ void COLLISION_TRP(TITUS_level *level) {
             }
 
             //Real test
-            if (player->sprite.x - level->spritedata[0]->refwidth < elevator[i].sprite.x) { //The elevator is right
-                if (player->sprite.x - level->spritedata[0]->refwidth + level->spritedata[0]->collwidth <= elevator[i].sprite.x) { //player->sprite must be 0
+            if (player->sprite.x - level->spritedata[0].refwidth < elevator[i].sprite.x) { //The elevator is right
+                if (player->sprite.x - level->spritedata[0].refwidth + level->spritedata[0].collwidth <= elevator[i].sprite.x) { //player->sprite must be 0
                     continue; //The elevator is too far right
                 }
             } else { //The elevator is left
-                if (player->sprite.x - level->spritedata[0]->refwidth >= elevator[i].sprite.x + elevator[i].sprite.spritedata->collwidth) {
+                if (player->sprite.x - level->spritedata[0].refwidth >= elevator[i].sprite.x + elevator[i].sprite.spritedata->collwidth) {
                     continue; //The elevator is too far left
                 }
             }
@@ -1525,7 +1525,7 @@ void COLLISION_OBJET(TITUS_level *level) {
         return;
     }
     //Collision with a sprite
-    if (!(SPRITES_VS_SPRITES(level, &(player->sprite), level->spritedata[0], &off_object))) { //check if player stands on an object, use sprite[0] (rest) as collision size (first player tile)
+    if (!(SPRITES_VS_SPRITES(level, &(player->sprite), &level->spritedata[0], &off_object))) { //check if player stands on an object, use sprite[0] (rest) as collision size (first player tile)
         return;
     }
     player->sprite.y = off_object->sprite.y - off_object->sprite.spritedata->collheight;

@@ -51,8 +51,7 @@ int loadlevel(
     TITUS_level *level,
     unsigned char *leveldata,
     int leveldatasize,
-    TITUS_spritedata **spritedata,
-    TITUS_spritecache *spritecache,
+    TITUS_spritedata *spritedata,
     TITUS_objectdata **objectdata,
     SDL_Color *levelcolor
 ){
@@ -125,7 +124,6 @@ int loadlevel(
         }
     }
     level->spritedata = spritedata;
-    level->spritecache = spritecache;
     level->objectdata = objectdata;
 
     level->player.initX = loadint16(leveldata[level->height * level->width + 33779], leveldata[level->height * level->width + 33778]);
@@ -345,7 +343,7 @@ int loadlevel(
     XLIMIT = loadint16(leveldata[offset + 1], leveldata[offset + 0]); // + 20;
     XLIMIT_BREACHED = false;
     for (i = 0; i < SPRITECOUNT; i++) {
-        copypixelformat(level->spritedata[i]->data->format, level->pixelformat);
+        copypixelformat(level->spritedata[i].data->format, level->pixelformat);
     }
 
     pre_size = 4; //level->trashcount

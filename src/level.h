@@ -36,8 +36,6 @@
 typedef struct _TITUS_tile TITUS_tile;
 typedef struct _TITUS_sprite TITUS_sprite;
 typedef struct _TITUS_spritedata TITUS_spritedata;
-typedef struct _TITUS_spritebuffer TITUS_spritebuffer;
-typedef struct _TITUS_spritecache TITUS_spritecache;
 typedef struct _TITUS_objectdata TITUS_objectdata;
 typedef struct _TITUS_object TITUS_object;
 typedef struct _TITUS_enemy TITUS_enemy;
@@ -82,21 +80,6 @@ struct _TITUS_spritedata {
     uint8_t collwidth;
     int16_t refheight;
     uint8_t refwidth;
-    TITUS_spritebuffer *spritebuffer[2]; //Not malloced
-};
-
-struct _TITUS_spritebuffer {
-    SDL_Surface *data; //Malloced
-    TITUS_spritedata *spritedata;
-    uint8_t index;
-};
-
-struct _TITUS_spritecache {
-    TITUS_spritebuffer **spritebuffer; //Malloced
-    uint16_t count;
-    uint16_t tmpcount;
-    uint16_t cycle;
-    uint16_t cycle2;
 };
 
 struct _TITUS_objectdata {
@@ -206,9 +189,7 @@ struct _TITUS_level {
     int16_t width; //Usually 256
     unsigned char **tilemap; //Malloced, usually 256 * height
     TITUS_tile tile[256];
-    TITUS_spritedata **spritedata; //Not malloced (on an original level); pointer to a global spritedata variable
-    TITUS_spritecache *spritecache; //Not malloced (on an original level); pointer to a global spritebuffer variable
-
+    TITUS_spritedata *spritedata; //Not malloced (on an original level); pointer to a global spritedata variable
     TITUS_objectdata **objectdata; //Not malloced (on an original level); pointer to a global objectdata variable
     int finishX, finishY;
     int lives, extrabonus;
@@ -237,7 +218,7 @@ struct _TITUS_level {
 
 };
 
-int loadlevel(TITUS_level *level, unsigned char *leveldata, int leveldatasize, TITUS_spritedata **spritedata, TITUS_spritecache *spritecache, TITUS_objectdata **objectdata, SDL_Color *levelcolor);
+int loadlevel(TITUS_level *level, unsigned char *leveldata, int leveldatasize, TITUS_spritedata *spritedata, TITUS_objectdata **objectdata, SDL_Color *levelcolor);
 void freelevel(TITUS_level *level);
 enum HFLAG get_horizflag(TITUS_level *level, int16_t tileY, int16_t tileX);
 enum FFLAG get_floorflag(TITUS_level *level, int16_t tileY, int16_t tileX);

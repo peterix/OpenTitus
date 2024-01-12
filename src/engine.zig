@@ -35,6 +35,7 @@ const elevators = @import("elevators.zig");
 const game_state = @import("game_state.zig");
 const draw = @import("draw.zig");
 const gates = @import("gates.zig");
+const spr = @import("sprites.zig");
 
 const image = @import("ui/image.zig");
 const keyboard = @import("ui/keyboard.zig");
@@ -47,9 +48,7 @@ pub fn playtitus(firstlevel: u16, allocator: std.mem.Allocator) c_int {
     var retval: c_int = 0;
 
     var level: c.TITUS_level = undefined;
-    var spritecache: c.TITUS_spritecache = undefined;
-    var sprites: [*c][*c]c.TITUS_spritedata = undefined;
-    var sprite_count: u16 = 0;
+    var sprites: [c.SPRITECOUNT]c.TITUS_spritedata = undefined;
     var objects: [*c][*c]c.TITUS_objectdata = undefined;
     var object_count: u16 = 0;
 
@@ -65,25 +64,22 @@ pub fn playtitus(firstlevel: u16, allocator: std.mem.Allocator) c_int {
     };
 
     // TODO: same as unSQZ()
-    retval = c.loadsprites(
+    spr.init(
+        allocator,
         &sprites,
-        &spritedata[0],
-        @intCast(spritedata.len),
+        spritedata,
         level.pixelformat,
-        &sprite_count,
-    );
-    allocator.free(spritedata);
-    if (retval < 0) {
-        return retval;
-    }
-    defer c.freesprites(&sprites, sprite_count);
+    ) catch |err| {
+        std.debug.print("Failed to load sprites: {}\n", .{err});
+        return -1;
+    };
+    defer spr.deinit(&sprites);
 
-    // TODO: same as unSQZ()
-    retval = c.initspritecache(&spritecache, 100, 3); //Cache size: 100 surfaces, 3 temporary
-    if (retval < 0) {
-        return retval;
-    }
-    defer c.freespritecache(&spritecache);
+    spr.sprite_cache.init(allocator) catch |err| {
+        std.debug.print("Failed to initialize sprite cache: {}\n", .{err});
+        return -1;
+    };
+    defer spr.sprite_cache.deinit();
 
     // TODO: same as unSQZ()
     retval = c.loadobjects(&objects, &object_count);
@@ -108,8 +104,7 @@ pub fn playtitus(firstlevel: u16, allocator: std.mem.Allocator) c_int {
             &level,
             &leveldata[0],
             @intCast(leveldata.len),
-            sprites,
-            &(spritecache),
+            &sprites[0],
             objects,
             @constCast(&data.constants.levelfiles[level.levelnumber].color),
         );

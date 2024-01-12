@@ -36,114 +36,6 @@
 #include "globals_old.h"
 #include "window.h"
 
-SDL_Surface * SDL_LoadSprite(unsigned char * first, char width, char height, unsigned int offset, SDL_PixelFormat * pixelformat){
-    SDL_Surface *surface = NULL;
-    char *tmpchar;
-    unsigned int groupsize = ((width * height) >> 3);
-    unsigned int i;
-    int j;
-
-    surface = SDL_CreateRGBSurface(SDL_SWSURFACE, width, height, pixelformat->BitsPerPixel, pixelformat->Rmask, pixelformat->Gmask, pixelformat->Bmask, pixelformat->Amask);
-    copypixelformat(surface->format, pixelformat);
-
-    tmpchar = (char *)surface->pixels;
-    if (surface->format->BitsPerPixel == 8) {
-        for (i = offset; i < offset + groupsize; i++) {
-            for (j = 7; j >= 0; j--) {
-                *tmpchar = (first[i] >> j) & 0x01;
-                *tmpchar += (first[i + groupsize] >> j << 1) & 0x02;
-                *tmpchar += (first[i + groupsize * 2] >> j << 2) & 0x04;
-                *tmpchar += (first[i + groupsize * 3] >> j << 3) & 0x08;
-                tmpchar++;
-            }
-        }
-    }
-    return(surface);
-}
-
-int loadsprites(TITUS_spritedata ***sprites, unsigned char * spritedata, int spritedatasize, SDL_PixelFormat * pixelformat, uint16_t *count) {
-    int i;
-    unsigned int offset = 0;
-    *count = SPRITECOUNT;
-    *sprites = (TITUS_spritedata **)SDL_malloc(sizeof(TITUS_spritedata *) * SPRITECOUNT);
-    if ((*sprites) == NULL) {
-        fprintf(stderr, "Error: Not enough memory to load sprites!\n");
-        return (TITUS_ERROR_NOT_ENOUGH_MEMORY);
-    }
-
-    for (i = 0; i < SPRITECOUNT; i++) {
-        // FIXME: possible overflow when accessing these?
-        // For some reason, it requires some more space in order to free properly
-        (*sprites)[i] = (TITUS_spritedata *)SDL_malloc(sizeof(TITUS_spritedata));
-        if ((*sprites)[i] == NULL) {
-            fprintf(stderr, "Error: Not enough memory to load sprites!\n");
-            return (TITUS_ERROR_NOT_ENOUGH_MEMORY);
-        }
-        (*sprites)[i]->data = SDL_LoadSprite(spritedata, spritewidth[i], spriteheight[i], offset, pixelformat);
-        (*sprites)[i]->collheight = spritecollheight[i];
-        (*sprites)[i]->collwidth = spritecollwidth[i];
-        (*sprites)[i]->refheight = 0 - ((int16_t)spriterefheight[i] - spriteheight[i]);
-        (*sprites)[i]->refwidth = spriterefwidth[i];
-        (*sprites)[i]->spritebuffer[0] = NULL;
-        (*sprites)[i]->spritebuffer[1] = NULL;
-        offset += ((unsigned int)spritewidth[i] * (unsigned int)spriteheight[i]) >> 1;
-    }
-
-    return SPRITECOUNT;
-}
-
-void freesprites(TITUS_spritedata ***sprites, uint16_t count) {
-    int i;
-
-    for (i = 0; i < count; i++) {
-        SDL_FreeSurface(((*sprites)[i])->data);
-        free ((*sprites)[i]);
-    }
-
-    free (*sprites);
-}
-
-
-int initspritecache(TITUS_spritecache *spritecache, uint16_t count, uint16_t tmpcount) {
-    int i;
-
-    spritecache->count = count;
-    spritecache->tmpcount = tmpcount;
-    spritecache->cycle = 0;
-    spritecache->cycle2 = spritecache->count - spritecache->tmpcount;
-
-    spritecache->spritebuffer = (TITUS_spritebuffer **)SDL_malloc(sizeof(TITUS_spritebuffer *) * spritecache->count);
-    if (spritecache->spritebuffer == NULL) {
-        fprintf(stderr, "Error: Not enough memory to initialize sprite buffer!\n");
-        return (TITUS_ERROR_NOT_ENOUGH_MEMORY);
-    }
-
-    for (i = 0; i < spritecache->count; i++) {
-        spritecache->spritebuffer[i] = (TITUS_spritebuffer *)SDL_malloc(sizeof(TITUS_spritebuffer));
-        if (spritecache->spritebuffer[i] == NULL) {
-            fprintf(stderr, "Error: Not enough memory to load sprites!\n");
-            return (TITUS_ERROR_NOT_ENOUGH_MEMORY);
-        }
-        spritecache->spritebuffer[i]->data = NULL;
-        spritecache->spritebuffer[i]->spritedata = NULL;
-        spritecache->spritebuffer[i]->index = 0;
-    }
-
-    return 0;
-}
-
-
-void freespritecache(TITUS_spritecache *spritecache) {
-    int i;
-
-    for (i = 0; i < spritecache->count; i++) {
-        SDL_FreeSurface(spritecache->spritebuffer[i]->data);
-        free (spritecache->spritebuffer[i]);
-    }
-
-    free (spritecache->spritebuffer);
-}
-
 // FIXME: maybe we can have one big tile map surface just like we have one big font surface
 SDL_Surface * SDL_LoadTile(unsigned char * first, int i, SDL_PixelFormat * pixelformat){
     SDL_Surface *surface = NULL;
@@ -171,11 +63,9 @@ SDL_Surface * SDL_LoadTile(unsigned char * first, int i, SDL_PixelFormat * pixel
 }
 
 int copypixelformat(SDL_PixelFormat * destformat, SDL_PixelFormat * srcformat) {
-    int i;
-
     if (srcformat->palette != NULL) {
         destformat->palette->ncolors = srcformat->palette->ncolors;
-        for (i = 0; i < destformat->palette->ncolors; i++) {
+        for (int i = 0; i < destformat->palette->ncolors; i++) {
             destformat->palette->colors[i].r = srcformat->palette->colors[i].r;
             destformat->palette->colors[i].g = srcformat->palette->colors[i].g;
             destformat->palette->colors[i].b = srcformat->palette->colors[i].b;
@@ -202,8 +92,6 @@ int copypixelformat(SDL_PixelFormat * destformat, SDL_PixelFormat * srcformat) {
 
     //destformat->colorkey = srcformat->colorkey;
     //destformat->alpha = srcformat->alpha;
-
-    return 0;
 }
 
 static void animate_sprite(TITUS_level *level, TITUS_sprite *spr) {
@@ -283,7 +171,7 @@ void SPRITES_ANIMATION(TITUS_level *level) {
 
 void updatesprite(TITUS_level *level, TITUS_sprite *spr, int16_t number, bool clearflags){
     spr->number = number;
-    spr->spritedata = level->spritedata[number];
+    spr->spritedata = &level->spritedata[number];
     spr->enabled = true;
     if (clearflags) {
         spr->flipped = false;
@@ -297,7 +185,7 @@ void updatesprite(TITUS_level *level, TITUS_sprite *spr, int16_t number, bool cl
 
 void copysprite(TITUS_level *level, TITUS_sprite *dest, TITUS_sprite *src){
     dest->number = src->number;
-    dest->spritedata = level->spritedata[src->number];
+    dest->spritedata = &level->spritedata[src->number];
     dest->enabled = src->enabled;
     dest->flipped = src->flipped;
     dest->flash = src->flash;
