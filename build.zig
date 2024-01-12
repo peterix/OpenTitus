@@ -85,7 +85,6 @@ fn build_game(b: *std.Build, name: []const u8, target: CrossTarget, optimize: st
         "src/original.c",
         "src/player.c",
         "src/reset.c",
-        "src/sprites.c",
     },
     // NOTE: the use of bit shifts of negative numbers is quite extensive, so we disable ubsan shooting us in the foot with those...
     // FIXME: remove the UB-ness

@@ -243,3 +243,79 @@ pub export fn copysprite(level: *c.TITUS_level, dest: *c.TITUS_sprite, src: *c.T
     dest.visible = src.visible;
     dest.invisible = false;
 }
+
+fn animate_sprite(level: *c.TITUS_level, spr: *c.TITUS_sprite) void {
+    if (!spr.visible) return; //Not on screen?
+    if (!spr.enabled) return;
+    if (spr.number == (c.FIRST_OBJET + 26)) { //Cage
+        if ((c.IMAGE_COUNTER & 0x0007) == 0) { //Every 8
+            updatesprite(level, spr, c.FIRST_OBJET + 27, false); //Cage, 2nd sprite
+        }
+    } else if (spr.number == (c.FIRST_OBJET + 27)) { //Cage, 2nd sprite
+        if ((c.IMAGE_COUNTER & 0x003F) == 0) { //Every 64
+            updatesprite(level, spr, c.FIRST_OBJET + 26, false); //Cage, 1st sprite
+        }
+    } else if (spr.number == (c.FIRST_OBJET + 21)) { //Flying carpet
+        if ((c.IMAGE_COUNTER & 0x0007) == 0) { //Every 8
+            updatesprite(level, spr, c.FIRST_OBJET + 22, false); //Flying carpet, 2nd sprite
+        }
+    } else if (spr.number == (c.FIRST_OBJET + 22)) { //Flying carpet, 2nd sprite
+        if ((c.IMAGE_COUNTER & 0x0007) == 0) { //Every 8
+            updatesprite(level, spr, c.FIRST_OBJET + 21, false); //Flying carpet, 1st sprite
+        }
+    } else if (spr.number == (c.FIRST_OBJET + 24)) { //Small spring
+        if ((c.IMAGE_COUNTER & 0x0001) == 0) { //Every 2
+            if (spr.UNDER == 0) { //Spring is not loaded
+                updatesprite(level, spr, c.FIRST_OBJET + 25, false); //Spring is not loaded; convert into big spring
+            } else if (c.GRAVITY_FLAG > 1) { //if not gravity, not clear
+                spr.UNDER = 0;
+            } else {
+                spr.UNDER = spr.UNDER & 0x01; //Keep eventually object load, remove player load
+            }
+        }
+    } else if (spr.number == (c.FIRST_OBJET + 25)) { //Big spring
+        if ((c.IMAGE_COUNTER & 0x0001) == 0) { //Every 2
+            if (spr.UNDER == 0) {
+                return; //Spring is not loaded; remain big
+            } else if (c.GRAVITY_FLAG > 1) { //if not gravity, not clear
+                spr.UNDER = 0;
+            } else {
+                spr.UNDER = spr.UNDER & 0x01; //Keep eventually object load, remove player load
+            }
+            // FIXME: maybe null sanity check in debug mode
+            spr.ONTOP.*.y += 5;
+            c.GRAVITY_FLAG = 3;
+            updatesprite(level, spr, c.FIRST_OBJET + 24, false); //Small spring
+        }
+    }
+}
+
+pub export fn SPRITES_ANIMATION(level: *c.TITUS_level) void {
+    //Animate player
+    if ((c.LAST_ORDER == 0) and
+        (c.POCKET_FLAG) and
+        (c.ACTION_TIMER >= 35 * 4))
+    {
+        updatesprite(level, &(level.player.sprite), 29, false); //"Pause"-sprite
+        if (c.ACTION_TIMER >= 35 * 5) {
+            updatesprite(level, &(level.player.sprite), 0, false); //Normal player sprite
+            c.ACTION_TIMER = 0;
+        }
+    }
+    //Animate other objects
+
+    animate_sprite(level, &(level.player.sprite2));
+    animate_sprite(level, &(level.player.sprite3));
+
+    for (0..level.objectcount) |i| {
+        animate_sprite(level, &(level.object[i].sprite));
+    }
+
+    for (0..level.enemycount) |i| {
+        animate_sprite(level, &(level.enemy[i].sprite));
+    }
+
+    for (0..level.elevatorcount) |i| {
+        animate_sprite(level, &(level.elevator[i].sprite));
+    }
+}
