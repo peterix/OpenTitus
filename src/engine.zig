@@ -109,10 +109,6 @@ pub fn playtitus(firstlevel: u16, allocator: std.mem.Allocator) c_int {
             objects,
             @constCast(&data.constants.levelfiles[level.levelnumber].color),
         );
-        for (0..level.elevatorcount) |i| {
-            const elevator = level.elevator[i];
-            std.log.debug("Elevator {}\n {}\n", .{ i, elevator });
-        }
         allocator.free(leveldata);
         if (retval < 0) {
             return retval;
