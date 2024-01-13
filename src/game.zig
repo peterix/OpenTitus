@@ -174,7 +174,7 @@ pub fn run() !u8 {
             state = 0;
 
         if (state != 0 and (curlevel.? < data.constants.*.levelfiles.len)) {
-            retval = engine.playtitus(
+            retval = try engine.playtitus(
                 @truncate(curlevel.?),
                 allocator,
             );

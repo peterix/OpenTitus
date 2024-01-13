@@ -65,8 +65,8 @@ fn check_gates(context: *c.ScreenContext, level: *c.TITUS_level) void {
     { //the player has finished the level
         return;
     }
-    for (0..level.gatecount) |i| {
-        if ((level.gate[i].exists != 0) and
+    for (0..c.GATE_CAPACITY) |i| {
+        if ((level.gate[i].exists) and
             (level.gate[i].entranceX == (player.sprite.x >> 4)) and
             (level.gate[i].entranceY == (player.sprite.y >> 4)))
         {
@@ -79,7 +79,7 @@ fn check_gates(context: *c.ScreenContext, level: *c.TITUS_level) void {
             const orig_xlimit_breached = globals.XLIMIT_BREACHED;
             defer globals.XLIMIT_BREACHED = orig_xlimit_breached;
 
-            globals.XLIMIT = level.width - globals.screen_width;
+            globals.XLIMIT = @as(i16, @intCast(level.width)) - globals.screen_width;
             player.sprite.x = @intCast(level.gate[i].exitX * 16);
             player.sprite.y = @intCast(level.gate[i].exitY * 16);
             while (globals.BITMAP_Y < level.gate[i].screenY) {

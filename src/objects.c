@@ -50,7 +50,7 @@ void move_objects(TITUS_level *level) {
     int16_t tileX, tileY, speed, j;
     bool obj_vs_sprite;
     int8_t reduction, tile_count;
-    for (i = 0; i < level->objectcount; i++) {
+    for (i = 0; i < OBJECT_CAPACITY; i++) {
         obj_vs_sprite = false;
         if (!(level->object[i].sprite.enabled)) continue; //Skip unused objects
         if (level->object[i].sprite.x <= 8) { //Left edge of level
@@ -370,7 +370,7 @@ bool SPRITES_VS_SPRITES (TITUS_level *level, TITUS_sprite *sprite1, TITUS_sprite
     int16_t obj1left, obj2left;
     //sprite1ref is equal to sprite1, except when sprite1 is the player, then sprite1ref is level->spritedata[0] (first player sprite)
     obj1left = sprite1->x - (sprite1data->data->w >> 1);
-    for (i = 0; i < level->objectcount; i++) { //loop all objects
+    for (i = 0; i < OBJECT_CAPACITY; i++) { //loop all objects
         if ((&(level->object[i].sprite) == sprite1) || !(level->object[i].sprite.enabled) || !(level->object[i].objectdata->support)) continue; //skip disabled objects and itself, and it must support
         if (abs(level->object[i].sprite.x - obj1left) > 64) continue; // Bug, center vs left edge
         if (abs(level->object[i].sprite.y - sprite1->y) > 70) continue;

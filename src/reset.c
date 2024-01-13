@@ -189,7 +189,7 @@ void MOVE_HIM(TITUS_level *level, TITUS_sprite *spr) {
 void SET_DATA_NMI(TITUS_level *level) {
     boss_alive = false;
     int i, anim;
-    for (i = 0; i < level->enemycount; i++) {
+    for (i = 0; i < ENEMY_CAPACITY; i++) {
         anim = -1;
         if (!level->enemy[i].init_enabled) continue;
         do {
@@ -277,11 +277,11 @@ void SET_ALL_SPRITES(TITUS_level *level) {
     int16_t i;
     TITUS_player *player = &(level->player);
 
-    for (i = 0; i < level->trashcount; i++) {
+    for (i = 0; i < TRASH_CAPACITY; i++) {
         clearsprite(&(level->trash[i]));
     }
 
-    for (i = 0; i < level->enemycount; i++) {
+    for (i = 0; i < ENEMY_CAPACITY; i++) {
         clearsprite(&(level->enemy[i].sprite));
         level->enemy[i].dying = 0;
         level->enemy[i].carry_sprite = -1;
@@ -300,7 +300,7 @@ void SET_ALL_SPRITES(TITUS_level *level) {
         }
     }
 
-    for (i = 0; i < level->elevatorcount; i++) {
+    for (i = 0; i < ELEVATOR_CAPACITY; i++) {
         clearsprite(&(level->elevator[i].sprite));
         if (level->elevator[i].init_enabled) {
             updatesprite(level, &(level->elevator[i].sprite), (int16_t)(level->elevator[i].initsprite & 0x1FFF) + 30, true);
@@ -315,7 +315,7 @@ void SET_ALL_SPRITES(TITUS_level *level) {
         }
     }
 
-    for (i = 0; i < level->objectcount; i++) {
+    for (i = 0; i < OBJECT_CAPACITY; i++) {
         clearsprite(&(level->object[i].sprite));
         level->object[i].mass = 0;
         if (level->object[i].init_enabled) {

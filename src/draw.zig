@@ -29,6 +29,7 @@ const globals = @import("globals.zig");
 const window = @import("window.zig");
 const fonts = @import("ui/fonts.zig");
 const sprites = @import("sprites.zig");
+const lvl = @import("level.zig");
 
 const tick_delay = 29;
 
@@ -94,7 +95,8 @@ pub export fn draw_tiles(level: *c.TITUS_level) void {
             var dest: c.SDL_Rect = undefined;
             dest.x = x * 16 + globals.g_scroll_px_offset;
             dest.y = y * 16 + y_offset;
-            const tile = level.tilemap[tileY][tileX];
+            var parent_level: *lvl.Level = @ptrCast(@alignCast(level.parent));
+            const tile = parent_level.tilemap[tileY][tileX];
             const surface = level.tile[level.tile[tile].animation[globals.tile_anim]].tiledata;
             _ = c.SDL_BlitSurface(surface, null, window.screen, &dest);
         }
@@ -102,20 +104,20 @@ pub export fn draw_tiles(level: *c.TITUS_level) void {
 }
 
 pub export fn draw_sprites(level: *c.TITUS_level) void {
-    for (0..level.elevatorcount) |i| {
-        draw_sprite(&level.elevator[level.elevatorcount - 1 - i].sprite);
+    for (0..c.ELEVATOR_CAPACITY) |i| {
+        draw_sprite(&level.elevator[c.ELEVATOR_CAPACITY - 1 - i].sprite);
     }
 
-    for (0..level.trashcount) |i| {
-        draw_sprite(&level.trash[level.trashcount - 1 - i]);
+    for (0..c.TRASH_CAPACITY) |i| {
+        draw_sprite(&level.trash[c.TRASH_CAPACITY - 1 - i]);
     }
 
-    for (0..level.enemycount) |i| {
-        draw_sprite(&level.enemy[level.enemycount - 1 - i].sprite);
+    for (0..c.ENEMY_CAPACITY) |i| {
+        draw_sprite(&level.enemy[c.ENEMY_CAPACITY - 1 - i].sprite);
     }
 
-    for (0..level.objectcount) |i| {
-        draw_sprite(&level.object[level.objectcount - 1 - i].sprite);
+    for (0..c.OBJECT_CAPACITY) |i| {
+        draw_sprite(&level.object[c.OBJECT_CAPACITY - 1 - i].sprite);
     }
 
     draw_sprite(&level.player.sprite3);

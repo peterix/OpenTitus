@@ -213,7 +213,7 @@ pub export fn scroll_left(level: *c.TITUS_level) bool {
 }
 
 pub export fn scroll_right(level: *c.TITUS_level) bool {
-    var maxX: i16 = if (globals.XLIMIT_BREACHED) level.width - globals.screen_width else globals.XLIMIT;
+    var maxX: i16 = if (globals.XLIMIT_BREACHED) @as(i16, @intCast(level.width)) - globals.screen_width else globals.XLIMIT;
     if (globals.BITMAP_X >= maxX) {
         return true;
     }

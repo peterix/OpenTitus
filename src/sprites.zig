@@ -72,17 +72,8 @@ pub fn deinit(sprites: []c.TITUS_spritedata) void {
     }
 }
 
-pub export fn load_tile_c(data: [*c]const u8, offset: c_int, pixelformat: *c.SDL_PixelFormat) *c.SDL_Surface {
-    const uoffset = @as(usize, @intCast(offset));
-    var slice = data[uoffset .. uoffset + 16 * 16 * 4];
-    var surface = load_tile(slice, pixelformat) catch {
-        @panic("Exploded while loading tiles from C code... port the C code.");
-    };
-    return surface;
-}
-
 // FIXME: maybe we can have one big tile map surface just like we have one big font surface
-fn load_tile(data: []const u8, pixelformat: *c.SDL_PixelFormat) !*c.SDL_Surface {
+pub fn load_tile(data: []const u8, pixelformat: *c.SDL_PixelFormat) !*c.SDL_Surface {
     const width = 16;
     const height = 16;
     var surface = c.SDL_CreateRGBSurface(c.SDL_SWSURFACE, width, height, 8, 0, 0, 0, 0);
@@ -307,15 +298,15 @@ pub export fn SPRITES_ANIMATION(level: *c.TITUS_level) void {
     animate_sprite(level, &(level.player.sprite2));
     animate_sprite(level, &(level.player.sprite3));
 
-    for (0..level.objectcount) |i| {
+    for (0..c.OBJECT_CAPACITY) |i| {
         animate_sprite(level, &(level.object[i].sprite));
     }
 
-    for (0..level.enemycount) |i| {
+    for (0..c.ENEMY_CAPACITY) |i| {
         animate_sprite(level, &(level.enemy[i].sprite));
     }
 
-    for (0..level.elevatorcount) |i| {
+    for (0..c.ELEVATOR_CAPACITY) |i| {
         animate_sprite(level, &(level.elevator[i].sprite));
     }
 }

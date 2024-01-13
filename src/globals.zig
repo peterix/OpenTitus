@@ -108,9 +108,6 @@ export var YFALL: u8 = 0;
 
 export var POCKET_FLAG: bool = false;
 
-//If false, there are no animated tiles on the screen?
-export var PERMUT_FLAG: bool = false;
-
 //Increased every loop in game loop
 pub export var loop_cycle: u8 = 0;
 

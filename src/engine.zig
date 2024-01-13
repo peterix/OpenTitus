@@ -36,27 +36,30 @@ const game_state = @import("game_state.zig");
 const draw = @import("draw.zig");
 const gates = @import("gates.zig");
 const spr = @import("sprites.zig");
+const lvl = @import("level.zig");
 
 const image = @import("ui/image.zig");
 const keyboard = @import("ui/keyboard.zig");
 const status = @import("ui/status.zig");
 
-pub fn playtitus(firstlevel: u16, allocator: std.mem.Allocator) c_int {
+pub fn playtitus(firstlevel: u16, allocator: std.mem.Allocator) !c_int {
     var context: c.ScreenContext = undefined;
     c.screencontext_reset(&context);
 
     var retval: c_int = 0;
 
-    var level: c.TITUS_level = undefined;
+    var level: lvl.Level = undefined;
+    level.c_level.parent = @ptrCast(&level);
+
     var sprites: [c.SPRITECOUNT]c.TITUS_spritedata = undefined;
     var objects: [*c][*c]c.TITUS_objectdata = undefined;
     var object_count: u16 = 0;
 
     // FIXME: this is persistent between levels... do not store it in the level
-    level.lives = 2;
-    level.extrabonus = 0;
+    level.c_level.lives = 2;
+    level.c_level.extrabonus = 0;
 
-    level.pixelformat = &data.titus_pixelformat;
+    level.c_level.pixelformat = &data.titus_pixelformat;
 
     var spritedata = sqz.unSQZ(data.constants.*.sprites, allocator) catch {
         std.debug.print("Failed to uncompress sprites file: {s}\n", .{data.constants.*.sprites});
@@ -68,7 +71,7 @@ pub fn playtitus(firstlevel: u16, allocator: std.mem.Allocator) c_int {
         allocator,
         &sprites,
         spritedata,
-        level.pixelformat,
+        level.c_level.pixelformat,
     ) catch |err| {
         std.debug.print("Failed to load sprites: {}\n", .{err});
         return -1;
@@ -89,64 +92,68 @@ pub fn playtitus(firstlevel: u16, allocator: std.mem.Allocator) c_int {
     }
     defer c.freeobjects(&objects, object_count);
 
-    level.levelnumber = firstlevel;
-    while (level.levelnumber < data.constants.*.levelfiles.len) : (level.levelnumber += 1) {
-        level.levelid = c.getlevelid(level.levelnumber);
-        const level_index = @as(usize, @intCast(level.levelnumber));
+    level.c_level.levelnumber = firstlevel;
+    while (level.c_level.levelnumber < data.constants.*.levelfiles.len) : (level.c_level.levelnumber += 1) {
+        level.c_level.levelid = c.getlevelid(level.c_level.levelnumber);
+        const level_index = @as(usize, @intCast(level.c_level.levelnumber));
         var leveldata = sqz.unSQZ(
             data.constants.*.levelfiles[level_index].filename,
             allocator,
         ) catch {
-            std.debug.print("Failed to uncompress level file: {}\n", .{level.levelnumber});
+            std.debug.print("Failed to uncompress level file: {}\n", .{level.c_level.levelnumber});
             return 1;
         };
 
-        retval = c.loadlevel(
+        retval = try lvl.loadlevel(
             &level,
-            &leveldata[0],
-            @intCast(leveldata.len),
+            &level.c_level,
+            allocator,
+            leveldata,
             &sprites[0],
             objects,
-            @constCast(&data.constants.levelfiles[level.levelnumber].color),
+            @constCast(&data.constants.levelfiles[level.c_level.levelnumber].color),
         );
         allocator.free(leveldata);
         if (retval < 0) {
             return retval;
         }
-        defer c.freelevel(&level);
+        defer lvl.freelevel(&level, allocator);
         var first = true;
         while (true) {
             c.music_select_song(0);
-            c.CLEAR_DATA(&level);
+            c.CLEAR_DATA(&level.c_level);
 
             globals.GODMODE = false;
             globals.NOCLIP = false;
             globals.DISPLAYLOOPTIME = false;
 
-            retval = status.viewstatus(&level, first);
+            retval = status.viewstatus(&level.c_level, first);
             first = false;
             if (retval < 0) {
                 return retval;
             }
 
-            c.music_select_song(c.LEVEL_MUSIC[level.levelid]);
+            c.music_select_song(c.LEVEL_MUSIC[
+                level.c_level
+                    .levelid
+            ]);
 
             // scroll to where the player is while 'closing' and 'opening' the screen to obscure the sudden change
             gates.CLOSE_SCREEN(&context);
-            scroll.scrollToPlayer(&level);
-            gates.OPEN_SCREEN(&context, &level);
+            scroll.scrollToPlayer(&level.c_level);
+            gates.OPEN_SCREEN(&context, &level.c_level);
 
-            draw.draw_tiles(&level);
+            draw.draw_tiles(&level.c_level);
             draw.flip_screen(&context, true);
 
             game_state.visit_level(
                 allocator,
-                level.levelnumber,
+                level.c_level.levelnumber,
             ) catch |err| {
                 std.log.err("Could not record level entry: {}", .{err});
             };
 
-            retval = playlevel(&context, &level);
+            retval = playlevel(&context, &level.c_level);
             if (retval < 0) {
                 return retval;
             }
@@ -155,9 +162,9 @@ pub fn playtitus(firstlevel: u16, allocator: std.mem.Allocator) c_int {
                 if (!globals.SKIPLEVEL_FLAG) {
                     game_state.record_completion(
                         allocator,
-                        level.levelnumber,
-                        level.bonuscollected,
-                        level.tickcount,
+                        level.c_level.levelnumber,
+                        level.c_level.bonuscollected,
+                        level.c_level.tickcount,
                     ) catch |err| {
                         std.log.err("Could not record level completion: {}", .{err});
                     };
@@ -165,18 +172,18 @@ pub fn playtitus(firstlevel: u16, allocator: std.mem.Allocator) c_int {
                 break;
             }
             if (globals.LOSELIFE_FLAG) {
-                if (level.lives == 0) {
+                if (level.c_level.lives == 0) {
                     globals.GAMEOVER_FLAG = true;
                 } else {
-                    level.lives -= 1;
-                    death(&context, &level);
+                    level.c_level.lives -= 1;
+                    death(&context, &level.c_level);
                 }
             } else if (globals.RESETLEVEL_FLAG == 1) {
-                death(&context, &level);
+                death(&context, &level.c_level);
             }
 
             if (globals.GAMEOVER_FLAG) {
-                gameover(&context, &level);
+                gameover(&context, &level.c_level);
                 return 0;
             }
         }

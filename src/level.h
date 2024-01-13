@@ -130,15 +130,15 @@ struct _TITUS_enemy {
 };
 
 struct _TITUS_bonus {
-    unsigned char exists;
+    bool exists;
     unsigned char bonustile;
     unsigned char replacetile;
-    int x;
-    int y;
+    uint8_t x;
+    uint8_t y;
 };
 
 struct _TITUS_gate {
-    unsigned char exists;
+    bool exists;
     unsigned int entranceX;
     unsigned int entranceY;
     unsigned int exitX;
@@ -181,45 +181,44 @@ struct _TITUS_player {
     bool action_pressed;
 };
 
+#define BONUS_CAPACITY 100
+#define GATE_CAPACITY 20
+#define ELEVATOR_CAPACITY 10
+#define TRASH_CAPACITY 4
+#define ENEMY_CAPACITY 50
+#define OBJECT_CAPACITY 40
+
 struct _TITUS_level {
+    void * parent;
     uint16_t levelnumber;
     uint16_t levelid;
-    //char title[41];
     int16_t height;
-    int16_t width; //Usually 256
-    unsigned char **tilemap; //Malloced, usually 256 * height
+    int16_t width; // always 256
     TITUS_tile tile[256];
-    TITUS_spritedata *spritedata; //Not malloced (on an original level); pointer to a global spritedata variable
-    TITUS_objectdata **objectdata; //Not malloced (on an original level); pointer to a global objectdata variable
+    TITUS_spritedata *spritedata; // Pointer to a global spritedata variable
+    TITUS_objectdata **objectdata; // Pointer to a global objectdata variable
     int finishX, finishY;
-    int lives, extrabonus;
     //TITUS_enemy *boss; //Pointer to the boss; NULL if there is no boss
-    //TITUS_object *finish_object; //Pointer to the required object to carry to finish; NULL if there is no such object
-    SDL_PixelFormat *pixelformat; //Malloced
-
-    size_t tickcount;
+    //TITUS_object *finish_object; // Pointer to the required object to carry to finish; NULL if there is no such object
+    SDL_PixelFormat *pixelformat; // Pointer to a global pixelformat variabl
 
     TITUS_player player;
 
-    TITUS_object *object; //Malloced
-    size_t objectcount;
-    TITUS_enemy *enemy; //Malloced
-    size_t enemycount;
-    TITUS_bonus *bonus; //Malloced
-    size_t bonuscapacity;
+    TITUS_object object[OBJECT_CAPACITY];
+    TITUS_enemy enemy[ENEMY_CAPACITY];
+    TITUS_bonus bonus[BONUS_CAPACITY];
+    TITUS_gate gate[GATE_CAPACITY];
+    TITUS_elevator elevator[ELEVATOR_CAPACITY];
+    TITUS_sprite trash[TRASH_CAPACITY];
+
+    // FIXME: move this outside level...
     size_t bonuscount;
     size_t bonuscollected;
-    TITUS_gate *gate; //Malloced
-    size_t gatecount;
-    TITUS_elevator *elevator; //Malloced
-    size_t elevatorcount;
-    TITUS_sprite *trash; //Malloced
-    size_t trashcount;
-
+    int lives, extrabonus;
+    size_t tickcount;
 };
 
-int loadlevel(TITUS_level *level, unsigned char *leveldata, int leveldatasize, TITUS_spritedata *spritedata, TITUS_objectdata **objectdata, SDL_Color *levelcolor);
-void freelevel(TITUS_level *level);
 enum HFLAG get_horizflag(TITUS_level *level, int16_t tileY, int16_t tileX);
 enum FFLAG get_floorflag(TITUS_level *level, int16_t tileY, int16_t tileX);
 enum CFLAG get_ceilflag(TITUS_level *level, int16_t tileY, int16_t tileX);
+void set_tile(TITUS_level *level, uint8_t tileY, uint8_t tileX, uint8_t tile);

@@ -681,7 +681,7 @@ TITUS_object *FORCE_POSE(TITUS_level *level) {
         //Drop the carried object
         i = 0;
         do {
-            if (i > level->objectcount) {
+            if (i > OBJECT_CAPACITY) {
                 printf("ERROR: FORCE_POSE returned NULL\n");
                 return NULL;
             }
@@ -887,7 +887,7 @@ static int CASE_BONUS(TITUS_level *level, uint8_t tileY, uint8_t tileX) {
     //Handle bonuses. Increase energy if HP, and change the bonus tile to normal tile
     uint16_t i = 0;
     do { //Is the bonus in the list?
-        if (i >= level->bonuscapacity) {
+        if (i >= BONUS_CAPACITY) {
             return false; //Bonus not found
         }
         i++;
@@ -901,10 +901,9 @@ static int CASE_BONUS(TITUS_level *level, uint8_t tileY, uint8_t tileX) {
         INC_ENERGY(level);
     }
     //Return the original tile underneath the bonus
-    level->tilemap[tileY][tileX] = level->bonus[i].replacetile;
+    set_tile(level, tileY, tileX, level->bonus[i].replacetile);
 
     GRAVITY_FLAG = 4;
-    PERMUT_FLAG = true;
     return true; //No problems, bonus handling done correctly!
 }
 
@@ -1104,7 +1103,7 @@ static void ACTION_PRG(TITUS_level *level, uint8_t action) {
                 }
             } else {
                 if (!CARRY_FLAG) {
-                    for (i = 0; i < level->objectcount; i++) {
+                    for (i = 0; i < OBJECT_CAPACITY; i++) {
                         //First do a quick test
                         if (!(level->object[i].sprite.enabled) ||
                           (abs(player->sprite.y - level->object[i].sprite.y) >= 20)) {
@@ -1182,7 +1181,7 @@ static void ACTION_PRG(TITUS_level *level, uint8_t action) {
                         break;
                     }
                     if (!CARRY_FLAG) { //No objects taken, check if he picks up an enemy!
-                        for (i = 0; i < level->enemycount; i++) {
+                        for (i = 0; i < ENEMY_CAPACITY; i++) {
                             //First do a quick test
                             if ((!level->enemy[i].sprite.enabled) ||
                               (abs(player->sprite.y - level->enemy[i].sprite.y) >= 20)) {
@@ -1464,7 +1463,7 @@ void COLLISION_TRP(TITUS_level *level) {
     TITUS_player *player = &(level->player);
     TITUS_elevator *elevator = level->elevator;
     if ((player->sprite.speedY >= 0) && (CROSS_FLAG == 0)) {
-        for (i = 0; i < level->elevatorcount; i++) {
+        for (i = 0; i < ELEVATOR_CAPACITY; i++) {
             //Quick test
             if (!(elevator[i].enabled) ||
               !(elevator[i].sprite.visible) ||

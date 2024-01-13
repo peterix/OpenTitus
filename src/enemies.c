@@ -70,7 +70,7 @@ static void DOWN_ANIMATION(TITUS_sprite *sprite) {
 void MOVE_NMI(TITUS_level *level) {
     TITUS_sprite *bullet;
     int j;
-    for (int i = 0; i < level->enemycount; i++) {
+    for (int i = 0; i < ENEMY_CAPACITY; i++) {
 
         TITUS_enemy *enemy = &level->enemy[i];
         TITUS_sprite *enemySprite = &enemy->sprite;
@@ -966,7 +966,7 @@ void MOVE_NMI(TITUS_level *level) {
             j = 0;
             do {
                 j++;
-                if (j > level->objectcount) {
+                if (j > OBJECT_CAPACITY) {
                     enemy->counter = 0;
                     continue;
                 }
@@ -1122,7 +1122,7 @@ void SET_NMI(TITUS_level *level) {
     //   - Decrease enemy's life
 
     int16_t i, k, hit;
-    for (i = 0; i < level->enemycount; i++) { //50
+    for (i = 0; i < ENEMY_CAPACITY; i++) { //50
         if (!(level->enemy[i].sprite.enabled)) continue; //Skip unused enemies
         level->enemy[i].visible = false;
         //Is the enemy on the screen?
@@ -1148,7 +1148,7 @@ void SET_NMI(TITUS_level *level) {
         }
         hit = 0;
         if (GRAVITY_FLAG != 0) { //Collision with a moving object?
-            for (k = 0; k < level->objectcount; k++) {
+            for (k = 0; k < OBJECT_CAPACITY; k++) {
                 if (level->object[k].sprite.speedX == 0) {
                     if (level->object[k].sprite.speedY == 0) {
                         continue;
@@ -1330,7 +1330,7 @@ void SEE_CHOC(TITUS_level *level) {
 
 void MOVE_TRASH(TITUS_level *level) {
     int16_t i, tmp;
-    for (i = 0; i < level->trashcount; i++) {
+    for (i = 0; i < TRASH_CAPACITY; i++) {
         if (!level->trash[i].enabled) continue;
         if (level->trash[i].speedX != 0) {
             level->trash[i].x += (level->trash[i].speedX >> 4);
@@ -1359,7 +1359,7 @@ void MOVE_TRASH(TITUS_level *level) {
 
 TITUS_sprite * FIND_TRASH(TITUS_level *level) {
     int i;
-    for (i = 0; i < level->trashcount; i++) {
+    for (i = 0; i < TRASH_CAPACITY; i++) {
         if (level->trash[i].enabled == false) {
             return &(level->trash[i]);
         }

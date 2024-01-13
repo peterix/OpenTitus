@@ -195,6 +195,7 @@ static int fillchip(ADLIB_DATA *aad)
                 insmaker(aad->instrument[i]->op[0], tmp2);
                 if (aad->vox[i] < 7) {
                     insmaker(aad->instrument[i]->op[1], tmp2 - 3);
+                    // FIXME: this can trigger UB somehow
                     OPL_WriteRegister(0xC0 + aad->vox[i], aad->instrument[i]->fb_alg);
                 }
                 break;
