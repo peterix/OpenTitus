@@ -30,7 +30,7 @@ const c = @import("c.zig");
 
 pub fn elevators_move(level: *c.TITUS_level) void {
     var elevators = level.*.elevator;
-    for (0..level.*.elevatorcount) |i| {
+    for (0..c.ELEVATOR_CAPACITY) |i| {
         var elevator = &elevators[i];
         if (elevator.*.enabled == false) {
             continue;

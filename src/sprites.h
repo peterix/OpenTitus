@@ -34,7 +34,6 @@
 #include <stdint.h>
 
 // TODO: port level.c to get rid of these
-SDL_Surface * load_tile_c(unsigned char * first, int i, SDL_PixelFormat * pixelformat);
 void flush_sprite_cache_c();
 void copypixelformat(SDL_PixelFormat * destformat, SDL_PixelFormat * srcformat);
 void updatesprite(TITUS_level *level, TITUS_sprite *spr, int16_t number, bool clearflags);

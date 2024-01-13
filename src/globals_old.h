@@ -152,7 +152,6 @@ extern uint8_t FUME_FLAG; //Smoke when object hits the floor
 extern const uint8_t *keystate; //Keyboard state
 extern uint8_t YFALL;
 extern bool POCKET_FLAG;
-extern bool PERMUT_FLAG; //If false, there are no animated tiles on the screen?
 extern uint8_t loop_cycle; //Increased every loop in game loop
 extern uint8_t tile_anim; //Current tile animation (0-1-2), changed every 4th game loop cycle
 
