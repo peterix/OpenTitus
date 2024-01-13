@@ -52,8 +52,6 @@ pub fn playtitus(firstlevel: u16, allocator: std.mem.Allocator) !c_int {
     level.c_level.parent = @ptrCast(&level);
 
     var sprites: [c.SPRITECOUNT]c.TITUS_spritedata = undefined;
-    var objects: [*c][*c]c.TITUS_objectdata = undefined;
-    var object_count: u16 = 0;
 
     // FIXME: this is persistent between levels... do not store it in the level
     level.c_level.lives = 2;
@@ -85,13 +83,6 @@ pub fn playtitus(firstlevel: u16, allocator: std.mem.Allocator) !c_int {
     };
     defer spr.sprite_cache.deinit();
 
-    // TODO: same as unSQZ()
-    retval = c.loadobjects(&objects, &object_count);
-    if (retval < 0) {
-        return retval;
-    }
-    defer c.freeobjects(&objects, object_count);
-
     level.c_level.levelnumber = firstlevel;
     while (level.c_level.levelnumber < data.constants.*.levelfiles.len) : (level.c_level.levelnumber += 1) {
         level.c_level.levelid = c.getlevelid(level.c_level.levelnumber);
@@ -110,7 +101,7 @@ pub fn playtitus(firstlevel: u16, allocator: std.mem.Allocator) !c_int {
             allocator,
             leveldata,
             &sprites[0],
-            objects,
+            data.object_data,
             @constCast(&data.constants.levelfiles[level.c_level.levelnumber].color),
         );
         allocator.free(leveldata);

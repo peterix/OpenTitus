@@ -63,9 +63,3 @@ extern int16_t anim_smoke[ORIG_ANIM_MAX];
 extern int16_t COEUR_POS[ORIG_ANIM_MAX * 2];
 
 #define ORIG_OBJECT_COUNT 71
-extern uint8_t object_maxspeedY[ORIG_OBJECT_COUNT];
-extern bool object_support[ORIG_OBJECT_COUNT]; //not support/support
-extern bool object_bounce[ORIG_OBJECT_COUNT]; //not bounce/bounce against floor + player bounces (ball, all spring, yellow stone, squeezed ball, skateboard)
-extern bool object_gravity[ORIG_OBJECT_COUNT]; //no gravity on throw/gravity (ball, all carpet, trolley, squeezed ball, garbage, grey stone, scooter, yellow bricks between the statues, skateboard, cage)
-extern bool object_droptobottom[ORIG_OBJECT_COUNT]; //on drop, lands on ground/continue below ground(cave spikes, rolling rock, ambolt, safe, dead man with helicopter)
-extern bool object_no_damage[ORIG_OBJECT_COUNT]; //weapon/not weapon(cage)

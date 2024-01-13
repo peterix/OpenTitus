@@ -284,6 +284,57 @@ pub var titus_pixelformat = c.SDL_PixelFormat{
     .next = null,
 };
 
+//Object flags:
+// 1: not support/support
+// 2: not bounce/bounce against floor + player bounces (ball, all spring, yellow stone, squeezed ball, skateboard)
+// 4: no gravity on throw/gravity (ball, all carpet, trolley, squeezed ball, garbage, grey stone, scooter, yellow bricks between the statues, skateboard, cage)
+// 8: on drop, lands on ground/continue below ground(cave spikes, rolling rock, ambolt, safe, dead man with helicopter)
+// 16: weapon/not weapon(cage)
+const NUM_ORIGINAL_OBJECTS = 71;
+const tmpobjectflag: [NUM_ORIGINAL_OBJECTS]u8 = .{
+    0, 0, 1, 1, 1, 0, 0, 0, 1, 7, 0,  0,  0, 0, 0, 0,
+    0, 0, 0, 4, 5, 5, 5, 1, 3, 3, 20, 20, 1, 0, 3, 0,
+    0, 1, 5, 0, 0, 0, 0, 0, 7, 0, 5,  5,  0, 0, 0, 0,
+    0, 8, 8, 9, 9, 5, 0, 0, 4, 4, 4,  0,  0, 0, 0, 9,
+    7, 0, 0, 8, 0, 0, 0,
+};
+
+const object_maxspeedY_data: [NUM_ORIGINAL_OBJECTS]u8 = .{
+    15, 15, 14, 14, 15, 15, 10, 12, 13, 25, 12, 12, 10, 10, 10, 15,
+    15, 15, 15, 15, 3,  1,  1,  15, 15, 15, 15, 15, 15, 15, 15, 15,
+    15, 15, 20, 15, 10, 10, 15, 10, 15, 15, 20, 15, 15, 15, 15, 15,
+    15, 24, 24, 24, 24, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 24,
+    15, 15, 15, 15, 15, 15, 15,
+};
+
+// NOTE: in sync with `struct _TITUS_objectdata`
+pub const ObjectData = extern struct {
+    maxspeedY: u8 = 0,
+    support: bool = false,
+    //bounce against floor + player bounces (ball, all spring, yellow stone, squeezed ball, skateboard)
+    bounce: bool = false,
+    //gravity on throw (ball, all carpet, trolley, squeezed ball, garbage, grey stone, scooter, yellow bricks between the statues, skateboard, cage)
+    gravity: bool = false,
+    //on drop, lands on ground/continue below ground(cave spikes, rolling rock, ambolt, safe, dead man with helicopter)
+    droptobottom: bool = false,
+    //weapon/not weapon(cage)
+    no_damage: bool = false,
+};
+
+// TODO: just dump the processed data and put it in as a simple array with none of this bit hackery
+pub const object_data: []ObjectData = init_object_data: {
+    var data: [NUM_ORIGINAL_OBJECTS]ObjectData = undefined;
+    for (tmpobjectflag, object_maxspeedY_data, &data) |flag, maxspeedY, *object| {
+        object.maxspeedY = maxspeedY;
+        object.support = flag & 0x01 != 0;
+        object.bounce = flag & 0x02 != 0;
+        object.gravity = flag & 0x04 != 0;
+        object.droptobottom = flag & 0x08 != 0;
+        object.no_damage = flag & 0x10 != 0;
+    }
+    break :init_object_data &data;
+};
+
 fn isFileOpenable(path: []const u8) bool {
     if (std.fs.cwd().openFile(path, .{})) |file| {
         file.close();

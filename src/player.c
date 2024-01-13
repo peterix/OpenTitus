@@ -1304,7 +1304,7 @@ static void ACTION_PRG(TITUS_level *level, uint8_t action) {
                 }
             } else {
                 if (player->sprite2.number < FIRST_NMI) { //level->objectdata can only be tested against an object sprite
-                    if (level->objectdata[player->sprite2.number - FIRST_OBJET]->gravity) {
+                    if (level->objectdata[player->sprite2.number - FIRST_OBJET].gravity) {
                         //Gravity throw
                         object = FORCE_POSE(level);
                         if (object != NULL) {

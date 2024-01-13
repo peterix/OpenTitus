@@ -1,6 +1,8 @@
 const std = @import("std");
 const spr = @import("sprites.zig");
 const c = @import("c.zig");
+const data = @import("data.zig");
+const ObjectData = data.ObjectData;
 
 fn load_u16(high: u8, low: u8) u16 {
     return @as(u16, high) * 256 + low;
@@ -37,7 +39,7 @@ pub fn loadlevel(
     allocator: std.mem.Allocator,
     leveldata: []const u8,
     spritedata: *c.TITUS_spritedata,
-    objectdata: [*c][*c]c.TITUS_objectdata,
+    objectdata: []const ObjectData,
     levelcolor: *c.SDL_Color,
 ) !c_int {
     var offset: usize = 0;
@@ -91,7 +93,8 @@ pub fn loadlevel(
             }
         }
         level.spritedata = spritedata;
-        level.objectdata = objectdata;
+        // NOTE: evil ptrCast from `*ObjectData` to `*struct _TITUS_objectdata`
+        level.objectdata = @ptrCast(&objectdata[0]);
 
         level.player.initX = load_i16(leveldata[height * width + 33779], leveldata[height * width + 33778]);
         level.player.initY = load_i16(leveldata[height * width + 33781], leveldata[height * width + 33780]);

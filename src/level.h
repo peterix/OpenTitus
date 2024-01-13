@@ -196,7 +196,7 @@ struct _TITUS_level {
     int16_t width; // always 256
     TITUS_tile tile[256];
     TITUS_spritedata *spritedata; // Pointer to a global spritedata variable
-    TITUS_objectdata **objectdata; // Pointer to a global objectdata variable
+    const TITUS_objectdata *objectdata; // Pointer to a global objectdata variable
     int finishX, finishY;
     //TITUS_enemy *boss; //Pointer to the boss; NULL if there is no boss
     //TITUS_object *finish_object; // Pointer to the required object to carry to finish; NULL if there is no such object

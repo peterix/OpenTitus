@@ -405,43 +405,6 @@ int updateobjectsprite(TITUS_level *level, TITUS_object *obj, int16_t number, bo
     if ((index < 0) || (index >= ORIG_OBJECT_COUNT)) {
         index = 0;
     }
-    obj->objectdata = level->objectdata[index];
+    obj->objectdata = &level->objectdata[index];
     return (0);
-}
-
-
-int loadobjects(TITUS_objectdata ***objects, uint16_t *count) {
-    int i;
-    *count = ORIG_OBJECT_COUNT;
-    *objects = (TITUS_objectdata **)SDL_malloc(sizeof(TITUS_objectdata *) * ORIG_OBJECT_COUNT);
-    if ((*objects) == NULL) {
-        fprintf(stderr, "Error: Not enough memory to load objects!\n");
-        return (TITUS_ERROR_NOT_ENOUGH_MEMORY);
-    }
-
-    for (i = 0; i < ORIG_OBJECT_COUNT; i++) {
-        (*objects)[i] = (TITUS_objectdata *)SDL_malloc(sizeof(TITUS_objectdata)); // * ORIG_OBJECT_COUNT);
-        if ((*objects)[i] == NULL) {
-            fprintf(stderr, "Error: Not enough memory to load objects!\n");
-            return (TITUS_ERROR_NOT_ENOUGH_MEMORY);
-        }
-        (*objects)[i]->maxspeedY = object_maxspeedY[i];
-        (*objects)[i]->support = object_support[i];
-        (*objects)[i]->bounce = object_bounce[i];
-        (*objects)[i]->gravity = object_gravity[i];
-        (*objects)[i]->droptobottom = object_droptobottom[i];
-        (*objects)[i]->no_damage = object_no_damage[i];
-    }
-
-    return ORIG_OBJECT_COUNT;
-}
-
-void freeobjects(TITUS_objectdata ***objects, uint16_t count) {
-    uint16_t i;
-
-    for (i = 0; i < count; i++) {
-        free ((*objects)[i]);
-    }
-
-    free (*objects);
 }

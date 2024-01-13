@@ -53,14 +53,6 @@ int16_t anim_moktar[ORIG_ANIM_MAX];
 int16_t anim_smoke[ORIG_ANIM_MAX];
 int16_t COEUR_POS[ORIG_ANIM_MAX * 2];
 
-uint8_t object_maxspeedY[ORIG_OBJECT_COUNT];
-bool object_support[ORIG_OBJECT_COUNT]; //not support/support
-bool object_bounce[ORIG_OBJECT_COUNT]; //not bounce/bounce against floor + player bounces (ball, all spring, yellow stone, squeezed ball, skateboard)
-bool object_gravity[ORIG_OBJECT_COUNT]; //no gravity on throw/gravity (ball, all carpet, trolley, squeezed ball, garbage, grey stone, scooter, yellow bricks between the statues, skateboard, cage)
-bool object_droptobottom[ORIG_OBJECT_COUNT]; //on drop, lands on ground/continue below ground(cave spikes, rolling rock, ambolt, safe, dead man with helicopter)
-bool object_no_damage[ORIG_OBJECT_COUNT]; //weapon/not weapon(cage)
-
-
 void initoriginal() {
     int i, j;
 
@@ -248,25 +240,6 @@ void initoriginal() {
                                     12,21,12,24,12,21,8,21,12,30,8,25,4,9,16,21,
                                     7,101,11,98,48,77,33,59,32,45,40,41,36,55,40,41,17,32,17,29,19,32,19,34,17,33,16,32,16,29,16,30,20,30,20,31,8,10,12,14,12,19,12,24,16,26,16,28,20,32,16,33,8,9};
 
-    //Object flags:
-    // bit 0: not support/support
-    // bit 1: not bounce/bounce against floor + player bounces (ball, all spring, yellow stone, squeezed ball, skateboard)
-    // bit 2: no gravity on throw/gravity (ball, all carpet, trolley, squeezed ball, garbage, grey stone, scooter, yellow bricks between the statues, skateboard, cage)
-    // bit 3: on drop, lands on ground/continue below ground(cave spikes, rolling rock, ambolt, safe, dead man with helicopter)
-    // bit 4: weapon/not weapon(cage)
-
-    uint8_t tmpobjectflag[] = {   0,0,1,1,1,0,0,0,1,7,0,0,0,0,0,0,
-                                0,0,0,4,5,5,5,1,3,3,20,20,1,0,3,0,
-                                0,1,5,0,0,0,0,0,7,0,5,5,0,0,0,0,
-                                0,8,8,9,9,5,0,0,4,4,4,0,0,0,0,9,
-                                7,0,0,8,0,0,0};
-
-    uint8_t object_maxspeedY_data[] = {   15,15,14,14,15,15,10,12,13,25,12,12,10,10,10,15,
-                                        15,15,15,15,3,1,1,15,15,15,15,15,15,15,15,15,
-                                        15,15,20,15,10,10,15,10,15,15,20,15,15,15,15,15,
-                                        15,24,24,24,24,15,15,15,15,15,15,15,15,15,15,24,
-                                        15,15,15,15,15,15,15};
-
     uint8_t tmpanimnmi[] = {  0x35,0x00,0x36,0x00,0x37,0x00,0xAA,0x55,0xFE,0xFF,0x35,0x00,0x36,0x00,0x37,0x00,0xFA,0xFF,0x8D,0x00,0xFE,0xFF,0x8E,0x00,
                             0x8E,0x00,0x8E,0x00,0x8F,0x00,0x8F,0x00,0x8F,0x00,0x90,0x00,0x90,0x00,0x90,0x00,0x91,0x00,0x91,0x00,0x91,0x00,0xE4,0xFF,
                             0x00,0x00,0x00,0x00,0x00,0x00,0x01,0x00,0x01,0x00,0x01,0x00,0x02,0x00,0x02,0x00,0x02,0x00,0x03,0x00,0x03,0x00,0x03,0x00,
@@ -358,18 +331,6 @@ void initoriginal() {
         uint8_t first = tmpanimnmi[i * 2 + 1];
         uint8_t second = tmpanimnmi[i * 2];
         anim_enemy[i] = (int16_t)(((uint16_t)(first) << 8) + (uint16_t)(second));
-    }
-
-    for (i = 0; i < ORIG_OBJECT_COUNT; i++) {
-        object_maxspeedY[i] = object_maxspeedY_data[i];
-    }
-
-    for (i = 0; i < ORIG_OBJECT_COUNT; i++) {
-        object_support[i] = (tmpobjectflag[i] & 0x01) ? true : false; //bit 0
-        object_bounce[i] = (tmpobjectflag[i] & 0x02) ? true : false; //bit 1
-        object_gravity[i] = (tmpobjectflag[i] & 0x04) ? true : false; //bit 2
-        object_droptobottom[i] = (tmpobjectflag[i] & 0x08) ? true : false; //bit 3
-        object_no_damage[i] = (tmpobjectflag[i] & 0x10) ? true : false; //bit 4
     }
 
     for (i = 0; i < ORIG_ANIM_MAX; i++) {
