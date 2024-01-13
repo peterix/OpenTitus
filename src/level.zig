@@ -10,6 +10,22 @@ fn load_i16(high: u8, low: u8) i16 {
     return (@as(i16, @bitCast(@as(u16, high))) << 8) + low;
 }
 
+test "test i16 loading" {
+    try std.testing.expect(load_i16(0xFF, 0xFF) == -1);
+    try std.testing.expect(load_i16(0x00, 0x00) == 0);
+    try std.testing.expect(load_i16(0x00, 0x01) == 1);
+    try std.testing.expect(load_i16(0x7F, 0xFF) == 32767);
+    try std.testing.expect(load_i16(0x80, 0x00) == -32768);
+}
+
+test "test u16 loading" {
+    try std.testing.expect(load_u16(0xFF, 0xFF) == 65535);
+    try std.testing.expect(load_u16(0x00, 0x00) == 0);
+    try std.testing.expect(load_u16(0x00, 0x01) == 1);
+    try std.testing.expect(load_u16(0x7F, 0xFF) == 32767);
+    try std.testing.expect(load_u16(0x80, 0x00) == 32768);
+}
+
 pub const Level = struct {
     c_level: c.TITUS_level,
     tilemap: [][]u8,
@@ -201,7 +217,6 @@ pub fn loadlevel(
 
     level.bonuscount = 0;
     level.bonuscollected = 0;
-
     level.tickcount = 0;
 
     offset = height * width + 35082;

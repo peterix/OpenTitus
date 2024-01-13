@@ -77,6 +77,8 @@ fn build_game(b: *std.Build, name: []const u8, target: CrossTarget, optimize: st
     }
     exe.c_std = C_STANDARD;
 
+    // NOTE: the use of bit shifts of negative numbers is quite extensive, so we disable ubsan shooting us in the foot with those...
+    // FIXME: remove the UB-ness
     exe.addCSourceFiles(&.{
         "src/audio.c",
         "src/enemies.c",
@@ -84,10 +86,7 @@ fn build_game(b: *std.Build, name: []const u8, target: CrossTarget, optimize: st
         "src/original.c",
         "src/player.c",
         "src/reset.c",
-    },
-    // NOTE: the use of bit shifts of negative numbers is quite extensive, so we disable ubsan shooting us in the foot with those...
-    // FIXME: remove the UB-ness
-    &.{
+    }, &.{
         "-fno-sanitize=shift",
     });
     exe.addIncludePath(std.build.LazyPath.relative("src/"));
@@ -98,6 +97,39 @@ fn build_game(b: *std.Build, name: []const u8, target: CrossTarget, optimize: st
     exe.linkSystemLibrary("SDL2main");
     exe.linkSystemLibrary("SDL2_mixer");
     exe.linkLibrary(opl);
+
+    const game_tests = b.addTest(.{
+        .root_source_file = .{ .path = "main.zig" },
+        .target = target,
+        .optimize = optimize,
+    });
+    game_tests.addCSourceFiles(&.{
+        "src/audio.c",
+        "src/enemies.c",
+        "src/objects.c",
+        "src/original.c",
+        "src/player.c",
+        "src/reset.c",
+    }, &.{
+        "-fno-sanitize=shift",
+    });
+    game_tests.addIncludePath(std.build.LazyPath.relative("src/"));
+
+    game_tests.linkLibC();
+    game_tests.linkSystemLibrary("m");
+    game_tests.linkSystemLibrary("SDL2");
+    game_tests.linkSystemLibrary("SDL2main");
+    game_tests.linkSystemLibrary("SDL2_mixer");
+    game_tests.linkLibrary(opl);
+
+    const run_game_tests = b.addRunArtifact(game_tests);
+
+    // This creates a build step. It will be visible in the `zig build --help` menu,
+    // and can be selected like this: `zig build test`
+    // This will evaluate the `test` step rather than the default, which is "install".
+    const test_step = b.step("test", "Run tests");
+    test_step.dependOn(&run_game_tests.step);
+
     return exe;
 }
 
@@ -129,21 +161,4 @@ pub fn build(b: *std.Build) void {
     wf.addCopyFileToSource(game.getEmittedBin(), "bin/moktar/openmoktar");
     wf.addCopyFileToSource(game.getEmittedBin(), "bin/titus/opentitus");
     b.getInstallStep().dependOn(&wf.step);
-
-    // TODO: do something with unit tests?
-    // // Creates a step for unit testing. This only builds the test executable
-    // // but does not run it.
-    // const main_tests = b.addTest(.{
-    //     .root_source_file = .{ .path = "opl/main.zig" },
-    //     .target = target,
-    //     .optimize = optimize,
-    // });
-
-    // const run_main_tests = b.addRunArtifact(main_tests);
-
-    // // This creates a build step. It will be visible in the `zig build --help` menu,
-    // // and can be selected like this: `zig build test`
-    // // This will evaluate the `test` step rather than the default, which is "install".
-    // const test_step = b.step("test", "Run library tests");
-    // test_step.dependOn(&run_main_tests.step);
 }
