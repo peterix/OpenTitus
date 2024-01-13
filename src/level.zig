@@ -237,6 +237,7 @@ pub fn loadlevel(
 
     offset = height * width + 35624;
     for (0..c.ELEVATOR_CAPACITY) |i| {
+        level.elevator[i].counter = 0;
         level.elevator[i].sprite.enabled = false;
         level.elevator[i].initsprite = load_u16(leveldata[offset + 5], leveldata[offset + 4]);
         level.elevator[i].initspeedX = 0;
