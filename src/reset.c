@@ -189,7 +189,7 @@ uint8_t RESET_LEVEL(ScreenContext *context, TITUS_level *level) {
 void MOVE_HIM(TITUS_level *level, TITUS_sprite *spr) {
     int16_t *pointer = spr->animation + 1;
     while (*pointer < 0) {
-        pointer += (*pointer / 2); //End of animation, jump back
+        pointer += *pointer; //End of animation, jump back
     }
     updatesprite(level, spr, *pointer, true);
     spr->animation = pointer;

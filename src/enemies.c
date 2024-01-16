@@ -1204,7 +1204,6 @@ void SET_NMI(TITUS_level *level) {
 
 
 void GAL_FORM(TITUS_level *level, TITUS_enemy *enemy) { //Enemy animation
-    int16_t *image;
     enemy->sprite.invisible = false;
     if ((enemy->dying & 0x03) != 0) {
         enemy->sprite.visible = false;
@@ -1212,22 +1211,24 @@ void GAL_FORM(TITUS_level *level, TITUS_enemy *enemy) { //Enemy animation
         return;
     }
     enemy->trigger = false;
-    image = enemy->sprite.animation; //Animation pointer
-    while (*image < 0) {
-        image += (*image >> 1); //jump back to start of animation
+    int16_t *animation = enemy->sprite.animation; //Animation pointer
+    //jump back to start of animation
+    while (*animation < 0) {
+        animation += *animation;
     }
-    if (*image == 0x55AA) {
+    // NOTE: this is a bit mad.
+    if (*animation == 0x55AA) {
         enemy->sprite.invisible = true;
         return;
     }
-    enemy->trigger = *image & 0x2000;
-    updateenemysprite(level, enemy, (*image & 0x00FF) + FIRST_NMI, true);
+    enemy->trigger = *animation & 0x2000;
+    updateenemysprite(level, enemy, (*animation & 0x00FF) + FIRST_NMI, true);
     enemy->sprite.flipped = (enemy->sprite.speed_x < 0) ? true : false;
-    image++;
-    if (*image < 0) {
-        image += (*image >> 1); //jump back to start of animation
+    animation++;
+    if (*animation < 0) {
+        animation += *animation; //jump back to start of animation
     }
-    enemy->sprite.animation = image;
+    enemy->sprite.animation = animation;
     enemy->visible = true;
 }
 

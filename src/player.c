@@ -1426,6 +1426,7 @@ static void NEW_FORM(TITUS_player *player, uint8_t action) {
 static void GET_IMAGE(TITUS_level *level) {
     TITUS_player *player = &(level->player);
     //animate the player sprite
+    // FIXME: divide all these negative numbers by 2 in the data instead
     int16_t frame = *(player->sprite.animation);
     if (frame < 0) { //frame is a negative number, telling how many bytes to jump back
         player->sprite.animation += (frame / 2); //jump back to first frame of animation
