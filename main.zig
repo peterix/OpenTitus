@@ -25,7 +25,6 @@
 
 const std = @import("std");
 const game = @import("src/game.zig");
-const level = @import("src/level.zig");
 
 test {
     _ = std.testing.refAllDeclsRecursive(game);

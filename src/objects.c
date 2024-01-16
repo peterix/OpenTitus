@@ -54,13 +54,13 @@ void move_objects(TITUS_level *level) {
         obj_vs_sprite = false;
         if (!(level->object[i].sprite.enabled)) continue; //Skip unused objects
         if (level->object[i].sprite.x <= 8) { //Left edge of level
-            level->object[i].sprite.speedX = 2 * 16;
-            level->object[i].sprite.speedY = 0;
+            level->object[i].sprite.speed_x = 2 * 16;
+            level->object[i].sprite.speed_y = 0;
         }
 
         if (level->object[i].sprite.x >= level->width * 16 - 8) { //Right edge of level
-            level->object[i].sprite.speedX = -2 * 16;
-            level->object[i].sprite.speedY = 0;
+            level->object[i].sprite.speed_x = -2 * 16;
+            level->object[i].sprite.speed_y = 0;
         }
         //Handle carpet
         if ((level->object[i].sprite.number == FIRST_OBJET + 21) || (level->object[i].sprite.number == FIRST_OBJET + 22)) { //Flying carpet, flying
@@ -68,28 +68,28 @@ void move_objects(TITUS_level *level) {
 
             //(Adjust height after player)
             if (TAPISWAIT_FLAG != 0) { //Flying ready
-                level->object[i].mass = 0;
+                level->object[i].momentum = 0;
                 if (level->object[i].sprite.y == (level->player.sprite.y - 8))
-                    level->object[i].sprite.speedY = 0;
+                    level->object[i].sprite.speed_y = 0;
                 else if (level->object[i].sprite.y < (level->player.sprite.y - 8))
-                    level->object[i].sprite.speedY = 16;
+                    level->object[i].sprite.speed_y = 16;
                 else
-                    level->object[i].sprite.speedY = -16;
+                    level->object[i].sprite.speed_y = -16;
             }
 
             if (TAPISFLY_FLAG == 0) { //Time's up! Stop flying
                 updateobjectsprite(level, &(level->object[i]), FIRST_OBJET + 19, true); //position falling and carry  (jump and carry sprite?)
-                level->object[i].sprite.speedX = 0;
+                level->object[i].sprite.speed_x = 0;
                 TAPISWAIT_FLAG = 2; //Timed out
             }  
         } else if (((level->object[i].sprite.number == FIRST_OBJET + 19) || (level->object[i].sprite.number == FIRST_OBJET + 20)) && //Flying carpet, not flying
-          ((IMAGE_COUNTER & 0x03) == 0) && (level->object[i].sprite.speedY > 0) && (TAPISWAIT_FLAG != 2)) {
+          ((IMAGE_COUNTER & 0x03) == 0) && (level->object[i].sprite.speed_y > 0) && (TAPISWAIT_FLAG != 2)) {
             //The carpet is being throwed
             if (level->object[i].sprite.number == FIRST_OBJET + 19) { //Carpet is closed
-                level->object[i].sprite.speedX = level->object[i].sprite.speedX >> 1;
+                level->object[i].sprite.speed_x = level->object[i].sprite.speed_x >> 1;
                 updateobjectsprite(level, &(level->object[i]), FIRST_OBJET + 20, false); //Open, not flying
             } else { //Open, not flying (sprite FIRST_OBJET + 20)
-                level->object[i].sprite.speedX = 0;
+                level->object[i].sprite.speed_x = 0;
                 updateobjectsprite(level, &(level->object[i]), FIRST_OBJET + 21, false); //Flying ready
             }
             TAPISWAIT_FLAG = 1;
@@ -97,7 +97,7 @@ void move_objects(TITUS_level *level) {
         }
 
         //Does it move in X?
-        if (level->object[i].sprite.speedX != 0) {
+        if (level->object[i].sprite.speed_x != 0) {
 
             //Test for horizontal collision
 
@@ -109,10 +109,10 @@ void move_objects(TITUS_level *level) {
             hflag = get_horizflag(level, tileY, tileX);
             if ((hflag == HFLAG_WALL) || (hflag == HFLAG_DEADLY) || (hflag == HFLAG_PADLOCK)) {
                 //Collision horizontal, change direction
-                level->object[i].sprite.speedX = 0 - level->object[i].sprite.speedX;
-                level->object[i].sprite.x += level->object[i].sprite.speedX >> 4;
-            } else if ((((level->object[i].sprite.speedX >> 4) + level->object[i].sprite.x) >> 4) != tileX) { //If speedX is big enough, check the neighbour tile
-                if (level->object[i].sprite.speedX < 0)
+                level->object[i].sprite.speed_x = 0 - level->object[i].sprite.speed_x;
+                level->object[i].sprite.x += level->object[i].sprite.speed_x >> 4;
+            } else if ((((level->object[i].sprite.speed_x >> 4) + level->object[i].sprite.x) >> 4) != tileX) { //If speed_x is big enough, check the neighbour tile
+                if (level->object[i].sprite.speed_x < 0)
                     tileX--;
                 else
                     tileX++;
@@ -120,47 +120,47 @@ void move_objects(TITUS_level *level) {
                     hflag = get_horizflag(level, tileY, tileX);
                     if ((hflag == HFLAG_WALL) || (hflag == HFLAG_DEADLY) || (hflag == HFLAG_PADLOCK)) {
                         //Collision horizontal, change direction
-                        level->object[i].sprite.speedX = 0 - level->object[i].sprite.speedX;
-                        level->object[i].sprite.x += level->object[i].sprite.speedX >> 4;
+                        level->object[i].sprite.speed_x = 0 - level->object[i].sprite.speed_x;
+                        level->object[i].sprite.x += level->object[i].sprite.speed_x >> 4;
                     }
                 }
             }
 
-            //Move the object in X and reduce speedX
+            //Move the object in X and reduce speed_x
             GRAVITY_FLAG = 4;
-            level->object[i].sprite.x += (level->object[i].sprite.speedX >> 4); //Move the object
-            if (abs(level->object[i].sprite.speedY) >= 16) {
+            level->object[i].sprite.x += (level->object[i].sprite.speed_x >> 4); //Move the object
+            if (abs(level->object[i].sprite.speed_y) >= 16) {
                 reduction = 1;
             } else {
                 reduction = 3;
             }
-            if (level->object[i].sprite.speedX < 0) {
+            if (level->object[i].sprite.speed_x < 0) {
                 reduction = 0 - reduction;
             }
-            level->object[i].sprite.speedX -= reduction;
-            if (abs(level->object[i].sprite.speedX) < 16) {
-                level->object[i].sprite.speedX = 0;
+            level->object[i].sprite.speed_x -= reduction;
+            if (abs(level->object[i].sprite.speed_x) < 16) {
+                level->object[i].sprite.speed_x = 0;
             }
         }
 
-        if (level->object[i].sprite.speedY < 0) {
+        if (level->object[i].sprite.speed_y < 0) {
             //Object's going up!
             tileX = level->object[i].sprite.x >> 4;
             tileY = (level->object[i].sprite.y >> 4) - (level->object[i].sprite.spritedata->collheight >> 4) - 1; //tile above the object
             if (get_ceilflag(level, tileY, tileX) != CFLAG_NOCEILING) {
                 //Hit, stop elevating
-                level->object[i].sprite.speedY = 0;
+                level->object[i].sprite.speed_y = 0;
                 if (!(level->object[i].objectdata->bounce)) {
                     level->object[i].sprite.y = level->object[i].sprite.y & 0xFFF0;
                 }
                 continue;
             } else {
-                if (((level->object[i].sprite.speedY >> 4) + level->object[i].sprite.y) != (level->object[i].sprite.y >> 4)) {
+                if (((level->object[i].sprite.speed_y >> 4) + level->object[i].sprite.y) != (level->object[i].sprite.y >> 4)) {
                     //The purpose is to test if the speed makes it necessary to check above sprite, the above line is a bug
                     tileY--;
                     if (get_ceilflag(level, tileY, tileX) != CFLAG_NOCEILING) { //Hit, stop elevating
                         //Hit, stop elevating
-                        level->object[i].sprite.speedY = 0;
+                        level->object[i].sprite.speed_y = 0;
                         if (!(level->object[i].objectdata->bounce)) {
                             level->object[i].sprite.y = level->object[i].sprite.y & 0xFFF0; //if not bouncing, place it on top of the floor tile when falling down
                         }
@@ -168,7 +168,7 @@ void move_objects(TITUS_level *level) {
                     }
                 }
             }
-        } else if ((level->object[i].sprite.droptobottom) || ((level->object[i].objectdata->droptobottom) && (level->object[i].sprite.speedY >= 10*16))) {
+        } else if ((level->object[i].sprite.droptobottom) || ((level->object[i].objectdata->droptobottom) && (level->object[i].sprite.speed_y >= 10*16))) {
             //Object's falling down, and it's dropping to bottom (skip collision detection)
             if (!level->object[i].sprite.visible) {
                 //if it's dropping to bottom and is not visible, delete
@@ -197,7 +197,7 @@ void move_objects(TITUS_level *level) {
             if (fflag == FFLAG_WATER) {
                 if (level->object[i].sprite.number == FIRST_OBJET + 9) { //Ball
                     //Collision, stop fall
-                    level->object[i].sprite.speedY = 0;
+                    level->object[i].sprite.speed_y = 0;
                     continue;
                 } else {
                     //if it ain't a ball, delete!
@@ -207,7 +207,7 @@ void move_objects(TITUS_level *level) {
             }
             if ((fflag != FFLAG_LADDER) && ((fflag != FFLAG_NOFLOOR) || (hflag == HFLAG_WALL) || (hflag == HFLAG_DEADLY) || (hflag == HFLAG_PADLOCK))) {
                 //Collision, stop fall
-                level->object[i].sprite.speedY = 0;
+                level->object[i].sprite.speed_y = 0;
                 if (!(level->object[i].objectdata->bounce)) {
                     level->object[i].sprite.y = level->object[i].sprite.y & 0xFFF0; //if not bouncing, place it on top of the floor tile when falling down
                 }
@@ -215,7 +215,7 @@ void move_objects(TITUS_level *level) {
             }
 
             //Test for sprite collision
-            tile_count = ((level->object[i].sprite.y + (level->object[i].sprite.speedY >> 4)) >> 4) - (level->object[i].sprite.y >> 4);
+            tile_count = ((level->object[i].sprite.y + (level->object[i].sprite.speed_y >> 4)) >> 4) - (level->object[i].sprite.y >> 4);
             if (tile_count != 0) { //Bug: this should be inside the tile collision test
                 obj_vs_sprite = SPRITES_VS_SPRITES(level, &(level->object[i].sprite), level->object[i].sprite.spritedata, &off_object);
             }
@@ -235,7 +235,7 @@ void move_objects(TITUS_level *level) {
                 if ((fflag != FFLAG_LADDER) && ((fflag != FFLAG_NOFLOOR) || (hflag == HFLAG_WALL) || (hflag == HFLAG_DEADLY) || (hflag == HFLAG_PADLOCK))) {
                     //Collision at high speed, stop fall
                     if (!(level->object[i].objectdata->bounce)) {
-                        level->object[i].sprite.speedY = 0;
+                        level->object[i].sprite.speed_y = 0;
                         level->object[i].sprite.y = (level->object[i].sprite.y & 0xFFF0) + 16;
                         if ((level->object[i].sprite.number >= FIRST_OBJET + 19) && (level->object[i].sprite.number <= FIRST_OBJET + 22)) { //Flying carpet
                             updateobjectsprite(level, &(level->object[i]), FIRST_OBJET + 19, false); //Carpet is closed
@@ -251,11 +251,11 @@ void move_objects(TITUS_level *level) {
                         //object is bouncing
                         level->object[i].sprite.y = (level->object[i].sprite.y & 0xFFF0) + 16;
                         GRAVITY_FLAG = 4;
-                        level->object[i].mass = 0;
+                        level->object[i].momentum = 0;
                         //Bounce, decrease speed
-                        level->object[i].sprite.speedY = 0 - level->object[i].sprite.speedY + 16*3;
-                        if (level->object[i].sprite.speedY > 0) {
-                            level->object[i].sprite.speedY = 0;
+                        level->object[i].sprite.speed_y = 0 - level->object[i].sprite.speed_y + 16*3;
+                        if (level->object[i].sprite.speed_y > 0) {
+                            level->object[i].sprite.speed_y = 0;
                         }
                     }
                     break;
@@ -268,39 +268,39 @@ void move_objects(TITUS_level *level) {
                 obj_vs_sprite = SPRITES_VS_SPRITES(level, &(level->object[i].sprite), level->object[i].sprite.spritedata, &off_object);
             }
             if (obj_vs_sprite) {
-                level->object[i].mass = 0;
+                level->object[i].momentum = 0;
                 if (off_object->objectdata->bounce) {
                     //offending object bounces
                     off_object->sprite.UNDER |= 0x01; //(?)
                     off_object->sprite.ONTOP = &(level->object[i].sprite); //(check this)
-                    if (level->object[i].sprite.speedY > 64) {
-                        off_object->sprite.speedY = ((0 - level->object[i].sprite.speedY) >> 1) + 32;
-                        level->object[i].sprite.speedY = ((0 - level->object[i].sprite.speedY) >> 1) + 16;
-                        off_object->sprite.speedX = level->object[i].sprite.speedX >> 1;
+                    if (level->object[i].sprite.speed_y > 64) {
+                        off_object->sprite.speed_y = ((0 - level->object[i].sprite.speed_y) >> 1) + 32;
+                        level->object[i].sprite.speed_y = ((0 - level->object[i].sprite.speed_y) >> 1) + 16;
+                        off_object->sprite.speed_x = level->object[i].sprite.speed_x >> 1;
                     } else {
-                        level->object[i].sprite.speedY = 0;
+                        level->object[i].sprite.speed_y = 0;
                         level->object[i].sprite.y = off_object->sprite.y - off_object->sprite.spritedata->collheight;
                         continue;
                     }
                 } else if (level->object[i].objectdata->bounce) {
                     //object bounces
                     level->object[i].sprite.y = off_object->sprite.y - off_object->sprite.spritedata->collheight;
-                    if ((level->object[i].sprite.speedY >= 16) || (level->object[i].sprite.speedY < 0)) {
+                    if ((level->object[i].sprite.speed_y >= 16) || (level->object[i].sprite.speed_y < 0)) {
                         GRAVITY_FLAG = 4;
-                        //level->object[i].mass = 0;
+                        //level->object[i].momentum = 0;
                         //Bounce, decrease speed
-                        level->object[i].sprite.speedY = 0 - level->object[i].sprite.speedY + 16*3;
-                        if (level->object[i].sprite.speedY > 0) {
-                            level->object[i].sprite.speedY = 0;
+                        level->object[i].sprite.speed_y = 0 - level->object[i].sprite.speed_y + 16*3;
+                        if (level->object[i].sprite.speed_y > 0) {
+                            level->object[i].sprite.speed_y = 0;
                         }
                     } else {
-                        level->object[i].sprite.speedY = 0;
+                        level->object[i].sprite.speed_y = 0;
                     }
                     continue;
                 } else {
                     //neither of the objects bounces
                     level->object[i].sprite.y = off_object->sprite.y - off_object->sprite.spritedata->collheight;
-                    level->object[i].sprite.speedY = 0;
+                    level->object[i].sprite.speed_y = 0;
                 }
             }
         }
@@ -309,15 +309,15 @@ void move_objects(TITUS_level *level) {
         if (level->object[i].sprite.number < FIRST_NMI) {
             max_speed = level->object[i].objectdata->maxspeedY;
         }
-        speed = (level->object[i].sprite.speedY >> 4);
+        speed = (level->object[i].sprite.speed_y >> 4);
         if (speed != 0) {
             GRAVITY_FLAG = 4;
         }
         level->object[i].sprite.y += speed; //Finally move the object at it's speed
         if (speed < max_speed) {
-            level->object[i].sprite.speedY += 16;
-            if (level->object[i].sprite.speedY > 0) {
-                level->object[i].mass++;
+            level->object[i].sprite.speed_y += 16;
+            if (level->object[i].sprite.speed_y > 0) {
+                level->object[i].momentum++;
             }
         }
         shock(level, &(level->object[i])); //Falling object versus player
@@ -329,8 +329,8 @@ void shock(TITUS_level *level, TITUS_object *object) { //Falling object versus p
     TITUS_player *player = &(level->player);
 
     //Quick test
-    if (object->mass < 10) return;
-    if (player->sprite.speedY >= MAX_Y*16) return;
+    if (object->momentum < 10) return;
+    if (player->sprite.speed_y >= MAX_Y*16) return;
     if (abs(player->sprite.y - object->sprite.y) >= 32) {
         return;
     }

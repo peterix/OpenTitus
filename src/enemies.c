@@ -78,10 +78,7 @@ void MOVE_NMI(TITUS_level *level) {
         if (!(enemySprite->enabled)) {
             continue;
         }
-        uint16_t enemyType = enemy->type;
-
-
-        switch (enemyType) {
+        switch (enemy->type) {
         case 0:
         case 1:
             //Noclip walk
@@ -89,12 +86,12 @@ void MOVE_NMI(TITUS_level *level) {
                 DEAD1(level, enemy);
                 continue;
             }
-            enemySprite->x -= enemySprite->speedX; //Move the enemy
-            if (abs(enemySprite->x - enemy->centerX) > enemy->rangeX) { //If the enemy is rangeX from center, turn direction
-                if (enemySprite->x >= enemy->centerX) { //The enemy is at rightmost edge
-                    enemySprite->speedX = abs(enemySprite->speedX);
+            enemySprite->x -= enemySprite->speed_x; //Move the enemy
+            if (abs(enemySprite->x - enemy->center_x) > enemy->range_x) { //If the enemy is range_x from center, turn direction
+                if (enemySprite->x >= enemy->center_x) { //The enemy is at rightmost edge
+                    enemySprite->speed_x = abs(enemySprite->speed_x);
                 } else { //The enemy is at leftmost edge
-                    enemySprite->speedX = 0 - abs(enemySprite->speedX);
+                    enemySprite->speed_x = 0 - abs(enemySprite->speed_x);
                 }
             }
             break;
@@ -110,14 +107,14 @@ void MOVE_NMI(TITUS_level *level) {
             }
             //Give directions!
             if (enemy->direction == 0) { //Both ways
-                enemySprite->speedX = 0;
+                enemySprite->speed_x = 0;
                 if (enemySprite->x < level->player.sprite.x) {
-                    enemySprite->speedX = -1;
+                    enemySprite->speed_x = -1;
                 }
             } else if (enemy->direction == 2) { //Right only
-                enemySprite->speedX = -1; //Flip the sprite
+                enemySprite->speed_x = -1; //Flip the sprite
             } else { //Left only
-                enemySprite->speedX = 0; //Not flipped (facing left)
+                enemySprite->speed_x = 0; //Not flipped (facing left)
             }
             switch (enemy->phase) { //State dependent actions
             case 0:
@@ -129,7 +126,7 @@ void MOVE_NMI(TITUS_level *level) {
                 if (abs(level->player.sprite.y - enemySprite->y) > 24) {
                     continue;
                 }
-                if (enemy->rangeX < abs(level->player.sprite.x - enemySprite->x)) { //if too far apart
+                if (enemy->range_x < abs(level->player.sprite.x - enemySprite->x)) { //if too far apart
                     continue;
                 }
                 if (enemy->direction != 0) {
@@ -171,12 +168,12 @@ void MOVE_NMI(TITUS_level *level) {
             }
             switch (enemy->phase) { //State dependent actions
             case 0:
-                enemySprite->x -= enemySprite->speedX; //Move the enemy
-                if (abs(enemySprite->x - enemy->centerX) > enemy->rangeX) { //If the enemy is rangeX from center, turn direction
-                    if (enemySprite->x >= enemy->centerX) { //The enemy is at rightmost edge
-                        enemySprite->speedX = abs(enemySprite->speedX);
+                enemySprite->x -= enemySprite->speed_x; //Move the enemy
+                if (abs(enemySprite->x - enemy->center_x) > enemy->range_x) { //If the enemy is range_x from center, turn direction
+                    if (enemySprite->x >= enemy->center_x) { //The enemy is at rightmost edge
+                        enemySprite->speed_x = abs(enemySprite->speed_x);
                     } else { //The enemy is at leftmost edge
-                        enemySprite->speedX = 0 - abs(enemySprite->speedX);
+                        enemySprite->speed_x = 0 - abs(enemySprite->speed_x);
                     }
                 }
                 if (!enemy->visible) { //Is the enemy on the screen?
@@ -185,7 +182,7 @@ void MOVE_NMI(TITUS_level *level) {
                 if ((enemySprite->y < level->player.sprite.y) || (enemySprite->y >= (level->player.sprite.y + 256))) { //Skip if player is below or >= 256 pixels above
                     continue;
                 }
-                if (enemy->rangeY < (enemySprite->y - level->player.sprite.y)) { //Skip if player is above jump limit
+                if (enemy->range_y < (enemySprite->y - level->player.sprite.y)) { //Skip if player is above jump limit
                     continue;
                 }
                 //see if the hero is in the direction of movement of fish
@@ -202,54 +199,54 @@ void MOVE_NMI(TITUS_level *level) {
                     continue;
                 }
                 //See if the hero is above the area of fish
-                if (abs(level->player.sprite.x - enemy->centerX) > enemy->rangeX) {
+                if (abs(level->player.sprite.x - enemy->center_x) > enemy->range_x) {
                     continue;
                 }
                 enemy->phase = 1; //Change state
                 //Calculation speed to the desired height
-                enemySprite->speedY = 0;
+                enemySprite->speed_y = 0;
                 j = 0;
                 do {
-                    enemySprite->speedY++; //Set init jump speed
-                    j += enemySprite->speedY;
+                    enemySprite->speed_y++; //Set init jump speed
+                    j += enemySprite->speed_y;
                 } while ((enemySprite->y - level->player.sprite.y) > j); //Make sure the enemy will jump high enough to hit the player
-                enemySprite->speedY = 0 - enemySprite->speedY; //Init speed must be negative
-                enemy->delay = enemySprite->y; //Delay: Last Y position, reuse of the delay variable
+                enemySprite->speed_y = 0 - enemySprite->speed_y; //Init speed must be negative
+                enemy->delay = enemySprite->y; //Delay: Last _y position, reuse of the delay variable
                 UP_ANIMATION(enemySprite);
                 break;
             case 1:
                 if (!enemy->visible) { //Is the enemy on the screen?
                     continue;
                 }
-                enemySprite->x -= enemySprite->speedX << 2;
-                enemySprite->y += enemySprite->speedY;
-                if (enemySprite->speedY + 1 < 0) {
-                    enemySprite->speedY++;
-                    if (enemySprite->y > (enemy->delay - enemy->rangeY)) { //Delay: Last Y position, reuse of the delay variable
+                enemySprite->x -= enemySprite->speed_x << 2;
+                enemySprite->y += enemySprite->speed_y;
+                if (enemySprite->speed_y + 1 < 0) {
+                    enemySprite->speed_y++;
+                    if (enemySprite->y > (enemy->delay - enemy->range_y)) { //Delay: Last _y position, reuse of the delay variable
                         continue;
                     }
                 }
                 UP_ANIMATION(enemySprite);
                 enemy->phase = 2;
-                enemySprite->speedY = 0;
-                if (enemySprite->x <= enemy->centerX) {
-                    enemySprite->speedX = abs(enemySprite->speedX);
+                enemySprite->speed_y = 0;
+                if (enemySprite->x <= enemy->center_x) {
+                    enemySprite->speed_x = abs(enemySprite->speed_x);
                 } else {
-                    enemySprite->speedX = 0 - abs(enemySprite->speedX);
+                    enemySprite->speed_x = 0 - abs(enemySprite->speed_x);
                 }
                 break;
             case 2:
                 if (!enemy->visible) { //Is the enemy on the screen?
                     continue;
                 }
-                enemySprite->x -= enemySprite->speedX;
-                enemySprite->y += enemySprite->speedY; //2: fall!
-                enemySprite->speedY++;
+                enemySprite->x -= enemySprite->speed_x;
+                enemySprite->y += enemySprite->speed_y; //2: fall!
+                enemySprite->speed_y++;
                 if (enemySprite->y < enemy->delay) { //3: we hit bottom? //Delay: Last Y position, reuse of the delay variable
                     continue;
                 }
                 enemySprite->y = enemy->delay; //Delay: Last Y position, reuse of the delay variable
-                enemySprite->x -= enemySprite->speedX;
+                enemySprite->x -= enemySprite->speed_x;
                 enemy->phase = 0;
                 DOWN_ANIMATION(enemySprite);
                 DOWN_ANIMATION(enemySprite);
@@ -264,12 +261,12 @@ void MOVE_NMI(TITUS_level *level) {
                 DEAD1(level, enemy);
                 continue;
             }
-            enemySprite->x -= enemySprite->speedX; //Move the enemy
-            if (abs(enemySprite->x - enemy->centerX) > enemy->rangeX) { //If the enemy is rangeX from center, turn direction
-                if (enemySprite->x >= enemy->centerX) { //The enemy is at rightmost edge
-                    enemySprite->speedX = abs(enemySprite->speedX);
+            enemySprite->x -= enemySprite->speed_x; //Move the enemy
+            if (abs(enemySprite->x - enemy->center_x) > enemy->range_x) { //If the enemy is range_x from center, turn direction
+                if (enemySprite->x >= enemy->center_x) { //The enemy is at rightmost edge
+                    enemySprite->speed_x = abs(enemySprite->speed_x);
                 } else { //The enemy is at leftmost edge
-                    enemySprite->speedX = 0 - abs(enemySprite->speedX);
+                    enemySprite->speed_x = 0 - abs(enemySprite->speed_x);
                 }
             }
             if (!enemy->visible) { //Is the enemy on the screen?
@@ -278,7 +275,7 @@ void MOVE_NMI(TITUS_level *level) {
             switch (enemy->phase) { //State dependent actions
             case 0:
                 //Forward
-                if (abs(enemySprite->y - level->player.sprite.y) > enemy->rangeY) { //Too far away
+                if (abs(enemySprite->y - level->player.sprite.y) > enemy->range_y) { //Too far away
                     continue;
                 }
                 if (abs(enemySprite->x - level->player.sprite.x) > 40) { //Too far away
@@ -286,26 +283,26 @@ void MOVE_NMI(TITUS_level *level) {
                 }
                 enemy->delay = enemySprite->y; //Delay: Last Y position, reuse of the delay variable
                 if (enemySprite->y < level->player.sprite.y) { //Player is below the enemy
-                    enemySprite->speedY = 2;
+                    enemySprite->speed_y = 2;
                 } else { //Player is above the enemy
-                    enemySprite->speedY = -2;
+                    enemySprite->speed_y = -2;
                 }
                 enemy->phase = 1; //Change state
                 UP_ANIMATION(enemySprite);
                 break;
             case 1:
                 //Attack
-                enemySprite->y += enemySprite->speedY;
-                if (labs((long)(enemySprite->y) - (long)(enemy->delay)) < enemy->rangeY) { //Delay: Last Y position, reuse of the delay variable
+                enemySprite->y += enemySprite->speed_y;
+                if (labs((long)(enemySprite->y) - (long)(enemy->delay)) < enemy->range_y) { //Delay: Last Y position, reuse of the delay variable
                     continue;
                 }
-                enemySprite->speedY = 0 - enemySprite->speedY;
+                enemySprite->speed_y = 0 - enemySprite->speed_y;
                 UP_ANIMATION(enemySprite);
                 enemy->phase = 2;
                 break;
             case 2:
                 //Back up!
-                enemySprite->y += enemySprite->speedY;
+                enemySprite->y += enemySprite->speed_y;
                 if (enemySprite->y != enemy->delay) { //Delay: Last Y position, reuse of the delay variable
                     continue;
                 }
@@ -328,7 +325,7 @@ void MOVE_NMI(TITUS_level *level) {
                 if (enemySprite->y > level->player.sprite.y) {
                     continue;
                 }
-                if (enemy->rangeX < abs(enemySprite->x - level->player.sprite.x)) {
+                if (enemy->range_x < abs(enemySprite->x - level->player.sprite.x)) {
                     continue;
                 }
                 if (abs(enemySprite->y - level->player.sprite.y) > 200) {
@@ -337,30 +334,30 @@ void MOVE_NMI(TITUS_level *level) {
                 enemy->phase = 1;
                 UP_ANIMATION(enemySprite);
                 if (enemySprite->x > level->player.sprite.x) { //Enemy is right for the player
-                    enemySprite->speedX = enemy->walkspeedX; //Move left
+                    enemySprite->speed_x = enemy->walkspeed_x; //Move left
                 } else { //Enemy is left for the player
-                    enemySprite->speedX = 0 - enemy->walkspeedX; //Move right
+                    enemySprite->speed_x = 0 - enemy->walkspeed_x; //Move right
                 }
                 break;
             case 1:
                 //Gravity walk
                 if (get_floorflag(level, (enemySprite->y >> 4), (enemySprite->x >> 4)) == FFLAG_NOFLOOR) {
-                    if (enemySprite->speedY < 16) { //16 = Max yspeed
-                        enemySprite->speedY++;
+                    if (enemySprite->speed_y < 16) { //16 = Max yspeed
+                        enemySprite->speed_y++;
                     }
-                    enemySprite->y += enemySprite->speedY;
+                    enemySprite->y += enemySprite->speed_y;
                     continue;
                 }
-                if (enemySprite->speedY != 0) {
+                if (enemySprite->speed_y != 0) {
                     if (enemySprite->x > level->player.sprite.x) { //Enemy is right for the player
-                        enemySprite->speedX = enemy->walkspeedX; //Move left
+                        enemySprite->speed_x = enemy->walkspeed_x; //Move left
                     } else { //Enemy is left for the player
-                        enemySprite->speedX = 0 - enemy->walkspeedX; //Move right
+                        enemySprite->speed_x = 0 - enemy->walkspeed_x; //Move right
                     }
                 }
-                enemySprite->speedY = 0;
+                enemySprite->speed_y = 0;
                 enemySprite->y = enemySprite->y & 0xFFF0;
-                if (enemySprite->speedX > 0) {
+                if (enemySprite->speed_x > 0) {
                     j = -1; //moving left
                 } else {
                     j = 1; //moving right
@@ -369,12 +366,12 @@ void MOVE_NMI(TITUS_level *level) {
                 if ((hflag == HFLAG_WALL) ||
                   (hflag == HFLAG_DEADLY) ||
                   (hflag == HFLAG_PADLOCK)) { //Next tile is wall, change direction
-                    enemySprite->speedX = 0 - enemySprite->speedX;
+                    enemySprite->speed_x = 0 - enemySprite->speed_x;
                 }
-                enemySprite->x -= enemySprite->speedX;
+                enemySprite->x -= enemySprite->speed_x;
                 if (enemySprite->x < 0) {
-                    enemySprite->speedX =  0 - enemySprite->speedX;
-                    enemySprite->x -= enemySprite->speedX;
+                    enemySprite->speed_x =  0 - enemySprite->speed_x;
+                    enemySprite->x -= enemySprite->speed_x;
                 }
                 if (abs(level->player.sprite.x - enemySprite->x) > 320 * 2) { //Too far away from the player in X, reset
                     enemy->phase = 2;
@@ -395,14 +392,14 @@ void MOVE_NMI(TITUS_level *level) {
                 break;
             case 2:
                 //Reset the enemy
-                if (((enemy->initY >> 4) - BITMAP_Y <= 13) && //13 tiles in Y
-                  ((enemy->initY >> 4) - BITMAP_Y >= 0) &&
-                  ((enemy->initX >> 4) - BITMAP_X < 21) && //21 tiles in X
-                  ((enemy->initX >> 4) - BITMAP_X >= 0)) {
+                if (((enemy->init_y >> 4) - BITMAP_Y <= 13) && //13 tiles in Y
+                  ((enemy->init_y >> 4) - BITMAP_Y >= 0) &&
+                  ((enemy->init_x >> 4) - BITMAP_X < 21) && //21 tiles in X
+                  ((enemy->init_x >> 4) - BITMAP_X >= 0)) {
                     continue; //Player is too close to the enemy's spawning point
                 }
-                enemySprite->y = enemy->initY;
-                enemySprite->x = enemy->initX;
+                enemySprite->y = enemy->init_y;
+                enemySprite->x = enemy->init_x;
                 enemy->phase = 0;
                 DOWN_ANIMATION(enemySprite);
                 break;
@@ -414,22 +411,22 @@ void MOVE_NMI(TITUS_level *level) {
                 }
                 //Gravity walk (equal to the first part of "case 1:")
                 if (get_floorflag(level, (enemySprite->y >> 4), (enemySprite->x >> 4)) == FFLAG_NOFLOOR) {
-                    if (enemySprite->speedY < 16) { //16 = Max yspeed
-                        enemySprite->speedY++;
+                    if (enemySprite->speed_y < 16) { //16 = Max yspeed
+                        enemySprite->speed_y++;
                     }
-                    enemySprite->y += enemySprite->speedY;
+                    enemySprite->y += enemySprite->speed_y;
                     continue;
                 }
-                if (enemySprite->speedY != 0) {
+                if (enemySprite->speed_y != 0) {
                     if (enemySprite->x > level->player.sprite.x) { //Enemy is right for the player
-                        enemySprite->speedX = enemy->walkspeedX; //Move left
+                        enemySprite->speed_x = enemy->walkspeed_x; //Move left
                     } else { //Enemy is left for the player
-                        enemySprite->speedX = 0 - enemy->walkspeedX; //Move right
+                        enemySprite->speed_x = 0 - enemy->walkspeed_x; //Move right
                     }
                 }
-                enemySprite->speedY = 0;
+                enemySprite->speed_y = 0;
                 enemySprite->y = enemySprite->y & 0xFFF0;
-                if (enemySprite->speedX > 0) {
+                if (enemySprite->speed_x > 0) {
                     j = -1; //moving left
                 } else {
                     j = 1; //moving right
@@ -438,12 +435,12 @@ void MOVE_NMI(TITUS_level *level) {
                 if ((hflag == HFLAG_WALL) ||
                   (hflag == HFLAG_DEADLY) ||
                   (hflag == HFLAG_PADLOCK)) { //Next tile is wall, change direction
-                    enemySprite->speedX = 0 - enemySprite->speedX;
+                    enemySprite->speed_x = 0 - enemySprite->speed_x;
                 }
-                enemySprite->x -= enemySprite->speedX;
+                enemySprite->x -= enemySprite->speed_x;
                 if (enemySprite->x < 0) {
-                    enemySprite->speedX =  0 - enemySprite->speedX;
-                    enemySprite->x -= enemySprite->speedX;
+                    enemySprite->speed_x =  0 - enemySprite->speed_x;
+                    enemySprite->x -= enemySprite->speed_x;
                 }
                 if (abs(level->player.sprite.x - enemySprite->x) > 320 * 2) { //Too far away from the player in X, reset
                     enemy->phase = 2;
@@ -459,7 +456,7 @@ void MOVE_NMI(TITUS_level *level) {
 
         case 8: //Gravity walk when off-screen
         case 14: //Gravity walk when off-screen (immortal)
-            if (enemyType == 14) {
+            if (enemy->type == 14) {
                 enemy->dying = 0; //Immortal
             } else if (enemy->dying != 0) { //If not 0, the enemy is dying or dead, and have special movement
                 DEAD1(level, enemy);
@@ -473,30 +470,30 @@ void MOVE_NMI(TITUS_level *level) {
                     enemy->phase = 1;
                     UP_ANIMATION(enemySprite);
                     if (enemySprite->x > level->player.sprite.x) { //Enemy is right for the player
-                        enemySprite->speedX = enemy->walkspeedX; //Move left
+                        enemySprite->speed_x = enemy->walkspeed_x; //Move left
                     } else { //Enemy is left for the player
-                        enemySprite->speedX = 0 - enemy->walkspeedX; //Move right
+                        enemySprite->speed_x = 0 - enemy->walkspeed_x; //Move right
                     }
                 }
                 break;
             case 1:
                 if (get_floorflag(level, (enemySprite->y >> 4), (enemySprite->x >> 4)) == FFLAG_NOFLOOR) {
-                    if (enemySprite->speedY < 16) { //16 = Max yspeed
-                        enemySprite->speedY++;
+                    if (enemySprite->speed_y < 16) { //16 = Max yspeed
+                        enemySprite->speed_y++;
                     }
-                    enemySprite->y += enemySprite->speedY;
+                    enemySprite->y += enemySprite->speed_y;
                     continue;
                 }
-                if (enemySprite->speedY != 0) {
+                if (enemySprite->speed_y != 0) {
                     if (enemySprite->x > level->player.sprite.x) { //Enemy is right for the player
-                        enemySprite->speedX = enemy->walkspeedX; //Move left
+                        enemySprite->speed_x = enemy->walkspeed_x; //Move left
                     } else { //Enemy is left for the player
-                        enemySprite->speedX = 0 - enemy->walkspeedX; //Move right
+                        enemySprite->speed_x = 0 - enemy->walkspeed_x; //Move right
                     }
                 }
-                enemySprite->speedY = 0;
+                enemySprite->speed_y = 0;
                 enemySprite->y = enemySprite->y & 0xFFF0;
-                if (enemySprite->speedX > 0) {
+                if (enemySprite->speed_x > 0) {
                     j = -1; //moving left
                 } else {
                     j = 1; //moving right
@@ -505,12 +502,12 @@ void MOVE_NMI(TITUS_level *level) {
                 if ((hflag == HFLAG_WALL) ||
                   (hflag == HFLAG_DEADLY) ||
                   (hflag == HFLAG_PADLOCK)) { //Next tile is wall, change direction
-                    enemySprite->speedX = 0 - enemySprite->speedX;
+                    enemySprite->speed_x = 0 - enemySprite->speed_x;
                 }
-                enemySprite->x -= enemySprite->speedX;
+                enemySprite->x -= enemySprite->speed_x;
                 if (enemySprite->x < 0) {
-                    enemySprite->speedX =  0 - enemySprite->speedX;
-                    enemySprite->x -= enemySprite->speedX;
+                    enemySprite->speed_x =  0 - enemySprite->speed_x;
+                    enemySprite->x -= enemySprite->speed_x;
                 }
                 if (abs(level->player.sprite.x - enemySprite->x) < 320 * 2) {
                     continue;
@@ -519,14 +516,14 @@ void MOVE_NMI(TITUS_level *level) {
                 break;
             case 2:
                 //Reset the enemy
-                if (((enemy->initY >> 4) - BITMAP_Y < 12) && //12 tiles in Y
-                  ((enemy->initY >> 4) - BITMAP_Y >= 0) &&
-                  ((enemy->initX >> 4) - BITMAP_X < 19) && //19 tiles in X
-                  ((enemy->initX >> 4) - BITMAP_X >= 0)) {
+                if (((enemy->init_y >> 4) - BITMAP_Y < 12) && //12 tiles in Y
+                  ((enemy->init_y >> 4) - BITMAP_Y >= 0) &&
+                  ((enemy->init_x >> 4) - BITMAP_X < 19) && //19 tiles in X
+                  ((enemy->init_x >> 4) - BITMAP_X >= 0)) {
                     continue; //Player is too close to the enemy's spawning point
                 }
-                enemySprite->y = enemy->initY;
-                enemySprite->x = enemy->initX;
+                enemySprite->y = enemy->init_y;
+                enemySprite->x = enemy->init_x;
                 enemy->phase = 0;
                 DOWN_ANIMATION(enemySprite);
                 break;
@@ -542,7 +539,7 @@ void MOVE_NMI(TITUS_level *level) {
             switch (enemy->phase) { //State dependent actions
             case 0:
                 //wait for its prey!
-                if (enemy->rangeX < abs(level->player.sprite.x - enemySprite->x)) {
+                if (enemy->range_x < abs(level->player.sprite.x - enemySprite->x)) {
                     continue;
                 }
                 if (abs(level->player.sprite.y - enemySprite->y) > 60) {
@@ -551,9 +548,9 @@ void MOVE_NMI(TITUS_level *level) {
                 enemy->phase = 1;
                 UP_ANIMATION(enemySprite);
                 if (enemySprite->x > level->player.sprite.x) { //Enemy is right for the player
-                    enemySprite->speedX = enemy->walkspeedX; //Move left
+                    enemySprite->speed_x = enemy->walkspeed_x; //Move left
                 } else { //Enemy is left for the player
-                    enemySprite->speedX = 0 - enemy->walkspeedX; //Move right
+                    enemySprite->speed_x = 0 - enemy->walkspeed_x; //Move right
                 }
                 break;
             case 1:
@@ -574,29 +571,29 @@ void MOVE_NMI(TITUS_level *level) {
                         enemySprite->animation--; //Previous animation frame
                         GAL_FORM(level, enemy);
                         if (enemySprite->x > level->player.sprite.x) { //Enemy is right for the player
-                            enemySprite->speedX = enemy->walkspeedX; //Move left
+                            enemySprite->speed_x = enemy->walkspeed_x; //Move left
                         } else { //Enemy is left for the player
-                            enemySprite->speedX = 0 - enemy->walkspeedX; //Move right
+                            enemySprite->speed_x = 0 - enemy->walkspeed_x; //Move right
                         }
                         enemy->phase = 1;
                     } else if (enemy->trigger) {
                         if (enemySprite->x > level->player.sprite.x) { //Enemy is right for the player
-                            enemySprite->speedX = enemy->walkspeedX; //Move left
+                            enemySprite->speed_x = enemy->walkspeed_x; //Move left
                         } else { //Enemy is left for the player
-                            enemySprite->speedX = 0 - enemy->walkspeedX; //Move right
+                            enemySprite->speed_x = 0 - enemy->walkspeed_x; //Move right
                         }
                         enemy->phase = 1;
                     }
                     continue;
                 }
                 if (get_floorflag(level, (enemySprite->y >> 4), (enemySprite->x >> 4)) == FFLAG_NOFLOOR) {
-                    enemySprite->speedX = abs(enemySprite->speedX);
-                    if (enemy->initX > enemySprite->x) {
-                        enemySprite->speedX = 0 - enemySprite->speedX;
+                    enemySprite->speed_x = abs(enemySprite->speed_x);
+                    if (enemy->init_x > enemySprite->x) {
+                        enemySprite->speed_x = 0 - enemySprite->speed_x;
                     }
                 }
                 enemySprite->y = enemySprite->y & 0xFFF0;
-                if (enemySprite->speedX > 0) {
+                if (enemySprite->speed_x > 0) {
                     j = -1; //moving left
                 } else {
                     j = 1; //moving right
@@ -605,12 +602,12 @@ void MOVE_NMI(TITUS_level *level) {
                 if ((hflag == HFLAG_WALL) ||
                   (hflag == HFLAG_DEADLY) ||
                   (hflag == HFLAG_PADLOCK)) { //Next tile is wall, change direction
-                    enemySprite->speedX = 0 - enemySprite->speedX;
+                    enemySprite->speed_x = 0 - enemySprite->speed_x;
                 }
-                enemySprite->x -= enemySprite->speedX;
+                enemySprite->x -= enemySprite->speed_x;
                 if (enemySprite->x < 0) {
-                    enemySprite->speedX = 0 - enemySprite->speedX;
-                    enemySprite->x -= enemySprite->speedX;
+                    enemySprite->speed_x = 0 - enemySprite->speed_x;
+                    enemySprite->x -= enemySprite->speed_x;
                 }
                 if (abs(level->player.sprite.x - enemySprite->x) < 320 * 4) {
                     continue;
@@ -619,14 +616,14 @@ void MOVE_NMI(TITUS_level *level) {
                 break;
             case 2:
                 //Reset, if not visible on the screen
-                if (((enemy->initY >> 4) - BITMAP_Y <= 12) && //12 tiles in Y
-                  ((enemy->initY >> 4) - BITMAP_Y >= 0) &&
-                  ((enemy->initX >> 4) - BITMAP_X < 25) && //25 tiles in X
-                  ((enemy->initX >> 4) - BITMAP_X >= 0)) {
+                if (((enemy->init_y >> 4) - BITMAP_Y <= 12) && //12 tiles in Y
+                  ((enemy->init_y >> 4) - BITMAP_Y >= 0) &&
+                  ((enemy->init_x >> 4) - BITMAP_X < 25) && //25 tiles in X
+                  ((enemy->init_x >> 4) - BITMAP_X >= 0)) {
                     continue; //Player is too close to the enemy's spawning point
                 }
-                enemySprite->y = enemy->initY;
-                enemySprite->x = enemy->initX;
+                enemySprite->y = enemy->init_y;
+                enemySprite->x = enemy->init_x;
                 enemy->phase = 0;
                 DOWN_ANIMATION(enemySprite);
                 break;
@@ -637,16 +634,16 @@ void MOVE_NMI(TITUS_level *level) {
                     enemySprite->animation--; //Previous animation frame
                     GAL_FORM(level, enemy);
                     if (enemySprite->x > level->player.sprite.x) { //Enemy is right for the player
-                        enemySprite->speedX = enemy->walkspeedX; //Move left
+                        enemySprite->speed_x = enemy->walkspeed_x; //Move left
                     } else { //Enemy is left for the player
-                        enemySprite->speedX = 0 - enemy->walkspeedX; //Move right
+                        enemySprite->speed_x = 0 - enemy->walkspeed_x; //Move right
                     }
                     enemy->phase = 1;
                 } else if (enemy->trigger) {
                     if (enemySprite->x > level->player.sprite.x) { //Enemy is right for the player
-                        enemySprite->speedX = enemy->walkspeedX; //Move left
+                        enemySprite->speed_x = enemy->walkspeed_x; //Move left
                     } else { //Enemy is left for the player
-                        enemySprite->speedX = 0 - enemy->walkspeedX; //Move right
+                        enemySprite->speed_x = 0 - enemy->walkspeed_x; //Move right
                     }
                     enemy->phase = 1;
                 }
@@ -665,7 +662,7 @@ void MOVE_NMI(TITUS_level *level) {
                 if (FURTIF_FLAG != 0) {
                     continue;
                 }
-                if (enemy->rangeX < abs(level->player.sprite.x - enemySprite->x)) {
+                if (enemy->range_x < abs(level->player.sprite.x - enemySprite->x)) {
                     continue;
                 }
                 if (abs(level->player.sprite.y - enemySprite->y) > 26) {
@@ -674,22 +671,22 @@ void MOVE_NMI(TITUS_level *level) {
                 enemy->phase = 1;
                 UP_ANIMATION(enemySprite);
                 if (enemySprite->x > level->player.sprite.x) { //Enemy is right for the player
-                    enemySprite->speedX = enemy->walkspeedX; //Move left
+                    enemySprite->speed_x = enemy->walkspeed_x; //Move left
                 } else { //Enemy is left for the player
-                    enemySprite->speedX = 0 - enemy->walkspeedX; //Move right
+                    enemySprite->speed_x = 0 - enemy->walkspeed_x; //Move right
                 }
             case 1:
                 //wait
                 if (FURTIF_FLAG != 0) {
                     continue;
                 }
-                if (enemy->rangeX < abs(level->player.sprite.x - enemySprite->x)) {
+                if (enemy->range_x < abs(level->player.sprite.x - enemySprite->x)) {
                     //Switch back to state 0
                     DOWN_ANIMATION(enemySprite);
                     enemy->phase = 0;
                     continue;
                 }
-                if ((enemy->rangeX - 50 >= abs(level->player.sprite.x - enemySprite->x)) &&
+                if ((enemy->range_x - 50 >= abs(level->player.sprite.x - enemySprite->x)) &&
                   (abs(level->player.sprite.y - enemySprite->y) <= 60)) {
                     enemy->phase = 2;
                     UP_ANIMATION(enemySprite);
@@ -698,13 +695,13 @@ void MOVE_NMI(TITUS_level *level) {
             case 2:
                 //run
                 if (get_floorflag(level, (enemySprite->y >> 4), (enemySprite->x >> 4)) == FFLAG_NOFLOOR) {
-                    enemySprite->speedX = abs(enemySprite->speedX);
-                    if (enemy->initX > enemySprite->x) {
-                        enemySprite->speedX = 0 - enemySprite->speedX;
+                    enemySprite->speed_x = abs(enemySprite->speed_x);
+                    if (enemy->init_x > enemySprite->x) {
+                        enemySprite->speed_x = 0 - enemySprite->speed_x;
                     }
                 }
                 enemySprite->y = enemySprite->y & 0xFFF0;
-                if (enemySprite->speedX > 0) {
+                if (enemySprite->speed_x > 0) {
                     j = -1; //moving left
                 } else {
                     j = 1; //moving right
@@ -713,15 +710,15 @@ void MOVE_NMI(TITUS_level *level) {
                 if ((hflag == HFLAG_WALL) ||
                   (hflag == HFLAG_DEADLY) ||
                   (hflag == HFLAG_PADLOCK)) { //Next tile is wall, change direction
-                    enemySprite->speedX = abs(enemySprite->speedX);
-                    if (enemy->initX > enemySprite->x) {
-                        enemySprite->speedX = 0 - enemySprite->speedX;
+                    enemySprite->speed_x = abs(enemySprite->speed_x);
+                    if (enemy->init_x > enemySprite->x) {
+                        enemySprite->speed_x = 0 - enemySprite->speed_x;
                     }
                 }
-                enemySprite->x -= enemySprite->speedX;
+                enemySprite->x -= enemySprite->speed_x;
                 if (enemySprite->x < 0) {
-                    enemySprite->speedX = 0 - enemySprite->speedX;
-                    enemySprite->x -= enemySprite->speedX;
+                    enemySprite->speed_x = 0 - enemySprite->speed_x;
+                    enemySprite->x -= enemySprite->speed_x;
                 }
                 if (abs(level->player.sprite.x - enemySprite->x) >= 320 * 2) {
                     enemy->phase = 3;
@@ -729,14 +726,14 @@ void MOVE_NMI(TITUS_level *level) {
                 break;
             case 3:
                 //Reset, if not visible on the screen
-                if (((enemy->initY >> 4) - BITMAP_Y <= 13) && //13 tiles in Y
-                  ((enemy->initY >> 4) - BITMAP_Y >= 0) &&
-                  ((enemy->initX >> 4) - BITMAP_X < 21) && //21 tiles in X
-                  ((enemy->initX >> 4) - BITMAP_X >= 0)) {
+                if (((enemy->init_y >> 4) - BITMAP_Y <= 13) && //13 tiles in Y
+                  ((enemy->init_y >> 4) - BITMAP_Y >= 0) &&
+                  ((enemy->init_x >> 4) - BITMAP_X < 21) && //21 tiles in X
+                  ((enemy->init_x >> 4) - BITMAP_X >= 0)) {
                     continue; //Spawning point is visible on screen
                 }
-                enemySprite->y = enemy->initY;
-                enemySprite->x = enemy->initX;
+                enemySprite->y = enemy->init_y;
+                enemySprite->x = enemy->init_x;
                 DOWN_ANIMATION(enemySprite);
                 DOWN_ANIMATION(enemySprite);
                 enemy->phase = 0;
@@ -753,7 +750,7 @@ void MOVE_NMI(TITUS_level *level) {
             switch (enemy->phase) { //State dependent actions
             case 0:
                 //wait
-                if (enemy->rangeX < abs(level->player.sprite.x - enemySprite->x)) {
+                if (enemy->range_x < abs(level->player.sprite.x - enemySprite->x)) {
                     continue;
                 }
                 if (abs(level->player.sprite.y - enemySprite->y) > 26) {
@@ -762,16 +759,16 @@ void MOVE_NMI(TITUS_level *level) {
                 enemy->phase = 1;
                 UP_ANIMATION(enemySprite);
                 if (enemySprite->x > level->player.sprite.x) { //Enemy is right for the player
-                    enemySprite->speedX = enemy->walkspeedX; //Move left
+                    enemySprite->speed_x = enemy->walkspeed_x; //Move left
                 } else { //Enemy is left for the player
-                    enemySprite->speedX = 0 - enemy->walkspeedX; //Move right
+                    enemySprite->speed_x = 0 - enemy->walkspeed_x; //Move right
                 }
                 break;
             case 1:
                 if (get_floorflag(level, (enemySprite->y >> 4), (enemySprite->x >> 4)) == FFLAG_NOFLOOR) {
-                    enemySprite->speedX = abs(enemySprite->speedX);
-                    if (enemy->initX > enemySprite->x) {
-                        enemySprite->speedX = 0 - enemySprite->speedX;
+                    enemySprite->speed_x = abs(enemySprite->speed_x);
+                    if (enemy->init_x > enemySprite->x) {
+                        enemySprite->speed_x = 0 - enemySprite->speed_x;
                     }
                 }
                 enemySprite->y = enemySprite->y & 0xFFF0;
@@ -779,12 +776,12 @@ void MOVE_NMI(TITUS_level *level) {
                 if ((hflag == HFLAG_WALL) ||
                   (hflag == HFLAG_DEADLY) ||
                   (hflag == HFLAG_PADLOCK)) { //Next tile is wall, change direction
-                    enemySprite->speedX = 0 - enemySprite->speedX;
+                    enemySprite->speed_x = 0 - enemySprite->speed_x;
                 }
-                enemySprite->x -= enemySprite->speedX;
+                enemySprite->x -= enemySprite->speed_x;
                 if (enemySprite->x < 0) {
-                    enemySprite->speedX = 0 - enemySprite->speedX;
-                    enemySprite->x -= enemySprite->speedX;
+                    enemySprite->speed_x = 0 - enemySprite->speed_x;
+                    enemySprite->x -= enemySprite->speed_x;
                 }
                 if (abs(level->player.sprite.x - enemySprite->x) >= 320 * 2) {
                     enemy->phase = 2;
@@ -800,9 +797,9 @@ void MOVE_NMI(TITUS_level *level) {
                     continue;
                 }
                 if (enemySprite->x > level->player.sprite.x) { //Enemy is right for the player
-                    enemySprite->speedX = enemy->walkspeedX; //Move left
+                    enemySprite->speed_x = enemy->walkspeed_x; //Move left
                 } else { //Enemy is left for the player
-                    enemySprite->speedX = 0 - enemy->walkspeedX; //Move right
+                    enemySprite->speed_x = 0 - enemy->walkspeed_x; //Move right
                 }
                 enemy->phase = 3; //phase started!
                 UP_ANIMATION(enemySprite);
@@ -810,12 +807,12 @@ void MOVE_NMI(TITUS_level *level) {
                 break;
             case 2:
                 //Reset enemy when spawn point isn't visible for the player
-                if (((enemy->initY >> 4) - BITMAP_Y > 13) || //13 tiles in Y (Spawn is below)
-                  ((enemy->initY >> 4) - BITMAP_Y < 0) || // (Spawn is above)
-                  ((enemy->initX >> 4) - BITMAP_X >= 21) || //21 tiles in X (Spawn is to the right)
-                  ((enemy->initX >> 4) - BITMAP_X < 0)) { //(Spawn is to the right)
-                    enemySprite->x = enemy->initX;
-                    enemySprite->y = enemy->initY;
+                if (((enemy->init_y >> 4) - BITMAP_Y > 13) || //13 tiles in Y (Spawn is below)
+                  ((enemy->init_y >> 4) - BITMAP_Y < 0) || // (Spawn is above)
+                  ((enemy->init_x >> 4) - BITMAP_X >= 21) || //21 tiles in X (Spawn is to the right)
+                  ((enemy->init_x >> 4) - BITMAP_X < 0)) { //(Spawn is to the right)
+                    enemySprite->x = enemy->init_x;
+                    enemySprite->y = enemy->init_y;
                     DOWN_ANIMATION(enemySprite);
                     enemy->phase = 0;
                 }
@@ -842,24 +839,24 @@ void MOVE_NMI(TITUS_level *level) {
             case 0:
                 //init
                 UP_ANIMATION(enemySprite);
-                enemySprite->speedY = enemy->rangeY;
-                enemy->initY = enemySprite->y;
+                enemySprite->speed_y = enemy->range_y;
+                enemy->init_y = enemySprite->y;
                 enemy->phase = 1;
                 break;
             case 1:
                 //Fireball moving up
-                enemySprite->y -= enemySprite->speedY;
-                enemySprite->speedY--;
-                if (enemySprite->speedY == 0) {
+                enemySprite->y -= enemySprite->speed_y;
+                enemySprite->speed_y--;
+                if (enemySprite->speed_y == 0) {
                     enemy->phase = 2;
                 }
                 break;
             case 2:
                 //Fireball falling down
-                enemySprite->y += enemySprite->speedY;
-                enemySprite->speedY++;
-                if (enemySprite->y >= enemy->initY) {
-                    enemySprite->y = enemy->initY;
+                enemySprite->y += enemySprite->speed_y;
+                enemySprite->speed_y++;
+                if (enemySprite->y >= enemy->init_y) {
+                    enemySprite->y = enemy->init_y;
                     enemy->counter = enemy->delay;
                     enemy->phase = 3;
                     DOWN_ANIMATION(enemySprite);
@@ -885,33 +882,33 @@ void MOVE_NMI(TITUS_level *level) {
             case 0:
                 //remain at rest or attack!
                 if (level->player.sprite.x >= enemySprite->x) {
-                    enemySprite->speedX = 0 - abs(enemySprite->speedX);
+                    enemySprite->speed_x = 0 - abs(enemySprite->speed_x);
                 } else {
-                    enemySprite->speedX = abs(enemySprite->speedX);
+                    enemySprite->speed_x = abs(enemySprite->speed_x);
                 }
-                if ((abs(level->player.sprite.x - enemySprite->x) <= enemy->rangeX) &&
+                if ((abs(level->player.sprite.x - enemySprite->x) <= enemy->range_x) &&
                   (abs(level->player.sprite.y - enemySprite->y) <= 40)) {
                     UP_ANIMATION(enemySprite);
                     enemy->phase = 1;
-                    enemySprite->speedY = 10;
+                    enemySprite->speed_y = 10;
                 }
                 break;
             case 1:
                 //Jump, move upwards
-                enemySprite->x -= enemySprite->speedX;
-                enemySprite->y -= enemySprite->speedY;
-                enemySprite->speedY--;
-                if (enemySprite->speedY == 0) {
+                enemySprite->x -= enemySprite->speed_x;
+                enemySprite->y -= enemySprite->speed_y;
+                enemySprite->speed_y--;
+                if (enemySprite->speed_y == 0) {
                     UP_ANIMATION(enemySprite);
                     enemy->phase = 2;
                 }
                 break;
             case 2:
                 //Fall down to the ground
-                enemySprite->x -= enemySprite->speedX;
-                enemySprite->y += enemySprite->speedY;
-                enemySprite->speedY++;
-                if (enemySprite->speedY > 10) {
+                enemySprite->x -= enemySprite->speed_x;
+                enemySprite->y += enemySprite->speed_y;
+                enemySprite->speed_y++;
+                if (enemySprite->speed_y > 10) {
                     enemy->phase = 3;
                     UP_ANIMATION(enemySprite);
                     enemy->counter = enemy->delay;
@@ -955,11 +952,11 @@ void MOVE_NMI(TITUS_level *level) {
                 enemy->counter++;
                 continue;
             }
-            if (enemy->rangeX < abs(enemySprite->x - level->player.sprite.x)) { //hero too far! at x
+            if (enemy->range_x < abs(enemySprite->x - level->player.sprite.x)) { //hero too far! at x
                 enemy->counter = 0;
                 continue;
             }
-            if (enemy->rangeY < (level->player.sprite.y - enemySprite->y)) { //hero too far! at y
+            if (enemy->range_y < (level->player.sprite.y - enemySprite->y)) { //hero too far! at y
                 continue;
             }
             //you attack, so finding a free object
@@ -979,7 +976,7 @@ void MOVE_NMI(TITUS_level *level) {
             level->object[j].sprite.y = enemySprite->y;
             level->object[j].sprite.droptobottom = true;
             level->object[j].sprite.killing = true;
-            level->object[j].sprite.speedY = 0;
+            level->object[j].sprite.speed_y = 0;
             GRAVITY_FLAG = 4;
             DOWN_ANIMATION(enemySprite);
             enemy->counter = 0;
@@ -991,39 +988,39 @@ void MOVE_NMI(TITUS_level *level) {
                 DEAD1(level, enemy);
                 continue;
             }
-            if ((level->player.sprite.x < (int16_t)(enemy->initX - enemy->rangeX)) || //Player is too far left
-              (level->player.sprite.x > (int16_t)(enemy->initX + enemy->rangeX)) || //Player is too far right
-              (level->player.sprite.y < (int16_t)(enemy->initY - enemy->rangeY)) || //Player is too high above
-              (level->player.sprite.y > (int16_t)(enemy->initY + enemy->rangeY))) { //Player is too far below
+            if ((level->player.sprite.x < (int16_t)(enemy->init_x - enemy->range_x)) || //Player is too far left
+              (level->player.sprite.x > (int16_t)(enemy->init_x + enemy->range_x)) || //Player is too far right
+              (level->player.sprite.y < (int16_t)(enemy->init_y - enemy->range_y)) || //Player is too high above
+              (level->player.sprite.y > (int16_t)(enemy->init_y + enemy->range_y))) { //Player is too far below
                 //The player is too far away, move enemy to center
-                if (enemy->initX != enemySprite->x) {
-                    enemySprite->speedX = abs(enemySprite->speedX);
-                    if (enemy->initX > enemySprite->x) {
-                        enemySprite->speedX = 0 - enemySprite->speedX;
+                if (enemy->init_x != enemySprite->x) {
+                    enemySprite->speed_x = abs(enemySprite->speed_x);
+                    if (enemy->init_x > enemySprite->x) {
+                        enemySprite->speed_x = 0 - enemySprite->speed_x;
                     }
-                    enemySprite->x -= enemySprite->speedX;
+                    enemySprite->x -= enemySprite->speed_x;
                 }
-                if (enemy->initY != enemySprite->y) {
-                    if (enemy->initY > enemySprite->y) {
-                        enemySprite->y += enemySprite->speedY;
+                if (enemy->init_y != enemySprite->y) {
+                    if (enemy->init_y > enemySprite->y) {
+                        enemySprite->y += enemySprite->speed_y;
                     } else {
-                        enemySprite->y -= enemySprite->speedY;
+                        enemySprite->y -= enemySprite->speed_y;
                     }
                 }
             } else {
                 //The player is inside the guarded area, move enemy to player
                 if (level->player.sprite.x != enemySprite->x) {
-                    enemySprite->speedX = abs(enemySprite->speedX);
+                    enemySprite->speed_x = abs(enemySprite->speed_x);
                     if (level->player.sprite.x > enemySprite->x) {
-                        enemySprite->speedX = 0 - enemySprite->speedX;
+                        enemySprite->speed_x = 0 - enemySprite->speed_x;
                     }
-                    enemySprite->x -= enemySprite->speedX;
+                    enemySprite->x -= enemySprite->speed_x;
                 }
                 if (level->player.sprite.y != enemySprite->y) {
                     if (level->player.sprite.y > enemySprite->y) {
-                        enemySprite->y += enemySprite->speedY;
+                        enemySprite->y += enemySprite->speed_y;
                     } else {
-                        enemySprite->y -= enemySprite->speedY;
+                        enemySprite->y -= enemySprite->speed_y;
                     }
                 }
             }
@@ -1037,16 +1034,16 @@ void DEAD1(TITUS_level *level, TITUS_enemy *enemy) {
       (enemy->dead_sprite == -1)) {
         if ((enemy->dying & 0x01) == 0) {
             enemy->dying = enemy->dying | 0x01;
-            enemy->sprite.speedY = -10;
+            enemy->sprite.speed_y = -10;
             enemy->phase = 0;
         }
         if (enemy->phase != 0xFF) {
-            enemy->sprite.y += enemy->sprite.speedY;
+            enemy->sprite.y += enemy->sprite.speed_y;
             if (SEECHOC_FLAG != 0) {
-                level->player.sprite2.y += enemy->sprite.speedY;
+                level->player.sprite2.y += enemy->sprite.speed_y;
             }
-            if (enemy->sprite.speedY < MAX_SPEED_DEAD) {
-                enemy->sprite.speedY++;
+            if (enemy->sprite.speed_y < MAX_SPEED_DEAD) {
+                enemy->sprite.speed_y++;
             }
         }
     } else {
@@ -1054,7 +1051,7 @@ void DEAD1(TITUS_level *level, TITUS_enemy *enemy) {
         updateenemysprite(level, enemy, enemy->dead_sprite, false);
         enemy->sprite.flash = false;
         enemy->sprite.visible = false;
-        enemy->sprite.speedY = 0;
+        enemy->sprite.speed_y = 0;
         enemy->phase = -1;
     }
 }
@@ -1149,11 +1146,11 @@ void SET_NMI(TITUS_level *level) {
         hit = 0;
         if (GRAVITY_FLAG != 0) { //Collision with a moving object?
             for (k = 0; k < OBJECT_CAPACITY; k++) {
-                if (level->object[k].sprite.speedX == 0) {
-                    if (level->object[k].sprite.speedY == 0) {
+                if (level->object[k].sprite.speed_x == 0) {
+                    if (level->object[k].sprite.speed_y == 0) {
                         continue;
                     }
-                    if (level->object[k].mass < 10) {
+                    if (level->object[k].momentum < 10) {
                         continue;
                     }
                 }
@@ -1180,7 +1177,7 @@ void SET_NMI(TITUS_level *level) {
         if (hit != 0) {
             if (hit == 1) {
                 if (level->object[k].sprite.number != 73) { //Change direction of the object, except if the object is a small iron ball
-                    level->object[k].sprite.speedX = 0 - level->object[k].sprite.speedX;
+                    level->object[k].sprite.speed_x = 0 - level->object[k].sprite.speed_x;
                 }
             }
             //If final enemy, remove energy
@@ -1225,7 +1222,7 @@ void GAL_FORM(TITUS_level *level, TITUS_enemy *enemy) { //Enemy animation
     }
     enemy->trigger = *image & 0x2000;
     updateenemysprite(level, enemy, (*image & 0x00FF) + FIRST_NMI, true);
-    enemy->sprite.flipped = (enemy->sprite.speedX < 0) ? true : false;
+    enemy->sprite.flipped = (enemy->sprite.speed_x < 0) ? true : false;
     image++;
     if (*image < 0) {
         image += (*image >> 1); //jump back to start of animation
@@ -1256,7 +1253,7 @@ void ACTIONC_NMI(TITUS_level *level, TITUS_enemy *enemy) {
         if (NMI_VS_DROP(&(enemy->sprite), &(level->player.sprite))) {
             if (enemy->type != 11) { //Walk and shoot
                 if (enemy->sprite.number != 178) { //Periscope
-                    enemy->sprite.speedX = 0 - enemy->sprite.speedX;
+                    enemy->sprite.speed_x = 0 - enemy->sprite.speed_x;
                 }
             }
             if ((enemy->sprite.number >= FIRST_NMI + 53) &&
@@ -1280,11 +1277,11 @@ void KICK_ASH(TITUS_level *level, TITUS_sprite *enemysprite, int16_t power) {
     KICK_FLAG = 24;
     CHOC_FLAG = 0;
     LAST_ORDER = 0;
-    p_sprite->speedX = power;
+    p_sprite->speed_x = power;
     if (p_sprite->x <= enemysprite->x) {
-        p_sprite->speedX = 0 - p_sprite->speedX;
+        p_sprite->speed_x = 0 - p_sprite->speed_x;
     }
-    p_sprite->speedY = -8*16;
+    p_sprite->speed_y = -8*16;
     FORCE_POSE(level);
 }
 
@@ -1323,8 +1320,8 @@ bool NMI_VS_DROP(TITUS_sprite *enemysprite, TITUS_sprite *sprite) {
 
 void SEE_CHOC(TITUS_level *level) {
     updatesprite(level, &(level->player.sprite2), FIRST_OBJET + 15, true); //Hit (a throw hits an enemy)
-    level->player.sprite2.speedX = 0;
-    level->player.sprite2.speedY = 0;
+    level->player.sprite2.speed_x = 0;
+    level->player.sprite2.speed_y = 0;
     SEECHOC_FLAG = 5;
 }
 
@@ -1332,15 +1329,15 @@ void MOVE_TRASH(TITUS_level *level) {
     int16_t i, tmp;
     for (i = 0; i < TRASH_CAPACITY; i++) {
         if (!level->trash[i].enabled) continue;
-        if (level->trash[i].speedX != 0) {
-            level->trash[i].x += (level->trash[i].speedX >> 4);
+        if (level->trash[i].speed_x != 0) {
+            level->trash[i].x += (level->trash[i].speed_x >> 4);
             tmp = (level->trash[i].x >> 4) - BITMAP_X;
             if ((tmp < 0) || (tmp > screen_width)) {
                 level->trash[i].enabled = false;
                 continue;
             }
             if (tmp != 0) { //Bug in the code
-                level->trash[i].y += (level->trash[i].speedY >> 4);
+                level->trash[i].y += (level->trash[i].speed_y >> 4);
                 tmp = (level->trash[i].y >> 4) - BITMAP_Y;
                 if ((tmp < 0) || (tmp > screen_height*16)) { //Bug?
                     level->trash[i].enabled = false;
@@ -1349,7 +1346,7 @@ void MOVE_TRASH(TITUS_level *level) {
             }
         }
         if (!GODMODE && NMI_VS_DROP(&(level->trash[i]), &(level->player.sprite))) { //Trash vs player
-            level->trash[i].x -= level->trash[i].speedX;
+            level->trash[i].x -= level->trash[i].speed_x;
             KICK_ASH(level, &(level->trash[i]), 70);
             level->trash[i].enabled = false;
             continue;
@@ -1372,12 +1369,12 @@ void PUT_BULLET(TITUS_level *level, TITUS_enemy *enemy, TITUS_sprite *bullet) {
     bullet->y = enemy->sprite.y - (int8_t)(*(enemy->sprite.animation - 1) & 0x00FF);
     updatesprite(level, bullet, (*(enemy->sprite.animation - 2) & 0x1FFF) + FIRST_OBJET, true);
     if (enemy->sprite.x < level->player.sprite.x) {
-        bullet->speedX = 16*11;
+        bullet->speed_x = 16*11;
         bullet->flipped = true;
     } else {
-        bullet->speedX = -16*11;
+        bullet->speed_x = -16*11;
         bullet->flipped = false;
     }
-    bullet->speedY = 0;
-    bullet->x += bullet->speedX >> 4;
+    bullet->speed_y = 0;
+    bullet->x += bullet->speed_x >> 4;
 }

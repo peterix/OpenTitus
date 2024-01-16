@@ -112,12 +112,12 @@ fn X_ADJUST(level: *c.TITUS_level) void {
 
 fn Y_ADJUST(level: *c.TITUS_level) void {
     var player = &(level.player);
-    if (player.sprite.speedY == 0) {
+    if (player.sprite.speed_y == 0) {
         globals.g_scroll_y = false;
     }
     var pstileY: i16 = (player.sprite.y >> 4) - globals.BITMAP_Y; //Player screen tile Y (0 to 11)
     if (!globals.g_scroll_y) {
-        if ((player.sprite.speedY == 0) and (globals.LADDER_FLAG == false)) {
+        if ((player.sprite.speed_y == 0) and (globals.LADDER_FLAG == false)) {
             if (pstileY >= globals.screen_height - 1) {
                 globals.g_scroll_y_target = globals.screen_height - 2;
                 globals.g_scroll_y = true;

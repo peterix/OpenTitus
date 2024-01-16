@@ -96,7 +96,7 @@ pub export fn draw_tiles(level: *c.TITUS_level) void {
             dest.x = x * 16 + globals.g_scroll_px_offset;
             dest.y = y * 16 + y_offset;
             var parent_level: *lvl.Level = @ptrCast(@alignCast(level.parent));
-            const tile = parent_level.tilemap[tileY][tileX];
+            const tile = parent_level.getTile(tileX, tileY);
             const surface = level.tile[level.tile[tile].animation[globals.tile_anim]].tiledata;
             _ = c.SDL_BlitSurface(surface, null, window.screen, &dest);
         }

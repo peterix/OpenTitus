@@ -29,32 +29,32 @@ const globals = @import("globals.zig");
 const c = @import("c.zig");
 
 pub fn elevators_move(level: *c.TITUS_level) void {
-    var elevators = &level.*.elevator;
+    var elevators = &level.elevator;
     for (0..c.ELEVATOR_CAPACITY) |i| {
         var elevator = &elevators[i];
-        if (elevator.*.enabled == false) {
+        if (elevator.enabled == false) {
             continue;
         }
 
         // move all elevators
-        elevator.*.sprite.x += elevator.*.sprite.speedX;
-        elevator.*.sprite.y += elevator.*.sprite.speedY;
-        elevator.*.counter += 1;
-        if (elevator.*.counter >= elevator.*.range) {
-            elevator.*.counter = 0;
-            elevator.*.sprite.speedX = 0 - elevator.*.sprite.speedX;
-            elevator.*.sprite.speedY = 0 - elevator.*.sprite.speedY;
+        elevator.sprite.x += elevator.sprite.speed_x;
+        elevator.sprite.y += elevator.sprite.speed_y;
+        elevator.counter += 1;
+        if (elevator.counter >= elevator.range) {
+            elevator.counter = 0;
+            elevator.sprite.speed_x = 0 - elevator.sprite.speed_x;
+            elevator.sprite.speed_y = 0 - elevator.sprite.speed_y;
         }
 
         // if elevators are out of the screen space, turn them invisible
-        if (((elevator.*.sprite.x + 16 - (globals.BITMAP_X * 16)) >= 0) and // +16: closer to center
-            ((elevator.*.sprite.x - 16 - (globals.BITMAP_X * 16)) <= c.screen_width * 16) and // -16: closer to center
-            ((elevator.*.sprite.y - (globals.BITMAP_Y * 16)) >= 0) and
-            ((elevator.*.sprite.y - (globals.BITMAP_Y * 16)) - 16 <= c.screen_height * 16))
+        if (((elevator.sprite.x + 16 - (globals.BITMAP_X * 16)) >= 0) and // +16: closer to center
+            ((elevator.sprite.x - 16 - (globals.BITMAP_X * 16)) <= c.screen_width * 16) and // -16: closer to center
+            ((elevator.sprite.y - (globals.BITMAP_Y * 16)) >= 0) and
+            ((elevator.sprite.y - (globals.BITMAP_Y * 16)) - 16 <= c.screen_height * 16))
         {
-            elevator.*.sprite.invisible = false;
+            elevator.sprite.invisible = false;
         } else {
-            elevator.*.sprite.invisible = true; //Not necessary, but to mimic the original game
+            elevator.sprite.invisible = true; //Not necessary, but to mimic the original game
         }
     }
 }

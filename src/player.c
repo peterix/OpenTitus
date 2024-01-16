@@ -179,10 +179,10 @@ int move_player(ScreenContext *context, TITUS_level *level) {
     X_FLAG = player->x_axis != 0;
     Y_FLAG = player->y_axis != 0;
     if (NOCLIP) {
-        player->sprite.speedX = player->x_axis * 100;
-        player->sprite.speedY = player->y_axis * 100;
-        player->sprite.x += (player->sprite.speedX >> 4);
-        player->sprite.y += (player->sprite.speedY >> 4);
+        player->sprite.speed_x = player->x_axis * 100;
+        player->sprite.speed_y = player->y_axis * 100;
+        player->sprite.x += (player->sprite.speed_x >> 4);
+        player->sprite.y += (player->sprite.speed_y >> 4);
         return 0;
     }
 
@@ -267,12 +267,12 @@ int move_player(ScreenContext *context, TITUS_level *level) {
 
     //Part 3: Move the player + collision detection
     //Move the player in X if the new position doesn't exceed 8 pixels from the edges
-    if (((player->sprite.speedX < 0) && ((player->sprite.x + (player->sprite.speedX >> 4)) >= 8)) || //Going left
-      ((player->sprite.speedX > 0) && ((player->sprite.x + (player->sprite.speedX >> 4)) <= (level->width << 4) - 8))) { //Going right
-        player->sprite.x += player->sprite.speedX >> 4;
+    if (((player->sprite.speed_x < 0) && ((player->sprite.x + (player->sprite.speed_x >> 4)) >= 8)) || //Going left
+      ((player->sprite.speed_x > 0) && ((player->sprite.x + (player->sprite.speed_x >> 4)) <= (level->width << 4) - 8))) { //Going right
+        player->sprite.x += player->sprite.speed_x >> 4;
     }
     //Move player in Y
-    player->sprite.y += (player->sprite.speedY >> 4);
+    player->sprite.y += (player->sprite.speed_y >> 4);
     //Test for collisions
     BRK_COLLISION(context, level);
 
@@ -280,13 +280,13 @@ int move_player(ScreenContext *context, TITUS_level *level) {
     //Move throwed/carried object
     if (DROP_FLAG) {
         //sprite2: throwed or dropped object
-        newX = (player->sprite2.speedX >> 4) + player->sprite2.x;
+        newX = (player->sprite2.speed_x >> 4) + player->sprite2.x;
         if ((newX < (level->width << 4)) && //Left for right level edge
           (newX >= 0) && //Right for level left edge
           (newX >= (BITMAP_X << 4) - GESTION_X) && //Max 40 pixels left for screen (bug: the purpose was probably one screen left for the screen)
           (newX <= (BITMAP_X << 4) + (screen_width << 4) + GESTION_X)) { //Max 40 pixels right for screen
             player->sprite2.x = newX;
-            newY = (player->sprite2.speedY >> 4) + player->sprite2.y;
+            newY = (player->sprite2.speed_y >> 4) + player->sprite2.y;
             if ((newY < (level->height << 4)) && //Above bottom edge of level
               (newY >= 0) && //Below top edge of level
               (newY >= (BITMAP_Y << 4) - GESTION_Y) && //Max 20 pixels above the screen (bug: the purpose was probably one screen above the screen)
@@ -339,10 +339,10 @@ int move_player(ScreenContext *context, TITUS_level *level) {
     subto0(&GRAVITY_FLAG);
     subto0(&FURTIF_FLAG);
     subto0(&KICK_FLAG);
-    if (player->sprite.speedY == 0) {
+    if (player->sprite.speed_y == 0) {
         subto0(&CHOC_FLAG);
     } 
-    if ((player->sprite.speedX == 0) && (player->sprite.speedY == 0)) {
+    if ((player->sprite.speed_x == 0) && (player->sprite.speed_y == 0)) {
         KICK_FLAG = 0;
     }
     subto0(&FUME_FLAG); //Smoke when object hits the floor
@@ -479,9 +479,9 @@ void BRK_COLLISION(ScreenContext *context, TITUS_level *level) { //Collision det
 
     //How will the player move in X?
     changeX = TEST_ZONE + MAX_X; //4 + 4 ??? + max_speed_x
-    if (player->sprite.speedX < 0) {
+    if (player->sprite.speed_x < 0) {
         changeX = 0 - changeX;
-    } else if (player->sprite.speedX == 0) {
+    } else if (player->sprite.speed_x == 0) {
         changeX = 0;
     }
 
@@ -536,7 +536,7 @@ static void TAKE_BLK_AND_YTEST(ScreenContext *context, TITUS_level *level, int16
         BLOCK_YYPRG(context, level, floor, floor_above, tileY + 1, tileX); //Player versus floor
     }
     //Test the tile on his head
-    if ((tileY < 1) || (player->sprite.speedY > 0)) {
+    if ((tileY < 1) || (player->sprite.speed_y > 0)) {
         return;
     }
 
@@ -546,7 +546,7 @@ static void TAKE_BLK_AND_YTEST(ScreenContext *context, TITUS_level *level, int16
     enum HFLAG horiz = get_horizflag(level, tileY, tileX);
     if (((horiz == HFLAG_WALL) || (horiz == HFLAG_DEADLY) || (horiz == HFLAG_PADLOCK)) && //Step on a hard tile?
       (player->sprite.y > MAP_LIMIT_Y + 1)) {
-        if (player->sprite.speedX > 0) {
+        if (player->sprite.speed_x > 0) {
             change = -1;
         } else {
             change = 1;
@@ -579,9 +579,9 @@ static void BLOCK_YYPRGD(TITUS_level *level, enum CFLAG cflag, uint8_t tileY, ui
     case CFLAG_DEADLY:
         if ((cflag == CFLAG_DEADLY) && !GODMODE) {
             CASE_DEAD_IM(level);
-        } else if (player->sprite.speedY != 0) {
+        } else if (player->sprite.speed_y != 0) {
             //Stop movement
-            player->sprite.speedY = 0;
+            player->sprite.speed_y = 0;
             player->sprite.y = (player->sprite.y & 0xFFF0) + 16;
             SAUT_COUNT = 0xFF;
         } else if ((player->sprite.number != 10) && //10 = Free fall
@@ -609,7 +609,7 @@ static void BLOCK_YYPRGD(TITUS_level *level, enum CFLAG cflag, uint8_t tileY, ui
         break;
 
     case CFLAG_LADDER:
-        if ((player->sprite.speedY < 0) && (player->sprite.speedX == 0)) {
+        if ((player->sprite.speed_y < 0) && (player->sprite.speed_x == 0)) {
             SAUT_COUNT = 10;
             LADDER_FLAG = true;
         }
@@ -661,8 +661,8 @@ static void BLOCK_XXPRG(ScreenContext *context, TITUS_level *level, enum HFLAG h
 void ARAB_BLOCKX(TITUS_level *level) {
     TITUS_player *player = &(level->player);
     //Horizontal hit (wall), stop the player
-    player->sprite.x -= player->sprite.speedX >> 4;
-    player->sprite.speedX = 0;
+    player->sprite.x -= player->sprite.speed_x >> 4;
+    player->sprite.speed_x = 0;
    if ((KICK_FLAG != 0) && (SAUT_FLAG != 6)) {
         CHOC_FLAG = 20;
         KICK_FLAG = 0;
@@ -699,9 +699,9 @@ TITUS_object *FORCE_POSE(TITUS_level *level) {
         }
         object->sprite.x = sprite2->x;
         object->sprite.y = sprite2->y;
-        object->mass = 0;
-        object->sprite.speedY = 0;
-        object->sprite.speedX = 0;
+        object->momentum = 0;
+        object->sprite.speed_y = 0;
+        object->sprite.speed_x = 0;
         object->sprite.UNDER = 0;
         object->sprite.ONTOP = NULL;
         POSEREADY_FLAG = true;
@@ -740,21 +740,21 @@ static void XACCELERATION(TITUS_player *player, int16_t maxspeed) {
         changeX = 0;
     }
 
-    if (player->sprite.speedX + changeX >= maxspeed) {
-        player->sprite.speedX = maxspeed;
-    } else if (player->sprite.speedX + changeX <= 0 - maxspeed) {
-        player->sprite.speedX = 0 - maxspeed;
+    if (player->sprite.speed_x + changeX >= maxspeed) {
+        player->sprite.speed_x = maxspeed;
+    } else if (player->sprite.speed_x + changeX <= 0 - maxspeed) {
+        player->sprite.speed_x = 0 - maxspeed;
     } else {
-        player->sprite.speedX += changeX;
+        player->sprite.speed_x += changeX;
     }
 }
 
 static void YACCELERATION(TITUS_player *player, int16_t maxspeed) {
     //Accelerate downwards
-    if ((player->sprite.speedY + 32/2) < maxspeed) {
-        player->sprite.speedY = player->sprite.speedY + (32/2);
+    if ((player->sprite.speed_y + 32/2) < maxspeed) {
+        player->sprite.speed_y = player->sprite.speed_y + (32/2);
     } else {
-        player->sprite.speedY = maxspeed;
+        player->sprite.speed_y = maxspeed;
     }
 }
 
@@ -872,12 +872,12 @@ void ARAB_BLOCK_YU(TITUS_player *player) {
     //Floor; the player will not fall through
     POCKET_FLAG = true;
     player->GLISSE = 0;
-    if (player->sprite.speedY < 0) {
+    if (player->sprite.speed_y < 0) {
         YFALL = YFALL | 0x01;
         return;
     }
     player->sprite.y = player->sprite.y & 0xFFF0;
-    player->sprite.speedY = 0;
+    player->sprite.speed_y = 0;
     subto0(&SAUT_FLAG);
     SAUT_COUNT = 0;
     YFALL = 2;
@@ -964,7 +964,7 @@ static void ACTION_PRG(TITUS_level *level, uint8_t action) {
     TITUS_player *player = &(level->player);
     uint8_t tileX, tileY, fflag;
     TITUS_object *object;
-    int16_t i, diffX, speedX, speedY;
+    int16_t i, diffX, speed_x, speed_y;
 
     switch (action) {
     case 0:
@@ -973,8 +973,8 @@ static void ACTION_PRG(TITUS_level *level, uint8_t action) {
         //Rest. Handle deacceleration and slide
         LAST_ORDER = action;
         DECELERATION(player);
-        if ((abs(player->sprite.speedX) >= 1 * 16) &&
-           (player->sprite.flipped == (player->sprite.speedX < 0))) {
+        if ((abs(player->sprite.speed_x) >= 1 * 16) &&
+           (player->sprite.flipped == (player->sprite.speed_x < 0))) {
             player->sprite.animation = anim_player[4 + add_carry()];
         } else {
             player->sprite.animation = anim_player[action];
@@ -1011,7 +1011,7 @@ static void ACTION_PRG(TITUS_level *level, uint8_t action) {
         NEW_FORM(player, action);
         GET_IMAGE(level);
         XACCELERATION(player, MAX_X * 16 / 2);
-        if (abs(player->sprite.speedX) < (2 * 16)) {
+        if (abs(player->sprite.speed_x) < (2 * 16)) {
             updatesprite(level, &(player->sprite), 6, true); //Crawling but not moving
             player->sprite.flipped = (SENSX < 0);
         }
@@ -1033,7 +1033,7 @@ static void ACTION_PRG(TITUS_level *level, uint8_t action) {
         DECELERATION(player);
         if (ACTION_TIMER == 15) {
             CROSS_FLAG = 6;
-            player->sprite.speedY = 0;
+            player->sprite.speed_y = 0;
         }
         break;
 
@@ -1068,12 +1068,12 @@ static void ACTION_PRG(TITUS_level *level, uint8_t action) {
                 }
             }
             if (player->y_axis >= 0) {
-                player->sprite.speedY = 4 * 16;
+                player->sprite.speed_y = 4 * 16;
             } else {
-                player->sprite.speedY = 0 - (4 * 16);
+                player->sprite.speed_y = 0 - (4 * 16);
             }
         } else {
-            player->sprite.speedY = 0;
+            player->sprite.speed_y = 0;
         }
         break;
 
@@ -1085,7 +1085,7 @@ static void ACTION_PRG(TITUS_level *level, uint8_t action) {
         DECELERATION(player);
         if (!POSEREADY_FLAG) {
             if ((ACTION_TIMER == 1) && (CARRY_FLAG)) {
-                //If the object is placed in a block, fix a speedX
+                //If the object is placed in a block, fix a speed_x
                 object = FORCE_POSE(level);
                 if (object != NULL) {
                     tileX = object->sprite.x >> 4;
@@ -1095,9 +1095,9 @@ static void ACTION_PRG(TITUS_level *level, uint8_t action) {
                         tileX++;
                         fflag = get_floorflag(level, tileY, tileX);
                         if ((fflag != FFLAG_NOFLOOR) && (fflag != FFLAG_WATER)) {
-                            object->sprite.speedX = 16 * 3;
+                            object->sprite.speed_x = 16 * 3;
                         } else {
-                            object->sprite.speedX = 0 - (16 * 3);
+                            object->sprite.speed_x = 0 - (16 * 3);
                         }
                     }
                 }
@@ -1161,8 +1161,8 @@ static void ACTION_PRG(TITUS_level *level, uint8_t action) {
                         //Take the object
                         sfx_play(9); //Sound effect
                         FUME_FLAG = 0;
-                        level->object[i].sprite.speedY = 0;
-                        level->object[i].sprite.speedX = 0;
+                        level->object[i].sprite.speed_y = 0;
+                        level->object[i].sprite.speed_x = 0;
                         GRAVITY_FLAG = 4;
                         copysprite(level, &(player->sprite2), &(level->object[i].sprite));
                         level->object[i].sprite.enabled = false;
@@ -1251,8 +1251,8 @@ static void ACTION_PRG(TITUS_level *level, uint8_t action) {
 
                             sfx_play(9); //Sound effect
                             FUME_FLAG = 0;
-                            level->enemy[i].sprite.speedY = 0;
-                            level->enemy[i].sprite.speedX = 0;
+                            level->enemy[i].sprite.speed_y = 0;
+                            level->enemy[i].sprite.speed_x = 0;
                             GRAVITY_FLAG = 4;
                             player->sprite2.flipped = level->enemy[i].sprite.flipped;
                             player->sprite2.flash = level->enemy[i].sprite.flash;
@@ -1285,22 +1285,22 @@ static void ACTION_PRG(TITUS_level *level, uint8_t action) {
         DECELERATION(player);
         if (CARRY_FLAG) {
             if (player->y_axis >= 0) { //Ordinary throw
-                speedX = 0x0E * 16;
-                speedY = 0;
+                speed_x = 0x0E * 16;
+                speed_y = 0;
                 if (player->sprite.flipped) {
-                    speedX = 0 - speedX;
+                    speed_x = 0 - speed_x;
                 }
                 player->sprite2.y = player->sprite.y - 16;
             } else { //Throw up
-                speedX = 0;
-                speedY = 0 - 0x0A * 16;
+                speed_x = 0;
+                speed_y = 0 - 0x0A * 16;
             }
-            if (speedY != 0) {
+            if (speed_y != 0) {
                 //Throw up
                 object = FORCE_POSE(level);
                 if (object != NULL) {
-                    object->sprite.speedY = speedY;
-                    object->sprite.speedX = speedX - (speedX >> 2);
+                    object->sprite.speed_y = speed_y;
+                    object->sprite.speed_x = speed_x - (speed_x >> 2);
                 }
             } else {
                 if (player->sprite2.number < FIRST_NMI) { //level->objectdata can only be tested against an object sprite
@@ -1308,19 +1308,19 @@ static void ACTION_PRG(TITUS_level *level, uint8_t action) {
                         //Gravity throw
                         object = FORCE_POSE(level);
                         if (object != NULL) {
-                            object->sprite.speedY = speedY;
-                            object->sprite.speedX = speedX - (speedX >> 2);
+                            object->sprite.speed_y = speed_y;
+                            object->sprite.speed_x = speed_x - (speed_x >> 2);
                         }
                     } else { //Ordinary throw
                         DROP_FLAG = true;
-                        player->sprite2.speedX = speedX;
-                        player->sprite2.speedY = speedY;
+                        player->sprite2.speed_x = speed_x;
+                        player->sprite2.speed_y = speed_y;
                         sfx_play(3); //Sound effect
                     }
                 } else { //Ordinary throw
                     DROP_FLAG = true;
-                    player->sprite2.speedX = speedX;
-                    player->sprite2.speedY = speedY;
+                    player->sprite2.speed_x = speed_x;
+                    player->sprite2.speed_y = speed_y;
                     sfx_play(3); //Sound effect
                 }
             }
@@ -1341,7 +1341,7 @@ static void ACTION_PRG(TITUS_level *level, uint8_t action) {
 
     case 11:
         //Headache
-        player->sprite.speedX = 0;
+        player->sprite.speed_x = 0;
         NEW_FORM(player, action);
         GET_IMAGE(level);
         break;
@@ -1386,7 +1386,7 @@ static void ACTION_PRG(TITUS_level *level, uint8_t action) {
     case 27:
         //Headache (c)
         FORCE_POSE(level);
-        player->sprite.speedX = 0;
+        player->sprite.speed_x = 0;
         NEW_FORM(player, action);
         GET_IMAGE(level);
         break;
@@ -1401,18 +1401,18 @@ void DECELERATION(TITUS_player *player) {
     //Stop acceleration
     uint8_t friction = (3 * 4) >> player->GLISSE;
     int16_t speed;
-    if (player->sprite.speedX < 0) {
-        speed = player->sprite.speedX + friction;
+    if (player->sprite.speed_x < 0) {
+        speed = player->sprite.speed_x + friction;
         if (speed > 0) {
             speed = 0;
         }
     } else {
-        speed = player->sprite.speedX - friction;
+        speed = player->sprite.speed_x - friction;
         if (speed < 0) {
             speed = 0;
         }
     }
-    player->sprite.speedX = speed;
+    player->sprite.speed_x = speed;
 }
 
 static void NEW_FORM(TITUS_player *player, uint8_t action) {
@@ -1440,11 +1440,11 @@ static void GET_IMAGE(TITUS_level *level) {
 static void YACCELERATION_NEG(TITUS_player *player, int16_t maxspeed) {
     //Accelerate upwards
     maxspeed = 0 - maxspeed; //maxspeed is negative
-    int16_t speed = player->sprite.speedY - 32;
+    int16_t speed = player->sprite.speed_y - 32;
     if (speed >= maxspeed) {
         speed = maxspeed;
     }
-    player->sprite.speedY = speed;
+    player->sprite.speed_y = speed;
 
 }
 
@@ -1462,7 +1462,7 @@ void COLLISION_TRP(TITUS_level *level) {
     uint8_t i;
     TITUS_player *player = &(level->player);
     TITUS_elevator *elevator = level->elevator;
-    if ((player->sprite.speedY >= 0) && (CROSS_FLAG == 0)) {
+    if ((player->sprite.speed_y >= 0) && (CROSS_FLAG == 0)) {
         for (i = 0; i < ELEVATOR_CAPACITY; i++) {
             //Quick test
             if (!(elevator[i].enabled) ||
@@ -1501,14 +1501,14 @@ void COLLISION_TRP(TITUS_level *level) {
             YFALL = 0;
             player->sprite.y = elevator[i].sprite.y;
 
-            player->sprite.speedY = 0;
+            player->sprite.speed_y = 0;
             subto0(&(SAUT_FLAG));
             SAUT_COUNT = 0;
             YFALL = 2;
 
-            player->sprite.x += elevator[i].sprite.speedX;
-            if (elevator[i].sprite.speedY > 0) { //Going down
-                player->sprite.y += elevator[i].sprite.speedY;
+            player->sprite.x += elevator[i].sprite.speed_x;
+            if (elevator[i].sprite.speed_y > 0) { //Going down
+                player->sprite.y += elevator[i].sprite.speed_y;
             }
             return;
         }
@@ -1520,7 +1520,7 @@ void COLLISION_OBJET(TITUS_level *level) {
     //Collision, spring state, speed up carpet/scooter/skateboard, bounce bouncy objects
     TITUS_player *player = &(level->player);
     TITUS_object *off_object;
-    if (player->sprite.speedY < 0) {
+    if (player->sprite.speed_y < 0) {
         return;
     }
     //Collision with a sprite
@@ -1536,67 +1536,67 @@ void COLLISION_OBJET(TITUS_level *level) {
     //If we jump on the flying carpet, let it fly
     if ((off_object->sprite.number == FIRST_OBJET + 21) || (off_object->sprite.number == FIRST_OBJET + 22)) { //Flying carpet
         if (!(player->sprite.flipped)) {
-            off_object->sprite.speedX = 6 * 16;
+            off_object->sprite.speed_x = 6 * 16;
         } else {
-            off_object->sprite.speedX = 0 - 6 * 16;
+            off_object->sprite.speed_x = 0 - 6 * 16;
         }
         off_object->sprite.flipped = player->sprite.flipped;
         GRAVITY_FLAG = 4;
         TAPISWAIT_FLAG = 0;
     } else if ((ACTION_TIMER > 10) && //delay
       ((LAST_ORDER & 0x0F) == 0) && //Player rests
-      (player->sprite.speedY == 0) && //stable Y
+      (player->sprite.speed_y == 0) && //stable Y
       ((off_object->sprite.number == 83) || //scooter
       (off_object->sprite.number == 94))) { //skateboard
 
         //If you put your foot on a scooter or a skateboard
         if (!(player->sprite.flipped)) {
-            off_object->sprite.speedX = 16 * 3;
+            off_object->sprite.speed_x = 16 * 3;
         } else {
-            off_object->sprite.speedX = 0 - 16 * 3;
+            off_object->sprite.speed_x = 0 - 16 * 3;
         }
         off_object->sprite.flipped = player->sprite.flipped;
         GRAVITY_FLAG = 4;
     }
 
-    if (off_object->sprite.speedX < 0) {
-        player->sprite.speedX = off_object->sprite.speedX;
-    } else if (off_object->sprite.speedX > 0) {
-        player->sprite.speedX = off_object->sprite.speedX + 16;
+    if (off_object->sprite.speed_x < 0) {
+        player->sprite.speed_x = off_object->sprite.speed_x;
+    } else if (off_object->sprite.speed_x > 0) {
+        player->sprite.speed_x = off_object->sprite.speed_x + 16;
     }
 
     //If we want to CROSS (cross) it does not bounce
     if ((CROSS_FLAG == 0) && //No long kneestand
-      (player->sprite.speedY > (16 * 3)) &&
+      (player->sprite.speed_y > (16 * 3)) &&
       (off_object->objectdata->bounce)) {
         //Bounce on a ball if no long kneestand (down key)
         if (player->y_axis > 0) {
-            player->sprite.speedY = 0;
+            player->sprite.speed_y = 0;
         } else {
             if (player->y_axis < 0) {
-                player->sprite.speedY += 16 * 3; //increase speed
+                player->sprite.speed_y += 16 * 3; //increase speed
             } else {
-                player->sprite.speedY -= 16; //reduce speed
+                player->sprite.speed_y -= 16; //reduce speed
             }
-            player->sprite.speedY = 0 - player->sprite.speedY;
-            if (player->sprite.speedY > 0) {
-                player->sprite.speedY = 0;
+            player->sprite.speed_y = 0 - player->sprite.speed_y;
+            if (player->sprite.speed_y > 0) {
+                player->sprite.speed_y = 0;
             }
         }
         ACTION_TIMER = 0;
 
         //If the ball lies on the ground
-        if (off_object->sprite.speedY == 0) {
+        if (off_object->sprite.speed_y == 0) {
             sfx_play(12); //Sound effect
-            off_object->sprite.speedY = 0 - player->sprite.speedY;
-            off_object->sprite.y -= off_object->sprite.speedY >> 4;
+            off_object->sprite.speed_y = 0 - player->sprite.speed_y;
+            off_object->sprite.y -= off_object->sprite.speed_y >> 4;
             GRAVITY_FLAG = 4;
         }
     } else {
-        if (off_object->sprite.speedY != 0) {
-            player->sprite.speedY = off_object->sprite.speedY;
+        if (off_object->sprite.speed_y != 0) {
+            player->sprite.speed_y = off_object->sprite.speed_y;
         } else {
-            player->sprite.speedY = 0;
+            player->sprite.speed_y = 0;
         }
         subto0(&(SAUT_FLAG));
         SAUT_COUNT = 0;

@@ -246,17 +246,17 @@ fn death(context: [*c]c.ScreenContext, level: *c.TITUS_level) void {
     c.music_select_song(1);
     _ = c.FORCE_POSE(level);
     spr.updatesprite(level, &(player.sprite), 13, true); //Death
-    player.sprite.speedY = 15;
+    player.sprite.speed_y = 15;
     for (0..60) |_| {
         draw.draw_tiles(level);
         //TODO! GRAVITY();
         draw.draw_sprites(level);
         draw.flip_screen(context, true);
-        player.sprite.speedY -= 1;
-        if (player.sprite.speedY < -16) {
-            player.sprite.speedY = -16;
+        player.sprite.speed_y -= 1;
+        if (player.sprite.speed_y < -16) {
+            player.sprite.speed_y = -16;
         }
-        player.sprite.y -= player.sprite.speedY;
+        player.sprite.y -= player.sprite.speed_y;
     }
 
     c.music_wait_to_finish();

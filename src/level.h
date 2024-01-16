@@ -48,18 +48,16 @@ typedef struct _TITUS_level TITUS_level;
 struct _TITUS_tile {
     SDL_Surface *tiledata; //Malloced
     uint8_t animation[3]; //Index to animation tiles
-    bool animated;
     enum HFLAG horizflag;
     enum FFLAG floorflag;
     enum CFLAG ceilflag;
-    uint8_t current; //Index of the current (animated) tile
 };
 
 struct _TITUS_sprite {
     int16_t x;
     int16_t y;
-    int16_t speedX;
-    int16_t speedY;
+    int16_t speed_x;
+    int16_t speed_y;
     int16_t number;
     bool visible; //On screen or not on screen (above/below/left/right)
     bool flash;
@@ -93,13 +91,15 @@ struct _TITUS_objectdata {
 
 struct _TITUS_object {
     TITUS_sprite sprite;
-    //unsigned char animcycle;
-    uint16_t initsprite;
-    int initX;
-    int initY;
-    //unsigned char initanimcycle;
+    uint8_t momentum; // must be >= 10 to cause a falling object to hit an enemy or the player
+
     bool init_enabled;
-    uint8_t mass; //momentum, must be >= 10 to cause a falling object to hit an enemy or the player
+    uint16_t init_sprite;
+    bool init_flash;
+    bool init_visible;
+    bool init_flipped;
+    int init_x;
+    int init_y;
     TITUS_objectdata *objectdata;
 };
 
@@ -109,24 +109,28 @@ struct _TITUS_enemy {
     TITUS_sprite sprite;
     uint16_t type; //What kind of enemy
     int16_t power;
-    int centerX;
-    unsigned int rangeX;
+    int center_x;
+    unsigned int range_x;
     unsigned int delay;
     unsigned char direction;
-    unsigned int rangeY;
-    uint16_t initsprite;
-    int initX;
-    int initY;
+    unsigned int range_y;
+
     bool init_enabled;
-    int initspeedX;
-    int initspeedY;
+    uint16_t init_sprite;
+    bool init_flipped;
+    int init_x;
+    int init_y;
+    int init_speed_x;
+    int init_speed_y;
+
     int16_t carry_sprite;
     int16_t dead_sprite;
+
     bool boss;
     bool trigger;
     bool visible;
     uint8_t counter;
-    uint8_t walkspeedX;
+    uint8_t walkspeed_x;
 };
 
 struct _TITUS_bonus {
@@ -152,14 +156,19 @@ struct _TITUS_elevator {
     bool enabled;
     TITUS_sprite sprite;
     unsigned int counter;
+
     unsigned int range;
+
     unsigned char init_direction;
     bool init_enabled;
-    int16_t initspeedX;
-    int16_t initspeedY;
-    uint16_t initsprite;
-    int initX;
-    int initY;
+    int16_t init_speed_x;
+    int16_t init_speed_y;
+    uint16_t init_sprite;
+    bool init_flash;
+    bool init_visible;
+    bool init_flipped;
+    int init_x;
+    int init_y;
 };
 
 struct _TITUS_player {

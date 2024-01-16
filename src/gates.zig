@@ -70,8 +70,8 @@ fn check_gates(context: *c.ScreenContext, level: *c.TITUS_level) void {
             (level.gate[i].entranceX == (player.sprite.x >> 4)) and
             (level.gate[i].entranceY == (player.sprite.y >> 4)))
         {
-            player.sprite.speedX = 0;
-            player.sprite.speedY = 0;
+            player.sprite.speed_x = 0;
+            player.sprite.speed_y = 0;
             CLOSE_SCREEN(context);
             defer OPEN_SCREEN(context, level);
             const orig_xlimit = globals.XLIMIT;

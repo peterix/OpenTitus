@@ -257,8 +257,8 @@ void clearsprite(TITUS_sprite *spr){
     spr->enabled = false;
     spr->x = 0;
     spr->y = 0;
-    spr->speedX = 0;
-    spr->speedY = 0;
+    spr->speed_x = 0;
+    spr->speed_y = 0;
     spr->number = 0;
     spr->UNDER = 0;
     spr->ONTOP = NULL;
@@ -291,40 +291,40 @@ void SET_ALL_SPRITES(TITUS_level *level) {
         level->enemy[i].trigger = false;
         level->enemy[i].visible = false;
         if (level->enemy[i].init_enabled) {
-            updateenemysprite(level, &(level->enemy[i]), (int16_t)(level->enemy[i].initsprite & 0x1FFF) + 101, true);
-            level->enemy[i].sprite.flipped = ((level->enemy[i].initsprite & 0x8000) == 0x8000);
-            level->enemy[i].sprite.x = level->enemy[i].initX;
-            level->enemy[i].sprite.y = level->enemy[i].initY;
-            level->enemy[i].sprite.speedX = level->enemy[i].initspeedX;
-            level->enemy[i].sprite.speedY = level->enemy[i].initspeedY;                
+            updateenemysprite(level, &(level->enemy[i]), level->enemy[i].init_sprite, true);
+            level->enemy[i].sprite.flipped = level->enemy[i].init_flipped;
+            level->enemy[i].sprite.x = level->enemy[i].init_x;
+            level->enemy[i].sprite.y = level->enemy[i].init_y;
+            level->enemy[i].sprite.speed_x = level->enemy[i].init_speed_x;
+            level->enemy[i].sprite.speed_y = level->enemy[i].init_speed_y;
         }
     }
 
     for (i = 0; i < ELEVATOR_CAPACITY; i++) {
         clearsprite(&(level->elevator[i].sprite));
         if (level->elevator[i].init_enabled) {
-            updatesprite(level, &(level->elevator[i].sprite), (int16_t)(level->elevator[i].initsprite & 0x1FFF) + 30, true);
-            level->elevator[i].sprite.visible = ((level->elevator[i].initsprite & 0x2000) == 0x2000);
-            level->elevator[i].sprite.flash = ((level->elevator[i].initsprite & 0x4000) == 0x4000);
-            level->elevator[i].sprite.flipped = ((level->elevator[i].initsprite & 0x8000) == 0x8000);
-            level->elevator[i].sprite.x = level->elevator[i].initX;
-            level->elevator[i].sprite.y = level->elevator[i].initY;
+            updatesprite(level, &(level->elevator[i].sprite), level->elevator[i].init_sprite, true);
+            level->elevator[i].sprite.visible = level->elevator[i].init_visible;
+            level->elevator[i].sprite.flash = level->elevator[i].init_flash;
+            level->elevator[i].sprite.flipped = level->elevator[i].init_flipped;
+            level->elevator[i].sprite.x = level->elevator[i].init_x;
+            level->elevator[i].sprite.y = level->elevator[i].init_y;
             level->elevator[i].counter = 0;
-            level->elevator[i].sprite.speedX = level->elevator[i].initspeedX;
-            level->elevator[i].sprite.speedY = level->elevator[i].initspeedY;
+            level->elevator[i].sprite.speed_x = level->elevator[i].init_speed_x;
+            level->elevator[i].sprite.speed_y = level->elevator[i].init_speed_y;
         }
     }
 
     for (i = 0; i < OBJECT_CAPACITY; i++) {
         clearsprite(&(level->object[i].sprite));
-        level->object[i].mass = 0;
+        level->object[i].momentum = 0;
         if (level->object[i].init_enabled) {
-            updateobjectsprite(level, &(level->object[i]), (int16_t)(level->object[i].initsprite & 0x1FFF), true);
-            level->object[i].sprite.visible = ((level->object[i].initsprite & 0x2000) == 0x2000);
-            level->object[i].sprite.flash = ((level->object[i].initsprite & 0x4000) == 0x4000);
-            level->object[i].sprite.flipped = ((level->object[i].initsprite & 0x8000) == 0x8000);
-            level->object[i].sprite.x = level->object[i].initX;
-            level->object[i].sprite.y = level->object[i].initY;
+            updateobjectsprite(level, &(level->object[i]), level->object[i].init_sprite, true);
+            level->object[i].sprite.visible = level->object[i].init_visible;
+            level->object[i].sprite.flash = level->object[i].init_flash;
+            level->object[i].sprite.flipped = level->object[i].init_flipped;
+            level->object[i].sprite.x = level->object[i].init_x;
+            level->object[i].sprite.y = level->object[i].init_y;
             if ((player->cageY != 0) &&
               ((level->object[i].sprite.number == FIRST_OBJET + 26) || (level->object[i].sprite.number == FIRST_OBJET + 27))) {
                 level->object[i].sprite.x = player->cageX;
