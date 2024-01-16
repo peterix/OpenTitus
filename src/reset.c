@@ -116,7 +116,16 @@ uint8_t RESET_LEVEL(ScreenContext *context, TITUS_level *level) {
         }
         //Display hearts
         updatesprite(level, &(player->sprite), 355, true);
-        int16_t *heart = COEUR_POS; //Heart position array
+        int16_t heart_animation[] = {
+            153,142,153,142,153,142,
+            139,148,139,148,139,148,
+            139,162,139,162,139,162,
+            152,171,152,171,152,171,
+            171,165,171,165,171,165,
+            170,147,170,147,170,147,
+            -12*3
+        };
+        int16_t *heart = &heart_animation[0];
         pass = false;
         do {
             if (*heart < 0) {

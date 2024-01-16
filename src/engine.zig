@@ -86,6 +86,7 @@ pub fn playtitus(firstlevel: u16, allocator: std.mem.Allocator) !c_int {
     level.c_level.levelnumber = firstlevel;
     while (level.c_level.levelnumber < data.constants.*.levelfiles.len) : (level.c_level.levelnumber += 1) {
         level.c_level.levelid = c.getlevelid(level.c_level.levelnumber);
+        std.debug.print("Level {} ID {}\n", .{ level.c_level.levelnumber, level.c_level.levelid });
         const level_index = @as(usize, @intCast(level.c_level.levelnumber));
         var leveldata = sqz.unSQZ(
             data.constants.*.levelfiles[level_index].filename,

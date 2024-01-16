@@ -60,6 +60,5 @@ extern uint8_t LEVEL_MUSIC[ORIG_LEVEL_COUNT];
 extern int16_t anim_zoubida[ORIG_ANIM_MAX];
 extern int16_t anim_moktar[ORIG_ANIM_MAX];
 extern int16_t anim_smoke[ORIG_ANIM_MAX];
-extern int16_t COEUR_POS[ORIG_ANIM_MAX * 2];
 
 #define ORIG_OBJECT_COUNT 71

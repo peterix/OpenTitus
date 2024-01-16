@@ -51,7 +51,6 @@ uint8_t LEVEL_MUSIC[ORIG_LEVEL_COUNT];
 int16_t anim_zoubida[ORIG_ANIM_MAX];
 int16_t anim_moktar[ORIG_ANIM_MAX];
 int16_t anim_smoke[ORIG_ANIM_MAX];
-int16_t COEUR_POS[ORIG_ANIM_MAX * 2];
 
 void initoriginal() {
     int i, j;
@@ -91,13 +90,6 @@ void initoriginal() {
     int16_t anim_zoubida_data[] = {337,337,337,338,338,338,339,339,339,340,340,340,341,341,341,342,342,342,-18*2};
     int16_t anim_moktar_data[] = {343,343,343,344,344,344,345,345,345,-9*2};
     int16_t anim_smoke_data[] = {347,347,348,348,349,349,350,350,351,351,352,352,353,353,354,354,-16*2};
-
-    int16_t COEUR_POS_data[] = {153,142,153,142,153,142,
-                        139,148,139,148,139,148,
-                        139,162,139,162,139,162,
-                        152,171,152,171,152,171,
-                        171,165,171,165,171,165,
-                        170,147,170,147,170,147,-12*3};
 
     uint8_t spritewidth_titus[] = {32, 32, 24, 24, 32, 32, 32, 32, 32, 32, 24, 24, 24, 32, 32, 32, 24,
                                 24, 24, 32, 24, 24, 24, 32, 32, 32, 32, 32, 32, 32, 24, 24, 16, 16,
@@ -350,13 +342,6 @@ void initoriginal() {
     for (i = 0; i < ORIG_ANIM_MAX; i++) {
         anim_smoke[i] = anim_smoke_data[i];
         if (anim_smoke[i] < 0) {
-            break;
-        }
-    }
-
-    for (i = 0; i < ORIG_ANIM_MAX * 2; i++) {
-        COEUR_POS[i] = COEUR_POS_data[i];
-        if (COEUR_POS[i] < 0) {
             break;
         }
     }
