@@ -33,7 +33,38 @@
 #include "original.h"
 #include "game.h"
 
-int16_t anim_player[ANIM_PLAYER_COUNT][ANIM_PLAYER_MAX];
+int16_t anim_player[ANIM_PLAYER_COUNT][ANIM_PLAYER_MAX] = {
+    {0,-2},
+    {-1},
+    {9,8,-4},
+    {5,6,6,7,7,-8},
+    {4,-2},
+    {5,-2},
+    {11,11,12,12,-8},
+    {22,-2},
+    {22,-2},
+    {9,-2},
+    {8,8,9,9,-8},
+    {25,26,27,-6},
+    {15,15,15,15,15,15,15,15,10,-2},
+    {28,28,28,28,28,28,28,28,10,-2},
+    {-1},
+    {-1},
+    {16,-2},
+    {17,17,17,18,18,18,18,19,19,19,18,18,18,18,-28},
+    {20,21,-4},
+    {17,17,17,18,18,18,18,19,19,19,18,18,18,18,-28},
+    {16,-2},
+    {22,-2},
+    {23,23,24,24,-8},
+    {22,-2},
+    {22,-2},
+    {-1},
+    {-1},
+    {25,26,27,-6},
+    {15,15,15,15,15,15,15,15,10,-2},
+    {28,28,28,28,28,28,28,28,10,-2}
+};
 // 21930 = turn invisible (set the invisible flag)
 // negative number = walk that many animation frames back
 // positive number = a mishmash of some flags and 0x1FFF masked sprite number to change the sprite to
@@ -167,44 +198,9 @@ int16_t anim_enemy[NMI_ANIM_TABLE_COUNT] = {
 };
 
 void initoriginal() {
-    int i, j;
-
-    //anim_player --> ACTION
-    int16_t orig_anim_player[ANIM_PLAYER_COUNT][ANIM_PLAYER_MAX] = {
-        {0,-2},
-        {-1},
-        {9,8,-4},
-        {5,6,6,7,7,-8},
-        {4,-2},
-        {5,-2},
-        {11,11,12,12,-8},
-        {22,-2},
-        {22,-2},
-        {9,-2},
-        {8,8,9,9,-8},
-        {25,26,27,-6},
-        {15,15,15,15,15,15,15,15,10,-2},
-        {28,28,28,28,28,28,28,28,10,-2},
-        {-1},
-        {-1},
-        {16,-2},
-        {17,17,17,18,18,18,18,19,19,19,18,18,18,18,-28},
-        {20,21,-4},
-        {17,17,17,18,18,18,18,19,19,19,18,18,18,18,-28},
-        {16,-2},
-        {22,-2},
-        {23,23,24,24,-8},
-        {22,-2},
-        {22,-2},
-        {-1},
-        {-1},
-        {25,26,27,-6},
-        {15,15,15,15,15,15,15,15,10,-2},
-        {28,28,28,28,28,28,28,28,10,-2}
-    };
-
+    /*
     fprintf(stderr, "anim_enemy = [\n");
-    for (i = 0; i < NMI_ANIM_TABLE_COUNT; i++) {
+    for (size_t i = 0; i < NMI_ANIM_TABLE_COUNT; i++) {
         if( anim_enemy[i] < 0 ) {
             fprintf(stderr, "%hd,\n", anim_enemy[i]);    
         }
@@ -213,25 +209,17 @@ void initoriginal() {
         }
     }
     fprintf(stderr, "];\n");
-
-    for (i = 0; i < ANIM_PLAYER_COUNT; i++) {
-        for (j = 0; j < ANIM_PLAYER_MAX; j++) {
-            anim_player[i][j] = orig_anim_player[i][j];
-            if (anim_player[i][j] < 0) {
-                break;
-            }
-        }
-    }
+    */
 
     if (game == Titus) {
-        int16_t anim_player_titus[] =     {2,2,2,1,1,1,1,2,2,2,3,3,3,3,-28};
-        for (i = 0; i < ANIM_PLAYER_MAX; i++) {
+        int16_t anim_player_titus[] =     {2,2,2,1,1,1,1,2,2,2,3,3,3,3,-14*2};
+        for (size_t i = 0; i < ANIM_PLAYER_MAX; i++) {
             anim_player[1][i] = anim_player_titus[i];
         }
     } else if (game == Moktar) {
         #define ANIM_PLAYER_MAX_MOKTAR 12
         int16_t anim_player_moktar[] =    {2,2,2,1,1,1,2,2,3,3,3,-11*2};
-        for (i = 0; i < ANIM_PLAYER_MAX_MOKTAR; i++) {
+        for (size_t i = 0; i < ANIM_PLAYER_MAX_MOKTAR; i++) {
             anim_player[1][i] = anim_player_moktar[i];
         }
     }
