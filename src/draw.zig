@@ -146,13 +146,15 @@ fn draw_sprite(spr: *allowzero c.TITUS_sprite) void {
         // FIXME: crash in final level!
         dest.x = spr.x - spr.spritedata.*.refwidth - (globals.BITMAP_X * 16) + globals.g_scroll_px_offset;
     } else {
-        dest.x = spr.x + spr.spritedata.*.refwidth - spr.spritedata.*.data.*.w - (globals.BITMAP_X * 16) + globals.g_scroll_px_offset;
+        dest.x = spr.x + spr.spritedata.*.refwidth - spr.spritedata.*.width - (globals.BITMAP_X * 16) + globals.g_scroll_px_offset;
     }
-    dest.y = spr.y + spr.spritedata.*.refheight - spr.spritedata.*.data.*.h + 1 - (globals.BITMAP_Y * 16) + get_y_offset();
+
+    const sprite_offset: i16 = 0 - (@as(i16, spr.spritedata.*.refheight) - spr.spritedata.*.height);
+    dest.y = spr.y + sprite_offset - spr.spritedata.*.height + 1 - (globals.BITMAP_Y * 16) + get_y_offset();
 
     if ((dest.x >= globals.screen_width * 16) or //Right for the screen
-        (dest.x + spr.spritedata.*.data.*.w < 0) or //Left for the screen
-        (dest.y + spr.spritedata.*.data.*.h < 0) or //Above the screen
+        (dest.x + spr.spritedata.*.width < 0) or //Left for the screen
+        (dest.y + spr.spritedata.*.height < 0) or //Above the screen
         (dest.y >= globals.screen_height * 16)) //Below the screen
     {
         return;

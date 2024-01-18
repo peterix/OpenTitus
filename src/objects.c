@@ -365,11 +365,11 @@ void shock(TITUS_level *level, TITUS_object *object) { //Falling object versus p
 
 
 
-bool SPRITES_VS_SPRITES (TITUS_level *level, TITUS_sprite *sprite1, TITUS_spritedata *sprite1data, TITUS_object **object2) { //check if there is an object below that can support the input object
+bool SPRITES_VS_SPRITES (TITUS_level *level, TITUS_sprite *sprite1, const TITUS_spritedata *sprite1data, TITUS_object **object2) { //check if there is an object below that can support the input object
     uint8_t i;
     int16_t obj1left, obj2left;
     //sprite1ref is equal to sprite1, except when sprite1 is the player, then sprite1ref is level->spritedata[0] (first player sprite)
-    obj1left = sprite1->x - (sprite1data->data->w >> 1);
+    obj1left = sprite1->x - (sprite1data->width >> 1);
     for (i = 0; i < OBJECT_CAPACITY; i++) { //loop all objects
         if ((&(level->object[i].sprite) == sprite1) || !(level->object[i].sprite.enabled) || !(level->object[i].objectdata->support)) continue; //skip disabled objects and itself, and it must support
         if (abs(level->object[i].sprite.x - obj1left) > 64) continue; // Bug, center vs left edge

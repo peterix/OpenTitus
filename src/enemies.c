@@ -381,7 +381,7 @@ void MOVE_NMI(TITUS_level *level) {
                     enemy->phase = 2;
                     continue;
                 }
-                if (abs(level->player.sprite.x - enemySprite->x) > enemySprite->spritedata->data->w + 6) {
+                if (abs(level->player.sprite.x - enemySprite->x) > enemySprite->spritedata->width + 6) {
                     continue;
                 }
                 if (abs(level->player.sprite.y - enemySprite->y) > 8) {

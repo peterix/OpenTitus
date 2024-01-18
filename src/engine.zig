@@ -51,8 +51,6 @@ pub fn playtitus(firstlevel: u16, allocator: std.mem.Allocator) !c_int {
     var level: lvl.Level = undefined;
     level.c_level.parent = @ptrCast(&level);
 
-    var sprites: [c.SPRITECOUNT]c.TITUS_spritedata = undefined;
-
     // FIXME: this is persistent between levels... do not store it in the level
     level.c_level.lives = 2;
     level.c_level.extrabonus = 0;
@@ -64,20 +62,18 @@ pub fn playtitus(firstlevel: u16, allocator: std.mem.Allocator) !c_int {
         return -1;
     };
 
-    // TODO: same as unSQZ()
     spr.init(
         allocator,
-        &sprites,
         spritedata,
         level.c_level.pixelformat,
     ) catch |err| {
         std.debug.print("Failed to load sprites: {}\n", .{err});
         return -1;
     };
-    defer spr.deinit(&sprites);
+    defer spr.deinit();
 
     const pixelformat = c.SDL_GetWindowPixelFormat(window.window);
-    spr.sprite_cache.init(&sprites, pixelformat, allocator) catch |err| {
+    spr.sprite_cache.init(pixelformat, allocator) catch |err| {
         std.debug.print("Failed to initialize sprite cache: {}\n", .{err});
         return -1;
     };
@@ -105,7 +101,6 @@ pub fn playtitus(firstlevel: u16, allocator: std.mem.Allocator) !c_int {
             &level.c_level,
             allocator,
             leveldata,
-            &sprites[0],
             data.object_data,
             @constCast(&data.constants.levelfiles[level.c_level.levelnumber].color),
         );

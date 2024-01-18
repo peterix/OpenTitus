@@ -178,21 +178,3 @@ pub export var NOCLIP: bool = false;
 
 //If true, display loop time in milliseconds
 pub export var DISPLAYLOOPTIME: bool = false;
-
-const SPRITE = extern struct {
-    enabled: bool,
-    NUM: u16,
-};
-
-const SPRITEDATA = extern struct {
-    enabled: bool,
-    NUM: u16,
-};
-
-export var sprites = std.mem.zeroes([256]SPRITE);
-export var spritedata = std.mem.zeroes([256]SPRITEDATA);
-export var level_code = std.mem.zeroes([16]u16);
-
-pub export fn reset() void {
-    // reset globals here...
-}

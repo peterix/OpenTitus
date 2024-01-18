@@ -244,7 +244,6 @@ pub fn loadlevel(
     level: *c.TITUS_level,
     allocator: std.mem.Allocator,
     leveldata: []const u8,
-    spritedata: *c.TITUS_spritedata,
     objectdata: []const ObjectData,
     levelcolor: *c.SDL_Color,
 ) !c_int {
@@ -273,8 +272,7 @@ pub fn loadlevel(
     level.pixelformat.*.palette.*.colors[14].g = levelcolor.g;
     level.pixelformat.*.palette.*.colors[14].b = levelcolor.b;
 
-    // basically global, static data. TODO: refactor.
-    level.spritedata = spritedata;
+    level.spritedata = @ptrCast(&spr.sprites.definitions[0]);
     // NOTE: evil ptrCast from `*ObjectData` to `*struct _TITUS_objectdata`
     level.objectdata = @ptrCast(&objectdata[0]);
 
@@ -509,10 +507,7 @@ pub fn loadlevel(
     level.finishX = other_data.finishX;
     level.finishY = other_data.finishY;
 
-    for (0..c.SPRITECOUNT) |i| {
-        c.copypixelformat(level.spritedata[i].data.*.format, level.pixelformat);
-    }
-
+    sprites.sprites.setPixelFormat(level.pixelformat);
     sprites.sprite_cache.evictAll();
 
     for (0..4) |i| {

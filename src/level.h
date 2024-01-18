@@ -63,7 +63,7 @@ struct _TITUS_sprite {
     bool flash;
     bool flipped;
     bool enabled;
-    TITUS_spritedata *spritedata;
+    const TITUS_spritedata *spritedata;
     uint8_t UNDER; //0: big spring, 1: small spring because of another object on top, 2: small spring because player on top
     TITUS_sprite *ONTOP; //Object on top of the spring
     int16_t *animation;
@@ -72,11 +72,13 @@ struct _TITUS_sprite {
     bool invisible; //Set by "hidden" enemies
 };
 
+// NOTE: mirrored by 
 struct _TITUS_spritedata {
-    SDL_Surface *data; //Malloced
+    uint8_t height;
+    uint8_t width;
     uint8_t collheight;
     uint8_t collwidth;
-    int16_t refheight;
+    uint8_t refheight;
     uint8_t refwidth;
 };
 
@@ -208,7 +210,7 @@ struct _TITUS_level {
     int16_t height;
     int16_t width; // always 256
     TITUS_tile tile[256];
-    TITUS_spritedata *spritedata; // Pointer to a global spritedata variable
+    const TITUS_spritedata *spritedata; // Pointer to a global spritedata variable
     const TITUS_objectdata *objectdata; // Pointer to a global objectdata variable
     int finishX, finishY;
     //TITUS_enemy *boss; //Pointer to the boss; NULL if there is no boss

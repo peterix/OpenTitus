@@ -84,8 +84,6 @@ pub var allocator: std.mem.Allocator = undefined;
 pub fn run() !u8 {
     try data.init();
 
-    globals.reset();
-
     var gpa = std.heap.GeneralPurposeAllocator(.{}){};
     defer {
         const deinit_status = gpa.deinit();

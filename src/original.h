@@ -33,16 +33,7 @@
 #include <stdbool.h>
 #include <stdint.h>
 
-
 void initoriginal();
-
-#define SPRITECOUNT 356
-extern uint8_t spritewidth[SPRITECOUNT];
-extern uint8_t spriteheight[SPRITECOUNT];
-extern uint8_t spritecollwidth[SPRITECOUNT];
-extern uint8_t spritecollheight[SPRITECOUNT];
-extern uint8_t spriterefwidth[SPRITECOUNT];
-extern uint8_t spriterefheight[SPRITECOUNT];
 
 #define ANIM_PLAYER_MAX 15
 #define ANIM_PLAYER_COUNT 30

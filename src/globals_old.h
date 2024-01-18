@@ -113,16 +113,6 @@ enum CFLAG : uint8_t {
 };
 
 
-typedef struct {
-    bool enabled;
-    uint16_t NUM;
-} SPRITE;
-
-typedef struct {
-    bool enabled;
-    uint16_t NUM;
-} SPRITEDATA;
-
 extern uint8_t RESETLEVEL_FLAG;
 extern bool LOSELIFE_FLAG;
 
@@ -183,8 +173,3 @@ extern uint8_t boss_lives;
 extern bool GODMODE; //If true, the player will not interfere with the enemies
 extern bool NOCLIP; //If true, the player will move noclip
 extern bool DISPLAYLOOPTIME; //If true, display loop time in milliseconds
-
-extern SPRITE sprites[256];
-
-extern SPRITEDATA spritedata[256];
-

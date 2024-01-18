@@ -29,51 +29,108 @@ const std = @import("std");
 const c = @import("c.zig");
 const image = @import("ui/image.zig");
 const window = @import("window.zig");
+const data = @import("data.zig");
 
-// TODO: the sprite cache doesn't have to be global anymore once we aren't passing through C code.
+// TODO: the sprite cache and sprites doesn't have to be global anymore once we aren't going through C code.
 pub var sprite_cache: SpriteCache = undefined;
+pub var sprites: SpriteData = undefined;
 
-pub export fn flush_sprite_cache_c() void {
-    sprite_cache.evictAll();
+const SPRITECOUNT = 356;
+
+const SpriteDefinition = extern struct {
+    height: u8,
+    width: u8,
+    collheight: u8,
+    collwidth: u8,
+    refheight: u8,
+    refwidth: u8,
+};
+
+fn load_sprite_defs(input: []const u8) ![]SpriteDefinition {
+    @setEvalBranchQuota(100000);
+    var output: [SPRITECOUNT]SpriteDefinition = undefined;
+    var lineIterator = std.mem.tokenizeScalar(u8, input, '\n');
+    var index: usize = 0;
+
+    // skip header, we don't use it.
+    _ = lineIterator.next();
+
+    while (lineIterator.next()) |line| {
+        var entry = &output[index];
+        var fieldIterator = std.mem.tokenizeScalar(u8, line, ',');
+        entry.width = try std.fmt.parseInt(u8, fieldIterator.next().?, 10);
+        entry.height = try std.fmt.parseInt(u8, fieldIterator.next().?, 10);
+        entry.collwidth = try std.fmt.parseInt(u8, fieldIterator.next().?, 10);
+        entry.collheight = try std.fmt.parseInt(u8, fieldIterator.next().?, 10);
+        entry.refwidth = try std.fmt.parseInt(u8, fieldIterator.next().?, 10);
+        entry.refheight = try std.fmt.parseInt(u8, fieldIterator.next().?, 10);
+        index += 1;
+    }
+    return &output;
 }
 
-pub fn init(allocator: std.mem.Allocator, sprites: *[c.SPRITECOUNT]c.TITUS_spritedata, spritedata: []const u8, pixelformat: *c.SDL_PixelFormat) !void {
-    defer allocator.free(spritedata);
-    var remaining_data = spritedata;
-    for (0..c.SPRITECOUNT) |i| {
-        const width = c.spritewidth[i];
-        const height = c.spriteheight[i];
-        var surface = c.SDL_CreateRGBSurface(
-            c.SDL_SWSURFACE,
-            width,
-            height,
-            pixelformat.BitsPerPixel,
-            pixelformat.Rmask,
-            pixelformat.Gmask,
-            pixelformat.Bmask,
-            pixelformat.Amask,
-        );
-        if (surface == null) {
-            return error.OutOfMemory;
+const titus_sprite_defs: []SpriteDefinition = load_sprite_defs(@embedFile("sprites_titus.csv")) catch {
+    unreachable;
+};
+const moktar_sprite_defs: []SpriteDefinition = load_sprite_defs(@embedFile("sprites_moktar.csv")) catch {
+    unreachable;
+};
+
+pub const SpriteData = struct {
+    definitions: []const SpriteDefinition,
+    bitmaps: [SPRITECOUNT]*c.SDL_Surface,
+
+    fn init(self: *SpriteData, allocator: std.mem.Allocator, spritedata: []const u8, pixelformat: *c.SDL_PixelFormat) !void {
+        defer allocator.free(spritedata);
+
+        if (data.game == c.Titus) {
+            self.definitions = titus_sprite_defs;
+        } else {
+            self.definitions = moktar_sprite_defs;
         }
-        _ = copypixelformat(surface.*.format, pixelformat);
-        remaining_data = try image.load_planar_16color(remaining_data, width, height, surface);
-        sprites[i].data = surface;
-        sprites[i].collheight = c.spritecollheight[i];
-        sprites[i].collwidth = c.spritecollwidth[i];
-        sprites[i].refheight = 0 - (@as(i16, c.spriterefheight[i]) - c.spriteheight[i]);
-        sprites[i].refwidth = c.spriterefwidth[i];
+        var remaining_data = spritedata;
+        for (0..SPRITECOUNT) |i| {
+            var surface = c.SDL_CreateRGBSurface(
+                c.SDL_SWSURFACE,
+                self.definitions[i].width,
+                self.definitions[i].height,
+                pixelformat.BitsPerPixel,
+                pixelformat.Rmask,
+                pixelformat.Gmask,
+                pixelformat.Bmask,
+                pixelformat.Amask,
+            );
+            if (surface == null) {
+                return error.OutOfMemory;
+            }
+            _ = copypixelformat(surface.*.format, pixelformat);
+            remaining_data = try image.load_planar_16color(remaining_data, self.definitions[i].width, self.definitions[i].height, surface);
+            self.bitmaps[i] = surface;
+        }
     }
+    fn deinit(self: *SpriteData) void {
+        for (self.bitmaps) |ptr| {
+            c.SDL_FreeSurface(ptr);
+        }
+    }
+
+    pub fn setPixelFormat(self: *SpriteData, pixelformat: *c.SDL_PixelFormat) void {
+        for (0..SPRITECOUNT) |i| {
+            copypixelformat(self.bitmaps[i].format, pixelformat);
+        }
+    }
+};
+
+pub fn init(allocator: std.mem.Allocator, spritedata: []const u8, pixelformat: *c.SDL_PixelFormat) !void {
+    try sprites.init(allocator, spritedata, pixelformat);
 }
 
-pub fn deinit(sprites: []c.TITUS_spritedata) void {
-    for (sprites) |*sprite| {
-        c.SDL_FreeSurface(sprite.data);
-    }
+pub fn deinit() void {
+    sprites.deinit();
 }
 
 // FIXME: maybe we can have one big tile map surface just like we have one big font surface
-pub fn load_tile(data: []const u8, pixelformat: *c.SDL_PixelFormat) !*c.SDL_Surface {
+pub fn load_tile(data_slice: []const u8, pixelformat: *c.SDL_PixelFormat) !*c.SDL_Surface {
     const width = 16;
     const height = 16;
     var surface = c.SDL_CreateRGBSurface(c.SDL_SWSURFACE, width, height, 8, 0, 0, 0, 0);
@@ -83,7 +140,7 @@ pub fn load_tile(data: []const u8, pixelformat: *c.SDL_PixelFormat) !*c.SDL_Surf
     defer c.SDL_FreeSurface(surface);
 
     copypixelformat(surface.*.format, pixelformat);
-    _ = try image.load_planar_16color(data, width, height, surface);
+    _ = try image.load_planar_16color(data_slice, width, height, surface);
     var surface2 = c.SDL_ConvertSurfaceFormat(surface, c.SDL_GetWindowPixelFormat(window.window), 0);
     if (surface2 == 0) {
         return error.OutOfMemory;
@@ -91,8 +148,7 @@ pub fn load_tile(data: []const u8, pixelformat: *c.SDL_PixelFormat) !*c.SDL_Surf
     return (surface2);
 }
 
-// FIXME: maybe this doesn't belong here?
-pub export fn copypixelformat(destformat: *c.SDL_PixelFormat, srcformat: *c.SDL_PixelFormat) void {
+fn copypixelformat(destformat: *c.SDL_PixelFormat, srcformat: *c.SDL_PixelFormat) void {
     if (srcformat.palette != null) {
         destformat.palette.*.ncolors = srcformat.palette.*.ncolors;
         for (0..@intCast(destformat.palette.*.ncolors)) |i| {
@@ -133,18 +189,15 @@ pub const SpriteCache = struct {
     allocator: std.mem.Allocator,
     hashmap: HashMap,
     pixelformat: c.SDL_PixelFormatEnum,
-    sprites: []c.TITUS_spritedata,
 
     pub fn init(
         self: *SpriteCache,
-        sprites: []c.TITUS_spritedata,
         pixelformat: c.SDL_PixelFormatEnum,
         allocator: std.mem.Allocator,
     ) !void {
         self.allocator = allocator;
         self.hashmap = HashMap.init(allocator);
         self.pixelformat = pixelformat;
-        self.sprites = sprites;
     }
     pub fn deinit(self: *SpriteCache) void {
         var iter = self.hashmap.iterator();
@@ -196,12 +249,12 @@ pub const SpriteCache = struct {
     }
 
     pub fn getSprite(self: *SpriteCache, key: Key) !*c.SDL_Surface {
-        var spritedata = &self.sprites[@as(usize, @intCast(key.number))];
+        var spritedata = sprites.bitmaps[@as(usize, @intCast(key.number))];
 
         if (self.hashmap.get(key)) |surface| {
             return surface;
         }
-        var new_surface = try copysurface(self, spritedata.*.data, key.flip, key.flash);
+        var new_surface = try copysurface(self, spritedata, key.flip, key.flash);
         try self.hashmap.put(key, new_surface);
         return new_surface;
     }
