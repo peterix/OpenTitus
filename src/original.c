@@ -401,24 +401,3 @@ void initoriginal() {
         }
     }
 }
-
-uint16_t getlevelid(uint16_t levelnumber) {
-    uint16_t levelid_titus[] = {1,3,4,5,6,7,8,9,10,11,300,12,13,300,14,300,15,300,300,2};
-    uint16_t levelid_moktar[] = {1,3,4,5,6,7,8,9,10,11,300,12,13,300,14,15,16,300,300,2};
-    uint16_t i;
-    if (game == Titus) {
-        for (i = 0; i < 20; i++) {
-            if (levelid_titus[i] == levelnumber + 1) {
-                return i;
-            }
-        }
-    } else {
-        for (i = 0; i < 20; i++) {
-            if (levelid_moktar[i] == levelnumber + 1) {
-                return i;
-            }
-        }
-    }
-    assert(false);
-    return 65535;
-}

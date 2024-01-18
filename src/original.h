@@ -35,7 +35,6 @@
 
 
 void initoriginal();
-uint16_t getlevelid(uint16_t levelnumber);
 
 #define SPRITECOUNT 356
 extern uint8_t spritewidth[SPRITECOUNT];
