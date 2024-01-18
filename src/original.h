@@ -52,13 +52,4 @@ extern int16_t anim_player[ANIM_PLAYER_COUNT][ANIM_PLAYER_MAX];
 #define NMI_ANIM_TABLE_COUNT 879 //1758
 extern int16_t anim_enemy[NMI_ANIM_TABLE_COUNT];
 
-#define ORIG_LEVEL_COUNT 20
-extern uint8_t NMI_POWER[ORIG_LEVEL_COUNT];
-extern uint8_t LEVEL_MUSIC[ORIG_LEVEL_COUNT];
-
-#define ORIG_ANIM_MAX 20
-extern int16_t anim_zoubida[ORIG_ANIM_MAX];
-extern int16_t anim_moktar[ORIG_ANIM_MAX];
-extern int16_t anim_smoke[ORIG_ANIM_MAX];
-
 #define ORIG_OBJECT_COUNT 71

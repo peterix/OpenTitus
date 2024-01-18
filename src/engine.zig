@@ -85,8 +85,12 @@ pub fn playtitus(firstlevel: u16, allocator: std.mem.Allocator) !c_int {
 
     level.c_level.levelnumber = firstlevel;
     while (level.c_level.levelnumber < data.constants.*.levelfiles.len) : (level.c_level.levelnumber += 1) {
-        level.c_level.levelid = c.getlevelid(level.c_level.levelnumber);
-        std.debug.print("Level {} ID {}\n", .{ level.c_level.levelnumber, level.c_level.levelid });
+        const current_constants = data.constants.levelfiles[level.c_level.levelnumber];
+        level.c_level.is_finish = current_constants.is_finish;
+        level.c_level.has_cage = current_constants.has_cage;
+        level.c_level.boss_power = current_constants.boss_power;
+        level.c_level.music = current_constants.music;
+
         const level_index = @as(usize, @intCast(level.c_level.levelnumber));
         var leveldata = sqz.unSQZ(
             data.constants.*.levelfiles[level_index].filename,
@@ -125,10 +129,7 @@ pub fn playtitus(firstlevel: u16, allocator: std.mem.Allocator) !c_int {
                 return retval;
             }
 
-            c.music_select_song(c.LEVEL_MUSIC[
-                level.c_level
-                    .levelid
-            ]);
+            c.music_select_song(level.c_level.music);
 
             // scroll to where the player is while 'closing' and 'opening' the screen to obscure the sudden change
             gates.CLOSE_SCREEN(&context);

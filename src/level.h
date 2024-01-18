@@ -200,7 +200,11 @@ struct _TITUS_player {
 struct _TITUS_level {
     void * parent;
     uint16_t levelnumber;
-    uint16_t levelid;
+    bool has_cage;
+    bool is_finish;
+    uint8_t music;
+    uint8_t boss_power;
+
     int16_t height;
     int16_t width; // always 256
     TITUS_tile tile[256];

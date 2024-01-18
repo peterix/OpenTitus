@@ -35,7 +35,7 @@ fn check_finish(context: *c.ScreenContext, level: *c.TITUS_level) void {
     if (globals.boss_alive) { //There is still a boss that needs to be killed!
         return;
     }
-    if (level.levelid == 9) { //The level with a cage
+    if (level.has_cage) {
         if ((level.player.sprite2.number != c.FIRST_OBJET + 26) and
             (level.player.sprite2.number != c.FIRST_OBJET + 27))
         {

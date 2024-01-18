@@ -55,6 +55,9 @@ static void SET_ALL_SPRITES(TITUS_level *level);
 //2 - Game over
 //3 - Death
 
+int16_t anim_zoubida[] = {337,337,337,338,338,338,339,339,339,340,340,340,341,341,341,342,342,342,-18};
+int16_t anim_moktar[] = {343,343,343,344,344,344,345,345,345,-9};
+int16_t anim_smoke[] = {347,347,348,348,349,349,350,350,351,351,352,352,353,353,354,354,-16};
 
 uint8_t RESET_LEVEL(ScreenContext *context, TITUS_level *level) {
     TITUS_player *player = &(level->player);
@@ -71,7 +74,7 @@ uint8_t RESET_LEVEL(ScreenContext *context, TITUS_level *level) {
     if (RESETLEVEL_FLAG == 1) {
         return 3;
     }
-    if (level->levelid == 16) {
+    if (level->is_finish) {
         BITMAP_X = 0;
         NOSCROLL_FLAG = true;
         //Prepare Titus/Moktar
@@ -209,7 +212,7 @@ void SET_DATA_NMI(TITUS_level *level) {
             boss_alive = true;
         }
     }
-    boss_lives = NMI_POWER[level->levelid];
+    boss_lives = level->boss_power;
 }
 
 void CLEAR_DATA(TITUS_level *level) {

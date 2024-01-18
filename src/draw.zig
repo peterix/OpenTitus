@@ -143,6 +143,7 @@ fn draw_sprite(spr: *allowzero c.TITUS_sprite) void {
 
     var dest: c.SDL_Rect = undefined;
     if (!spr.flipped) {
+        // FIXME: crash in final level!
         dest.x = spr.x - spr.spritedata.*.refwidth - (globals.BITMAP_X * 16) + globals.g_scroll_px_offset;
     } else {
         dest.x = spr.x + spr.spritedata.*.refwidth - spr.spritedata.*.data.*.w - (globals.BITMAP_X * 16) + globals.g_scroll_px_offset;

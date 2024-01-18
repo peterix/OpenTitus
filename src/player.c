@@ -1429,6 +1429,9 @@ static void GET_IMAGE(TITUS_level *level) {
     // FIXME: divide all these negative numbers by 2 in the data instead
     int16_t frame = *(player->sprite.animation);
     if (frame < 0) { //frame is a negative number, telling how many bytes to jump back
+        if(frame == -1) {
+            fprintf(stderr, "Player frame is -1, advancing by %hd\n", frame / 2);
+        }
         player->sprite.animation += (frame / 2); //jump back to first frame of animation
         frame = *(player->sprite.animation);
 
