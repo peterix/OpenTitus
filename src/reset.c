@@ -141,6 +141,7 @@ uint8_t RESET_LEVEL(ScreenContext *context, TITUS_level *level) {
 
             scroll(level);
             draw_tiles(level);
+
             draw_sprites(level);
             flip_screen(context, true);
 

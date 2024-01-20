@@ -131,6 +131,9 @@ int move_player(ScreenContext *context, TITUS_level *level) {
                 if (mods & (KMOD_ALT | KMOD_CTRL)) {
                     music_cycle();
                 }
+                else {
+                    music_toggle();
+                }
             } else if (event.key.keysym.scancode == KEY_P) {
                 pause = true;
             } else if (event.key.keysym.scancode == KEY_FULLSCREEN) {

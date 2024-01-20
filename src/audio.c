@@ -83,6 +83,7 @@ typedef struct {
 
 uint8_t last_song = 0;
 uint16_t seg_reduction;
+bool playing_musical_sfx = false;
 
 bool sfx_on;
 uint16_t sfx_time;
@@ -117,6 +118,10 @@ static int fillchip(ADLIB_DATA *aad)
     unsigned char tmpC;
 
     sfx_driver();
+
+    if(!settings->music && !playing_musical_sfx) {
+        return (aad->cutsong);
+    }
 
     aad->skip_delay_counter--;
     if (aad->skip_delay_counter == 0) {
@@ -378,7 +383,7 @@ static void all_vox_zero()
 
 void TimerCallback(void *data)
 {
-    if (!settings->music) {
+    if (!settings->music && !settings->sound) {
         return;
     }
     SDL_PLAYER    *sdlp = (SDL_PLAYER *)data;
@@ -481,6 +486,10 @@ void music_select_song(int song_number) {
     unsigned char *raw_data = aad->data;
     if (song_type[song_number] == 0) { //0: level music, 1: bonus
         last_song = song_number;
+        playing_musical_sfx = false;
+    }
+    else {
+        playing_musical_sfx = true;
     }
     aad->perc_stat = 0x20;
 
@@ -586,9 +595,11 @@ void music_cycle() {
 
 bool music_toggle() {
     settings->music = !settings->music;
+    /*
     if(settings->music) {
         OPL_SetCallback(0, TimerCallback, &sdl_player_data);
     }
+    */
     return settings->music;
 }
 
@@ -624,6 +635,7 @@ void music_restart_if_finished() {
     if (settings->music) {
         if (sdl_player_data.aad.cutsong == 0) {
             music_select_song(last_song);
+            playing_musical_sfx = false;
         }
     }
 }
