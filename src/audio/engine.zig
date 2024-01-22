@@ -29,6 +29,7 @@
 
 const std = @import("std");
 const Adlib = @import("Adlib.zig");
+const Backend = @import("Backend.zig");
 const c = @import("../c.zig");
 const game = @import("../game.zig");
 const data = @import("../data.zig");
@@ -37,19 +38,20 @@ extern var OPL_SDL_VOLUME: u8;
 
 pub const AudioEngine = struct {
     allocator: std.mem.Allocator = undefined,
-    aad: Adlib = .{},
+    adlib: Adlib = .{},
+    backend: Backend = undefined,
     last_song: u8 = 0,
 
     pub fn init(self: *AudioEngine, allocator: std.mem.Allocator) !void {
         self.allocator = allocator;
         self.last_song = 0;
         OPL_SDL_VOLUME = game.settings.volume_master;
-
-        try self.aad.init(allocator);
+        self.backend = self.adlib.backend();
+        try self.backend.init(allocator);
     }
 
     pub fn deinit(self: *AudioEngine) void {
-        self.aad.deinit();
+        self.backend.deinit();
         if (c.SDL_WasInit(c.SDL_INIT_AUDIO) == 0) {
             return;
         }
@@ -64,16 +66,14 @@ pub fn music_get_last_song() u8 {
 }
 
 pub export fn music_play_jingle_c(song_number: u8) void {
-    var aad: *Adlib = &(audio_engine.aad);
     c.SDL_LockAudio();
     {
-        aad.play_track(song_number);
+        audio_engine.backend.playTrack(song_number);
     }
     c.SDL_UnlockAudio();
 }
 
 pub export fn music_select_song_c(song_number: u8) void {
-    var aad: *Adlib = &(audio_engine.aad);
     audio_engine.last_song = song_number;
     if (!game.settings.music) {
         return;
@@ -81,7 +81,7 @@ pub export fn music_select_song_c(song_number: u8) void {
 
     c.SDL_LockAudio();
     {
-        aad.play_track(song_number);
+        audio_engine.backend.playTrack(song_number);
     }
     c.SDL_UnlockAudio();
 }
@@ -91,8 +91,7 @@ pub export fn music_toggle_c() bool {
     if (!game.settings.music) {
         c.SDL_LockAudio();
         {
-            var aad: *Adlib = &(audio_engine.aad);
-            aad.stop_track(audio_engine.last_song);
+            audio_engine.backend.stopTrack(audio_engine.last_song);
         }
         c.SDL_UnlockAudio();
     }
@@ -121,7 +120,7 @@ pub fn music_wait_to_finish() void {
                 }
             }
         }
-        if (audio_engine.aad.active_channels == 0) {
+        if (!audio_engine.backend.isPlayingATrack()) {
             waiting = false;
         }
     }
@@ -131,15 +130,15 @@ pub fn music_restart_if_finished() void {
     if (!game.settings.music) {
         return;
     }
-    if (audio_engine.aad.active_channels == 0) {
+    if (!audio_engine.backend.isPlayingATrack()) {
         music_select_song_c(audio_engine.last_song);
     }
 }
 
 pub export fn sfx_play_c(fx_number: u8) void {
-    var aad: *Adlib = &(audio_engine.aad);
+    var backend = audio_engine.backend;
     c.SDL_LockAudio();
-    aad.sfx_play(fx_number);
+    backend.playSfx(fx_number);
     c.SDL_UnlockAudio();
 }
 

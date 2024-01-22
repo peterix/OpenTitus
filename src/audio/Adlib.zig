@@ -25,11 +25,10 @@
 
 // TODO: dissolve the OPL library and bring its core into here.
 //       OPL3 should remain in C (so we can update it from upstream)
-// TODO: lift out an 'audio.Backend' interface out of this
-//       This should have dynamic dispatch
 
 const std = @import("std");
 const c = @import("../c.zig");
+const Backend = @import("Backend.zig");
 
 const Adlib = @This();
 
@@ -143,12 +142,30 @@ sfx: [SfxCount]Instrument = [_]Instrument{.{}} ** SfxCount,
 instrument_data: [InstrumentCount]Instrument = [_]Instrument{.{}} ** InstrumentCount,
 data: []const u8 = "",
 
-pub fn init(self: *Adlib, allocator: std.mem.Allocator) !void {
+pub fn backend(self: *Adlib) Backend {
+    return .{
+        .name = "AdLib",
+        .ptr = self,
+        .vtable = &.{
+            .init = init,
+            .deinit = deinit,
+            .playTrack = play_track,
+            .stopTrack = stop_track,
+            .playSfx = play_sfx,
+            .isPlayingATrack = is_playing_a_track,
+        },
+    };
+}
+
+fn init(ctx: *anyopaque, allocator: std.mem.Allocator) Backend.Error!void {
+    const self: *Adlib = @ptrCast(@alignCast(ctx));
     self.allocator = allocator;
-    const bytes = try load_file(
+    const bytes = load_file(
         "music.bin",
         allocator,
-    );
+    ) catch {
+        return Backend.Error.InvalidData;
+    };
     errdefer allocator.free(bytes);
 
     switch (bytes.len) {
@@ -160,14 +177,14 @@ pub fn init(self: *Adlib, allocator: std.mem.Allocator) !void {
         },
         else => {
             std.log.err("music.bin has unexpected size!", .{});
-            return error.InvalidFile;
+            return Backend.Error.InvalidData;
         },
     }
 
     c.OPL_SetSampleRate(44100);
     if (c.OPL_Init(0x388) == 0) {
         std.log.err("Unable to initialise OPL layer", .{});
-        return error.CannotInitializeOPL;
+        return Backend.Error.CannotInitialize;
     }
 
     // This makes no difference, but specifying 1 (OPL3) does break the music
@@ -177,6 +194,124 @@ pub fn init(self: *Adlib, allocator: std.mem.Allocator) !void {
     self.sfx_init();
 
     c.OPL_SetCallback(0, TimerCallback, @constCast(@ptrCast(self)));
+}
+
+fn deinit(ctx: *anyopaque) void {
+    const self: *Adlib = @ptrCast(@alignCast(ctx));
+    self.allocator.free(self.data);
+    c.OPL_Shutdown();
+}
+
+fn is_playing_a_track(ctx: *anyopaque) bool {
+    const self: *Adlib = @ptrCast(@alignCast(ctx));
+    return self.active_channels != 0;
+}
+
+fn stop_track(ctx: *anyopaque, song_number: u8) void {
+    const self: *Adlib = @ptrCast(@alignCast(ctx));
+    if (self.current_track) |track| {
+        if (track == song_number) {
+            self.active_channels = 0;
+            self.current_track = null;
+        }
+    }
+}
+
+fn play_track(ctx: *anyopaque, song_number: u8) void {
+    const self: *Adlib = @ptrCast(@alignCast(ctx));
+    self.current_track = song_number;
+
+    var raw_data = self.data;
+    self.perc_stat = 0x20;
+
+    //Load instruments
+    var instrument_buffer = raw_data[INS_OFFSET..];
+
+    for (0..song_number) |_| {
+        while (true) {
+            var temp = chomp_u16(&instrument_buffer);
+            if (temp == 0xFFFF) {
+                break;
+            }
+        }
+    }
+    all_vox_zero();
+
+    for (0..InstrumentCount) |i| {
+        //Init; instrument not in use
+        self.instrument_data[i].vox = 0xFF;
+    }
+
+    var previous: u16 = 0;
+    var current = chomp_u16(&instrument_buffer);
+    for (0..InstrumentCount) |i| {
+        previous = current;
+        current = chomp_u16(&instrument_buffer);
+
+        if (current == 0xFFFF) //Terminate for loop
+            break;
+
+        if (previous == 0) //Instrument not in use
+            continue;
+
+        var read_buffer = raw_data[previous - self.seg_reduction ..];
+
+        if (i > 14) {
+            //Perc instrument (15-18) have an extra byte, melodic (0-14) have not
+            self.instrument_data[i].vox = chomp_u8(&read_buffer);
+        } else {
+            self.instrument_data[i].vox = 0xFE;
+        }
+
+        for (0..5) |k| {
+            self.instrument_data[i].op[0][k] = chomp_u8(&read_buffer);
+        }
+
+        for (0..5) |k| {
+            self.instrument_data[i].op[1][k] = chomp_u8(&read_buffer);
+        }
+
+        self.instrument_data[i].fb_alg = chomp_u8(&read_buffer);
+    }
+
+    //Set skip delay
+    self.skip_delay = @truncate(previous);
+    self.skip_delay_counter = @truncate(previous);
+
+    //Load music
+    var mus_buffer = raw_data[MUS_OFFSET..];
+
+    for (0..song_number) |_| {
+        while (true) {
+            var offset = chomp_u16(&mus_buffer);
+            if (offset == 0xFFFF) {
+                break;
+            }
+        }
+    }
+
+    self.active_channels = 0;
+    for (0..ChannelCount) |i| {
+        var offset = chomp_u16(&mus_buffer);
+        if (offset == 0xFFFF) {
+            break;
+        }
+        self.active_channels += 1;
+        self.channels[i] = .{
+            .offset = offset - self.seg_reduction,
+            .vox = @truncate(i),
+        };
+    }
+}
+
+fn play_sfx(ctx: *anyopaque, fx_number: u8) void {
+    const self: *Adlib = @ptrCast(@alignCast(ctx));
+    self.sfx_time = 15;
+    self.sfx_on = true;
+    const index: usize = @intCast(fx_number);
+    Adlib.insmaker(&self.sfx[index].op[0], 0x13); //Channel 6 operator 1
+    Adlib.insmaker(&self.sfx[index].op[1], 0x10); //Channel 6 operator 2
+    c.OPL_WriteRegister(0xC6, self.sfx[index].fb_alg); //Channel 6 (Feedback/Algorithm)
 }
 
 fn load_file(inputfile: []const u8, allocator: std.mem.Allocator) ![]const u8 {
@@ -208,11 +343,6 @@ fn sfx_init(self: *Adlib) void {
     }
 }
 
-pub fn deinit(self: *Adlib) void {
-    self.allocator.free(self.data);
-    c.OPL_Shutdown();
-}
-
 fn sfx_driver(self: *Adlib) void {
     if (!self.sfx_on) {
         return;
@@ -236,15 +366,6 @@ fn sfx_stop(self: *Adlib) void {
     insmaker(tmpins2, 0x10); //Channel 6 operator 2
     c.OPL_WriteRegister(0xC6, 0x08); //Channel 6 (Feedback/Algorithm)
     self.sfx_on = false;
-}
-
-pub fn sfx_play(self: *Adlib, fx_number: u8) void {
-    self.sfx_time = 15;
-    self.sfx_on = true;
-    const index: usize = @intCast(fx_number);
-    Adlib.insmaker(&self.sfx[index].op[0], 0x13); //Channel 6 operator 1
-    Adlib.insmaker(&self.sfx[index].op[1], 0x10); //Channel 6 operator 2
-    c.OPL_WriteRegister(0xC6, self.sfx[index].fb_alg); //Channel 6 (Feedback/Algorithm)
 }
 
 fn processInstruction(self: *Adlib, channel: *Channel, instruction: Instruction) void {
@@ -527,99 +648,4 @@ fn TimerCallback(callback_data: ?*anyopaque) callconv(.C) void {
     // Schedule the next timer callback.
     // Delay is original 13.75 ms
     c.OPL_SetCallback(13750, TimerCallback, callback_data);
-}
-
-pub fn stop_track(self: *Adlib, song_number: u8) void {
-    if (self.current_track) |track| {
-        if (track == song_number) {
-            self.active_channels = 0;
-            self.current_track = null;
-        }
-    }
-}
-
-pub fn play_track(self: *Adlib, song_number: u8) void {
-    self.current_track = song_number;
-
-    var raw_data = self.data;
-    self.perc_stat = 0x20;
-
-    //Load instruments
-    var instrument_buffer = raw_data[INS_OFFSET..];
-
-    for (0..song_number) |_| {
-        while (true) {
-            var temp = chomp_u16(&instrument_buffer);
-            if (temp == 0xFFFF) {
-                break;
-            }
-        }
-    }
-    all_vox_zero();
-
-    for (0..InstrumentCount) |i| {
-        //Init; instrument not in use
-        self.instrument_data[i].vox = 0xFF;
-    }
-
-    var previous: u16 = 0;
-    var current = chomp_u16(&instrument_buffer);
-    for (0..InstrumentCount) |i| {
-        previous = current;
-        current = chomp_u16(&instrument_buffer);
-
-        if (current == 0xFFFF) //Terminate for loop
-            break;
-
-        if (previous == 0) //Instrument not in use
-            continue;
-
-        var read_buffer = raw_data[previous - self.seg_reduction ..];
-
-        if (i > 14) {
-            //Perc instrument (15-18) have an extra byte, melodic (0-14) have not
-            self.instrument_data[i].vox = chomp_u8(&read_buffer);
-        } else {
-            self.instrument_data[i].vox = 0xFE;
-        }
-
-        for (0..5) |k| {
-            self.instrument_data[i].op[0][k] = chomp_u8(&read_buffer);
-        }
-
-        for (0..5) |k| {
-            self.instrument_data[i].op[1][k] = chomp_u8(&read_buffer);
-        }
-
-        self.instrument_data[i].fb_alg = chomp_u8(&read_buffer);
-    }
-
-    //Set skip delay
-    self.skip_delay = @truncate(previous);
-    self.skip_delay_counter = @truncate(previous);
-
-    //Load music
-    var mus_buffer = raw_data[MUS_OFFSET..];
-
-    for (0..song_number) |_| {
-        while (true) {
-            var offset = chomp_u16(&mus_buffer);
-            if (offset == 0xFFFF) {
-                break;
-            }
-        }
-    }
-
-    self.active_channels = 0;
-    for (0..ChannelCount) |i| {
-        var offset = chomp_u16(&mus_buffer);
-        if (offset == 0xFFFF) {
-            break;
-        }
-        self.active_channels += 1;
-        self.channels[i] = .{
-            .offset = offset - self.seg_reduction,
-            .vox = @truncate(i),
-        };
-    }
 }
