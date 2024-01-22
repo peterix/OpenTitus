@@ -49,6 +49,7 @@ const intro_text = @import("ui/intro_text.zig");
 const keyboard = @import("ui/keyboard.zig");
 const menu = @import("ui/menu.zig");
 
+const audio = @import("audio.zig");
 const data = @import("data.zig");
 const globals = @import("globals.zig");
 const engine = @import("engine.zig");
@@ -109,11 +110,8 @@ pub fn run() !u8 {
 
     try window.window_init();
 
-    if (c.audio_init() != 0) {
-        std.debug.print("Unable to initialize Audio...", .{});
-        return TitusError.CannotInitAudio;
-    }
-    defer c.audio_free();
+    try audio.audio_engine.init(allocator);
+    defer audio.audio_engine.deinit();
 
     c.initoriginal();
 
@@ -149,7 +147,7 @@ pub fn run() !u8 {
             state = 0;
     }
 
-    c.music_select_song(15);
+    audio.music_select_song(15);
 
     if (state != 0) {
         retval = try image.viewImageFile(

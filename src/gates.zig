@@ -29,6 +29,7 @@ const globals = @import("globals.zig");
 const window = @import("window.zig");
 const scroll = @import("scroll.zig");
 const draw = @import("draw.zig");
+const audio = @import("audio.zig");
 
 fn check_finish(context: *c.ScreenContext, level: *c.TITUS_level) void {
     var player = &level.player;
@@ -52,8 +53,8 @@ fn check_finish(context: *c.ScreenContext, level: *c.TITUS_level) void {
     {
         return;
     }
-    c.music_select_song(4);
-    c.music_wait_to_finish();
+    audio.music_select_song(4);
+    audio.music_wait_to_finish();
     CLOSE_SCREEN(context);
     globals.NEWLEVEL_FLAG = true;
 }

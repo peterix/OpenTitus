@@ -102,7 +102,7 @@ export var GRAVITY_FLAG: u8 = 0;
 export var FUME_FLAG: u8 = 0;
 
 //Keyboard state
-export var keystate: [*c]const u8 = null;
+pub export var keystate: [*c]const u8 = null;
 
 export var YFALL: u8 = 0;
 

@@ -34,8 +34,8 @@ uint8_t audio_get_volume();
 void sfx_play(int fx_number);
 
 void music_wait_to_finish();
-void music_select_song(int song_number);
-int  music_get_last_song();
+void music_select_song(uint8_t song_number);
+uint8_t music_get_last_song();
 bool music_toggle();
 void music_cycle();
 void music_restart_if_finished();
