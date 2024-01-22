@@ -37,6 +37,26 @@ const game = @import("game.zig");
 const data = @import("data.zig");
 const globals = @import("globals.zig");
 
+fn chomp_u8(bytes: *[]const u8) u8 {
+    if (bytes.len > 0) {
+        const result = bytes.*[0];
+        bytes.len -= 1;
+        bytes.ptr += 1;
+        return result;
+    }
+    unreachable;
+}
+
+fn chomp_u16(bytes: *[]const u8) u16 {
+    if (bytes.len > 1) {
+        const result = @as(u16, bytes.*[0]) + (@as(u16, bytes.*[1]) << 8);
+        bytes.*.len -= 2;
+        bytes.*.ptr += 2;
+        return result;
+    }
+    unreachable;
+}
+
 extern var OPL_SDL_VOLUME: u8;
 
 const MUS_OFFSET = 0;
@@ -48,7 +68,7 @@ const voxp: []const u8 = &.{ 1, 2, 3, 7, 8, 9, 13, 17, 15, 18, 14 };
 const gamme: []const c_uint = &.{ 343, 363, 385, 408, 432, 458, 485, 514, 544, 577, 611, 647, 0 };
 const song_type: []const c_uint = &.{ 0, 1, 0, 0, 0, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0 };
 
-const ADLIB_INSTR = struct {
+const Instrument = struct {
     op: [2][5]u8 = .{
         .{ 0, 0, 0, 0, 0 },
         .{ 0, 0, 0, 0, 0 },
@@ -57,7 +77,7 @@ const ADLIB_INSTR = struct {
     vox: u8 = 0, //(only for perc instruments, 0xFE if this is melodic instrument, 0xFF if this instrument is disabled)
 };
 
-const AdlibData = struct {
+const Adlib = struct {
     const ChannelCount = 10;
     const SfxCount = 14;
     const InstrumentCount = 20;
@@ -119,11 +139,62 @@ const AdlibData = struct {
     skip_delay: u8 = 0,
     skip_delay_counter: u8 = 0,
 
-    sfx: [SfxCount]ADLIB_INSTR = [_]ADLIB_INSTR{.{}} ** SfxCount,
-    instrument_data: [InstrumentCount]ADLIB_INSTR = [_]ADLIB_INSTR{.{}} ** InstrumentCount,
+    seg_reduction: u16 = 0,
+    playing_musical_sfx: bool = false,
+    sfx_on: bool = false,
+    sfx_time: u16 = 0,
+
+    sfx: [SfxCount]Instrument = [_]Instrument{.{}} ** SfxCount,
+    instrument_data: [InstrumentCount]Instrument = [_]Instrument{.{}} ** InstrumentCount,
     data: []const u8 = "",
 
-    fn fillchip_channel(self: *AdlibData, i: usize) void {
+    fn sfx_init(self: *Adlib) void {
+        self.sfx_on = false;
+        self.sfx_time = 0;
+
+        var raw_data = self.data[SFX_OFFSET..];
+
+        for (0..Adlib.SfxCount) |i| {
+            for (0..5) |k| {
+                self.sfx[i].op[0][k] = chomp_u8(&raw_data);
+            }
+
+            for (0..5) |k| {
+                self.sfx[i].op[1][k] = chomp_u8(&raw_data);
+            }
+
+            self.sfx[i].fb_alg = chomp_u8(&raw_data);
+        }
+    }
+
+    fn sfx_driver(self: *Adlib) void {
+        if (!self.sfx_on) {
+            return;
+        }
+        c.OPL_WriteRegister(0xBD, 0xEF & self.perc_stat);
+        c.OPL_WriteRegister(0xA6, 0x57);
+        c.OPL_WriteRegister(0xB6, 1);
+        c.OPL_WriteRegister(0xB6, 5);
+        c.OPL_WriteRegister(0xBD, 0x10 | self.perc_stat);
+        self.sfx_time -= 1;
+        if (self.sfx_time == 0) {
+            self.sfx_stop();
+        }
+    }
+
+    fn sfx_stop(self: *Adlib) void {
+        const tmpins1: []const u8 = &.{ 0xF5, 0x7F, 0x00, 0x11, 0x00 };
+        const tmpins2: []const u8 = &.{ 0xF8, 0xFF, 0x04, 0x30, 0x00 };
+        c.SDL_LockAudio();
+        c.OPL_WriteRegister(0xB6, 32);
+        insmaker(tmpins1, 0x13); //Channel 6 operator 1
+        insmaker(tmpins2, 0x10); //Channel 6 operator 2
+        c.OPL_WriteRegister(0xC6, 0x08); //Channel 6 (Feedback/Algorithm)
+        c.SDL_UnlockAudio();
+        self.sfx_on = false;
+    }
+
+    fn fillchip_channel(self: *Adlib, i: usize) void {
         var channel = &self.channels[i];
         if (channel.offset == null) {
             return;
@@ -220,7 +291,7 @@ const AdlibData = struct {
                             channel.return_offset = channel.offset.? + 2;
                             var temp = (@as(c_uint, self.data[channel.offset.? + 1]) << 8) & 0xFF00;
                             temp += @as(c_uint, self.data[channel.offset.?]) & 0xFF;
-                            channel.offset = temp - audio_engine.seg_reduction;
+                            channel.offset = temp - self.seg_reduction;
                         },
 
                         .UpdateLoopCounter => {
@@ -233,7 +304,7 @@ const AdlibData = struct {
                                 channel.loop_counter -= 1;
                                 var temp = (@as(c_uint, self.data[channel.offset.? + 1]) << 8);
                                 temp += @as(c_uint, self.data[channel.offset.?]);
-                                channel.offset = temp - audio_engine.seg_reduction;
+                                channel.offset = temp - self.seg_reduction;
                             } else {
                                 channel.offset.? += 2;
                             }
@@ -247,7 +318,7 @@ const AdlibData = struct {
                         .Jump => {
                             var temp = (@as(c_uint, self.data[channel.offset.? + 1]) << 8);
                             temp += @as(c_uint, self.data[channel.offset.?]);
-                            channel.offset = temp - audio_engine.seg_reduction;
+                            channel.offset = temp - self.seg_reduction;
                         },
 
                         .Finish => {
@@ -333,23 +404,23 @@ const AdlibData = struct {
         }
     }
 
-    fn fillchip(self: *AdlibData) c_int {
-        sfx_driver();
+    fn fillchip(self: *Adlib) void {
+        self.sfx_driver();
 
-        if (!game.settings.music and !audio_engine.playing_musical_sfx) {
-            return (self.active_channels);
+        if (!game.settings.music and !self.playing_musical_sfx) {
+            return;
         }
 
         self.skip_delay_counter = @subWithOverflow(self.skip_delay_counter, 1)[0];
 
         if (self.skip_delay_counter == 0) {
             self.skip_delay_counter = self.skip_delay;
-            return (self.active_channels); //Skip (for modifying tempo)
+            return; //Skip (for modifying tempo)
         }
         for (0..ChannelCount) |i| {
             self.fillchip_channel(i);
         }
-        return (self.active_channels);
+        return;
     }
 };
 
@@ -408,9 +479,9 @@ export fn TimerCallback(callback_data: ?*anyopaque) void {
     if (!game.settings.music and !game.settings.sound) {
         return;
     }
-    var self: *AudioEngine = @alignCast(@ptrCast(callback_data));
+    var self: *Adlib = @alignCast(@ptrCast(callback_data));
     // Read data until we must make a delay.
-    self.playing = self.aad.fillchip();
+    self.fillchip();
 
     // Schedule the next timer callback.
     // Delay is original 13.75 ms
@@ -419,23 +490,18 @@ export fn TimerCallback(callback_data: ?*anyopaque) void {
 
 pub const AudioEngine = struct {
     allocator: std.mem.Allocator = undefined,
-    aad: AdlibData = .{},
-    playing: c_int = 0,
+    aad: Adlib = .{},
     last_song: u8 = 0,
-    seg_reduction: u16 = 0,
-    playing_musical_sfx: bool = false,
-    sfx_on: bool = false,
-    sfx_time: u16 = 0,
 
     pub fn init(self: *AudioEngine, allocator: std.mem.Allocator) !void {
         self.allocator = allocator;
         self.last_song = 0;
         var expected_file_size: usize = 0;
         if (data.game == c.Titus) {
-            self.seg_reduction = 1301;
+            self.aad.seg_reduction = 1301;
             expected_file_size = 18749;
         } else if (data.game == c.Moktar) {
-            self.seg_reduction = 1345;
+            self.aad.seg_reduction = 1345;
             expected_file_size = 18184;
         } else {
             unreachable;
@@ -457,9 +523,9 @@ pub const AudioEngine = struct {
         c.OPL_InitRegisters(0);
 
         self.aad.data = bytes;
-        sfx_init();
+        self.aad.sfx_init();
 
-        c.OPL_SetCallback(0, TimerCallback, @constCast(@ptrCast(self)));
+        c.OPL_SetCallback(0, TimerCallback, @constCast(@ptrCast(&self.aad)));
         OPL_SDL_VOLUME = game.settings.volume_master;
     }
 
@@ -480,13 +546,13 @@ pub export fn music_get_last_song() u8 {
 }
 
 pub export fn music_select_song(song_number: u8) void {
-    var aad: *AdlibData = &(audio_engine.aad);
+    var aad: *Adlib = &(audio_engine.aad);
     var raw_data = aad.data;
     if (song_type[song_number] == 0) { //0: level music, 1: bonus
         audio_engine.last_song = song_number;
-        audio_engine.playing_musical_sfx = false;
+        audio_engine.aad.playing_musical_sfx = false;
     } else {
-        audio_engine.playing_musical_sfx = true;
+        audio_engine.aad.playing_musical_sfx = true;
     }
     aad.perc_stat = 0x20;
 
@@ -504,14 +570,14 @@ pub export fn music_select_song(song_number: u8) void {
     }
     all_vox_zero();
 
-    for (0..AdlibData.InstrumentCount) |i| {
+    for (0..Adlib.InstrumentCount) |i| {
         //Init; instrument not in use
         aad.instrument_data[i].vox = 0xFF;
     }
 
     var previous: u16 = 0;
     var current = chomp_u16(&instrument_buffer);
-    for (0..AdlibData.InstrumentCount) |i| {
+    for (0..Adlib.InstrumentCount) |i| {
         previous = current;
         current = chomp_u16(&instrument_buffer);
 
@@ -521,7 +587,7 @@ pub export fn music_select_song(song_number: u8) void {
         if (previous == 0) //Instrument not in use
             continue;
 
-        var read_buffer = raw_data[previous - audio_engine.seg_reduction ..];
+        var read_buffer = raw_data[previous - aad.seg_reduction ..];
 
         if (i > 14) {
             //Perc instrument (15-18) have an extra byte, melodic (0-14) have not
@@ -558,13 +624,16 @@ pub export fn music_select_song(song_number: u8) void {
     }
 
     aad.active_channels = 0;
-    for (0..AdlibData.ChannelCount) |i| {
+    for (0..Adlib.ChannelCount) |i| {
         var offset = chomp_u16(&mus_buffer);
         if (offset == 0xFFFF) {
             break;
         }
         aad.active_channels += 1;
-        aad.channels[i] = .{ .offset = offset - audio_engine.seg_reduction, .vox = @truncate(i) };
+        aad.channels[i] = .{
+            .offset = offset - aad.seg_reduction,
+            .vox = @truncate(i),
+        };
     }
     c.SDL_UnlockAudio();
     c.SDL_PauseAudio(0); //perhaps unneccessary
@@ -589,7 +658,7 @@ pub export fn music_toggle() bool {
 }
 
 // FIXME: this is just weird
-pub export fn music_wait_to_finish() void {
+pub fn music_wait_to_finish() void {
     var waiting: bool = true;
     if (!game.settings.music) {
         return;
@@ -617,59 +686,19 @@ pub export fn music_wait_to_finish() void {
     }
 }
 
-pub export fn music_restart_if_finished() void {
+pub fn music_restart_if_finished() void {
     if (game.settings.music) {
         if (audio_engine.aad.active_channels == 0) {
             music_select_song(audio_engine.last_song);
-            audio_engine.playing_musical_sfx = false;
+            audio_engine.aad.playing_musical_sfx = false;
         }
-    }
-}
-
-fn chomp_u8(bytes: *[]const u8) u8 {
-    if (bytes.len > 0) {
-        const result = bytes.*[0];
-        bytes.len -= 1;
-        bytes.ptr += 1;
-        return result;
-    }
-    unreachable;
-}
-
-fn chomp_u16(bytes: *[]const u8) u16 {
-    if (bytes.len > 1) {
-        const result = @as(u16, bytes.*[0]) + (@as(u16, bytes.*[1]) << 8);
-        bytes.*.len -= 2;
-        bytes.*.ptr += 2;
-        return result;
-    }
-    unreachable;
-}
-
-fn sfx_init() void {
-    var aad: *AdlibData = &(audio_engine.aad);
-    audio_engine.sfx_on = false;
-    audio_engine.sfx_time = 0;
-
-    var raw_data = aad.data[SFX_OFFSET..];
-
-    for (0..AdlibData.SfxCount) |i| {
-        for (0..5) |k| {
-            aad.sfx[i].op[0][k] = chomp_u8(&raw_data);
-        }
-
-        for (0..5) |k| {
-            aad.sfx[i].op[1][k] = chomp_u8(&raw_data);
-        }
-
-        aad.sfx[i].fb_alg = chomp_u8(&raw_data);
     }
 }
 
 pub export fn sfx_play(fx_number: c_int) void {
-    var aad: *AdlibData = &(audio_engine.aad);
-    audio_engine.sfx_time = 15;
-    audio_engine.sfx_on = true;
+    var aad: *Adlib = &(audio_engine.aad);
+    aad.sfx_time = 15;
+    aad.sfx_on = true;
 
     const index: usize = @intCast(fx_number);
     c.SDL_LockAudio();
@@ -677,34 +706,6 @@ pub export fn sfx_play(fx_number: c_int) void {
     insmaker(&aad.sfx[index].op[1], 0x10); //Channel 6 operator 2
     c.OPL_WriteRegister(0xC6, aad.sfx[index].fb_alg); //Channel 6 (Feedback/Algorithm)
     c.SDL_UnlockAudio();
-}
-
-fn sfx_driver() void {
-    if (!audio_engine.sfx_on) {
-        return;
-    }
-    const aad: *AdlibData = &(audio_engine.aad);
-    c.OPL_WriteRegister(0xBD, 0xEF & aad.perc_stat);
-    c.OPL_WriteRegister(0xA6, 0x57);
-    c.OPL_WriteRegister(0xB6, 1);
-    c.OPL_WriteRegister(0xB6, 5);
-    c.OPL_WriteRegister(0xBD, 0x10 | aad.perc_stat);
-    audio_engine.sfx_time -= 1;
-    if (audio_engine.sfx_time == 0) {
-        sfx_stop();
-    }
-}
-
-fn sfx_stop() void {
-    const tmpins1: []const u8 = &.{ 0xF5, 0x7F, 0x00, 0x11, 0x00 };
-    const tmpins2: []const u8 = &.{ 0xF8, 0xFF, 0x04, 0x30, 0x00 };
-    c.SDL_LockAudio();
-    c.OPL_WriteRegister(0xB6, 32);
-    insmaker(tmpins1, 0x13); //Channel 6 operator 1
-    insmaker(tmpins2, 0x10); //Channel 6 operator 2
-    c.OPL_WriteRegister(0xC6, 0x08); //Channel 6 (Feedback/Algorithm)
-    c.SDL_UnlockAudio();
-    audio_engine.sfx_on = false;
 }
 
 pub fn set_volume(volume: u8) void {

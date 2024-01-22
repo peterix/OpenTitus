@@ -24,18 +24,11 @@
 
 #pragma once
 
-#include <stdbool.h>
+#include <stdint.h>
 
-int audio_init();
-void audio_free();
-void audio_set_volume(uint8_t volume);
-uint8_t audio_get_volume();
+// TODO: reduce this to nothing.
 
 void sfx_play(int fx_number);
-
-void music_wait_to_finish();
 void music_select_song(uint8_t song_number);
-uint8_t music_get_last_song();
 bool music_toggle();
 void music_cycle();
-void music_restart_if_finished();
