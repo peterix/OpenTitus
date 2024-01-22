@@ -28,8 +28,7 @@
 // TODO: research how Amiga version does sound effects, use those too
 
 const std = @import("std");
-const adlib = @import("adlib.zig");
-const Adlib = adlib.Adlib;
+const Adlib = @import("Adlib.zig");
 const c = @import("../c.zig");
 const game = @import("../game.zig");
 const data = @import("../data.zig");
