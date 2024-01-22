@@ -28,7 +28,7 @@
 
 // TODO: reduce this to nothing.
 
-void sfx_play(int fx_number);
-void music_select_song(uint8_t song_number);
-bool music_toggle();
-void music_cycle();
+void sfx_play_c(uint8_t fx_number);
+void music_select_song_c(uint8_t track_number);
+void music_play_jingle_c(uint8_t track_number);
+bool music_toggle_c();

@@ -118,31 +118,5 @@ void OPL_InitRegisters(int opl3);
 
 void OPL_SetCallback(uint64_t us, opl_callback_t callback, void *data);
 
-// Adjust callback times by the specified factor. For example, a value of
-// 0.5 will halve all remaining times.
-
-void OPL_AdjustCallbacks(float factor);
-
-// Clear all OPL callbacks that have been set.
-
-void OPL_ClearCallbacks(void);
-
-// Begin critical section, during which, OPL callbacks will not be
-// invoked.
-
-void OPL_Lock(void);
-
-// End critical section.
-
-void OPL_Unlock(void);
-
-// Block until the specified number of microseconds have elapsed.
-
-void OPL_Delay(uint64_t us);
-
-// Pause the OPL callbacks.
-
-void OPL_SetPaused(int paused);
-
 #endif
 

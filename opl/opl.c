@@ -33,11 +33,6 @@ void OPL_SDL_Shutdown(void);
 unsigned int OPL_SDL_PortRead(opl_port_t port);
 void OPL_SDL_PortWrite(opl_port_t port, unsigned int value);
 void OPL_SDL_SetCallback(uint64_t us, opl_callback_t callback, void *data);
-void OPL_SDL_ClearCallbacks(void);
-void OPL_SDL_Lock(void);
-void OPL_SDL_Unlock(void);
-void OPL_SDL_SetPaused(int paused);
-void OPL_SDL_AdjustCallbacks(float factor);
 
 static bool initialized = false;
 
@@ -249,44 +244,3 @@ void OPL_SetCallback(uint64_t us, opl_callback_t callback, void *data)
         OPL_SDL_SetCallback(us, callback, data);
     }
 }
-
-void OPL_ClearCallbacks(void)
-{
-    if (initialized)
-    {
-        OPL_SDL_ClearCallbacks();
-    }
-}
-
-void OPL_Lock(void)
-{
-    if (initialized)
-    {
-        OPL_SDL_Lock();
-    }
-}
-
-void OPL_Unlock(void)
-{
-    if (initialized)
-    {
-        OPL_SDL_Unlock();
-    }
-}
-
-void OPL_SetPaused(int paused)
-{
-    if (initialized)
-    {
-        OPL_SDL_SetPaused(paused);
-    }
-}
-
-void OPL_AdjustCallbacks(float value)
-{
-    if (initialized)
-    {
-        OPL_SDL_AdjustCallbacks(value);
-    }
-}
-

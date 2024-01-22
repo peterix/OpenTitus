@@ -27,7 +27,7 @@ const std = @import("std");
 
 const c = @import("../c.zig");
 const window = @import("../window.zig");
-const audio = @import("../audio.zig");
+const audio = @import("../audio/engine.zig");
 const keyboard = @import("keyboard.zig");
 const fonts = @import("fonts.zig");
 
@@ -45,7 +45,7 @@ const credits: [8][2][:0]const u8 = .{
 
 pub export fn credits_screen() c_int {
     var last_song = audio.music_get_last_song();
-    audio.music_select_song(9);
+    audio.music_select_song_c(9);
 
     // TODO: have a way for the event loop to re-run this rendering code... maybe to animate it?
     window.window_clear(null);
@@ -66,6 +66,6 @@ pub export fn credits_screen() c_int {
     if (retval < 0)
         return retval;
 
-    audio.music_select_song(last_song);
+    audio.music_select_song_c(last_song);
     return (0);
 }

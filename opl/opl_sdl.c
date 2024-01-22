@@ -455,32 +455,3 @@ void OPL_SDL_SetCallback(uint64_t us, opl_callback_t callback, void *data)
                    current_time - pause_offset + us);
     SDL_UnlockMutex(callback_queue_mutex);
 }
-
-void OPL_SDL_ClearCallbacks(void)
-{
-    SDL_LockMutex(callback_queue_mutex);
-    OPL_Queue_Clear(callback_queue);
-    SDL_UnlockMutex(callback_queue_mutex);
-}
-
-void OPL_SDL_Lock(void)
-{
-    SDL_LockMutex(callback_mutex);
-}
-
-void OPL_SDL_Unlock(void)
-{
-    SDL_UnlockMutex(callback_mutex);
-}
-
-void OPL_SDL_SetPaused(int paused)
-{
-    opl_sdl_paused = paused;
-}
-
-void OPL_SDL_AdjustCallbacks(float factor)
-{
-    SDL_LockMutex(callback_queue_mutex);
-    OPL_Queue_AdjustCallbacks(callback_queue, current_time, factor);
-    SDL_UnlockMutex(callback_queue_mutex);
-}

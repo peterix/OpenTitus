@@ -128,12 +128,7 @@ int move_player(ScreenContext *context, TITUS_level *level) {
                     }
                 }
             } else if (event.key.keysym.scancode == KEY_M) {
-                if (mods & (KMOD_ALT | KMOD_CTRL)) {
-                    music_cycle();
-                }
-                else {
-                    music_toggle();
-                }
+                music_toggle_c();
             } else if (event.key.keysym.scancode == KEY_P) {
                 pause = true;
             } else if (event.key.keysym.scancode == KEY_FULLSCREEN) {
@@ -900,7 +895,7 @@ static int CASE_BONUS(TITUS_level *level, uint8_t tileY, uint8_t tileX) {
     if (level->bonus[i].bonustile >= 255 - 2) {
         //Increase HP if tile number is >= 253
         level->bonuscollected += 1;
-        music_select_song(6);
+        music_play_jingle_c(6);
         INC_ENERGY(level);
     }
     //Return the original tile underneath the bonus
@@ -914,7 +909,7 @@ int view_password(TITUS_level *level, uint8_t level_index);
 
 static void CASE_PASS(ScreenContext *context, TITUS_level *level, uint8_t level_index, uint8_t tileY, uint8_t tileX) {
     //Codelamp
-    music_select_song(7);
+    music_play_jingle_c(7);
     if (CASE_BONUS(level, tileY, tileX)) { //if the bonus is found in the bonus list
         CLOSE_SCREEN(context);
         view_password(level, level_index);
@@ -925,7 +920,7 @@ static void CASE_PASS(ScreenContext *context, TITUS_level *level, uint8_t level_
 static void CASE_SECU(TITUS_level *level, uint8_t tileY, uint8_t tileX) {
     TITUS_player *player = &(level->player);
     //Padlock, store X/Y coordinates
-    music_select_song(5);
+    music_play_jingle_c(5);
     if (CASE_BONUS(level, tileY, tileX)) { //if the bonus is found in the bonus list
         player->initX = player->sprite.x;
         player->initY = player->sprite.y;
@@ -1162,7 +1157,7 @@ static void ACTION_PRG(TITUS_level *level, uint8_t action) {
                         }
 
                         //Take the object
-                        sfx_play(9); //Sound effect
+                        sfx_play_c(9); //Sound effect
                         FUME_FLAG = 0;
                         level->object[i].sprite.speed_y = 0;
                         level->object[i].sprite.speed_x = 0;
@@ -1252,7 +1247,7 @@ static void ACTION_PRG(TITUS_level *level, uint8_t action) {
                                 }
                             }
 
-                            sfx_play(9); //Sound effect
+                            sfx_play_c(9); //Sound effect
                             FUME_FLAG = 0;
                             level->enemy[i].sprite.speed_y = 0;
                             level->enemy[i].sprite.speed_x = 0;
@@ -1318,13 +1313,13 @@ static void ACTION_PRG(TITUS_level *level, uint8_t action) {
                         DROP_FLAG = true;
                         player->sprite2.speed_x = speed_x;
                         player->sprite2.speed_y = speed_y;
-                        sfx_play(3); //Sound effect
+                        sfx_play_c(3); //Sound effect
                     }
                 } else { //Ordinary throw
                     DROP_FLAG = true;
                     player->sprite2.speed_x = speed_x;
                     player->sprite2.speed_y = speed_y;
-                    sfx_play(3); //Sound effect
+                    sfx_play_c(3); //Sound effect
                 }
             }
             updatesprite(level, &(player->sprite), 10, true); //The same as in free fall
@@ -1594,7 +1589,7 @@ void COLLISION_OBJET(TITUS_level *level) {
 
         //If the ball lies on the ground
         if (off_object->sprite.speed_y == 0) {
-            sfx_play(12); //Sound effect
+            sfx_play_c(12); //Sound effect
             off_object->sprite.speed_y = 0 - player->sprite.speed_y;
             off_object->sprite.y -= off_object->sprite.speed_y >> 4;
             GRAVITY_FLAG = 4;

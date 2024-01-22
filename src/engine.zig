@@ -25,7 +25,7 @@
 
 const std = @import("std");
 
-const audio = @import("audio.zig");
+const audio = @import("audio/engine.zig");
 const globals = @import("globals.zig");
 const sqz = @import("sqz.zig");
 const scroll = @import("scroll.zig");
@@ -113,7 +113,7 @@ pub fn playtitus(firstlevel: u16, allocator: std.mem.Allocator) !c_int {
 
         var first = true;
         while (true) {
-            audio.music_select_song(0);
+            audio.music_select_song_c(0);
             c.CLEAR_DATA(&level.c_level);
 
             globals.GODMODE = false;
@@ -126,7 +126,7 @@ pub fn playtitus(firstlevel: u16, allocator: std.mem.Allocator) !c_int {
                 return retval;
             }
 
-            audio.music_select_song(level.c_level.music);
+            audio.music_select_song_c(level.c_level.music);
 
             // scroll to where the player is while 'closing' and 'opening' the screen to obscure the sudden change
             gates.CLOSE_SCREEN(&context);
@@ -242,7 +242,7 @@ fn playlevel(context: [*c]c.ScreenContext, level: *c.TITUS_level) c_int {
 fn death(context: [*c]c.ScreenContext, level: *c.TITUS_level) void {
     var player = &(level.player);
 
-    audio.music_select_song(1);
+    audio.music_play_jingle_c(1);
     _ = c.FORCE_POSE(level);
     spr.updatesprite(level, &(player.sprite), 13, true); //Death
     player.sprite.speed_y = 15;
@@ -259,14 +259,14 @@ fn death(context: [*c]c.ScreenContext, level: *c.TITUS_level) void {
     }
 
     audio.music_wait_to_finish();
-    audio.music_select_song(0);
+    audio.music_select_song_c(0);
     gates.CLOSE_SCREEN(context);
 }
 
 fn gameover(context: [*c]c.ScreenContext, level: *c.TITUS_level) void {
     var player = &(level.player);
 
-    audio.music_select_song(2);
+    audio.music_select_song_c(2);
     spr.updatesprite(level, &(player.sprite), 13, true); //Death
     spr.updatesprite(level, &(player.sprite2), 333, true); //Game
     player.sprite2.x = @as(i16, globals.BITMAP_X << 4) - (120 - 2);
