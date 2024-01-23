@@ -16,6 +16,8 @@
 //     can always get the first callback.
 //
 
+// TODO: replace with something from zig standard library
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -62,9 +64,7 @@ void OPL_Queue_Clear(opl_callback_queue_t *queue)
     queue->num_entries = 0;
 }
 
-void OPL_Queue_Push(opl_callback_queue_t *queue,
-                    opl_callback_t callback, void *data,
-                    uint64_t time)
+void OPL_Queue_Push(opl_callback_queue_t *queue, opl_callback_t callback, void *data, uint64_t time)
 {
     int entry_id;
     int parent_id;
@@ -111,8 +111,7 @@ void OPL_Queue_Push(opl_callback_queue_t *queue,
     queue->entries[entry_id].time = time;
 }
 
-int OPL_Queue_Pop(opl_callback_queue_t *queue,
-                  opl_callback_t *callback, void **data)
+int OPL_Queue_Pop(opl_callback_queue_t *queue, opl_callback_t *callback, void **data)
 {
     opl_queue_entry_t *entry;
     int child1, child2;
@@ -145,8 +144,7 @@ int OPL_Queue_Pop(opl_callback_queue_t *queue,
         child1 = i * 2 + 1;
         child2 = i * 2 + 2;
 
-        if (child1 < queue->num_entries
-         && queue->entries[child1].time < entry->time)
+        if (child1 < queue->num_entries && queue->entries[child1].time < entry->time)
         {
             // Left child is less than entry.
             // Use the minimum of left and right children.
@@ -161,8 +159,7 @@ int OPL_Queue_Pop(opl_callback_queue_t *queue,
                 next_i = child1;
             }
         }
-        else if (child2 < queue->num_entries
-              && queue->entries[child2].time < entry->time)
+        else if (child2 < queue->num_entries && queue->entries[child2].time < entry->time)
         {
             // Right child is less than entry.  Go down the right side.
 
@@ -176,9 +173,7 @@ int OPL_Queue_Pop(opl_callback_queue_t *queue,
 
         // Percolate the next value up and advance.
 
-        memcpy(&queue->entries[i],
-               &queue->entries[next_i],
-               sizeof(opl_queue_entry_t));
+        memcpy(&queue->entries[i], &queue->entries[next_i], sizeof(opl_queue_entry_t));
         i = next_i;
     }
 
@@ -189,8 +184,7 @@ int OPL_Queue_Pop(opl_callback_queue_t *queue,
     return 1;
 }
 
-uint64_t OPL_Queue_Peek(opl_callback_queue_t *queue)
-{
+uint64_t OPL_Queue_Peek(opl_callback_queue_t *queue) {
     if (queue->num_entries > 0)
     {
         return queue->entries[0].time;
@@ -201,8 +195,7 @@ uint64_t OPL_Queue_Peek(opl_callback_queue_t *queue)
     }
 }
 
-void OPL_Queue_AdjustCallbacks(opl_callback_queue_t *queue,
-                               uint64_t time, float factor)
+void OPL_Queue_AdjustCallbacks(opl_callback_queue_t *queue, uint64_t time, float factor)
 {
     int64_t offset;
     int i;
@@ -213,73 +206,3 @@ void OPL_Queue_AdjustCallbacks(opl_callback_queue_t *queue,
         queue->entries[i].time = time + (uint64_t) (offset / factor);
     }
 }
-
-#ifdef TEST
-
-#include <assert.h>
-
-static void PrintQueueNode(opl_callback_queue_t *queue, int node, int depth)
-{
-    int i;
-
-    if (node >= queue->num_entries)
-    {
-        return;
-    }
-
-    for (i=0; i<depth * 3; ++i)
-    {
-        printf(" ");
-    }
-
-    printf("%i\n", queue->entries[node].time);
-
-    PrintQueueNode(queue, node * 2 + 1, depth + 1);
-    PrintQueueNode(queue, node * 2 + 2, depth + 1);
-}
-
-static void PrintQueue(opl_callback_queue_t *queue)
-{
-    PrintQueueNode(queue, 0, 0);
-}
-
-int main()
-{
-    opl_callback_queue_t *queue;
-    int iteration;
-
-    queue = OPL_Queue_Create();
-
-    for (iteration=0; iteration<5000; ++iteration)
-    {
-        opl_callback_t callback;
-        void *data;
-        unsigned int time;
-        unsigned int newtime;
-        int i;
-
-        for (i=0; i<MAX_OPL_QUEUE; ++i)
-        {
-            time = rand() % 0x10000;
-            OPL_Queue_Push(queue, NULL, NULL, time);
-        }
-
-        time = 0;
-
-        for (i=0; i<MAX_OPL_QUEUE; ++i)
-        {
-            assert(!OPL_Queue_IsEmpty(queue));
-            newtime = OPL_Queue_Peek(queue);
-            assert(OPL_Queue_Pop(queue, &callback, &data));
-
-            assert(newtime >= time);
-            time = newtime;
-        }
-
-        assert(OPL_Queue_IsEmpty(queue));
-        assert(!OPL_Queue_Pop(queue, &callback, &data));
-    }
-}
-
-#endif
-

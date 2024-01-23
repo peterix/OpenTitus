@@ -16,8 +16,7 @@
 //
 
 
-#ifndef OPL_OPL_H
-#define OPL_OPL_H
+#pragma once
 
 #include <inttypes.h>
 
@@ -85,29 +84,13 @@ void OPL_Shutdown(void);
 
 void OPL_SetSampleRate(unsigned int rate);
 
-// Write to one of the OPL I/O ports:
-
-void OPL_WritePort(opl_port_t port, unsigned int value);
-
-// Read from one of the OPL I/O ports:
-
-unsigned int OPL_ReadPort(opl_port_t port);
-
 //
 // Higher-level functions.
 //
 
-// Read the cuurrent status byte of the OPL chip.
-
-unsigned int OPL_ReadStatus(void);
-
 // Write to an OPL register.
 
-void OPL_WriteRegister(int reg, int value);
-
-// Initialize all registers, performed on startup.
-
-void OPL_InitRegisters(int opl3);
+void OPL_WriteRegister(uint16_t reg, uint8_t value);
 
 //
 // Timer callback functions.
@@ -117,6 +100,3 @@ void OPL_InitRegisters(int opl3);
 // have elapsed, the callback will be invoked.
 
 void OPL_SetCallback(uint64_t us, opl_callback_t callback, void *data);
-
-#endif
-

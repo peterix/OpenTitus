@@ -187,9 +187,6 @@ fn init(ctx: *anyopaque, allocator: std.mem.Allocator) Backend.Error!void {
         return Backend.Error.CannotInitialize;
     }
 
-    // This makes no difference, but specifying 1 (OPL3) does break the music
-    c.OPL_InitRegisters(0);
-
     self.data = bytes;
     self.sfx_init();
 
@@ -386,7 +383,7 @@ fn processInstruction(self: *Adlib, channel: *Channel, instruction: Instruction)
             if (tmp2 <= 13)
                 tmp2 += 3;
             tmp2 = opera[@intCast(tmp2)];
-            c.OPL_WriteRegister(0x40 + tmp2, tmp1);
+            c.OPL_WriteRegister(0x40 + tmp2, @truncate(tmp1));
         },
         .Tempo => {
             channel.tempo = instruction.freq;
@@ -559,7 +556,7 @@ fn fillchip_channel(self: *Adlib, i: usize) void {
                     tmp2 += 3;
                 }
                 tmp2 = opera[@intCast(tmp2)];
-                c.OPL_WriteRegister(0x40 + tmp2, tmp1);
+                c.OPL_WriteRegister(0x40 + tmp2, @truncate(tmp1));
             }
             const percussion_bit = @as(c_int, channel.vox) - 6;
             var tmpC = @as(u8, 0x10) >> @intCast(percussion_bit);
@@ -604,7 +601,7 @@ fn fillchip(self: *Adlib) void {
     }
 }
 
-fn insmaker(insdata: []const u8, channel: c_int) void {
+fn insmaker(insdata: []const u8, channel: u8) void {
     c.OPL_WriteRegister(0x60 + channel, insdata[0]); //Attack Rate / Decay Rate
     c.OPL_WriteRegister(0x80 + channel, insdata[1]); //Sustain Level / Release Rate
     c.OPL_WriteRegister(0x40 + channel, insdata[2]); //Key scaling level / Operator output level
