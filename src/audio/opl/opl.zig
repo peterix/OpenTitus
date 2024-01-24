@@ -211,7 +211,7 @@ pub fn init(alloc: std.mem.Allocator) !void {
 
     if (SDL.Mix_OpenAudioDevice(
         @intCast(sample_rate),
-        SDL.AUDIO_S16LSB,
+        SDL.AUDIO_S16SYS,
         NumChannels,
         @intCast(GetSliceSize()),
         null,
@@ -232,8 +232,8 @@ pub fn init(alloc: std.mem.Allocator) !void {
     _ = SDL.Mix_QuerySpec(&mixing_freq, &mixing_format, &mixing_channels);
 
     // Only supports AUDIO_S16SYS
-    if (mixing_format != @as(u16, @intCast(SDL.AUDIO_S16LSB)) or mixing_channels != 2) {
-        std.log.err("OpenTitus only supports native signed 16-bit LSB, stereo format!", .{});
+    if (mixing_format != @as(u16, @intCast(SDL.AUDIO_S16SYS)) or mixing_channels != 2) {
+        std.log.err("OpenTitus only supports native signed 16-bit SYS, stereo format!", .{});
         return error.UnexpectedMixerFormat;
     }
 
