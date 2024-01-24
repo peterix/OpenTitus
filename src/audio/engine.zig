@@ -34,7 +34,7 @@ const c = @import("../c.zig");
 const game = @import("../game.zig");
 const data = @import("../data.zig");
 
-extern var OPL_SDL_VOLUME: u8;
+// extern var OPL_SDL_VOLUME: u8;
 
 pub const AudioEngine = struct {
     allocator: std.mem.Allocator = undefined,
@@ -45,7 +45,7 @@ pub const AudioEngine = struct {
     pub fn init(self: *AudioEngine, allocator: std.mem.Allocator) !void {
         self.allocator = allocator;
         self.last_song = 0;
-        OPL_SDL_VOLUME = game.settings.volume_master;
+        // OPL_SDL_VOLUME = game.settings.volume_master;
         self.backend = self.adlib.backend();
         try self.backend.init(allocator);
     }
@@ -148,9 +148,9 @@ pub fn set_volume(volume: u8) void {
         volume_clamp = 128;
     }
     game.settings.volume_master = volume_clamp;
-    OPL_SDL_VOLUME = volume_clamp;
+    // OPL_SDL_VOLUME = volume_clamp;
 }
 
 pub fn get_volume() u8 {
-    return OPL_SDL_VOLUME;
+    return 128; //OPL_SDL_VOLUME;
 }

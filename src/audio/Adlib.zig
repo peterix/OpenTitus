@@ -26,11 +26,11 @@
 // TODO: dissolve the OPL library and bring its core into here.
 //       OPL3 should remain in C (so we can update it from upstream)
 
-const std = @import("std");
-const c = @import("../c.zig");
-const Backend = @import("Backend.zig");
-
 const Adlib = @This();
+
+const std = @import("std");
+const Backend = @import("Backend.zig");
+const opl = @import("opl/opl.zig");
 
 fn chomp_u8(bytes: *[]const u8) u8 {
     if (bytes.len > 0) {
@@ -181,22 +181,22 @@ fn init(ctx: *anyopaque, allocator: std.mem.Allocator) Backend.Error!void {
         },
     }
 
-    c.OPL_SetSampleRate(44100);
-    if (c.OPL_Init(0x388) == 0) {
+    opl.setSampleRate(44100);
+    opl.init(allocator) catch {
         std.log.err("Unable to initialise OPL layer", .{});
         return Backend.Error.CannotInitialize;
-    }
+    };
 
     self.data = bytes;
     self.sfx_init();
 
-    c.OPL_SetCallback(0, TimerCallback, @constCast(@ptrCast(self)));
+    opl.setCallback(0, TimerCallback, @constCast(@ptrCast(self)));
 }
 
 fn deinit(ctx: *anyopaque) void {
+    opl.deinit();
     const self: *Adlib = @ptrCast(@alignCast(ctx));
     self.allocator.free(self.data);
-    c.OPL_Shutdown();
 }
 
 fn is_playing_a_track(ctx: *anyopaque) bool {
@@ -308,7 +308,7 @@ fn play_sfx(ctx: *anyopaque, fx_number: u8) void {
     const index: usize = @intCast(fx_number);
     Adlib.insmaker(&self.sfx[index].op[0], 0x13); //Channel 6 operator 1
     Adlib.insmaker(&self.sfx[index].op[1], 0x10); //Channel 6 operator 2
-    c.OPL_WriteRegister(0xC6, self.sfx[index].fb_alg); //Channel 6 (Feedback/Algorithm)
+    opl.writeRegister(0xC6, self.sfx[index].fb_alg); //Channel 6 (Feedback/Algorithm)
 }
 
 fn load_file(inputfile: []const u8, allocator: std.mem.Allocator) ![]const u8 {
@@ -344,11 +344,11 @@ fn sfx_driver(self: *Adlib) void {
     if (!self.sfx_on) {
         return;
     }
-    c.OPL_WriteRegister(0xBD, 0xEF & self.perc_stat);
-    c.OPL_WriteRegister(0xA6, 0x57);
-    c.OPL_WriteRegister(0xB6, 1);
-    c.OPL_WriteRegister(0xB6, 5);
-    c.OPL_WriteRegister(0xBD, 0x10 | self.perc_stat);
+    opl.writeRegister(0xBD, 0xEF & self.perc_stat);
+    opl.writeRegister(0xA6, 0x57);
+    opl.writeRegister(0xB6, 1);
+    opl.writeRegister(0xB6, 5);
+    opl.writeRegister(0xBD, 0x10 | self.perc_stat);
     self.sfx_time -= 1;
     if (self.sfx_time == 0) {
         self.sfx_stop();
@@ -358,10 +358,10 @@ fn sfx_driver(self: *Adlib) void {
 fn sfx_stop(self: *Adlib) void {
     const tmpins1: []const u8 = &.{ 0xF5, 0x7F, 0x00, 0x11, 0x00 };
     const tmpins2: []const u8 = &.{ 0xF8, 0xFF, 0x04, 0x30, 0x00 };
-    c.OPL_WriteRegister(0xB6, 32);
+    opl.writeRegister(0xB6, 32);
     insmaker(tmpins1, 0x13); //Channel 6 operator 1
     insmaker(tmpins2, 0x10); //Channel 6 operator 2
-    c.OPL_WriteRegister(0xC6, 0x08); //Channel 6 (Feedback/Algorithm)
+    opl.writeRegister(0xC6, 0x08); //Channel 6 (Feedback/Algorithm)
     self.sfx_on = false;
 }
 
@@ -383,7 +383,7 @@ fn processInstruction(self: *Adlib, channel: *Channel, instruction: Instruction)
             if (tmp2 <= 13)
                 tmp2 += 3;
             tmp2 = opera[@intCast(tmp2)];
-            c.OPL_WriteRegister(0x40 + tmp2, @truncate(tmp1));
+            opl.writeRegister(0x40 + tmp2, @truncate(tmp1));
         },
         .Tempo => {
             channel.tempo = instruction.freq;
@@ -420,7 +420,7 @@ fn processInstruction(self: *Adlib, channel: *Channel, instruction: Instruction)
                     self.perc_stat = self.perc_stat | temp;
                     temp = ~(temp) & 0xFF;
                     self.perc_stat = self.perc_stat & temp;
-                    c.OPL_WriteRegister(0xBD, self.perc_stat);
+                    opl.writeRegister(0xBD, self.perc_stat);
                 }
             }
             var tmp2 = voxp[channel.vox];
@@ -431,7 +431,7 @@ fn processInstruction(self: *Adlib, channel: *Channel, instruction: Instruction)
             insmaker(&instrument.op[0], tmp2);
             if (channel.vox < 7) {
                 insmaker(&instrument.op[1], tmp2 - 3);
-                c.OPL_WriteRegister(0xC0 + channel.vox, instrument.fb_alg);
+                opl.writeRegister(0xC0 + channel.vox, instrument.fb_alg);
             }
         },
         .SubCommand => {
@@ -517,13 +517,13 @@ fn fillchip_channel(self: *Adlib, i: usize) void {
         if (self.instrument_data[channel.instrument.?].vox == 0xFE) {
             //Play a frequence
             //Output lower 8 bits of frequence
-            c.OPL_WriteRegister(0xA0 + channel.vox, @as(u8, @truncate(gamme[channel.freq] & 0xFF)));
+            opl.writeRegister(0xA0 + channel.vox, @as(u8, @truncate(gamme[channel.freq] & 0xFF)));
             if (channel.lie_late != 1) {
-                c.OPL_WriteRegister(0xB0 + channel.vox, 0); //Silence the channel
+                opl.writeRegister(0xB0 + channel.vox, 0); //Silence the channel
             }
             var tmp1 = (channel.octave + 2) & 0x07; //Octave (3 bits)
             var tmp2 = @as(u8, @truncate((gamme[channel.freq] >> 8) & 0x03)); //Frequency (higher 2 bits)
-            c.OPL_WriteRegister(0xB0 + channel.vox, 0x20 + (tmp1 << 2) + tmp2); //Voices the channel, and output octave and last bits of frequency
+            opl.writeRegister(0xB0 + channel.vox, 0x20 + (tmp1 << 2) + tmp2); //Voices the channel, and output octave and last bits of frequency
             channel.lie_late = channel.lie;
         } else {
             //Play a perc instrument
@@ -543,7 +543,7 @@ fn fillchip_channel(self: *Adlib, i: usize) void {
                 insmaker(&instrument.op[0], tmp2);
                 if (channel.vox < 7) {
                     insmaker(&instrument.op[1], tmp2 - 3);
-                    c.OPL_WriteRegister(0xC0 + channel.vox, instrument.fb_alg);
+                    opl.writeRegister(0xC0 + channel.vox, instrument.fb_alg);
                 }
 
                 //Similar to Volume command, oct = 1
@@ -556,17 +556,17 @@ fn fillchip_channel(self: *Adlib, i: usize) void {
                     tmp2 += 3;
                 }
                 tmp2 = opera[@intCast(tmp2)];
-                c.OPL_WriteRegister(0x40 + tmp2, @truncate(tmp1));
+                opl.writeRegister(0x40 + tmp2, @truncate(tmp1));
             }
             const percussion_bit = @as(c_int, channel.vox) - 6;
             var tmpC = @as(u8, 0x10) >> @intCast(percussion_bit);
-            c.OPL_WriteRegister(0xBD, self.perc_stat & ~tmpC); //Output perc_stat with one bit removed
+            opl.writeRegister(0xBD, self.perc_stat & ~tmpC); //Output perc_stat with one bit removed
             if (channel.vox == 6) {
-                c.OPL_WriteRegister(0xA6, 0x57); //
-                c.OPL_WriteRegister(0xB6, 0); // Output the perc sound
-                c.OPL_WriteRegister(0xB6, 5); //
+                opl.writeRegister(0xA6, 0x57); //
+                opl.writeRegister(0xB6, 0); // Output the perc sound
+                opl.writeRegister(0xB6, 5); //
             }
-            c.OPL_WriteRegister(0xBD, self.perc_stat); //Output perc_stat
+            opl.writeRegister(0xBD, self.perc_stat); //Output perc_stat
         }
     } else {
         channel.lie_late = channel.lie;
@@ -602,39 +602,39 @@ fn fillchip(self: *Adlib) void {
 }
 
 fn insmaker(insdata: []const u8, channel: u8) void {
-    c.OPL_WriteRegister(0x60 + channel, insdata[0]); //Attack Rate / Decay Rate
-    c.OPL_WriteRegister(0x80 + channel, insdata[1]); //Sustain Level / Release Rate
-    c.OPL_WriteRegister(0x40 + channel, insdata[2]); //Key scaling level / Operator output level
-    c.OPL_WriteRegister(0x20 + channel, insdata[3]); //Amp Mod / Vibrato / EG type / Key Scaling / Multiple
-    c.OPL_WriteRegister(0xE0 + channel, insdata[4]); //Wave type
+    opl.writeRegister(0x60 + channel, insdata[0]); //Attack Rate / Decay Rate
+    opl.writeRegister(0x80 + channel, insdata[1]); //Sustain Level / Release Rate
+    opl.writeRegister(0x40 + channel, insdata[2]); //Key scaling level / Operator output level
+    opl.writeRegister(0x20 + channel, insdata[3]); //Amp Mod / Vibrato / EG type / Key Scaling / Multiple
+    opl.writeRegister(0xE0 + channel, insdata[4]); //Wave type
 }
 
 fn all_vox_zero() void {
     for (0xB0..0xB9) |i|
-        c.OPL_WriteRegister(@intCast(i), 0); //Clear voice, octave and upper bits of frequence
+        opl.writeRegister(@intCast(i), 0); //Clear voice, octave and upper bits of frequence
     for (0xA0..0xB9) |i|
-        c.OPL_WriteRegister(@intCast(i), 0); //Clear lower byte of frequence
+        opl.writeRegister(@intCast(i), 0); //Clear lower byte of frequence
 
-    c.OPL_WriteRegister(0x08, 0x00);
-    c.OPL_WriteRegister(0xBD, 0x00);
-    c.OPL_WriteRegister(0x40, 0x3F);
-    c.OPL_WriteRegister(0x41, 0x3F);
-    c.OPL_WriteRegister(0x42, 0x3F);
-    c.OPL_WriteRegister(0x43, 0x3F);
-    c.OPL_WriteRegister(0x44, 0x3F);
-    c.OPL_WriteRegister(0x45, 0x3F);
-    c.OPL_WriteRegister(0x48, 0x3F);
-    c.OPL_WriteRegister(0x49, 0x3F);
-    c.OPL_WriteRegister(0x4A, 0x3F);
-    c.OPL_WriteRegister(0x4B, 0x3F);
-    c.OPL_WriteRegister(0x4C, 0x3F);
-    c.OPL_WriteRegister(0x4D, 0x3F);
-    c.OPL_WriteRegister(0x50, 0x3F);
-    c.OPL_WriteRegister(0x51, 0x3F);
-    c.OPL_WriteRegister(0x52, 0x3F);
-    c.OPL_WriteRegister(0x53, 0x3F);
-    c.OPL_WriteRegister(0x54, 0x3F);
-    c.OPL_WriteRegister(0x55, 0x3F);
+    opl.writeRegister(0x08, 0x00);
+    opl.writeRegister(0xBD, 0x00);
+    opl.writeRegister(0x40, 0x3F);
+    opl.writeRegister(0x41, 0x3F);
+    opl.writeRegister(0x42, 0x3F);
+    opl.writeRegister(0x43, 0x3F);
+    opl.writeRegister(0x44, 0x3F);
+    opl.writeRegister(0x45, 0x3F);
+    opl.writeRegister(0x48, 0x3F);
+    opl.writeRegister(0x49, 0x3F);
+    opl.writeRegister(0x4A, 0x3F);
+    opl.writeRegister(0x4B, 0x3F);
+    opl.writeRegister(0x4C, 0x3F);
+    opl.writeRegister(0x4D, 0x3F);
+    opl.writeRegister(0x50, 0x3F);
+    opl.writeRegister(0x51, 0x3F);
+    opl.writeRegister(0x52, 0x3F);
+    opl.writeRegister(0x53, 0x3F);
+    opl.writeRegister(0x54, 0x3F);
+    opl.writeRegister(0x55, 0x3F);
 }
 
 fn TimerCallback(callback_data: ?*anyopaque) callconv(.C) void {
@@ -644,5 +644,5 @@ fn TimerCallback(callback_data: ?*anyopaque) callconv(.C) void {
 
     // Schedule the next timer callback.
     // Delay is original 13.75 ms
-    c.OPL_SetCallback(13750, TimerCallback, callback_data);
+    opl.setCallback(13750, TimerCallback, callback_data);
 }

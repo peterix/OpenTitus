@@ -26,9 +26,6 @@
 // version: 1.8
 //
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
 #include "opl3.h"
 
 #define RSM_FRAC    10
@@ -1190,6 +1187,8 @@ void OPL3_GenerateResampled(opl3_chip *chip, Bit16s *buf)
                      + chip->samples[1] * chip->samplecnt) / chip->rateratio);
     chip->samplecnt += 1 << RSM_FRAC;
 }
+
+void *memset(void *str, int c, uintptr_t n);
 
 void OPL3_Reset(opl3_chip *chip, Bit32u samplerate)
 {
