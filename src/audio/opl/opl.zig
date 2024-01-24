@@ -30,9 +30,7 @@ const std = @import("std");
 const Mutex = std.Thread.Mutex;
 const Order = std.math.Order;
 
-const OPL_SECOND: u64 = 1000 * 1000;
-const OPL_MS: u64 = 1000;
-const OPL_US: u64 = 1;
+const usecs_in_sec: u64 = 1000 * 1000;
 const MAX_SOUND_SLICE_TIME = 100; // ms
 
 const SampleType = i16;
@@ -78,7 +76,6 @@ var current_time: u64 = 0;
 
 // OPL software emulator structure.
 var opl_chip: OPL3.opl3_chip = undefined;
-var opl_opl3mode: c_int = undefined;
 
 // Temporary mixing buffer used by the mixing callback.
 var mix_buffer: []SampleType = &.{};
@@ -101,7 +98,7 @@ fn AdvanceTime(nsamples: u64) void {
     callback_queue_mutex.lock();
 
     // Advance time.
-    var us: u64 = (nsamples * OPL_SECOND) / @as(u64, @intCast(mixing_freq));
+    var us: u64 = (nsamples * usecs_in_sec) / @as(u64, @intCast(mixing_freq));
     current_time += us;
 
     // Are there callbacks to invoke now?  Keep invoking them
@@ -165,7 +162,7 @@ fn OPL_Mix_Callback(udata: ?*anyopaque, buffer: [*c]u8, len: c_int) callconv(.C)
             const next_callback_time = callback_queue.peek().?.time;
 
             nsamples = (next_callback_time - current_time) * @as(u32, @intCast(mixing_freq));
-            nsamples = (nsamples + OPL_SECOND - 1) / OPL_SECOND;
+            nsamples = (nsamples + usecs_in_sec - 1) / usecs_in_sec;
 
             if (nsamples > buffer_samples - filled) {
                 nsamples = buffer_samples - filled;
@@ -215,7 +212,7 @@ pub fn init(alloc: std.mem.Allocator) !void {
     if (SDL.Mix_OpenAudioDevice(
         @intCast(sample_rate),
         SDL.AUDIO_S16LSB,
-        2,
+        NumChannels,
         @intCast(GetSliceSize()),
         null,
         SDL.SDL_AUDIO_ALLOW_FREQUENCY_CHANGE,
@@ -247,7 +244,6 @@ pub fn init(alloc: std.mem.Allocator) !void {
     // Create the emulator structure:
 
     OPL3.OPL3_Reset(&opl_chip, @intCast(mixing_freq));
-    opl_opl3mode = 0;
 
     callback_mutex = Mutex{};
     callback_queue_mutex = Mutex{};
