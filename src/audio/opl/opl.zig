@@ -30,55 +30,44 @@ const std = @import("std");
 const Mutex = std.Thread.Mutex;
 const Order = std.math.Order;
 
-const OPL_REG_WAVEFORM_ENABLE = 0x01;
-const OPL_REG_TIMER1 = 0x02;
-const OPL_REG_TIMER2 = 0x03;
-const OPL_REG_TIMER_CTRL = 0x04;
-const OPL_REG_FM_MODE = 0x08;
-const OPL_REG_NEW = 0x105;
-
 const OPL_SECOND: u64 = 1000 * 1000;
 const OPL_MS: u64 = 1000;
 const OPL_US: u64 = 1;
-
 const MAX_SOUND_SLICE_TIME = 100; // ms
+
+const SampleType = i16;
+const NumChannels = 2;
+const Stride = @sizeOf(SampleType) * NumChannels;
 
 pub const opl_callback_t = ?*const fn (?*anyopaque) callconv(.C) void;
 
 pub var OPL_SDL_VOLUME = SDL.SDL_MIX_MAXVOLUME;
 
-const opl_timer_t = struct {
-    rate: c_uint, // Number of times the timer is advanced per sec.
-    enabled: bool = false, // Non-zero if timer is enabled.
-    value: c_uint = 0, // Last value that was set.
-    expire_time: u64 = 0, // Calculated time that timer will expire.
-};
-
 // When the callback mutex is locked using OPL_Lock, callback functions are not invoked.
 var callback_mutex = Mutex{};
 
 // Queue of callbacks waiting to be invoked.
-const opl_queue_entry_t = struct {
+const QueuedCallback = struct {
     callback: opl_callback_t = null,
     data: ?*anyopaque = null,
     time: u64 = 0,
 };
-fn timeOrder(context: void, a: opl_queue_entry_t, b: opl_queue_entry_t) Order {
+fn timeOrder(context: void, a: QueuedCallback, b: QueuedCallback) Order {
     _ = context;
     return std.math.order(a.time, b.time);
 }
-const CallbackQueue = std.PriorityQueue(opl_queue_entry_t, void, timeOrder);
+const CallbackQueue = std.PriorityQueue(QueuedCallback, void, timeOrder);
 var callback_queue: CallbackQueue = undefined;
 
 test "test queue priority" {
     var queue = CallbackQueue.init(std.testing.allocator, {});
     defer queue.deinit();
-    try queue.add(opl_queue_entry_t{ .time = 0 });
-    try queue.add(opl_queue_entry_t{ .time = 1 });
-    try queue.add(opl_queue_entry_t{ .time = 2 });
-    try std.testing.expectEqual(opl_queue_entry_t{ .time = 0 }, queue.remove());
-    try std.testing.expectEqual(opl_queue_entry_t{ .time = 1 }, queue.remove());
-    try std.testing.expectEqual(opl_queue_entry_t{ .time = 2 }, queue.remove());
+    try queue.add(QueuedCallback{ .time = 0 });
+    try queue.add(QueuedCallback{ .time = 1 });
+    try queue.add(QueuedCallback{ .time = 2 });
+    try std.testing.expectEqual(QueuedCallback{ .time = 0 }, queue.remove());
+    try std.testing.expectEqual(QueuedCallback{ .time = 1 }, queue.remove());
+    try std.testing.expectEqual(QueuedCallback{ .time = 2 }, queue.remove());
 }
 
 // Mutex used to control access to the callback queue.
@@ -92,11 +81,7 @@ var opl_chip: OPL3.opl3_chip = undefined;
 var opl_opl3mode: c_int = undefined;
 
 // Temporary mixing buffer used by the mixing callback.
-var mix_buffer: []u8 = &.{};
-
-// Timers; DBOPL does not do timer stuff itself.
-var timer1 = opl_timer_t{ .rate = 12500 };
-var timer2 = opl_timer_t{ .rate = 3125 };
+var mix_buffer: []SampleType = &.{};
 
 // SDL parameters.
 var mixing_freq: c_int = undefined;
@@ -105,7 +90,7 @@ var mixing_format: u16 = undefined;
 
 var initialized = false;
 
-var opl_sample_rate: c_uint = 22050;
+var sample_rate: c_uint = 22050;
 
 var allocator: std.mem.Allocator = undefined;
 
@@ -154,15 +139,15 @@ fn FillBuffer(buffer: *u8, nsamples: u32) void {
 
     // OPL output is generated into temporary buffer and then mixed
     // (to avoid overflows etc.)
-    OPL3.OPL3_GenerateStream(&opl_chip, @alignCast(@ptrCast(&mix_buffer[0])), nsamples);
-    SDL.SDL_MixAudioFormat(buffer, @ptrCast(&mix_buffer[0]), SDL.AUDIO_S16SYS, nsamples * 4, OPL_SDL_VOLUME);
+    OPL3.OPL3_GenerateStream(&opl_chip, &mix_buffer[0], nsamples);
+    SDL.SDL_MixAudioFormat(buffer, @ptrCast(&mix_buffer[0]), SDL.AUDIO_S16SYS, nsamples * @sizeOf(SampleType) * NumChannels, OPL_SDL_VOLUME);
 }
 
 // Callback function to fill a new sound buffer:
 fn OPL_Mix_Callback(udata: ?*anyopaque, buffer: [*c]u8, len: c_int) callconv(.C) void {
     _ = udata;
     var filled: u64 = 0;
-    var buffer_samples: c_uint = @as(c_uint, @intCast(len)) / 4;
+    var buffer_samples: c_uint = @as(c_uint, @intCast(len)) / Stride;
 
     // Repeatedly call the OPL emulator update function until the buffer is full.
     while (filled < buffer_samples) {
@@ -190,7 +175,7 @@ fn OPL_Mix_Callback(udata: ?*anyopaque, buffer: [*c]u8, len: c_int) callconv(.C)
         callback_queue_mutex.unlock();
 
         // Add emulator output to buffer.
-        FillBuffer(buffer + filled * 4, @truncate(nsamples));
+        FillBuffer(buffer + filled * Stride, @truncate(nsamples));
         filled += nsamples;
 
         // Invoke callbacks for this point in time.
@@ -199,7 +184,7 @@ fn OPL_Mix_Callback(udata: ?*anyopaque, buffer: [*c]u8, len: c_int) callconv(.C)
 }
 
 fn GetSliceSize() c_uint {
-    const limit: c_uint = (opl_sample_rate * MAX_SOUND_SLICE_TIME) / 1000;
+    const limit: c_uint = (sample_rate * MAX_SOUND_SLICE_TIME) / 1000;
 
     // Try all powers of two, not exceeding the limit.
     var n: c_uint = 1;
@@ -215,16 +200,6 @@ fn GetSliceSize() c_uint {
     return 1024;
 }
 
-fn OPLTimer_CalculateEndTime(timer: *opl_timer_t) void {
-    // If the timer is enabled, calculate the time when the timer
-    // will expire.
-
-    if (timer.enabled) {
-        var tics = 0x100 - timer.value;
-        timer.expire_time = current_time + (@as(u64, tics) * OPL_SECOND) / timer.rate;
-    }
-}
-
 // Initialize the OPL library. Return value indicates type of OPL chip
 // detected, if any.
 pub fn init(alloc: std.mem.Allocator) !void {
@@ -238,7 +213,7 @@ pub fn init(alloc: std.mem.Allocator) !void {
     errdefer SDL.SDL_QuitSubSystem(SDL.SDL_INIT_AUDIO);
 
     if (SDL.Mix_OpenAudioDevice(
-        @intCast(opl_sample_rate),
+        @intCast(sample_rate),
         SDL.AUDIO_S16LSB,
         2,
         @intCast(GetSliceSize()),
@@ -266,7 +241,7 @@ pub fn init(alloc: std.mem.Allocator) !void {
     }
 
     // Mix buffer: four bytes per sample (16 bits * 2 channels):
-    mix_buffer = try allocator.alloc(u8, @intCast(mixing_freq * 4));
+    mix_buffer = try allocator.alloc(SampleType, @intCast(mixing_freq * NumChannels));
     errdefer allocator.free(mix_buffer);
 
     // Create the emulator structure:
@@ -303,58 +278,24 @@ pub fn deinit() void {
 
 // Set the sample rate used for software OPL emulation.
 pub fn setSampleRate(rate: c_uint) void {
-    opl_sample_rate = rate;
+    sample_rate = rate;
 }
 
 pub fn writeRegister(reg_num: u16, value: u8) void {
-    switch (reg_num) {
-        OPL_REG_TIMER1 => {
-            timer1.value = value;
-            OPLTimer_CalculateEndTime(&timer1);
-        },
-
-        OPL_REG_TIMER2 => {
-            timer2.value = value;
-            OPLTimer_CalculateEndTime(&timer2);
-        },
-
-        OPL_REG_TIMER_CTRL => {
-            if ((value & 0x80) != 0) {
-                timer1.enabled = false;
-                timer2.enabled = false;
-            } else {
-                if ((value & 0x40) == 0) {
-                    timer1.enabled = (value & 0x01) != 0;
-                    OPLTimer_CalculateEndTime(&timer1);
-                }
-
-                if ((value & 0x20) == 0) {
-                    timer1.enabled = (value & 0x02) != 0;
-                    OPLTimer_CalculateEndTime(&timer2);
-                }
-            }
-        },
-
-        OPL_REG_NEW => {
-            opl_opl3mode = value & 0x01;
-        },
-
-        else => {
-            OPL3.OPL3_WriteRegBuffered(&opl_chip, reg_num, value);
-        },
-    }
+    OPL3.OPL3_WriteRegBuffered(&opl_chip, reg_num, value);
 }
 
-//
-// Timer functions.
-//
 pub fn setCallback(us: u64, callback: opl_callback_t, data: ?*anyopaque) void {
     if (!initialized) {
         return;
     }
     callback_queue_mutex.lock();
     // FIXME: actual error handling
-    callback_queue.add(opl_queue_entry_t{ .callback = callback, .data = data, .time = current_time + us }) catch {
+    callback_queue.add(QueuedCallback{
+        .callback = callback,
+        .data = data,
+        .time = current_time + us,
+    }) catch {
         unreachable;
     };
     callback_queue_mutex.unlock();
