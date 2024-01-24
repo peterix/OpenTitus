@@ -48,55 +48,14 @@ typedef enum
 #define OPL_REG_FM_MODE           0x08
 #define OPL_REG_NEW               0x105
 
-// Operator registers (21 of each):
-
-#define OPL_REGS_TREMOLO          0x20
-#define OPL_REGS_LEVEL            0x40
-#define OPL_REGS_ATTACK           0x60
-#define OPL_REGS_SUSTAIN          0x80
-#define OPL_REGS_WAVEFORM         0xE0
-
-// Voice registers (9 of each):
-
-#define OPL_REGS_FREQ_1           0xA0
-#define OPL_REGS_FREQ_2           0xB0
-#define OPL_REGS_FEEDBACK         0xC0
-
 // Times
 
 #define OPL_SECOND ((uint64_t) 1000 * 1000)
 #define OPL_MS     ((uint64_t) 1000)
 #define OPL_US     ((uint64_t) 1)
 
-//
-// Low-level functions.
-//
-
-// Initialize the OPL subsystem.
-
 opl_init_result_t OPL_Init(unsigned int port_base);
-
-// Shut down the OPL subsystem.
-
 void OPL_Shutdown(void);
-
-// Set the sample rate used for software emulation.
-
 void OPL_SetSampleRate(unsigned int rate);
-
-//
-// Higher-level functions.
-//
-
-// Write to an OPL register.
-
 void OPL_WriteRegister(uint16_t reg, uint8_t value);
-
-//
-// Timer callback functions.
-//
-
-// Set a timer callback.  After the specified number of microseconds
-// have elapsed, the callback will be invoked.
-
 void OPL_SetCallback(uint64_t us, opl_callback_t callback, void *data);

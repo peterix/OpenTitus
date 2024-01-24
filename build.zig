@@ -38,33 +38,7 @@ const TARGETS = [_]std.zig.CrossTarget{
     .{ .cpu_arch = .aarch64, .os_tag = .macos },
 };
 
-fn build_opl(b: *std.Build, target: CrossTarget, optimize: std.builtin.Mode) *Step.Compile {
-    const lib = b.addStaticLibrary(.{
-        .name = "opl",
-        .root_source_file = null, //.{ .path = "opl/main.zig" },
-        .target = target,
-        .optimize = optimize,
-    });
-
-    lib.addCSourceFiles(&.{
-        "opl/opl.c",
-        "opl/opl_queue.c",
-        "opl/opl3.c",
-    },
-    // NOTE: the use of bit shifts of negative numbers is quite extensive, so we disable ubsan shooting us in the foot with those...
-    // FIXME: remove the UB-ness
-    &.{
-        "-fno-sanitize=shift",
-    });
-    lib.addIncludePath(std.build.LazyPath.relative("opl/"));
-    lib.c_std = C_STANDARD;
-    lib.linkLibC();
-    lib.linkSystemLibrary("SDL2_mixer");
-    lib.installHeader("opl/opl.h", "opl.h");
-    return lib;
-}
-
-fn build_game(b: *std.Build, name: []const u8, target: CrossTarget, optimize: std.builtin.Mode, opl: *Step.Compile) *Step.Compile {
+fn build_game(b: *std.Build, name: []const u8, target: CrossTarget, optimize: std.builtin.Mode) *Step.Compile {
     const exe = b.addExecutable(.{
         .name = name,
         .root_source_file = .{ .path = "main.zig" },
@@ -84,17 +58,20 @@ fn build_game(b: *std.Build, name: []const u8, target: CrossTarget, optimize: st
         "src/original.c",
         "src/player.c",
         "src/reset.c",
+        "src/audio/opl/opl.c",
+        "src/audio/opl/opl_queue.c",
+        "src/audio/opl/opl3.c",
     }, &.{
         "-fno-sanitize=shift",
     });
     exe.addIncludePath(std.build.LazyPath.relative("src/"));
+    exe.addIncludePath(std.build.LazyPath.relative("src/audio/opl/"));
 
     exe.linkLibC();
     exe.linkSystemLibrary("m");
     exe.linkSystemLibrary("SDL2");
     exe.linkSystemLibrary("SDL2main");
     exe.linkSystemLibrary("SDL2_mixer");
-    exe.linkLibrary(opl);
 
     const game_tests = b.addTest(.{
         .root_source_file = .{ .path = "main.zig" },
@@ -111,13 +88,13 @@ fn build_game(b: *std.Build, name: []const u8, target: CrossTarget, optimize: st
         "-fno-sanitize=shift",
     });
     game_tests.addIncludePath(std.build.LazyPath.relative("src/"));
+    game_tests.addIncludePath(std.build.LazyPath.relative("src/audio/opl/"));
 
     game_tests.linkLibC();
     game_tests.linkSystemLibrary("m");
     game_tests.linkSystemLibrary("SDL2");
     game_tests.linkSystemLibrary("SDL2main");
     game_tests.linkSystemLibrary("SDL2_mixer");
-    game_tests.linkLibrary(opl);
 
     const run_game_tests = b.addRunArtifact(game_tests);
 
@@ -148,8 +125,7 @@ pub fn build(b: *std.Build) void {
     // set a preferred release mode, allowing the user to decide how to optimize.
     const optimize = b.standardOptimizeOption(.{});
 
-    const opl = build_opl(b, target, optimize);
-    const game = build_game(b, "game", target, optimize, opl);
+    const game = build_game(b, "game", target, optimize);
 
     // This declares intent for the library to be installed into the standard
     // location when the user invokes the "install" step (the default step when

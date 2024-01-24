@@ -40,39 +40,30 @@ typedef struct
     uint64_t expire_time;     // Calculated time that timer will expire.
 } opl_timer_t;
 
-// When the callback mutex is locked using OPL_Lock, callback functions
-// are not invoked.
-
+// When the callback mutex is locked using OPL_Lock, callback functions are not invoked.
 static SDL_mutex *callback_mutex = NULL;
 
 // Queue of callbacks waiting to be invoked.
-
 static opl_callback_queue_t *callback_queue;
 
 // Mutex used to control access to the callback queue.
-
 static SDL_mutex *callback_queue_mutex = NULL;
 
 // Current time, in us since startup:
-
 static uint64_t current_time;
 
 // OPL software emulator structure.
-
 static opl3_chip opl_chip;
 static int opl_opl3mode;
 
 // Temporary mixing buffer used by the mixing callback.
-
 static uint8_t *mix_buffer = NULL;
 
 // Timers; DBOPL does not do timer stuff itself.
-
 static opl_timer_t timer1 = { 12500, 0, 0, 0 };
 static opl_timer_t timer2 = { 3125, 0, 0, 0 };
 
 // SDL parameters.
-
 static int sdl_was_initialized = 0;
 static int mixing_freq, mixing_channels;
 static Uint16 mixing_format;
@@ -346,7 +337,6 @@ opl_init_result_t OPL_Init(unsigned int port_base)
 }
 
 // Shut down the OPL library.
-
 void OPL_Shutdown(void)
 {
     if (!initialized) {
@@ -356,7 +346,6 @@ void OPL_Shutdown(void)
 }
 
 // Set the sample rate used for software OPL emulation.
-
 void OPL_SetSampleRate(unsigned int rate)
 {
     opl_sample_rate = rate;
@@ -411,7 +400,6 @@ void OPL_WriteRegister(uint16_t reg_num, uint8_t value)
 //
 // Timer functions.
 //
-
 void OPL_SetCallback(uint64_t us, opl_callback_t callback, void *data)
 {
     if (!initialized) {
