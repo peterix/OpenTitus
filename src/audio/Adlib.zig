@@ -2,7 +2,6 @@
 // Copyright (C) 2008 - 2024 The OpenTitus team
 // Copyright (C) 2005 - 2014 Simon Howard (originally under GPL2 as part of the OPL library)
 //
-//
 // Authors:
 // Eirik Stople
 // Petr Mrázek
