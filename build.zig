@@ -58,12 +58,12 @@ fn build_game(b: *std.Build, name: []const u8, target: CrossTarget, optimize: st
         "src/original.c",
         "src/player.c",
         "src/reset.c",
-        "src/audio/opl/opl3.c",
+        "src/audio/opl3.c",
     }, &.{
         "-fno-sanitize=shift",
     });
     exe.addIncludePath(std.build.LazyPath.relative("src/"));
-    exe.addIncludePath(std.build.LazyPath.relative("src/audio/opl/"));
+    exe.addIncludePath(std.build.LazyPath.relative("src/audio/"));
 
     exe.linkLibC();
     exe.linkSystemLibrary("m");
@@ -82,12 +82,12 @@ fn build_game(b: *std.Build, name: []const u8, target: CrossTarget, optimize: st
         "src/original.c",
         "src/player.c",
         "src/reset.c",
-        "src/audio/opl/opl3.c",
+        "src/audio/opl3.c",
     }, &.{
         "-fno-sanitize=shift",
     });
     game_tests.addIncludePath(std.build.LazyPath.relative("src/"));
-    game_tests.addIncludePath(std.build.LazyPath.relative("src/audio/opl/"));
+    game_tests.addIncludePath(std.build.LazyPath.relative("src/audio/"));
 
     game_tests.linkLibC();
     game_tests.linkSystemLibrary("m");

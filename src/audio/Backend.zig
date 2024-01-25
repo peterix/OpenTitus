@@ -24,6 +24,8 @@
 
 const std = @import("std");
 const Backend = @This();
+const _engine = @import("engine.zig");
+const AudioEngine = _engine.AudioEngine;
 
 pub const Error = error{
     OutOfMemory,
@@ -36,20 +38,25 @@ vtable: *const VTable,
 name: []const u8,
 
 pub const VTable = struct {
-    init: *const fn (ctx: *anyopaque, allocator: std.mem.Allocator) Error!void,
+    init: *const fn (ctx: *anyopaque, engine: *AudioEngine, allocator: std.mem.Allocator, sample_rate: u32) Error!void,
     deinit: *const fn (ctx: *anyopaque) void,
+    fillBuffer: *const fn (ctx: *anyopaque, buffer: []i16, nsamples: u32) void,
     playTrack: *const fn (ctx: *anyopaque, song_number: u8) void,
     stopTrack: *const fn (ctx: *anyopaque, song_number: u8) void,
     playSfx: *const fn (ctx: *anyopaque, sfx_number: u8) void,
     isPlayingATrack: *const fn (ctx: *anyopaque) bool,
 };
 
-pub inline fn init(self: Backend, allocator: std.mem.Allocator) Error!void {
-    return self.vtable.init(self.ptr, allocator);
+pub inline fn init(self: Backend, engine: *AudioEngine, allocator: std.mem.Allocator, sample_rate: u32) Error!void {
+    return self.vtable.init(self.ptr, engine, allocator, sample_rate);
 }
 
 pub inline fn deinit(self: Backend) void {
     return self.vtable.deinit(self.ptr);
+}
+
+pub inline fn fillBuffer(self: Backend, buffer: []i16, nsamples: u32) void {
+    return self.vtable.fillBuffer(self.ptr, buffer, nsamples);
 }
 
 pub inline fn playTrack(self: Backend, song_number: u8) void {
