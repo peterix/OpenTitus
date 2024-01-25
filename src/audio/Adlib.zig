@@ -652,7 +652,7 @@ fn all_vox_zero(self: *Adlib) void {
     self.writeRegister(0x55, 0x3F);
 }
 
-fn TimerCallback(callback_data: ?*anyopaque) callconv(.C) void {
+fn TimerCallback(callback_data: ?*anyopaque) void {
     var self: *Adlib = @alignCast(@ptrCast(callback_data));
     // Read data until we must make a delay.
     self.fillchip();

@@ -45,11 +45,10 @@ const SampleType = i16;
 const NumChannels = 2;
 const Stride = @sizeOf(SampleType) * NumChannels;
 
-pub const opl_callback_t = ?*const fn (?*anyopaque) callconv(.C) void;
-
 // Queue of callbacks waiting to be invoked.
+pub const BackendCallback = ?*const fn (?*anyopaque) void;
 const QueuedCallback = struct {
-    callback: opl_callback_t = null,
+    callback: BackendCallback = null,
     data: ?*anyopaque = null,
     time: u64 = 0,
 };
@@ -266,7 +265,7 @@ pub const AudioEngine = struct {
         }
     }
 
-    pub fn setCallback(self: *AudioEngine, us: u64, callback: opl_callback_t, callback_data: ?*anyopaque) void {
+    pub fn setCallback(self: *AudioEngine, us: u64, callback: BackendCallback, callback_data: ?*anyopaque) void {
         self.callback_queue_mutex.lock();
         // FIXME: actual error handling
         self.callback_queue.add(QueuedCallback{
