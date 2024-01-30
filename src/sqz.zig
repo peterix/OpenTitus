@@ -25,23 +25,19 @@
 
 const std = @import("std");
 const Allocator = std.mem.Allocator;
-
-const c = @import("c.zig");
-
-const LZW_CLEAR_CODE = 0x100;
-const LZW_END_CODE = 0x101;
-const LZW_FIRST = 0x102;
-const LZW_MAX_TABLE = 4096;
+const _bytes = @import("bytes.zig");
+const chompInt = _bytes.chompInt;
+const getInt = _bytes.getInt;
+const Endian = _bytes.Endian;
 
 const SqzError = error{
     OutOfMemory,
     InvalidFile,
+    BadRead,
+    NotImplemented,
 };
 
 pub fn unSQZ(inputfile: []const u8, allocator: Allocator) ![]u8 {
-    var i: c_int = 0;
-    _ = i;
-
     var file = try std.fs.cwd().openFile(inputfile, .{});
     defer file.close();
 
@@ -83,18 +79,23 @@ pub fn unSQZ(inputfile: []const u8, allocator: Allocator) ![]u8 {
     if (comp_type == 0x10) {
         try lzw_decode(inbuffer, output);
     } else {
-        try huffman_decode(inbuffer, output);
+        try huffman_decode(.Little, inbuffer, output);
     }
     return output;
 }
 
-fn lzw_decode(input: []u8, output: []u8) !void {
+// TODO: test on a big endian machine
+fn lzw_decode(input: []const u8, output: []u8) !void {
+    const LZW_CLEAR_CODE = 0x100;
+    const LZW_END_CODE = 0x101;
+    const LZW_FIRST = 0x102;
+    const LZW_MAX_TABLE = 4096;
+
     var nbit: u8 = 9;
     var bitadd: u8 = 0;
     var i: c_uint = 0;
     var k_pos: c_uint = 0;
     var k: c_uint = 0;
-    var tmp_k: c_uint = 0;
     var w: c_uint = 0;
     var out_pos: c_uint = 0;
     var addtodict: bool = false;
@@ -127,7 +128,7 @@ fn lzw_decode(input: []u8, output: []u8) !void {
         } else if (k != LZW_END_CODE) {
             if (k > 255 and k < LZW_FIRST + dict_length) {
                 i = 0;
-                tmp_k = k;
+                var tmp_k = k;
                 while (tmp_k >= LZW_FIRST) {
                     dict_stack[i] = dict_character[tmp_k - LZW_FIRST];
                     tmp_k = dict_prefix[tmp_k - LZW_FIRST];
@@ -152,7 +153,7 @@ fn lzw_decode(input: []u8, output: []u8) !void {
                 dict_stack[0] = dict_stack[tmp_k];
             } else if (k > 255 and k >= LZW_FIRST + dict_length) {
                 i = 1;
-                tmp_k = w;
+                var tmp_k = w;
                 while (tmp_k >= LZW_FIRST) {
                     dict_stack[i] = dict_character[tmp_k - LZW_FIRST];
                     tmp_k = dict_prefix[tmp_k - LZW_FIRST];
@@ -202,8 +203,11 @@ fn lzw_decode(input: []u8, output: []u8) !void {
     }
 }
 
-fn huffman_decode(input: []u8, output: []u8) !void {
-    const treesize = (@as(u16, input[1]) << 8) + input[0];
+fn huffman_decode(comptime endian: Endian, input: []const u8, output: []u8) !void {
+    var consumable = input;
+    const treesize = chompInt(u16, endian, &consumable);
+    const bintree = consumable[0..treesize];
+    var input_buffer = consumable[treesize..];
     var node: u16 = 0;
     var state: c_int = 0;
     var count: u16 = 0;
@@ -211,16 +215,21 @@ fn huffman_decode(input: []u8, output: []u8) !void {
     var last: u8 = 0;
     var out_pos: c_uint = 0;
 
-    for (2 + treesize..input.len) |i| {
+    while (input_buffer.len != 0) {
         var bit: u8 = 128;
+        const input_byte = chompInt(u8, endian, &input_buffer);
         while (bit >= 1) : (bit >>= 1) {
-            if (input[i] & bit != 0)
+            if (input_byte & bit != 0)
                 node += 1;
-            var bintree = (@as(u16, input[3 + node * 2]) << 8) + @as(u16, input[2 + node * 2]);
-            if (bintree <= 0x7FFF) {
-                node = bintree >> 1;
+            const bintree_val = getInt(
+                u16,
+                endian,
+                bintree[node * 2 ..],
+            );
+            if (bintree_val <= 0x7FFF) {
+                node = bintree_val >> 1;
             } else {
-                node = bintree & 0x7FFF;
+                node = bintree_val & 0x7FFF;
                 var nodeL: u8 = @truncate(node & 0x00FF);
                 if (state == 0) {
                     if (node < 0x100) {

@@ -26,6 +26,8 @@
 const std = @import("std");
 
 const c = @import("c.zig");
+const sqz = @import("sqz.zig");
+const sqz_amiga = @import("sqz_amiga.zig");
 
 // NOTE: force-imported modules
 pub fn refAllDecls(comptime T: type) void {
@@ -118,6 +120,8 @@ pub fn run() !u8 {
     try fonts.fonts_load();
     defer fonts.fonts_free();
 
+    try amigaTest();
+
     // View the menu when the main loop starts
     var state: c_int = 1;
     var retval: c_int = 0;
@@ -183,4 +187,33 @@ pub fn run() !u8 {
     try game_state.write(allocator);
 
     return 0;
+}
+
+fn amigaTest2() !void {
+    var amiga_music: []const u8 = sqz_amiga.unSQZ("amiga/JEU1.PAT", allocator) catch foo: {
+        std.debug.print("Too bad, Amiga file didn't uncompreess well...", .{});
+        break :foo "";
+    };
+    if (amiga_music.len > 0) {
+        try std.fs.cwd().writeFile("amiga/JEU1.PAT.UNSQZ", amiga_music);
+    }
+
+    allocator.free(amiga_music);
+}
+
+fn amigaTest1() !void {
+    var amiga_huffman: []const u8 = sqz_amiga.unSQZ("amiga/fox.spr", allocator) catch foo: {
+        std.debug.print("Too bad, Amiga file didn't uncompreess well...", .{});
+        break :foo "";
+    };
+    if (amiga_huffman.len > 0) {
+        try std.fs.cwd().writeFile("amiga/fox.spr.UNSQZ", amiga_huffman);
+    }
+
+    allocator.free(amiga_huffman);
+}
+
+fn amigaTest() !void {
+    // try amigaTest1();
+    // try amigaTest2();
 }

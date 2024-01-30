@@ -30,30 +30,19 @@ const Adlib = @This();
 const std = @import("std");
 const Backend = @import("Backend.zig");
 const _engine = @import("engine.zig");
+const _bytes = @import("../bytes.zig");
 const AudioEngine = _engine.AudioEngine;
 
 const OPL3 = @cImport({
     @cInclude("./opl3.h");
 });
 
-fn chomp_u8(bytes: *[]const u8) u8 {
-    if (bytes.len > 0) {
-        const result = bytes.*[0];
-        bytes.len -= 1;
-        bytes.ptr += 1;
-        return result;
-    }
-    unreachable;
+inline fn chomp_u8(bytes: *[]const u8) u8 {
+    return _bytes.chompInt(u8, .Little, bytes);
 }
 
-fn chomp_u16(bytes: *[]const u8) u16 {
-    if (bytes.len > 1) {
-        const result = @as(u16, bytes.*[0]) + (@as(u16, bytes.*[1]) << 8);
-        bytes.*.len -= 2;
-        bytes.*.ptr += 2;
-        return result;
-    }
-    unreachable;
+inline fn chomp_u16(bytes: *[]const u8) u16 {
+    return _bytes.chompInt(u16, .Little, bytes);
 }
 
 const MUS_OFFSET = 0;
