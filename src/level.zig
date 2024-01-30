@@ -13,11 +13,11 @@ const ObjectData = data.ObjectData;
 // to do that, we have to split all of the data representations
 
 // fully describe enemy data as an externally tagged union, then remove these
-fn load_u16(high: u8, low: u8) u16 {
+inline fn load_u16(high: u8, low: u8) u16 {
     return @as(u16, high) * 256 + low;
 }
 
-fn load_i16(high: u8, low: u8) i16 {
+inline fn load_i16(high: u8, low: u8) i16 {
     return (@as(i16, @bitCast(@as(u16, high))) << 8) + low;
 }
 
@@ -112,6 +112,7 @@ const InitSprite = extern union {
     value: u16,
 };
 
+// FIXME: we need to @Swap all of the things that are multiple byte integers on .Big endian platforms
 const StaticData = extern struct {
     // 0, planar 16 color images, 16x16
     tile_images: [256]extern struct {

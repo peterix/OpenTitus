@@ -34,13 +34,13 @@ pub const ManagedSurface = struct {
 
     const Self = @This();
 
-    pub fn deinit(self: Self) void {
+    pub fn deinit(self: *Self) void {
         if (self.value != null) {
             c.SDL_FreeSurface(self.value);
         }
     }
 
-    pub fn dump(self: Self, filename: [:0]const u8) !void {
+    pub fn dump(self: *Self, filename: [:0]const u8) !void {
         if (c.SDL_SaveBMP(self.value, &filename[0]) != 0) {
             return error.DumpError;
         }
