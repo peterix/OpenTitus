@@ -26,6 +26,8 @@
 const std = @import("std");
 
 const c = @import("../c.zig");
+const SDL = @import("../SDL.zig");
+
 const window = @import("../window.zig");
 const keyboard = @import("keyboard.zig");
 const data = @import("../data.zig");
@@ -142,13 +144,13 @@ pub export fn viewstatus(level: *c.TITUS_level, countbonus: bool) c_int {
                 last_extrabonus = draw_extrabonus(level, last_extrabonus);
                 window.window_render();
                 // 150 ms
-                c.SDL_Delay(150);
+                SDL.delay(150);
             }
             level.lives += 1;
             last_lives = draw_lives(level, last_lives);
             window.window_render();
             // 100 ms
-            c.SDL_Delay(100);
+            SDL.delay(100);
         }
     }
 

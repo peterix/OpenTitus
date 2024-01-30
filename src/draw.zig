@@ -31,6 +31,8 @@ const fonts = @import("ui/fonts.zig");
 const sprites = @import("sprites.zig");
 const lvl = @import("level.zig");
 
+const SDL = @import("SDL.zig");
+
 const tick_delay = 29;
 
 pub export fn screencontext_reset(context: *c.ScreenContext) void {
@@ -38,11 +40,11 @@ pub export fn screencontext_reset(context: *c.ScreenContext) void {
 }
 
 fn screencontext_initial(context: *c.ScreenContext) void {
-    var initial_clock = c.SDL_GetTicks();
+    var initial_clock = SDL.getTicks();
     context.TARGET_CLOCK = initial_clock + tick_delay;
     context.started = true;
-    c.SDL_Delay(tick_delay);
-    context.LAST_CLOCK = c.SDL_GetTicks();
+    SDL.delay(tick_delay);
+    context.LAST_CLOCK = SDL.getTicks();
     context.TARGET_CLOCK += tick_delay;
 }
 
@@ -51,11 +53,11 @@ fn screencontext_advance_29(context: *c.ScreenContext) void {
         screencontext_initial(context);
         return;
     }
-    var now = c.SDL_GetTicks();
+    var now = SDL.getTicks();
     if (context.TARGET_CLOCK > now) {
-        c.SDL_Delay(context.TARGET_CLOCK - now);
+        SDL.delay(context.TARGET_CLOCK - now);
     }
-    context.LAST_CLOCK = c.SDL_GetTicks();
+    context.LAST_CLOCK = SDL.getTicks();
     context.TARGET_CLOCK = context.LAST_CLOCK + tick_delay;
 }
 
@@ -64,7 +66,7 @@ pub export fn flip_screen(context: *c.ScreenContext, slow: bool) void {
     if (slow) {
         screencontext_advance_29(context);
     } else {
-        c.SDL_Delay(10);
+        SDL.delay(10);
         screencontext_reset(context);
     }
 }
@@ -269,6 +271,6 @@ pub fn fadeout() void {
         _ = c.SDL_BlitSurface(image, &rect, window.screen, &rect);
         window.window_render();
 
-        c.SDL_Delay(1);
+        SDL.delay(1);
     }
 }

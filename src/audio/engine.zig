@@ -35,6 +35,7 @@ const Order = std.math.Order;
 const Adlib = @import("Adlib.zig");
 const Backend = @import("Backend.zig");
 const c = @import("../c.zig");
+const SDL = @import("../SDL.zig");
 const game = @import("../game.zig");
 const data = @import("../data.zig");
 
@@ -325,7 +326,7 @@ pub fn music_wait_to_finish() void {
         return;
     }
     while (waiting) {
-        c.SDL_Delay(1);
+        SDL.delay(1);
         var event: c.SDL_Event = undefined;
         while (c.SDL_PollEvent(&event) != 0) { //Check all events
             if (event.type == c.SDL_QUIT) {

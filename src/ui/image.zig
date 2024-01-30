@@ -27,6 +27,7 @@ const std = @import("std");
 
 const sqz = @import("../sqz.zig");
 const c = @import("../c.zig");
+const SDL = @import("../SDL.zig");
 
 pub const ManagedSurface = struct {
     value: [*c]c.SDL_Surface,
@@ -221,7 +222,7 @@ pub fn viewImageFile(file: ImageFile, display_mode: DisplayMode, delay: c_int, a
                     }
                 }
 
-                image_alpha = (c.SDL_GetTicks() - tick_start) * 256 / fade_time;
+                image_alpha = (SDL.getTicks() - tick_start) * 256 / fade_time;
 
                 if (image_alpha > 255)
                     image_alpha = 255;
@@ -231,7 +232,7 @@ pub fn viewImageFile(file: ImageFile, display_mode: DisplayMode, delay: c_int, a
                 window.window_clear(null);
                 _ = c.SDL_BlitSurface(image_surface, &src, c.screen, &dest);
                 window.window_render();
-                c.SDL_Delay(1);
+                SDL.delay(1);
             }
 
             while (activedelay) //Visible delay
@@ -270,14 +271,14 @@ pub fn viewImageFile(file: ImageFile, display_mode: DisplayMode, delay: c_int, a
                         }
                     }
                 }
-                c.SDL_Delay(1);
-                if ((c.SDL_GetTicks() - tick_start + fade_time) >= delay) {
+                SDL.delay(1);
+                if ((SDL.getTicks() - tick_start + fade_time) >= delay) {
                     activedelay = false;
                 }
             }
 
             image_alpha = 255 - image_alpha;
-            tick_start = c.SDL_GetTicks();
+            tick_start = SDL.getTicks();
             while (image_alpha < 255) //Fade to black
             {
                 var event: c.SDL_Event = undefined;
@@ -296,7 +297,7 @@ pub fn viewImageFile(file: ImageFile, display_mode: DisplayMode, delay: c_int, a
                     }
                 }
 
-                image_alpha = (c.SDL_GetTicks() - tick_start) * 256 / fade_time + fadeoutskip;
+                image_alpha = (SDL.getTicks() - tick_start) * 256 / fade_time + fadeoutskip;
 
                 if (image_alpha > 255)
                     image_alpha = 255;
@@ -306,7 +307,7 @@ pub fn viewImageFile(file: ImageFile, display_mode: DisplayMode, delay: c_int, a
                 window.window_clear(null);
                 _ = c.SDL_BlitSurface(image_surface, &src, c.screen, &dest);
                 c.window_render();
-                c.SDL_Delay(1);
+                SDL.delay(1);
             }
         },
         .FadeOut => {
@@ -321,7 +322,7 @@ pub fn viewImageFile(file: ImageFile, display_mode: DisplayMode, delay: c_int, a
                 return retval;
             }
 
-            var tick_start = c.SDL_GetTicks();
+            var tick_start = SDL.getTicks();
             while (image_alpha < 255) //Fade to black
             {
                 var event: c.SDL_Event = undefined;
@@ -350,7 +351,7 @@ pub fn viewImageFile(file: ImageFile, display_mode: DisplayMode, delay: c_int, a
                 window.window_clear(null);
                 _ = c.SDL_BlitSurface(image_surface, &src, c.screen, &dest);
                 window.window_render();
-                c.SDL_Delay(1);
+                SDL.delay(1);
             }
         },
     }

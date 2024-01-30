@@ -26,10 +26,8 @@
  * Handle objects
  */
 
-#ifndef OBJECT_H
-#define OBJECT_H
+#pragma once
 
-#include "SDL2/SDL.h"
 #include "level.h"
 
 void move_objects(TITUS_level *level);
@@ -37,7 +35,3 @@ bool SPRITES_VS_SPRITES(TITUS_level* level, TITUS_sprite* sprite1, const TITUS_s
 int updateobjectsprite(TITUS_level *level, TITUS_object *obj, int16_t number, bool clearflags);
 int loadobjects(TITUS_objectdata ***objects, uint16_t *count);
 void freeobjects(TITUS_objectdata ***objects, uint16_t count);
-
-
-#endif
-

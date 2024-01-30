@@ -26,6 +26,8 @@
 const std = @import("std");
 
 const c = @import("../c.zig");
+const SDL = @import("../SDL.zig");
+
 const globals = @import("../globals.zig");
 const window = @import("../window.zig");
 
@@ -57,7 +59,7 @@ pub export fn waitforbutton() c_int {
                 }
             }
         }
-        c.SDL_Delay(1);
+        SDL.delay(1);
     }
     return waiting;
 }

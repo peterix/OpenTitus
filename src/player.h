@@ -26,16 +26,11 @@
  * Handles player movement and keyboard handling
  */
 
-#ifndef PLAYER_H
-#define PLAYER_H
+#pragma once
 
-#include "SDL2/SDL.h"
 #include "level.h"
 #include "draw.h"
 
 int move_player(ScreenContext *context, TITUS_level *level);
 TITUS_object *FORCE_POSE(TITUS_level *level);
 void DEC_ENERGY(TITUS_level *level);
-
-#endif
-

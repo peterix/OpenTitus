@@ -28,8 +28,6 @@
 
 #pragma once
 
-#include "SDL2/SDL.h"
-
 #include <stdint.h>
 
 void initoriginal();

@@ -26,6 +26,8 @@
 const std = @import("std");
 
 const c = @import("../c.zig");
+const SDL = @import("../SDL.zig");
+
 const sqz = @import("../sqz.zig");
 const image = @import("image.zig");
 const window = @import("../window.zig");
@@ -129,7 +131,7 @@ pub fn view_menu(file: ImageFile, allocator: std.mem.Allocator) !?usize {
         _ = c.SDL_BlitSurface(menu, &sel[1], window.screen, &sel_dest[0]);
         _ = c.SDL_BlitSurface(menu, &sel[0], window.screen, &sel_dest[selection]);
         window.window_render();
-        c.SDL_Delay(1);
+        SDL.delay(1);
     }
 
     var curlevel: ?usize = null;
@@ -188,7 +190,7 @@ pub fn view_menu(file: ImageFile, allocator: std.mem.Allocator) !?usize {
         _ = c.SDL_BlitSurface(menu, &sel[1], window.screen, &sel_dest[0]);
         _ = c.SDL_BlitSurface(menu, &sel[0], window.screen, &sel_dest[selection]);
         window.window_render();
-        c.SDL_Delay(1);
+        SDL.delay(1);
     }
 
     // Close the menu
@@ -297,6 +299,6 @@ fn select_level(allocator: std.mem.Allocator) !?usize {
             }
         }
         window.window_render();
-        c.SDL_Delay(1);
+        SDL.delay(1);
     }
 }
