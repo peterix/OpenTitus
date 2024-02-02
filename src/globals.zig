@@ -41,72 +41,69 @@ pub export var GAMEOVER_FLAG: bool = false;
 pub export var BAR_FLAG: u8 = 0;
 
 // true if left or right key is pressed
-export var X_FLAG: bool = false;
+pub export var X_FLAG: bool = false;
 
 // true if up or down key is pressed
-export var Y_FLAG: bool = false;
+pub export var Y_FLAG: bool = false;
 
 // headache timer
-export var CHOC_FLAG: u8 = 0;
+pub export var CHOC_FLAG: u8 = 0;
 
 // TODO: this doesn't have to be a global, it's only used in one function and whatever it directly calls
 export var action: u8 = 0;
 
 // hit/burn timer
-export var KICK_FLAG: u8 = 0;
+pub export var KICK_FLAG: u8 = 0;
 
 // If set, player will be "burned" when hit (fireballs)
-export var GRANDBRULE_FLAG: bool = false;
+pub export var GRANDBRULE_FLAG: bool = false;
 
 // True if on a ladder
 pub export var LADDER_FLAG: bool = false;
 
 //True if player is forced into kneestanding because of low ceiling
-export var PRIER_FLAG: bool = false;
+pub export var PRIER_FLAG: bool = false;
 
 //6 if free fall or in the middle of a jump, decremented if on solid surface. Must be 0 to initiate a jump.
-export var SAUT_FLAG: u8 = 0;
+pub export var SAUT_FLAG: u8 = 0;
 
 //Last action (kneestand + jump = silent walk)
-export var LAST_ORDER: u8 = 0;
+pub export var LAST_ORDER: u8 = 0;
 
 //Silent walk timer
-export var FURTIF_FLAG: u8 = 0;
+pub export var FURTIF_FLAG: u8 = 0;
 
 //True if an object is throwed forward
-export var DROP_FLAG: bool = false;
+pub export var DROP_FLAG: bool = false;
 
-export var DROPREADY_FLAG: bool = false;
+pub export var DROPREADY_FLAG: bool = false;
 
 //true if carrying something (add 16 to player sprite)
-export var CARRY_FLAG: bool = false;
+pub export var CARRY_FLAG: bool = false;
 
-export var POSEREADY_FLAG: bool = false;
+pub export var POSEREADY_FLAG: bool = false;
 
 //Frames since last action change
-export var ACTION_TIMER: u8 = 0;
+pub export var ACTION_TIMER: u8 = 0;
 
 //When non-zero, boss is invulnerable
-export var INVULNERABLE_FLAG: u8 = 0;
-
-//When non-zero, the flying carpet is flying
-export var TAPISFLY_FLAG: u8 = 0;
+pub export var INVULNERABLE_FLAG: u8 = 0;
 
 //When non-zero, fall through certain floors (after key down)
 pub export var CROSS_FLAG: u8 = 0;
 
 //When zero, skip object gravity function
-export var GRAVITY_FLAG: u8 = 0;
+pub export var GRAVITY_FLAG: u8 = 0;
 
 //Smoke when object hits the floor
-export var FUME_FLAG: u8 = 0;
+pub export var FUME_FLAG: u8 = 0;
 
 //Keyboard state
 pub export var keystate: [*c]const u8 = null;
 
-export var YFALL: u8 = 0;
+pub export var YFALL: u8 = 0;
 
-export var POCKET_FLAG: bool = false;
+pub export var POCKET_FLAG: bool = false;
 
 //Increased every loop in game loop
 pub export var loop_cycle: u8 = 0;
@@ -142,10 +139,10 @@ pub export var ALTITUDE_ZERO: TileCoord = 0;
 pub export var IMAGE_COUNTER: u16 = 0;
 
 //1: walk right, 0: stand still, -1: walk left, triggers the ACTION_TIMER if it changes
-export var SENSX: i8 = 0;
+pub export var SENSX: i8 = 0;
 
 //Incremented from 0 to 3 when accelerating while jumping, stop acceleration upwards if >= 3
-export var SAUT_COUNT: u8 = 0;
+pub export var SAUT_COUNT: u8 = 0;
 
 pub export var NOSCROLL_FLAG: bool = false;
 
@@ -156,16 +153,19 @@ pub export var NEWLEVEL_FLAG: bool = false;
 pub export var SKIPLEVEL_FLAG: bool = false;
 
 //Used for enemies walking and popping up
-export var TAUPE_FLAG: u8 = 0;
+pub export var TAUPE_FLAG: u8 = 0;
+
+//When non-zero, the flying carpet is flying
+pub export var TAPISFLY_FLAG: u8 = 0;
 
 //Flying carpet state
-export var TAPISWAIT_FLAG: u8 = 0;
+pub export var TAPISWAIT_FLAG: u8 = 0;
 
 //Counter when hit
-export var SEECHOC_FLAG: u8 = 0;
+pub export var SEECHOC_FLAG: u8 = 0;
 
 //Lives of the boss
-export var boss_lives: u8 = 0;
+pub export var boss_lives: u8 = 0;
 
 //True if the boss is alive
 pub export var boss_alive: bool = false;

@@ -57,7 +57,6 @@ fn build_game(b: *std.Build, name: []const u8, target: CrossTarget, optimize: st
         "src/objects.c",
         "src/original.c",
         "src/player.c",
-        "src/reset.c",
         "src/audio/opl3.c",
     }, &.{
         "-fno-sanitize=shift",
@@ -81,7 +80,6 @@ fn build_game(b: *std.Build, name: []const u8, target: CrossTarget, optimize: st
         "src/objects.c",
         "src/original.c",
         "src/player.c",
-        "src/reset.c",
         "src/audio/opl3.c",
     }, &.{
         "-fno-sanitize=shift",

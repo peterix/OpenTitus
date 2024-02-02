@@ -26,9 +26,8 @@
  * Handles enemies.
  *
  * Global functions:
- * void MOVE_NMI(TITUS_level *level): Move enemies, is called by main game loop
  * void SET_NMI(TITUS_level *level): Collision detection, animation, is called by main game loop
- * void MOVE_TRASH(TITUS_level *level): Move objects thrown by enemies
+ * void moveTrash(TITUS_level *level): Move objects thrown by enemies
 */
 
 #pragma once
@@ -36,9 +35,9 @@
 #include "SDL2/SDL.h"
 #include "level.h"
 
-
-void MOVE_NMI(TITUS_level *level);
+/// Move enemies, is called by main game loop
+void moveEnemies(TITUS_level *level);
 void SET_NMI(TITUS_level *level);
-void MOVE_TRASH(TITUS_level *level);
+void moveTrash(TITUS_level *level);
 
-int updateenemysprite(TITUS_level *level, TITUS_enemy *enemy, int16_t number, bool clearflags);
+void updateenemysprite(TITUS_level *level, TITUS_enemy *enemy, int16_t number, bool clearflags);

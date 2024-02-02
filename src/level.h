@@ -66,7 +66,7 @@ struct _TITUS_sprite {
     const TITUS_spritedata *spritedata;
     uint8_t UNDER; //0: big spring, 1: small spring because of another object on top, 2: small spring because player on top
     TITUS_sprite *ONTOP; //Object on top of the spring
-    int16_t *animation;
+    const int16_t *animation;
     bool droptobottom;
     bool killing;
     bool invisible; //Set by "hidden" enemies

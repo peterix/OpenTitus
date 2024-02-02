@@ -6,10 +6,8 @@ pub usingnamespace @cImport({
     @cInclude("original.h");
     @cInclude("sprites.h");
     @cInclude("level.h");
-    @cInclude("keyboard.h");
     @cInclude("player.h");
     @cInclude("draw.h");
-    @cInclude("reset.h");
     @cInclude("gates.h");
     @cInclude("objects.h");
     @cInclude("enemies.h");

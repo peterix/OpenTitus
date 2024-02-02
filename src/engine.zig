@@ -35,6 +35,7 @@ const window = @import("window.zig");
 const elevators = @import("elevators.zig");
 const game_state = @import("game_state.zig");
 const draw = @import("draw.zig");
+const reset = @import("reset.zig");
 const gates = @import("gates.zig");
 const spr = @import("sprites.zig");
 const lvl = @import("level.zig");
@@ -114,7 +115,7 @@ pub fn playtitus(firstlevel: u16, allocator: std.mem.Allocator) !c_int {
         var first = true;
         while (true) {
             audio.music_select_song_c(0);
-            c.CLEAR_DATA(&level.c_level);
+            reset.CLEAR_DATA(&level.c_level);
 
             globals.GODMODE = false;
             globals.NOCLIP = false;
@@ -213,14 +214,14 @@ fn playlevel(context: [*c]c.ScreenContext, level: *c.TITUS_level) c_int {
         }
         firstrun = false;
         globals.IMAGE_COUNTER = (globals.IMAGE_COUNTER + 1) & 0x0FFF; //Cycle from 0 to 0x0FFF
-        elevators.elevators_move(level);
+        elevators.move(level);
         c.move_objects(level); //Object gravity
         retval = c.move_player(context, level); //Key input, update and move player, handle carried object and decrease timers
         if (retval == c.TITUS_ERROR_QUIT) {
             return retval;
         }
-        c.MOVE_NMI(level); //Move enemies
-        c.MOVE_TRASH(level); //Move enemy throwed objects
+        c.moveEnemies(level); //Move enemies
+        c.moveTrash(level); //Move enemy throwed objects
         c.SET_NMI(level); //Handle enemies on the screen
         gates.CROSSING_GATE(context, level); //Check and handle level completion, and if the player does a kneestand on a secret entrance
         c.SPRITES_ANIMATION(level); //Animate player and objects
@@ -228,7 +229,7 @@ fn playlevel(context: [*c]c.ScreenContext, level: *c.TITUS_level) c_int {
         draw.draw_tiles(level);
         draw.draw_sprites(level);
         level.tickcount += 1;
-        retval = c.RESET_LEVEL(context, level); //Check terminate flags (finishlevel, gameover, death or theend)
+        retval = reset.RESET_LEVEL(context, level); //Check terminate flags (finishlevel, gameover, death or theend)
         if (retval < 0) {
             return retval;
         }

@@ -26,9 +26,9 @@
  * Handles enemies.
  *
  * Global functions:
- * void MOVE_NMI(TITUS_level *level): Move enemies, is called by main game loop
+ * void moveEnemies(TITUS_level *level): Move enemies, is called by main game loop
  * void SET_NMI(TITUS_level *level): Collision detection, animation, is called by main game loop
- * void MOVE_TRASH(TITUS_level *level): Move objects thrown by enemies
+ * void moveTrash(TITUS_level *level): Move objects thrown by enemies
  */
 
 #include <stdio.h>
@@ -67,7 +67,7 @@ static void DOWN_ANIMATION(TITUS_sprite *sprite) {
     sprite->animation--;
 }
 
-void MOVE_NMI(TITUS_level *level) {
+void moveEnemies(TITUS_level *level) {
     TITUS_sprite *bullet;
     int j;
     for (int i = 0; i < ENEMY_CAPACITY; i++) {
@@ -1056,7 +1056,7 @@ void DEAD1(TITUS_level *level, TITUS_enemy *enemy) {
     }
 }
 
-int updateenemysprite(TITUS_level *level, TITUS_enemy *enemy, int16_t number, bool clearflags){
+void updateenemysprite(TITUS_level *level, TITUS_enemy *enemy, int16_t number, bool clearflags){
     updatesprite(level, &(enemy->sprite), number, clearflags);
 
     if ((number >= 101) && (number <= 105)) { //Walking man
@@ -1103,8 +1103,6 @@ int updateenemysprite(TITUS_level *level, TITUS_enemy *enemy, int16_t number, bo
     } else {
         enemy->boss = false;
     }
-
-    return (0);
 }
 
 
@@ -1326,7 +1324,7 @@ void SEE_CHOC(TITUS_level *level) {
     SEECHOC_FLAG = 5;
 }
 
-void MOVE_TRASH(TITUS_level *level) {
+void moveTrash(TITUS_level *level) {
     int16_t i, tmp;
     for (i = 0; i < TRASH_CAPACITY; i++) {
         if (!level->trash[i].enabled) continue;

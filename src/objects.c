@@ -398,12 +398,11 @@ bool SPRITES_VS_SPRITES (TITUS_level *level, TITUS_sprite *sprite1, const TITUS_
 
 
 
-int updateobjectsprite(TITUS_level *level, TITUS_object *obj, int16_t number, bool clearflags){
+void updateobjectsprite(TITUS_level *level, TITUS_object *obj, int16_t number, bool clearflags){
     int16_t index = number - FIRST_OBJET;    
     updatesprite(level, &(obj->sprite), number, clearflags);
     if ((index < 0) || (index >= ORIG_OBJECT_COUNT)) {
         index = 0;
     }
     obj->objectdata = &level->objectdata[index];
-    return (0);
 }
