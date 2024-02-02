@@ -30,36 +30,6 @@ const scroll = @import("scroll.zig");
 const draw = @import("draw.zig");
 const window = @import("window.zig");
 const keyboard = @import("ui/keyboard.zig");
-const final_cutscene = @import("final_cutscene.zig");
-
-//Possible return states:
-
-//0 - No action
-//1 - New level
-//2 - Game over
-//3 - Death
-
-pub fn RESET_LEVEL(context: *c.ScreenContext, level: *c.TITUS_level) c_int {
-    if (globals.NEWLEVEL_FLAG) {
-        return 1;
-    }
-    if (globals.GAMEOVER_FLAG) {
-        return 2;
-    }
-    if (globals.RESETLEVEL_FLAG == 1) {
-        return 3;
-    }
-    if (level.is_finish) {
-        // FIXME: replace with error handling? or some sensible return value enum
-        const retval = final_cutscene.play(context, level);
-        if (retval < 0) {
-            return retval;
-        }
-        globals.NEWLEVEL_FLAG = true;
-        return 3;
-    }
-    return 0;
-}
 
 fn SET_DATA_NMI(level: *c.TITUS_level) void {
     globals.boss_alive = false;

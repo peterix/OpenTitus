@@ -43,6 +43,7 @@ const lvl = @import("level.zig");
 const image = @import("ui/image.zig");
 const keyboard = @import("ui/keyboard.zig");
 const status = @import("ui/status.zig");
+const final_cutscene = @import("final_cutscene.zig");
 
 pub fn playtitus(firstlevel: u16, allocator: std.mem.Allocator) !c_int {
     var context: c.ScreenContext = undefined;
@@ -202,6 +203,29 @@ pub fn playtitus(firstlevel: u16, allocator: std.mem.Allocator) !c_int {
     return (0);
 }
 
+// FIXME: most of the different return values are meaningless and unused
+fn resetLevel(context: *c.ScreenContext, level: *c.TITUS_level) c_int {
+    if (globals.NEWLEVEL_FLAG) {
+        return 1;
+    }
+    if (globals.GAMEOVER_FLAG) {
+        return 2;
+    }
+    if (globals.RESETLEVEL_FLAG == 1) {
+        return 3;
+    }
+    if (level.is_finish) {
+        // FIXME: replace with error handling? or some sensible return value enum
+        const retval = final_cutscene.play(context, level);
+        if (retval < 0) {
+            return retval;
+        }
+        globals.NEWLEVEL_FLAG = true;
+        return 3;
+    }
+    return 0;
+}
+
 fn playlevel(context: [*c]c.ScreenContext, level: *c.TITUS_level) c_int {
     var retval: c_int = 0;
     var firstrun = true;
@@ -229,7 +253,7 @@ fn playlevel(context: [*c]c.ScreenContext, level: *c.TITUS_level) c_int {
         draw.draw_tiles(level);
         draw.draw_sprites(level);
         level.tickcount += 1;
-        retval = reset.RESET_LEVEL(context, level); //Check terminate flags (finishlevel, gameover, death or theend)
+        retval = resetLevel(context, level); //Check terminate flags (finishlevel, gameover, death or theend)
         if (retval < 0) {
             return retval;
         }
