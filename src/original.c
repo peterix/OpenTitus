@@ -197,19 +197,6 @@ int16_t anim_enemy[NMI_ANIM_TABLE_COUNT] = {
 };
 
 void initoriginal() {
-    /*
-    fprintf(stderr, "anim_enemy = [\n");
-    for (size_t i = 0; i < NMI_ANIM_TABLE_COUNT; i++) {
-        if( anim_enemy[i] < 0 ) {
-            fprintf(stderr, "%hd,\n", anim_enemy[i]);    
-        }
-        else {
-            fprintf(stderr, "%hd, ", anim_enemy[i]);
-        }
-    }
-    fprintf(stderr, "];\n");
-    */
-
     if (game == Titus) {
         int16_t anim_player_titus[] =     {2,2,2,1,1,1,1,2,2,2,3,3,3,3,-14*2};
         for (size_t i = 0; i < ANIM_PLAYER_MAX; i++) {

@@ -153,7 +153,7 @@ int move_player(ScreenContext *context, TITUS_level *level) {
             SKIPLEVEL_FLAG = true;
         }
     }
-    
+
     if (keystate[KEY_E]) { //E = display energy
         BAR_FLAG = 50;
     }
@@ -161,7 +161,7 @@ int move_player(ScreenContext *context, TITUS_level *level) {
     if (keystate[KEY_F4]) { //F4 = view status page
         viewstatus(level, false);
     }
-    // TODO: ADD!    SCREEN_3(); //Test for hidden credits screen
+
     if (pause) {
         retval = t_pause(context, level); //Apply pause
         if (retval < 0) {

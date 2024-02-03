@@ -47,7 +47,7 @@ const final_cutscene = @import("final_cutscene.zig");
 
 pub fn playtitus(firstlevel: u16, allocator: std.mem.Allocator) !c_int {
     var context: c.ScreenContext = undefined;
-    c.screencontext_reset(&context);
+    draw.screencontext_reset(&context);
 
     var retval: c_int = 0;
 
