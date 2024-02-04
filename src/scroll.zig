@@ -170,7 +170,7 @@ fn Y_ADJUST(level: *c.TITUS_level) void {
 }
 
 // TODO: put this somewhere else, like `engine`, it has nothing to do with scrolling
-pub export fn animate_tiles() void {
+pub fn animate_tiles() void {
     globals.loop_cycle += 1; //Cycle from 0 to 3
     if (globals.loop_cycle > 3) {
         globals.loop_cycle = 0;
@@ -194,7 +194,7 @@ pub fn scrollToPlayer(level: *c.TITUS_level) void {
     }
 }
 
-pub export fn scroll(level: *c.TITUS_level) void {
+pub fn scroll(level: *c.TITUS_level) void {
     animate_tiles();
     //Scroll
     if (!globals.NOSCROLL_FLAG) {
@@ -203,7 +203,7 @@ pub export fn scroll(level: *c.TITUS_level) void {
     }
 }
 
-pub export fn scroll_left(level: *c.TITUS_level) bool {
+pub fn scroll_left(level: *c.TITUS_level) bool {
     _ = level;
     if (globals.BITMAP_X == 0) {
         return true;
@@ -212,7 +212,7 @@ pub export fn scroll_left(level: *c.TITUS_level) bool {
     return false;
 }
 
-pub export fn scroll_right(level: *c.TITUS_level) bool {
+pub fn scroll_right(level: *c.TITUS_level) bool {
     var maxX: i16 = if (globals.XLIMIT_BREACHED) @as(i16, @intCast(level.width)) - globals.screen_width else globals.XLIMIT;
     if (globals.BITMAP_X >= maxX) {
         return true;
@@ -221,7 +221,7 @@ pub export fn scroll_right(level: *c.TITUS_level) bool {
     return false;
 }
 
-pub export fn scroll_up(level: *c.TITUS_level) bool {
+pub fn scroll_up(level: *c.TITUS_level) bool {
     _ = level;
     if (globals.BITMAP_Y == 0) {
         return true;
@@ -230,7 +230,7 @@ pub export fn scroll_up(level: *c.TITUS_level) bool {
     return false;
 }
 
-pub export fn scroll_down(level: *c.TITUS_level) bool {
+pub fn scroll_down(level: *c.TITUS_level) bool {
     if (globals.BITMAP_Y >= (level.height - globals.screen_height)) {
         return true;
     }

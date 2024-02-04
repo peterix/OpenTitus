@@ -36,12 +36,15 @@ pub fn refAllDecls(comptime T: type) void {
     }
 }
 const credits = @import("ui/credits.zig");
-comptime {
-    refAllDecls(credits);
-}
 const view_password = @import("ui/view_password.zig");
 comptime {
+    refAllDecls(credits);
     refAllDecls(view_password);
+}
+
+const pauseMenu = @import("ui/pause_menu.zig");
+comptime {
+    refAllDecls(pauseMenu);
 }
 
 const fonts = @import("ui/fonts.zig");
@@ -151,7 +154,7 @@ pub fn run() !u8 {
             state = 0;
     }
 
-    audio.music_select_song_c(15);
+    audio.music_select_song(15);
 
     if (state != 0) {
         retval = try image.viewImageFile(

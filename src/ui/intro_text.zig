@@ -43,10 +43,10 @@ pub fn viewintrotext(allocator: std.mem.Allocator) !c_int {
     );
     defer allocator.free(year);
 
-    fonts.Gold.render("     YEAAA . . .", 0, 4 * 12, false);
-    fonts.Gold.render(year, 0, 6 * 12, false);
-    fonts.Gold.render("     Programmed in 1991 on AT .286 12MHz.", 0, 11 * 12, false);
-    fonts.Gold.render("              . . . Enjoy Moktar Adventure !!", 0, 13 * 12, false);
+    fonts.Gold.render("     YEAAA . . .", 0, 4 * 12, .{});
+    fonts.Gold.render(year, 0, 6 * 12, .{});
+    fonts.Gold.render("     Programmed in 1991 on AT .286 12MHz.", 0, 11 * 12, .{});
+    fonts.Gold.render("              . . . Enjoy Moktar Adventure !!", 0, 13 * 12, .{});
 
     window.window_render();
 

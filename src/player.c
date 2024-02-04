@@ -67,9 +67,13 @@ static void ARAB_BLOCKX(TITUS_level *level);
 static void ARAB_BLOCK_YU(TITUS_player *player);
 static void INC_ENERGY(TITUS_level *level);
 
-// FIXME: int is really an error enum, see tituserror.h
-static int t_pause (ScreenContext *context, TITUS_level *level);
-int16_t add_carry();
+int16_t add_carry() {
+    if (CARRY_FLAG) {
+        return 16;
+    } else {
+        return 0;
+    }
+}
 
 void handle_player_input(TITUS_player *player, const uint8_t* keystate) {
     player->x_axis = (int8_t)(keystate[KEY_RIGHT] || keystate[KEY_D]) - (int8_t)(keystate[KEY_LEFT] || keystate[KEY_A]);
@@ -77,6 +81,7 @@ void handle_player_input(TITUS_player *player, const uint8_t* keystate) {
     player->action_pressed = keystate[KEY_SPACE];
 }
 
+int pauseMenu (ScreenContext *context);
 int credits_screen();
 int viewstatus(TITUS_level *level, bool countbonus);
 
@@ -129,15 +134,18 @@ int move_player(ScreenContext *context, TITUS_level *level) {
                 }
             } else if (event.key.keysym.scancode == KEY_M) {
                 music_toggle_c();
-            } else if (event.key.keysym.scancode == KEY_P) {
-                pause = true;
             } else if (event.key.keysym.scancode == KEY_FULLSCREEN) {
-                window_toggle_fullscreen();
+                toggle_fullscreen();
+            } else if (event.key.keysym.scancode == KEY_ESC) {
+                pause = true;
             }
         }
     }
-    if (keystate[KEY_ESC]) {
-        return TITUS_ERROR_QUIT;
+    if (pause) {
+        retval = pauseMenu(context);
+        if (retval < 0) {
+            return retval;
+        }
     }
     if (keystate[KEY_F1] && (RESETLEVEL_FLAG == 0)) {
         RESETLEVEL_FLAG = 2;
@@ -162,13 +170,6 @@ int move_player(ScreenContext *context, TITUS_level *level) {
         viewstatus(level, false);
     }
 
-    if (pause) {
-        retval = t_pause(context, level); //Apply pause
-        if (retval < 0) {
-            return retval;
-        }
-    }
-
     TITUS_player *player = &(level->player);
     handle_player_input(player, keystate);
 
@@ -183,6 +184,8 @@ int move_player(ScreenContext *context, TITUS_level *level) {
         player->sprite.y += (player->sprite.speed_y >> 4);
         return 0;
     }
+
+    uint8_t action;
 
     if (CHOC_FLAG != 0) {
         action = 11; //Headache
@@ -373,40 +376,6 @@ void CASE_DEAD_IM (TITUS_level *level) {
     //Sets RESET_FLAG to 2, in opposite to being killed as a result of 0 HP (then RESET_FLAG is 10)
     DEC_LIFE(level);
     RESETLEVEL_FLAG = 2;
-}
-
-int t_pause (ScreenContext *context, TITUS_level *level) {
-    TITUS_player *player = &(level->player);
-    SDL_Event event;
-    TITUS_sprite tmp;
-    //tmp.buffer = NULL;
-
-    draw_tiles(level); //Draw tiles
-    copysprite(level, &(tmp), &(player->sprite));
-    updatesprite(level, &(player->sprite), 29, true); //Pause tile
-    draw_sprites(level); //Draw sprites
-    flip_screen(context, true); //Display it
-    copysprite(level, &(player->sprite), &(tmp)); //Reset player sprite
-
-    screencontext_reset(context);
-
-    do {
-        SDL_Delay(1);
-        keystate = SDL_GetKeyboardState(NULL);
-        while(SDL_PollEvent(&event)) { //Check all events
-            if (event.type == SDL_QUIT) {
-                return TITUS_ERROR_QUIT;
-            } else if (event.type == SDL_KEYDOWN) {
-                if (event.key.keysym.scancode == KEY_ESC) {
-                    return TITUS_ERROR_QUIT;
-                } else if (event.key.keysym.scancode == KEY_P) {
-                    return 0;
-                } else if (event.key.keysym.scancode == KEY_FULLSCREEN) {
-                    window_toggle_fullscreen();
-                }
-            }
-        }
-    } while (1);
 }
 
 void BRK_COLLISION(ScreenContext *context, TITUS_level *level) { //Collision detection between player and tiles/objects/elevators
@@ -905,14 +874,14 @@ static int CASE_BONUS(TITUS_level *level, uint8_t tileY, uint8_t tileX) {
     return true; //No problems, bonus handling done correctly!
 }
 
-int view_password(TITUS_level *level, uint8_t level_index);
+int viewPassword(TITUS_level *level, uint8_t level_index);
 
 static void CASE_PASS(ScreenContext *context, TITUS_level *level, uint8_t level_index, uint8_t tileY, uint8_t tileX) {
     //Codelamp
     music_play_jingle_c(7);
     if (CASE_BONUS(level, tileY, tileX)) { //if the bonus is found in the bonus list
         CLOSE_SCREEN(context);
-        view_password(level, level_index);
+        viewPassword(level, level_index);
         OPEN_SCREEN(context, level);
     }
 }
@@ -1448,14 +1417,6 @@ static void YACCELERATION_NEG(TITUS_player *player, int16_t maxspeed) {
     }
     player->sprite.speed_y = speed;
 
-}
-
-int16_t add_carry() {
-    if (CARRY_FLAG) {
-        return 16;
-    } else {
-        return 0;
-    }
 }
 
 void COLLISION_TRP(TITUS_level *level) {

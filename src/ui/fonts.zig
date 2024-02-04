@@ -62,27 +62,34 @@ pub const Font = struct {
         c.SDL_FreeSurface(self.sheet);
     }
 
-    pub fn render_columns(self: *Font, left: []const u8, right: []const u8, y: c_int, monospace: bool) void {
+    pub const RenderOptions = packed struct {
+        monospace: bool = false,
+        transpatent: bool = false,
+    };
+
+    pub fn render_columns(self: *Font, left: []const u8, right: []const u8, y: c_int, options: RenderOptions) void {
         const margin = 5 * 8;
-        const width_right = metrics(self, right, monospace);
+        const width_right = metrics(self, right, options);
 
-        render(self, left, margin, y, monospace);
-        render(self, right, 320 - margin - width_right, y, monospace);
+        render(self, left, margin, y, options);
+        render(self, right, 320 - margin - width_right, y, options);
     }
 
-    pub fn render_center(self: *Font, text: []const u8, y: c_int, monospace: bool) void {
-        const width = metrics(self, text, monospace);
+    pub fn render_center(self: *Font, text: []const u8, y: c_int, options: RenderOptions) void {
+        const width = metrics(self, text, options);
         const x = 160 - width / 2;
-        render(self, text, x, y, monospace);
+        render(self, text, x, y, options);
     }
 
-    pub fn render(self: *Font, text: []const u8, x: c_int, y: c_int, monospace: bool) void {
+    pub fn render(self: *Font, text: []const u8, x: c_int, y: c_int, options: RenderOptions) void {
         var dest: c.SDL_Rect = .{ .x = x, .y = y, .w = 0, .h = 0 };
+
+        _ = c.SDL_SetColorKey(self.sheet, if (options.transpatent) c.SDL_TRUE else c.SDL_FALSE, c.SDL_MapRGB(self.sheet.*.format, 0, 0, 0));
 
         // Let's assume ASCII for now... original code was trying to do something with UTF-8, but had the font files have no support for that
         for (text) |character| {
             var chardesc = self.characters[character];
-            if (monospace) {
+            if (options.monospace) {
                 var src = c.SDL_Rect{ .x = chardesc.x_mono, .y = chardesc.y, .w = chardesc.w_mono, .h = chardesc.h };
                 dest.w = chardesc.w_mono;
                 dest.h = chardesc.h;
@@ -99,13 +106,13 @@ pub const Font = struct {
         }
     }
 
-    pub fn metrics(self: *Font, text: []const u8, monospace: bool) u16 {
+    pub fn metrics(self: *Font, text: []const u8, options: RenderOptions) u16 {
         var size: i17 = 0;
 
         // Let's assume ASCII for now... original code was trying to do something with UTF-8, but had the font files have no support for that
         for (text) |character| {
             var chardesc = self.characters[character];
-            if (monospace) {
+            if (options.monospace) {
                 size += chardesc.w_mono;
             } else {
                 size += chardesc.x_offset;
@@ -245,8 +252,4 @@ fn loadfont(image: *c.SDL_Surface, font: *Font) !void {
             }
         }
     }
-
-    // TODO: good font with transparency...
-
-    // _ = c.SDL_SetColorKey(font.*.sheet, c.SDL_TRUE, c.SDL_MapRGB(font.*.sheet.*.format, 0, 0, 0));
 }

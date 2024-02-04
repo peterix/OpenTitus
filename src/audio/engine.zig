@@ -294,7 +294,7 @@ pub export fn music_play_jingle_c(song_number: u8) void {
     c.SDL_UnlockAudio();
 }
 
-pub export fn music_select_song_c(song_number: u8) void {
+pub fn music_select_song(song_number: u8) void {
     audio_engine.last_song = song_number;
     if (!game.settings.music) {
         return;
@@ -352,7 +352,7 @@ pub fn music_restart_if_finished() void {
         return;
     }
     if (!audio_engine.backend.isPlayingATrack()) {
-        music_select_song_c(audio_engine.last_song);
+        music_select_song(audio_engine.last_song);
     }
 }
 

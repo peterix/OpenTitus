@@ -121,7 +121,6 @@ extern uint8_t BAR_FLAG; //timer for health bar
 extern bool X_FLAG; //true if left or right key is pressed
 extern bool Y_FLAG; //true if up or down key is pressed
 extern uint8_t CHOC_FLAG; //headache timer
-extern uint8_t action; //player sprite array
 extern uint8_t KICK_FLAG; //hit/burn timer
 extern bool GRANDBRULE_FLAG; //If set, player will be "burned" when hit (fireballs)
 extern bool LADDER_FLAG; //True if in a ladder

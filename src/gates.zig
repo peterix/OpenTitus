@@ -53,7 +53,7 @@ fn check_finish(context: *c.ScreenContext, level: *c.TITUS_level) void {
     {
         return;
     }
-    audio.music_select_song_c(4);
+    audio.music_select_song(4);
     audio.music_wait_to_finish();
     CLOSE_SCREEN(context);
     globals.NEWLEVEL_FLAG = true;
@@ -101,7 +101,7 @@ fn check_gates(context: *c.ScreenContext, level: *c.TITUS_level) void {
 }
 
 //Check and handle level completion, and if the player does a kneestand on a secret entrance
-pub export fn CROSSING_GATE(context: *c.ScreenContext, level: *c.TITUS_level) void {
+pub fn CROSSING_GATE(context: *c.ScreenContext, level: *c.TITUS_level) void {
     check_finish(context, level);
     check_gates(context, level);
 }

@@ -36,7 +36,7 @@ const game_state = @import("../game_state.zig");
 
 // FIXME: this does not hold any allocator... nor can it find one easily.
 
-pub export fn view_password(level: *c.TITUS_level, level_index: u8) c_int {
+pub export fn viewPassword(level: *c.TITUS_level, level_index: u8) c_int {
     var tmpchars: [10]u8 = .{};
     var retval: c_int = undefined;
 
@@ -46,18 +46,18 @@ pub export fn view_password(level: *c.TITUS_level, level_index: u8) c_int {
 
     // TODO: replace with proper localization
     if (data.game == c.Titus) {
-        fonts.Gold.render("Level", 13 * 8, 13 * 8, false);
+        fonts.Gold.render("Level", 13 * 8, 13 * 8, .{});
     } else if (data.game == c.Moktar) {
-        fonts.Gold.render("Etape", 13 * 8, 13 * 8, false);
+        fonts.Gold.render("Etape", 13 * 8, 13 * 8, .{});
     }
 
     var level_index_ = std.fmt.bufPrint(&tmpchars, "{d}", .{level_index + 1}) catch {
         unreachable;
     };
-    var level_index_width = fonts.Gold.metrics(level_index_, true);
-    fonts.Gold.render(level_index_, 25 * 8 - level_index_width, 13 * 8, false);
+    var level_index_width = fonts.Gold.metrics(level_index_, .{ .monospace = true });
+    fonts.Gold.render(level_index_, 25 * 8 - level_index_width, 13 * 8, .{ .monospace = true });
 
-    fonts.Gold.render("Unlocked!", 14 * 8, 10 * 8, false);
+    fonts.Gold.render_center("Unlocked!", 10 * 8, .{});
     game_state.unlock_level(
         game.allocator,
         level_index,

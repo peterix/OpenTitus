@@ -31,7 +31,7 @@ const SDL = @import("../SDL.zig");
 const globals = @import("../globals.zig");
 const window = @import("../window.zig");
 
-pub export fn waitforbutton() c_int {
+pub fn waitforbutton() c_int {
     var event: c.SDL_Event = undefined;
     var waiting: c_int = 1;
     while (waiting > 0) {
@@ -40,14 +40,16 @@ pub export fn waitforbutton() c_int {
                 waiting = -1;
 
             if (event.type == c.SDL_KEYDOWN) {
-                if (event.key.keysym.scancode == c.KEY_RETURN or event.key.keysym.scancode == c.KEY_ENTER or event.key.keysym.scancode == c.KEY_SPACE)
-                    waiting = 0;
-
-                if (event.key.keysym.scancode == c.SDL_SCANCODE_ESCAPE)
-                    waiting = -1;
-
-                if (event.key.keysym.scancode == c.KEY_FULLSCREEN) {
-                    window.window_toggle_fullscreen();
+                switch (event.key.keysym.scancode) {
+                    c.KEY_RETURN, c.KEY_ENTER, c.KEY_SPACE, c.SDL_SCANCODE_ESCAPE => {
+                        waiting = 0;
+                    },
+                    c.KEY_FULLSCREEN => {
+                        window.toggle_fullscreen();
+                    },
+                    else => {
+                        // NOOP
+                    },
                 }
             }
             if (event.type == c.SDL_WINDOWEVENT) {

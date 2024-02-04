@@ -113,7 +113,7 @@ pub fn view_menu(file: ImageFile, allocator: std.mem.Allocator) !?usize {
                     return null;
                 }
                 if (event.key.keysym.scancode == c.KEY_FULLSCREEN) {
-                    window.window_toggle_fullscreen();
+                    window.toggle_fullscreen();
                 }
             }
         }
@@ -180,7 +180,7 @@ pub fn view_menu(file: ImageFile, allocator: std.mem.Allocator) !?usize {
                 }
 
                 if (event.key.keysym.scancode == c.KEY_FULLSCREEN) {
-                    window.window_toggle_fullscreen();
+                    window.toggle_fullscreen();
                 }
             }
         }
@@ -216,7 +216,7 @@ fn select_level(allocator: std.mem.Allocator) !?usize {
         const y: c_int = @intCast(i * 13);
         const known = game.game_state.isKnown(i);
         if (!known) {
-            const width = fonts.Gray.metrics("...", false);
+            const width = fonts.Gray.metrics("...", .{});
             if (width > max_width) {
                 max_width = width;
             }
@@ -234,7 +234,7 @@ fn select_level(allocator: std.mem.Allocator) !?usize {
         }
         const unlocked = game.game_state.isUnlocked(i);
         const font = if (unlocked) &fonts.Gold else &fonts.Gray;
-        const width = font.metrics(level.title, false);
+        const width = font.metrics(level.title, .{});
         if (width > max_width) {
             max_width = width;
         }
@@ -278,7 +278,7 @@ fn select_level(allocator: std.mem.Allocator) !?usize {
                 }
 
                 if (event.key.keysym.scancode == c.KEY_FULLSCREEN) {
-                    window.window_toggle_fullscreen();
+                    window.toggle_fullscreen();
                 }
             }
         }
@@ -288,14 +288,14 @@ fn select_level(allocator: std.mem.Allocator) !?usize {
         for (level_list.items, 0..) |level, i| {
             if (selection == i) {
                 const x = 160 - level.width / 2;
-                level.font.render(level.text, x, level.y, false);
+                level.font.render(level.text, x, level.y, .{});
                 const left = ">";
                 const right = "<";
-                const left_width = fonts.Gold.metrics(left, false);
-                fonts.Gold.render(left, x - 4 - left_width, level.y, false);
-                fonts.Gold.render(right, x + level.width + 4, level.y, false);
+                const left_width = fonts.Gold.metrics(left, .{});
+                fonts.Gold.render(left, x - 4 - left_width, level.y, .{});
+                fonts.Gold.render(right, x + level.width + 4, level.y, .{});
             } else {
-                level.font.render_center(level.text, level.y, false);
+                level.font.render_center(level.text, level.y, .{});
             }
         }
         window.window_render();

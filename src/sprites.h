@@ -36,4 +36,3 @@
 void updatesprite(TITUS_level *level, TITUS_sprite *spr, int16_t number, bool clearflags);
 void copysprite(TITUS_level *level, TITUS_sprite *dest, TITUS_sprite *src);
 
-void SPRITES_ANIMATION(TITUS_level *level);

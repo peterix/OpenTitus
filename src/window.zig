@@ -59,7 +59,7 @@ const WindowError = error{
     Other,
 };
 
-pub export fn window_toggle_fullscreen() void {
+pub export fn toggle_fullscreen() void {
     if (!game.settings.fullscreen) {
         // FIXME: process error.
         _ = c.SDL_SetWindowFullscreen(window, c.SDL_WINDOW_FULLSCREEN_DESKTOP);
@@ -122,12 +122,12 @@ pub fn window_init() !void {
     }
 }
 
-pub export fn window_clear(rect: [*c]c.SDL_Rect) void {
+pub fn window_clear(rect: [*c]c.SDL_Rect) void {
     // FIXME: process error.
     _ = c.SDL_FillRect(screen, rect, black);
 }
 
-pub export fn window_render() void {
+pub fn window_render() void {
     if (screen == null) {
         return;
     }

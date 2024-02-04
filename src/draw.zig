@@ -35,7 +35,7 @@ const SDL = @import("SDL.zig");
 
 const tick_delay = 29;
 
-pub export fn screencontext_reset(context: *c.ScreenContext) void {
+pub fn screencontext_reset(context: *c.ScreenContext) void {
     context.* = std.mem.zeroInit(c.ScreenContext, .{});
 }
 
@@ -61,7 +61,7 @@ fn screencontext_advance_29(context: *c.ScreenContext) void {
     context.TARGET_CLOCK = context.LAST_CLOCK + tick_delay;
 }
 
-pub export fn flip_screen(context: *c.ScreenContext, slow: bool) void {
+pub fn flip_screen(context: *c.ScreenContext, slow: bool) void {
     window.window_render();
     if (slow) {
         screencontext_advance_29(context);
@@ -77,7 +77,7 @@ fn get_y_offset() u8 {
     return if (globals.BITMAP_Y == 0) 0 else 8;
 }
 
-pub export fn draw_tiles(level: *c.TITUS_level) void {
+pub fn draw_tiles(level: *c.TITUS_level) void {
     const y_offset = get_y_offset();
     var x: i16 = -1;
     while (x < 21) : (x += 1) {
@@ -105,7 +105,7 @@ pub export fn draw_tiles(level: *c.TITUS_level) void {
     }
 }
 
-pub export fn draw_sprites(level: *c.TITUS_level) void {
+pub fn draw_sprites(level: *c.TITUS_level) void {
     for (0..c.ELEVATOR_CAPACITY) |i| {
         draw_sprite(&level.elevator[c.ELEVATOR_CAPACITY - 1 - i].sprite);
     }
@@ -127,10 +127,10 @@ pub export fn draw_sprites(level: *c.TITUS_level) void {
     draw_sprite(&level.player.sprite);
 
     if (globals.GODMODE) {
-        fonts.Gold.render("GODMODE", 30 * 8, 0 * 12, true);
+        fonts.Gold.render("GODMODE", 30 * 8, 0 * 12, .{ .monospace = true });
     }
     if (globals.NOCLIP) {
-        fonts.Gold.render("NOCLIP", 30 * 8, 1 * 12, true);
+        fonts.Gold.render("NOCLIP", 30 * 8, 1 * 12, .{ .monospace = true });
     }
 }
 
@@ -254,7 +254,7 @@ pub fn fadeout() void {
                     return;
                 }
                 if (event.key.keysym.scancode == c.KEY_FULLSCREEN) {
-                    window.window_toggle_fullscreen();
+                    window.toggle_fullscreen();
                 }
             }
         }

@@ -45,27 +45,27 @@ const credits: [8][2][:0]const u8 = .{
 
 pub export fn credits_screen() c_int {
     var last_song = audio.music_get_last_song();
-    audio.music_select_song_c(9);
+    audio.music_select_song(9);
 
     // TODO: have a way for the event loop to re-run this rendering code... maybe to animate it?
     window.window_clear(null);
-    const monospace = false;
+    const options = fonts.Font.RenderOptions{ .monospace = false };
     var y: c_int = 2 * 12;
     for (credits, 0..) |credits_line, index| {
         _ = index;
-        fonts.Gold.render_columns(credits_line[0], credits_line[1], y, monospace);
+        fonts.Gold.render_columns(credits_line[0], credits_line[1], y, options);
         y += 13;
     }
     y += 2 * 12 + 6 - 8;
-    fonts.Gold.render_center("Thanks to", y, monospace);
+    fonts.Gold.render_center("Thanks to", y, options);
     y += 12 + 6;
-    fonts.Gold.render_center("Cristelle, Ana Luisa, Corinne and Manou.", y, monospace);
+    fonts.Gold.render_center("Cristelle, Ana Luisa, Corinne and Manou.", y, options);
     window.window_render();
 
     var retval = keyboard.waitforbutton();
     if (retval < 0)
         return retval;
 
-    audio.music_select_song_c(last_song);
+    audio.music_select_song(last_song);
     return (0);
 }

@@ -207,17 +207,17 @@ pub fn viewImageFile(file: ImageFile, display_mode: DisplayMode, delay: c_int, a
                     }
 
                     if (event.type == c.SDL_KEYDOWN) {
-                        if (event.key.keysym.scancode == c.SDL_SCANCODE_ESCAPE) {
-                            return (-1);
-                        }
-
-                        if (event.key.keysym.scancode == c.KEY_RETURN or event.key.keysym.scancode == c.KEY_ENTER or event.key.keysym.scancode == c.KEY_SPACE) {
+                        if (event.key.keysym.scancode == c.KEY_RETURN or
+                            event.key.keysym.scancode == c.KEY_ENTER or
+                            event.key.keysym.scancode == c.KEY_SPACE or
+                            event.key.keysym.scancode == c.SDL_SCANCODE_ESCAPE)
+                        {
                             activedelay = false;
                             fadeoutskip = 255 - image_alpha;
                         }
 
                         if (event.key.keysym.scancode == c.KEY_FULLSCREEN) {
-                            window.window_toggle_fullscreen();
+                            window.toggle_fullscreen();
                         }
                     }
                 }
@@ -244,15 +244,14 @@ pub fn viewImageFile(file: ImageFile, display_mode: DisplayMode, delay: c_int, a
                     }
 
                     if (event.type == c.SDL_KEYDOWN) {
-                        if (event.key.keysym.scancode == c.SDL_SCANCODE_ESCAPE) {
-                            return (-1);
-                        }
-
-                        if (event.key.keysym.scancode == c.KEY_RETURN or event.key.keysym.scancode == c.KEY_ENTER or event.key.keysym.scancode == c.KEY_SPACE)
+                        if (event.key.keysym.scancode == c.KEY_RETURN or
+                            event.key.keysym.scancode == c.KEY_ENTER or
+                            event.key.keysym.scancode == c.KEY_SPACE or
+                            event.key.keysym.scancode == c.SDL_SCANCODE_ESCAPE)
                             activedelay = false;
 
                         if (event.key.keysym.scancode == c.KEY_FULLSCREEN) {
-                            window.window_toggle_fullscreen();
+                            window.toggle_fullscreen();
                         }
                     }
 
@@ -264,7 +263,7 @@ pub fn viewImageFile(file: ImageFile, display_mode: DisplayMode, delay: c_int, a
                             c.SDL_WINDOWEVENT_RESTORED,
                             c.SDL_WINDOWEVENT_EXPOSED,
                             => {
-                                c.window_render();
+                                window.window_render();
                             },
 
                             else => {},
@@ -279,8 +278,8 @@ pub fn viewImageFile(file: ImageFile, display_mode: DisplayMode, delay: c_int, a
 
             image_alpha = 255 - image_alpha;
             tick_start = SDL.getTicks();
-            while (image_alpha < 255) //Fade to black
-            {
+            // Fade to black
+            while (image_alpha < 255) {
                 var event: c.SDL_Event = undefined;
                 if (c.SDL_PollEvent(&event) != 0) {
                     if (event.type == c.SDL_QUIT) {
@@ -288,11 +287,8 @@ pub fn viewImageFile(file: ImageFile, display_mode: DisplayMode, delay: c_int, a
                     }
 
                     if (event.type == c.SDL_KEYDOWN) {
-                        if (event.key.keysym.scancode == c.SDL_SCANCODE_ESCAPE) {
-                            return (-1);
-                        }
                         if (event.key.keysym.scancode == c.KEY_FULLSCREEN) {
-                            window.window_toggle_fullscreen();
+                            window.toggle_fullscreen();
                         }
                     }
                 }
@@ -306,7 +302,7 @@ pub fn viewImageFile(file: ImageFile, display_mode: DisplayMode, delay: c_int, a
                 _ = c.SDL_SetSurfaceBlendMode(image_surface, c.SDL_BLENDMODE_BLEND);
                 window.window_clear(null);
                 _ = c.SDL_BlitSurface(image_surface, &src, c.screen, &dest);
-                c.window_render();
+                window.window_render();
                 SDL.delay(1);
             }
         },
@@ -332,11 +328,8 @@ pub fn viewImageFile(file: ImageFile, display_mode: DisplayMode, delay: c_int, a
                     }
 
                     if (event.type == c.SDL_KEYDOWN) {
-                        if (event.key.keysym.scancode == c.SDL_SCANCODE_ESCAPE) {
-                            return (-1);
-                        }
                         if (event.key.keysym.scancode == c.KEY_FULLSCREEN) {
-                            window.window_toggle_fullscreen();
+                            window.toggle_fullscreen();
                         }
                     }
                 }

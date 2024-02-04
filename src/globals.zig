@@ -49,9 +49,6 @@ pub export var Y_FLAG: bool = false;
 // headache timer
 pub export var CHOC_FLAG: u8 = 0;
 
-// TODO: this doesn't have to be a global, it's only used in one function and whatever it directly calls
-export var action: u8 = 0;
-
 // hit/burn timer
 pub export var KICK_FLAG: u8 = 0;
 

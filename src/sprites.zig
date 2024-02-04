@@ -334,7 +334,7 @@ fn animate_sprite(level: *c.TITUS_level, spr: *c.TITUS_sprite) void {
     }
 }
 
-pub export fn SPRITES_ANIMATION(level: *c.TITUS_level) void {
+pub fn animateSprites(level: *c.TITUS_level) void {
     //Animate player
     if ((c.LAST_ORDER == 0) and
         (c.POCKET_FLAG) and

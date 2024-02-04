@@ -120,13 +120,12 @@ pub fn play(context: *c.ScreenContext, level: *c.TITUS_level) c_int {
             if (event.type == c.SDL_QUIT) {
                 return c.TITUS_ERROR_QUIT;
             } else if (event.type == c.SDL_KEYDOWN) {
-                if (event.key.keysym.scancode == c.KEY_ESC) {
-                    return c.TITUS_ERROR_QUIT;
-                } else if (event.key.keysym.scancode == c.KEY_FULLSCREEN) {
-                    window.window_toggle_fullscreen();
+                if (event.key.keysym.scancode == c.KEY_FULLSCREEN) {
+                    window.toggle_fullscreen();
                 } else if (event.key.keysym.scancode == c.KEY_RETURN or
                     event.key.keysym.scancode == c.KEY_ENTER or
-                    event.key.keysym.scancode == c.KEY_SPACE)
+                    event.key.keysym.scancode == c.KEY_SPACE or
+                    event.key.keysym.scancode == c.KEY_ESC)
                 {
                     pass = true;
                     break;
