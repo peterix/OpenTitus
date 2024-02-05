@@ -73,23 +73,6 @@ fn renderLabel(font: *fonts.Font, text: []const u8, y: i16, selected: bool) void
     font.render_center(text, y, options);
 }
 
-fn renderMenu(menu_context: *MenuContext, selected: u8) void {
-    menu_context.renderBackground();
-    const title_width = fonts.Gold.metrics("PAUSED", .{ .transpatent = true }) + 4;
-    var y: i16 = 40;
-    fonts.Gold.render_center("PAUSED", y, .{ .transpatent = true });
-    y += 12;
-    const bar = c.SDL_Rect{ .x = 160 - title_width / 2, .y = y, .w = title_width, .h = 1 };
-    _ = c.SDL_FillRect(window.screen.?, &bar, c.SDL_MapRGB(window.screen.?.format, 0xd0, 0xb0, 0x00));
-    y += 27;
-    for (menu_entries, 0..) |entry, i| {
-        renderLabel(if (entry.active) &fonts.Gold else &fonts.Gray, entry.text, y, selected == i);
-        y += 14;
-    }
-    window.window_render();
-}
-
-// FIXME: int is really an error enum, see tituserror.h
 pub export fn pauseMenu(context: *c.ScreenContext) c_int {
 
     // take a screenshot and use it as a background that fades to black a bit
@@ -106,48 +89,48 @@ pub export fn pauseMenu(context: *c.ScreenContext) c_int {
     while (true) {
         const timeout = menu_context.updateBackground();
         SDL.delay(timeout);
-        renderMenu(&menu_context, selected);
-        audio.music_restart_if_finished();
-        var event: c.SDL_Event = undefined;
-        while (c.SDL_PollEvent(&event) != 0) { //Check all events
-            switch (event.type) {
-                c.SDL_QUIT => {
-                    return c.TITUS_ERROR_QUIT;
-                },
-                c.SDL_KEYDOWN => {
-                    switch (event.key.keysym.scancode) {
-                        c.KEY_ESC => {
-                            return 0;
-                        },
-                        c.KEY_ENTER, c.KEY_RETURN, c.KEY_SPACE => {
-                            const ret_val = menu_entries[selected].handler(&menu_context);
-                            if (ret_val) |value| {
-                                return value;
-                            }
-                        },
-                        c.KEY_FULLSCREEN => {
-                            window.toggle_fullscreen();
-                        },
-                        c.KEY_DOWN => {
-                            if (selected < menu_entries.len - 1)
-                                selected += 1;
-                        },
-                        c.KEY_UP => {
-                            if (selected > 0)
-                                selected -= 1;
-                        },
-                        c.KEY_M => {
-                            _ = audio.music_toggle_c();
-                        },
-                        else => {
-                            // NOOP
-                        },
-                    }
-                },
-                else => {
-                    // NOOP
-                },
-            }
+
+        const action = menu.getMenuAction();
+        switch (action) {
+            .Quit => {
+                return c.TITUS_ERROR_QUIT;
+            },
+            .ExitMenu => {
+                return 0;
+            },
+            .Up => {
+                if (selected > 0) {
+                    selected -= 1;
+                }
+            },
+            .Down => {
+                if (selected < menu_entries.len - 1) {
+                    selected += 1;
+                }
+            },
+            .Activate => {
+                const ret_val = menu_entries[selected].handler(&menu_context);
+                if (ret_val) |value| {
+                    return value;
+                }
+            },
+            else => {},
         }
+
+        menu_context.renderBackground();
+        const title_width = fonts.Gold.metrics("PAUSED", .{ .transpatent = true }) + 4;
+        var y: i16 = 40;
+        fonts.Gold.render_center("PAUSED", y, .{ .transpatent = true });
+        y += 12;
+        const bar = c.SDL_Rect{ .x = 160 - title_width / 2, .y = y, .w = title_width, .h = 1 };
+        _ = c.SDL_FillRect(window.screen.?, &bar, c.SDL_MapRGB(window.screen.?.format, 0xd0, 0xb0, 0x00));
+        y += 27;
+        for (menu_entries, 0..) |entry, i| {
+            renderLabel(if (entry.active) &fonts.Gold else &fonts.Gray, entry.text, y, selected == i);
+            y += 14;
+        }
+        window.window_render();
+
+        audio.music_restart_if_finished();
     }
 }

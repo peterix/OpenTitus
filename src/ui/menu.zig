@@ -1,8 +1,11 @@
 const c = @import("../c.zig");
 const window = @import("../window.zig");
+const audio = @import("../audio/engine.zig");
 
 pub const MenuAction = enum {
     None,
+    Quit,
+    ExitMenu,
     Left,
     Right,
     Up,
@@ -31,3 +34,50 @@ pub const MenuContext = struct {
         return 10;
     }
 };
+
+pub fn getMenuAction() MenuAction {
+    var action: MenuAction = .None;
+    var event: c.SDL_Event = undefined;
+    while (c.SDL_PollEvent(&event) != 0) {
+        switch (event.type) {
+            c.SDL_QUIT => {
+                return .Quit;
+            },
+            c.SDL_KEYDOWN => {
+                switch (event.key.keysym.scancode) {
+                    c.KEY_ESC, c.SDL_SCANCODE_BACKSPACE => {
+                        return .ExitMenu;
+                    },
+                    c.KEY_ENTER, c.KEY_RETURN, c.KEY_SPACE => {
+                        action = .Activate;
+                    },
+                    c.KEY_FULLSCREEN => {
+                        window.toggle_fullscreen();
+                    },
+                    c.KEY_M => {
+                        _ = audio.music_toggle_c();
+                    },
+                    c.KEY_DOWN => {
+                        action = .Down;
+                    },
+                    c.KEY_UP => {
+                        action = .Up;
+                    },
+                    c.KEY_LEFT => {
+                        action = .Left;
+                    },
+                    c.KEY_RIGHT => {
+                        action = .Right;
+                    },
+                    else => {
+                        // NOOP
+                    },
+                }
+            },
+            else => {
+                // NOOP
+            },
+        }
+    }
+    return action;
+}

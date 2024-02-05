@@ -212,112 +212,73 @@ fn slider(
     font.render("]", x, y, options);
 }
 
-fn renderMenu(menu_context: *MenuContext, selected: *u8, action: MenuAction) void {
-    menu_context.renderBackground();
-    const title_width = fonts.Gold.metrics("OPTIONS", .{ .transpatent = true }) + 4;
-    var y: i16 = 8;
-    fonts.Gold.render_center("OPTIONS", y, .{ .transpatent = true });
-    y += 12;
-    const bar = c.SDL_Rect{ .x = 160 - title_width / 2, .y = y, .w = title_width, .h = 1 };
-    _ = c.SDL_FillRect(window.screen.?, &bar, c.SDL_MapRGB(window.screen.?.format, 0xd0, 0xb0, 0x00));
-    y += 27;
-
-    switch (action) {
-        .Up => {
-            if (selected.* > 0) {
-                selected.* -= 1;
-            }
-        },
-        .Down => {
-            if (selected.* < 2) {
-                selected.* += 1;
-            }
-        },
-        else => {},
-    }
-
-    label("Audio", y, selected.* == 0);
-    enumOptions(
-        SoundTypes,
-        &sound_types,
-        y,
-        selected.* == 0,
-        action,
-    );
-    y += 13;
-    label("Music", y, selected.* == 1);
-    toggle(
-        audio.music_is_playing(),
-        y,
-        selected.* == 1,
-        action,
-        audio.music_set_playing,
-    );
-    y += 13;
-    label("Volume", y, selected.* == 2);
-    slider(
-        u8,
-        audio.get_volume(),
-        0,
-        128,
-        y,
-        selected.* == 2,
-        action,
-        audio.set_volume,
-    );
-    y += 13;
-    window.window_render();
-}
-
 pub fn optionsMenu(menu_context: *MenuContext) ?c_int {
     var selected: u8 = 0;
     while (true) {
         const timeout = menu_context.updateBackground();
-        var action: MenuAction = .None;
         SDL.delay(timeout);
-        var event: c.SDL_Event = undefined;
-        while (c.SDL_PollEvent(&event) != 0) {
-            switch (event.type) {
-                c.SDL_QUIT => {
-                    return c.TITUS_ERROR_QUIT;
-                },
-                c.SDL_KEYDOWN => {
-                    switch (event.key.keysym.scancode) {
-                        c.KEY_ESC, c.SDL_SCANCODE_BACKSPACE => {
-                            return null;
-                        },
-                        c.KEY_ENTER, c.KEY_RETURN, c.KEY_SPACE => {
-                            action = .Activate;
-                        },
-                        c.KEY_FULLSCREEN => {
-                            window.toggle_fullscreen();
-                        },
-                        c.KEY_M => {
-                            _ = audio.music_toggle_c();
-                        },
-                        c.KEY_DOWN => {
-                            action = .Down;
-                        },
-                        c.KEY_UP => {
-                            action = .Up;
-                        },
-                        c.KEY_LEFT => {
-                            action = .Left;
-                        },
-                        c.KEY_RIGHT => {
-                            action = .Right;
-                        },
-                        else => {
-                            // NOOP
-                        },
-                    }
-                },
-                else => {
-                    // NOOP
-                },
-            }
+
+        const action = menu.getMenuAction();
+        switch (action) {
+            .Quit => {
+                return c.TITUS_ERROR_QUIT;
+            },
+            .ExitMenu => {
+                return null;
+            },
+            .Up => {
+                if (selected > 0) {
+                    selected -= 1;
+                }
+            },
+            .Down => {
+                if (selected < 2) {
+                    selected += 1;
+                }
+            },
+            else => {},
         }
-        renderMenu(menu_context, &selected, action);
+
+        menu_context.renderBackground();
+        const title_width = fonts.Gold.metrics("OPTIONS", .{ .transpatent = true }) + 4;
+        var y: i16 = 8;
+        fonts.Gold.render_center("OPTIONS", y, .{ .transpatent = true });
+        y += 12;
+        const bar = c.SDL_Rect{ .x = 160 - title_width / 2, .y = y, .w = title_width, .h = 1 };
+        _ = c.SDL_FillRect(window.screen.?, &bar, c.SDL_MapRGB(window.screen.?.format, 0xd0, 0xb0, 0x00));
+        y += 27;
+
+        label("Audio", y, selected == 0);
+        enumOptions(
+            SoundTypes,
+            &sound_types,
+            y,
+            selected == 0,
+            action,
+        );
+        y += 13;
+        label("Music", y, selected == 1);
+        toggle(
+            audio.music_is_playing(),
+            y,
+            selected == 1,
+            action,
+            audio.music_set_playing,
+        );
+        y += 13;
+        label("Volume", y, selected == 2);
+        slider(
+            u8,
+            audio.get_volume(),
+            0,
+            128,
+            y,
+            selected == 2,
+            action,
+            audio.set_volume,
+        );
+        y += 13;
+        window.window_render();
         audio.music_restart_if_finished();
     }
     unreachable;
