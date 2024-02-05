@@ -319,6 +319,21 @@ pub export fn music_toggle_c() bool {
     return game.settings.music;
 }
 
+pub fn music_set_playing(playing: bool) void {
+    game.settings.music = playing;
+    if (!game.settings.music) {
+        c.SDL_LockAudio();
+        {
+            audio_engine.backend.stopTrack(audio_engine.last_song);
+        }
+        c.SDL_UnlockAudio();
+    }
+}
+
+pub fn music_is_playing() bool {
+    return game.settings.music;
+}
+
 // FIXME: this is just weird
 pub fn music_wait_to_finish() void {
     var waiting: bool = true;

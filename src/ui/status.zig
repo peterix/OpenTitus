@@ -43,7 +43,7 @@ const Rect = struct {
 
 // FIXME: deduplicate these two...
 // TODO: return the rect this has drawn over and blank it in the next iteration
-fn draw_extrabonus(level: *c.TITUS_level, last_bounds: ?Rect) Rect {
+fn render_extrabonus(level: *c.TITUS_level, last_bounds: ?Rect) Rect {
     if (last_bounds != null) {
         var rect = c.SDL_Rect{
             // FIXME: move all UI screens to an overlay that's independent from the scroll buffer madness
@@ -70,7 +70,7 @@ fn draw_extrabonus(level: *c.TITUS_level, last_bounds: ?Rect) Rect {
 }
 
 // TODO: return the rect this has drawn over and blank it in the next iteration
-fn draw_lives(level: *c.TITUS_level, last_bounds: ?Rect) Rect {
+fn render_lives(level: *c.TITUS_level, last_bounds: ?Rect) Rect {
     if (last_bounds != null) {
         var rect = c.SDL_Rect{
             // FIXME: move all UI screens to an overlay that's independent from the scroll buffer madness
@@ -128,8 +128,8 @@ pub export fn viewstatus(level: *c.TITUS_level, countbonus: bool) c_int {
         fonts.Gold.render(title, position, 12 * 6, .{});
     }
 
-    var last_extrabonus = draw_extrabonus(level, null);
-    var last_lives = draw_lives(level, null);
+    var last_extrabonus = render_extrabonus(level, null);
+    var last_lives = render_lives(level, null);
 
     window.window_render();
 
@@ -141,13 +141,13 @@ pub export fn viewstatus(level: *c.TITUS_level, countbonus: bool) c_int {
         while (level.extrabonus >= 10) {
             for (0..10) |_| {
                 level.extrabonus -= 1;
-                last_extrabonus = draw_extrabonus(level, last_extrabonus);
+                last_extrabonus = render_extrabonus(level, last_extrabonus);
                 window.window_render();
                 // 150 ms
                 SDL.delay(150);
             }
             level.lives += 1;
-            last_lives = draw_lives(level, last_lives);
+            last_lives = render_lives(level, last_lives);
             window.window_render();
             // 100 ms
             SDL.delay(100);

@@ -71,13 +71,13 @@ pub fn flip_screen(context: *c.ScreenContext, slow: bool) void {
     }
 }
 
-// We use this to fill the whole 320x200 space in most cases instead of not drawing the bottom 8 pixels
+// We use this to fill the whole 320x200 space in most cases instead of not rendering the bottom 8 pixels
 // TODO: actual vertical smooth scrolling instead of this coarse stuff and half-tile workarounds
 fn get_y_offset() u8 {
     return if (globals.BITMAP_Y == 0) 0 else 8;
 }
 
-pub fn draw_tiles(level: *c.TITUS_level) void {
+pub fn render_tiles(level: *c.TITUS_level) void {
     const y_offset = get_y_offset();
     var x: i16 = -1;
     while (x < 21) : (x += 1) {
@@ -105,26 +105,26 @@ pub fn draw_tiles(level: *c.TITUS_level) void {
     }
 }
 
-pub fn draw_sprites(level: *c.TITUS_level) void {
+pub fn render_sprites(level: *c.TITUS_level) void {
     for (0..c.ELEVATOR_CAPACITY) |i| {
-        draw_sprite(&level.elevator[c.ELEVATOR_CAPACITY - 1 - i].sprite);
+        render_sprite(&level.elevator[c.ELEVATOR_CAPACITY - 1 - i].sprite);
     }
 
     for (0..c.TRASH_CAPACITY) |i| {
-        draw_sprite(&level.trash[c.TRASH_CAPACITY - 1 - i]);
+        render_sprite(&level.trash[c.TRASH_CAPACITY - 1 - i]);
     }
 
     for (0..c.ENEMY_CAPACITY) |i| {
-        draw_sprite(&level.enemy[c.ENEMY_CAPACITY - 1 - i].sprite);
+        render_sprite(&level.enemy[c.ENEMY_CAPACITY - 1 - i].sprite);
     }
 
     for (0..c.OBJECT_CAPACITY) |i| {
-        draw_sprite(&level.object[c.OBJECT_CAPACITY - 1 - i].sprite);
+        render_sprite(&level.object[c.OBJECT_CAPACITY - 1 - i].sprite);
     }
 
-    draw_sprite(&level.player.sprite3);
-    draw_sprite(&level.player.sprite2);
-    draw_sprite(&level.player.sprite);
+    render_sprite(&level.player.sprite3);
+    render_sprite(&level.player.sprite2);
+    render_sprite(&level.player.sprite);
 
     if (globals.GODMODE) {
         fonts.Gold.render("GODMODE", 30 * 8, 0 * 12, .{ .monospace = true });
@@ -134,7 +134,7 @@ pub fn draw_sprites(level: *c.TITUS_level) void {
     }
 }
 
-fn draw_sprite(spr: *allowzero c.TITUS_sprite) void {
+fn render_sprite(spr: *allowzero c.TITUS_sprite) void {
     if (!spr.enabled) {
         return;
     }
@@ -186,7 +186,7 @@ fn draw_sprite(spr: *allowzero c.TITUS_sprite) void {
     spr.flash = false;
 }
 
-pub fn draw_health_bars(level: *c.TITUS_level) void {
+pub fn render_health_bars(level: *c.TITUS_level) void {
     c.subto0(&globals.BAR_FLAG);
     if (window.screen == null) {
         return;
@@ -198,7 +198,7 @@ pub fn draw_health_bars(level: *c.TITUS_level) void {
     }
     var offset: u8 = 96;
 
-    //Draw big bars (4px*16px, spacing 4px)
+    //render big bars (4px*16px, spacing 4px)
     for (0..level.player.hp) |_| {
         const dest = c.SDL_Rect{
             .x = offset,
@@ -211,7 +211,7 @@ pub fn draw_health_bars(level: *c.TITUS_level) void {
         offset += 8;
     }
 
-    //Draw small bars (4px*4px, spacing 4px)
+    //render small bars (4px*4px, spacing 4px)
     for (0..@as(usize, c.MAXIMUM_ENERGY) - level.player.hp) |_| {
         const dest = c.SDL_Rect{
             .x = offset,

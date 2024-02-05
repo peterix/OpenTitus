@@ -26,10 +26,6 @@
 const globals = @import("globals.zig");
 const c = @import("c.zig");
 const sprites = @import("sprites.zig");
-const scroll = @import("scroll.zig");
-const draw = @import("draw.zig");
-const window = @import("window.zig");
-const keyboard = @import("ui/keyboard.zig");
 
 fn SET_DATA_NMI(level: *c.TITUS_level) void {
     globals.boss_alive = false;

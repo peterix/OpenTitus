@@ -29,7 +29,7 @@
 #pragma once
 
 #include "level.h"
-#include "draw.h"
+#include "render.h"
 
 int move_player(ScreenContext *context, TITUS_level *level);
 TITUS_object *FORCE_POSE(TITUS_level *level);

@@ -22,8 +22,8 @@
  * General Public License for more details.
  */
 
-/* draw.h
- * Draw functions
+/* render.h
+ * Render functions
  */
 
 #pragma once
@@ -39,9 +39,3 @@ struct _ScreenContext {
     uint32_t TARGET_CLOCK;
 };
 typedef struct _ScreenContext ScreenContext;
-
-void screencontext_reset(ScreenContext * context);
-void flip_screen(ScreenContext *context, bool slow);
-
-void draw_tiles(TITUS_level *level);
-void draw_sprites(TITUS_level *level);

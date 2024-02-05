@@ -30,7 +30,7 @@
 
 #include "SDL2/SDL.h"
 #include "level.h"
-#include "draw.h"
+#include "render.h"
 
 void CLOSE_SCREEN(ScreenContext *context);
 void OPEN_SCREEN(ScreenContext *context, TITUS_level *level);

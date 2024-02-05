@@ -1,34 +1,61 @@
+//
+// Copyright (C) 2024 The OpenTitus team
+//
+// Authors:
+// Petr Mrázek
+//
+// "Titus the Fox: To Marrakech and Back" (1992) and
+// "Lagaf': Les Aventures de Moktar - Vol 1: La Zoubida" (1991)
+// was developed by, and is probably copyrighted by Titus Software,
+// which, according to Wikipedia, stopped buisness in 2005.
+//
+// OpenTitus is not affiliated with Titus Software.
+//
+// OpenTitus is  free software; you can redistribute  it and/or modify
+// it under the  terms of the GNU General  Public License as published
+// by the Free  Software Foundation; either version 3  of the License,
+// or (at your option) any later version.
+//
+// This program is distributed in the hope that it will be useful, but
+// WITHOUT  ANY  WARRANTY;  without   even  the  implied  warranty  of
+// MERCHANTABILITY or  FITNESS FOR A PARTICULAR PURPOSE.   See the GNU
+// General Public License for more details.
+//
+
 const c = @import("../c.zig");
 const SDL = @import("../SDL.zig");
 
-const draw = @import("../draw.zig");
+const render = @import("../render.zig");
 const window = @import("../window.zig");
 const sprites = @import("../sprites.zig");
 const fonts = @import("fonts.zig");
 const globals = @import("../globals.zig");
 const audio = @import("../audio/engine.zig");
+const options_menu = @import("options_menu.zig");
 
-fn continueFn() ?c_int {
+const menu = @import("menu.zig");
+const MenuAction = menu.MenuAction;
+const MenuContext = menu.MenuContext;
+
+fn continueFn(menu_context: *MenuContext) ?c_int {
+    _ = menu_context;
     return 0;
 }
 
-fn quitFn() ?c_int {
+fn quitFn(menu_context: *MenuContext) ?c_int {
+    _ = menu_context;
     return -1;
-}
-
-fn optionsFn() ?c_int {
-    return null;
 }
 
 const MenuEntry = struct {
     text: []const u8,
     active: bool,
-    handler: *const fn () ?c_int,
+    handler: *const fn (*MenuContext) ?c_int,
 };
 
 const menu_entries: []const MenuEntry = &.{
     .{ .text = "Continue", .active = true, .handler = continueFn },
-    .{ .text = "Options", .active = false, .handler = optionsFn },
+    .{ .text = "Options", .active = true, .handler = options_menu.optionsMenu },
     .{ .text = "Quit", .active = true, .handler = quitFn },
 };
 
@@ -46,11 +73,8 @@ fn renderLabel(font: *fonts.Font, text: []const u8, y: i16, selected: bool) void
     font.render_center(text, y, options);
 }
 
-fn drawMenu(fade: u8, selected: u8, image: *c.SDL_Surface) void {
-    _ = c.SDL_SetSurfaceAlphaMod(image, 255 - fade);
-    _ = c.SDL_SetSurfaceBlendMode(image, c.SDL_BLENDMODE_BLEND);
-    window.window_clear(null);
-    _ = c.SDL_BlitSurface(image, null, window.screen, null);
+fn renderMenu(menu_context: *MenuContext, selected: u8) void {
+    menu_context.renderBackground();
     const title_width = fonts.Gold.metrics("PAUSED", .{ .transpatent = true }) + 4;
     var y: i16 = 40;
     fonts.Gold.render_center("PAUSED", y, .{ .transpatent = true });
@@ -67,20 +91,22 @@ fn drawMenu(fade: u8, selected: u8, image: *c.SDL_Surface) void {
 
 // FIXME: int is really an error enum, see tituserror.h
 pub export fn pauseMenu(context: *c.ScreenContext) c_int {
+
+    // take a screenshot and use it as a background that fades to black a bit
     const image = c.SDL_ConvertSurface(window.screen.?, window.screen.?.format, c.SDL_SWSURFACE);
     defer c.SDL_FreeSurface(image);
 
-    defer draw.screencontext_reset(context);
+    defer render.screencontext_reset(context);
 
-    var fade: u8 = 0;
+    var menu_context: MenuContext = .{
+        .background_image = image,
+        .background_fade = 0,
+    };
     var selected: u8 = 0;
     while (true) {
-        SDL.delay(1);
-        fade += 1;
-        if (fade > 150) {
-            fade = 150;
-        }
-        drawMenu(fade, selected, image);
+        const timeout = menu_context.updateBackground();
+        SDL.delay(timeout);
+        renderMenu(&menu_context, selected);
         audio.music_restart_if_finished();
         var event: c.SDL_Event = undefined;
         while (c.SDL_PollEvent(&event) != 0) { //Check all events
@@ -94,7 +120,7 @@ pub export fn pauseMenu(context: *c.ScreenContext) c_int {
                             return 0;
                         },
                         c.KEY_ENTER, c.KEY_RETURN, c.KEY_SPACE => {
-                            const ret_val = menu_entries[selected].handler();
+                            const ret_val = menu_entries[selected].handler(&menu_context);
                             if (ret_val) |value| {
                                 return value;
                             }

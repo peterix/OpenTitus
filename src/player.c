@@ -33,7 +33,7 @@
 #include "player.h"
 #include "globals_old.h"
 #include "tituserror.h"
-#include "draw.h"
+#include "render.h"
 #include "original.h"
 #include "common.h"
 #include "game.h"

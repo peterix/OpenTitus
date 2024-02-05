@@ -52,7 +52,7 @@ const image = @import("ui/image.zig");
 const ImageFile = image.ImageFile;
 const intro_text = @import("ui/intro_text.zig");
 const keyboard = @import("ui/keyboard.zig");
-const menu = @import("ui/menu.zig");
+const main_menu = @import("ui/main_menu.zig");
 
 const audio = @import("audio/engine.zig");
 const data = @import("data.zig");
@@ -62,11 +62,6 @@ const window = @import("window.zig");
 
 const json = @import("json.zig");
 const ManagedJSON = json.ManagedJSON;
-
-const draw = @import("draw.zig");
-comptime {
-    refAllDecls(draw);
-}
 
 const TitusError = error{
     CannotReadConfig,
@@ -168,7 +163,7 @@ pub fn run() !u8 {
     }
 
     while (state != 0) {
-        var curlevel = try menu.view_menu(
+        var curlevel = try main_menu.view_menu(
             data.constants.*.menu,
             allocator,
         );

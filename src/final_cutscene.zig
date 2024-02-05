@@ -27,7 +27,7 @@ const globals = @import("globals.zig");
 const c = @import("c.zig");
 const sprites = @import("sprites.zig");
 const scroll = @import("scroll.zig");
-const draw = @import("draw.zig");
+const render = @import("render.zig");
 const window = @import("window.zig");
 const keyboard = @import("ui/keyboard.zig");
 
@@ -72,9 +72,9 @@ pub fn play(context: *c.ScreenContext, level: *c.TITUS_level) c_int {
         player.sprite2.x -= 3;
         advanceAnimation(level, &(player.sprite2));
         // View all
-        draw.draw_tiles(level);
-        draw.draw_sprites(level);
-        draw.flip_screen(context, true);
+        render.render_tiles(level);
+        render.render_sprites(level);
+        render.flip_screen(context, true);
     }
 
     // Lovers in one sprite
@@ -88,9 +88,9 @@ pub fn play(context: *c.ScreenContext, level: *c.TITUS_level) c_int {
     for (0..16) |_| {
         advanceAnimation(level, &(player.sprite));
         scroll.scroll(level);
-        draw.draw_tiles(level);
-        draw.draw_sprites(level);
-        draw.flip_screen(context, true);
+        render.render_tiles(level);
+        render.render_sprites(level);
+        render.flip_screen(context, true);
         player.sprite.y += 1;
     }
 
@@ -108,9 +108,9 @@ pub fn play(context: *c.ScreenContext, level: *c.TITUS_level) c_int {
         heart += 1;
 
         scroll.scroll(level);
-        draw.draw_tiles(level);
-        draw.draw_sprites(level);
-        draw.flip_screen(context, true);
+        render.render_tiles(level);
+        render.render_sprites(level);
+        render.flip_screen(context, true);
 
         c.SDL_PumpEvents(); //Update keyboard state
 
@@ -144,9 +144,9 @@ pub fn play(context: *c.ScreenContext, level: *c.TITUS_level) c_int {
     player.sprite3.x = (globals.BITMAP_X << 4) + (320 + 120 - 2);
     player.sprite3.y = (globals.BITMAP_Y << 4) + 100;
     for (0..31) |_| {
-        draw.draw_tiles(level);
-        draw.draw_sprites(level);
-        draw.flip_screen(context, true);
+        render.render_tiles(level);
+        render.render_sprites(level);
+        render.flip_screen(context, true);
         player.sprite.x += 8;
         player.sprite3.x -= 8;
     }

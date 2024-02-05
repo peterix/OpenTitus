@@ -28,7 +28,7 @@ const c = @import("c.zig");
 const globals = @import("globals.zig");
 const window = @import("window.zig");
 const scroll = @import("scroll.zig");
-const draw = @import("draw.zig");
+const render = @import("render.zig");
 const audio = @import("audio/engine.zig");
 
 fn check_finish(context: *c.ScreenContext, level: *c.TITUS_level) void {
@@ -143,7 +143,7 @@ pub export fn CLOSE_SCREEN(context: *c.ScreenContext) void {
         dest.h = globals.screen_height * 16;
         window.window_clear(&dest);
 
-        draw.flip_screen(context, true);
+        render.flip_screen(context, true);
     }
 }
 
@@ -151,8 +151,8 @@ pub export fn OPEN_SCREEN(context: *c.ScreenContext, level: *c.TITUS_level) void
     var dest: c.SDL_Rect = undefined;
     var i: u32 = step_count - 1;
     while (i >= 2) : (i -= 2) {
-        // draw all tiles
-        draw.draw_tiles(level);
+        // render all tiles
+        render.render_tiles(level);
 
         //Clear top
         dest.x = 0;
@@ -182,6 +182,6 @@ pub export fn OPEN_SCREEN(context: *c.ScreenContext, level: *c.TITUS_level) void
         dest.h = globals.screen_height * 16;
         window.window_clear(&dest);
 
-        draw.flip_screen(context, true);
+        render.flip_screen(context, true);
     }
 }
