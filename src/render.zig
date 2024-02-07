@@ -253,7 +253,7 @@ pub fn fadeout() void {
                     // FIXME: handle this better
                     return;
                 }
-                if (event.key.keysym.scancode == c.KEY_FULLSCREEN) {
+                if (event.key.keysym.scancode == c.SDL_SCANCODE_F11) {
                     window.toggle_fullscreen();
                 }
             }

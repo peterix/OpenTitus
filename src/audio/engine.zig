@@ -349,7 +349,7 @@ pub fn music_wait_to_finish() void {
                 //return TITUS_ERROR_QUIT;
                 return;
             } else if (event.type == c.SDL_KEYDOWN) {
-                if (event.key.keysym.scancode == c.KEY_ESC) {
+                if (event.key.keysym.scancode == c.SDL_SCANCODE_ESCAPE) {
                     // FIXME: handle this better
                     // return TITUS_ERROR_QUIT;
                     return;

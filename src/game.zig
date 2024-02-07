@@ -36,10 +36,8 @@ pub fn refAllDecls(comptime T: type) void {
     }
 }
 const credits = @import("ui/credits.zig");
-const view_password = @import("ui/view_password.zig");
 comptime {
     refAllDecls(credits);
-    refAllDecls(view_password);
 }
 
 const pauseMenu = @import("ui/pause_menu.zig");
@@ -113,7 +111,7 @@ pub fn run() !u8 {
     try audio.audio_engine.init(allocator);
     defer audio.audio_engine.deinit();
 
-    c.initoriginal();
+    data.init_anim_player();
 
     try fonts.fonts_load();
     defer fonts.fonts_free();

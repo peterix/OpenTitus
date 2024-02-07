@@ -3,7 +3,6 @@ pub usingnamespace @cImport({
     @cInclude("SDL2/SDL_mixer.h");
     @cInclude("window.h");
     @cInclude("tituserror.h");
-    @cInclude("original.h");
     @cInclude("sprites.h");
     @cInclude("level.h");
     @cInclude("player.h");

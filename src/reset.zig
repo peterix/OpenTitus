@@ -26,6 +26,7 @@
 const globals = @import("globals.zig");
 const c = @import("c.zig");
 const sprites = @import("sprites.zig");
+const data = @import("data.zig");
 
 fn SET_DATA_NMI(level: *c.TITUS_level) void {
     globals.boss_alive = false;
@@ -34,10 +35,10 @@ fn SET_DATA_NMI(level: *c.TITUS_level) void {
         if (!level.enemy[i].init_enabled) {
             continue;
         }
-        while (c.anim_enemy[anim] + c.FIRST_NMI != level.enemy[i].sprite.number) {
+        while (data.anim_enemy[anim] + c.FIRST_NMI != level.enemy[i].sprite.number) {
             anim += 1;
         }
-        level.enemy[i].sprite.animation = &(c.anim_enemy[anim]);
+        level.enemy[i].sprite.animation = &(data.anim_enemy[anim]);
         if (level.enemy[i].boss) {
             globals.boss_alive = true;
         }

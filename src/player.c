@@ -26,7 +26,6 @@
  * Handles player movement and keyboard handling
  */
 
-#include <stdio.h>
 #include <stdlib.h>
 #include "SDL2/SDL.h"
 #include "level.h"
@@ -34,7 +33,6 @@
 #include "globals_old.h"
 #include "tituserror.h"
 #include "render.h"
-#include "original.h"
 #include "common.h"
 #include "game.h"
 #include "gates.h"
@@ -67,7 +65,7 @@ static void ARAB_BLOCKX(TITUS_level *level);
 static void ARAB_BLOCK_YU(TITUS_player *player);
 static void INC_ENERGY(TITUS_level *level);
 
-int16_t add_carry() {
+uint8_t add_carry() {
     if (CARRY_FLAG) {
         return 16;
     } else {
@@ -76,14 +74,17 @@ int16_t add_carry() {
 }
 
 void handle_player_input(TITUS_player *player, const uint8_t* keystate) {
-    player->x_axis = (int8_t)(keystate[KEY_RIGHT] || keystate[KEY_D]) - (int8_t)(keystate[KEY_LEFT] || keystate[KEY_A]);
-    player->y_axis = (int8_t)(keystate[KEY_DOWN] || keystate[KEY_S]) - (int8_t)(keystate[KEY_UP] || keystate[KEY_W]);
-    player->action_pressed = keystate[KEY_SPACE];
+    player->x_axis = (int8_t)(keystate[SDL_SCANCODE_RIGHT] || keystate[SDL_SCANCODE_D]) -
+        (int8_t)(keystate[SDL_SCANCODE_LEFT] || keystate[SDL_SCANCODE_A]);
+    player->y_axis = (int8_t)(keystate[SDL_SCANCODE_DOWN] || keystate[SDL_SCANCODE_S]) -
+        (int8_t)(keystate[SDL_SCANCODE_UP] || keystate[SDL_SCANCODE_W]);
+    player->action_pressed = keystate[SDL_SCANCODE_SPACE];
 }
 
 int pauseMenu (ScreenContext *context);
 int credits_screen();
 int viewstatus(TITUS_level *level, bool countbonus);
+int16_t *get_anim_player(uint8_t action);
 
 int move_player(ScreenContext *context, TITUS_level *level) {
     //Part 1: Check keyboard input
@@ -102,29 +103,29 @@ int move_player(ScreenContext *context, TITUS_level *level) {
     SDL_PumpEvents(); //Update keyboard state
     keystate = SDL_GetKeyboardState(NULL);
 
-    // TODO: add the crazy credits screen that converts your extra bonuses to a life
+    // TODO: move this to input.zig or some such place
     while(SDL_PollEvent(&event)) { //Check all events
         if (event.type == SDL_QUIT) {
             return TITUS_ERROR_QUIT;
         } else if (event.type == SDL_KEYDOWN) {
             SDL_Keymod mods = SDL_GetModState();
-            if (event.key.keysym.scancode == KEY_GODMODE && settings->devmode) {
+            if (event.key.keysym.scancode == SDL_SCANCODE_G && settings->devmode) {
                 if (GODMODE) {
                     GODMODE = false;
                     NOCLIP = false;
                 } else {
                     GODMODE = true;
                 }
-            } else if (event.key.keysym.scancode == KEY_NOCLIP && settings->devmode) {
+            } else if (event.key.keysym.scancode == SDL_SCANCODE_N && settings->devmode) {
                 if (NOCLIP) {
                     NOCLIP = false;
                 } else {
                     NOCLIP = true;
                     GODMODE = true;
                 }
-            } else if (event.key.keysym.scancode == KEY_DEBUG && settings->devmode) {
+            } else if (event.key.keysym.scancode == SDL_SCANCODE_D && settings->devmode) {
                 DISPLAYLOOPTIME = !DISPLAYLOOPTIME;
-            } else if (event.key.keysym.scancode == KEY_Q) {
+            } else if (event.key.keysym.scancode == SDL_SCANCODE_Q) {
                 if (mods & (KMOD_ALT | KMOD_CTRL)) {
                     credits_screen();
                     if (level->extrabonus >= 10) {
@@ -132,11 +133,11 @@ int move_player(ScreenContext *context, TITUS_level *level) {
                         level->lives += 1;
                     }
                 }
-            } else if (event.key.keysym.scancode == KEY_M) {
+            } else if (event.key.keysym.scancode == SDL_SCANCODE_M) {
                 music_toggle_c();
-            } else if (event.key.keysym.scancode == KEY_FULLSCREEN) {
+            } else if (event.key.keysym.scancode == SDL_SCANCODE_F11) {
                 toggle_fullscreen();
-            } else if (event.key.keysym.scancode == KEY_ESC) {
+            } else if (event.key.keysym.scancode == SDL_SCANCODE_ESCAPE) {
                 pause = true;
             }
         }
@@ -147,26 +148,26 @@ int move_player(ScreenContext *context, TITUS_level *level) {
             return retval;
         }
     }
-    if (keystate[KEY_F1] && (RESETLEVEL_FLAG == 0)) {
+    if (keystate[SDL_SCANCODE_F1] && (RESETLEVEL_FLAG == 0)) {
         RESETLEVEL_FLAG = 2;
         return 0;
     }
     if(settings->devmode) {
-        if (keystate[KEY_F2]) { //F2 = game over
+        if (keystate[SDL_SCANCODE_F2]) { //F2 = game over
             GAMEOVER_FLAG = true;
             return 0;
         }
-        if (keystate[KEY_F3]) { //F3 = skip to next level
+        if (keystate[SDL_SCANCODE_F3]) { //F3 = skip to next level
             NEWLEVEL_FLAG = true;
             SKIPLEVEL_FLAG = true;
         }
     }
 
-    if (keystate[KEY_E]) { //E = display energy
+    if (keystate[SDL_SCANCODE_E]) { //E = display energy
         BAR_FLAG = 50;
     }
 
-    if (keystate[KEY_F4]) { //F4 = view status page
+    if (keystate[SDL_SCANCODE_F4]) { //F4 = view status page
         viewstatus(level, false);
     }
 
@@ -874,15 +875,12 @@ static int CASE_BONUS(TITUS_level *level, uint8_t tileY, uint8_t tileX) {
     return true; //No problems, bonus handling done correctly!
 }
 
-int viewPassword(TITUS_level *level, uint8_t level_index);
-
 static void CASE_PASS(ScreenContext *context, TITUS_level *level, uint8_t level_index, uint8_t tileY, uint8_t tileX) {
     //Codelamp
-    music_play_jingle_c(7);
-    if (CASE_BONUS(level, tileY, tileX)) { //if the bonus is found in the bonus list
-        CLOSE_SCREEN(context);
-        viewPassword(level, level_index);
-        OPEN_SCREEN(context, level);
+     //if the bonus is found in the bonus list
+    if (CASE_BONUS(level, tileY, tileX)) {
+        // TODO: add something to tell the player what happened, but not a full screen modal...
+        music_play_jingle_c(7);
     }
 }
 
@@ -890,7 +888,9 @@ static void CASE_SECU(TITUS_level *level, uint8_t tileY, uint8_t tileX) {
     TITUS_player *player = &(level->player);
     //Padlock, store X/Y coordinates
     music_play_jingle_c(5);
-    if (CASE_BONUS(level, tileY, tileX)) { //if the bonus is found in the bonus list
+    //if the bonus is found in the bonus list
+    if (CASE_BONUS(level, tileY, tileX)) {
+        // TODO: add something to tell the player what happened
         player->initX = player->sprite.x;
         player->initY = player->sprite.y;
         if ((player->sprite2.number == FIRST_OBJET+26) || (player->sprite2.number == FIRST_OBJET+27)) {
@@ -942,9 +942,9 @@ static void ACTION_PRG(TITUS_level *level, uint8_t action) {
         DECELERATION(player);
         if ((abs(player->sprite.speed_x) >= 1 * 16) &&
            (player->sprite.flipped == (player->sprite.speed_x < 0))) {
-            player->sprite.animation = anim_player[4 + add_carry()];
+            player->sprite.animation = get_anim_player(4 + add_carry());
         } else {
-            player->sprite.animation = anim_player[action];
+            player->sprite.animation = get_anim_player(action);
         }
         updatesprite(level, &(player->sprite), *(player->sprite.animation), true);
         player->sprite.flipped = (SENSX < 0);
@@ -1386,7 +1386,7 @@ static void NEW_FORM(TITUS_player *player, uint8_t action) {
     //if the order is changed, change player animation
     if ((LAST_ORDER != action) || (player->sprite.animation == NULL)) {
         LAST_ORDER = action;
-        player->sprite.animation = anim_player[action];
+        player->sprite.animation = get_anim_player(action);
     }
 }
 

@@ -49,27 +49,18 @@ fn quitFn(menu_context: *MenuContext) ?c_int {
 
 const MenuEntry = struct {
     text: []const u8,
-    active: bool,
     handler: *const fn (*MenuContext) ?c_int,
 };
 
 const menu_entries: []const MenuEntry = &.{
-    .{ .text = "Continue", .active = true, .handler = continueFn },
-    .{ .text = "Options", .active = true, .handler = options_menu.optionsMenu },
-    .{ .text = "Quit", .active = true, .handler = quitFn },
+    .{ .text = "Continue", .handler = continueFn },
+    .{ .text = "Options", .handler = options_menu.optionsMenu },
+    .{ .text = "Quit", .handler = quitFn },
 };
 
-fn renderLabel(font: *fonts.Font, text: []const u8, y: i16, selected: bool) void {
+fn renderLabel(text: []const u8, y: i16, selected: bool) void {
+    const font = if (selected) &fonts.Gold else &fonts.Gray;
     const options = fonts.Font.RenderOptions{ .transpatent = true };
-    const label_width = fonts.Gold.metrics(text, options);
-    const x = 160 - label_width / 2;
-    if (selected) {
-        const left = ">";
-        const right = "<";
-        const left_width = font.metrics(left, .{});
-        font.render(left, x - 4 - left_width, y, .{});
-        font.render(right, x + label_width + 4, y, .{});
-    }
     font.render_center(text, y, options);
 }
 
@@ -126,7 +117,7 @@ pub export fn pauseMenu(context: *c.ScreenContext) c_int {
         _ = c.SDL_FillRect(window.screen.?, &bar, c.SDL_MapRGB(window.screen.?.format, 0xd0, 0xb0, 0x00));
         y += 27;
         for (menu_entries, 0..) |entry, i| {
-            renderLabel(if (entry.active) &fonts.Gold else &fonts.Gray, entry.text, y, selected == i);
+            renderLabel(entry.text, y, selected == i);
             y += 14;
         }
         window.window_render();

@@ -29,8 +29,7 @@
  * void subto0(uint8_t *number): Decreases a number until it reaches 0
  */
 
-#ifndef COMMON_H
-#define COMMON_H
+#pragma once
 
 /// Decreases a value with 1 until it's zero
 static inline void subto0(uint8_t *number) {
@@ -38,5 +37,3 @@ static inline void subto0(uint8_t *number) {
         *number = *number - 1;
     }
 }
-
-#endif

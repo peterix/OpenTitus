@@ -32,7 +32,6 @@
 
 #pragma once
 
-#include "SDL2/SDL.h"
 #include "level.h"
 
 /// Move enemies, is called by main game loop

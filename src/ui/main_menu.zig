@@ -112,7 +112,7 @@ pub fn view_menu(file: ImageFile, allocator: std.mem.Allocator) !?usize {
                 if (event.key.keysym.scancode == c.SDL_SCANCODE_ESCAPE) {
                     return null;
                 }
-                if (event.key.keysym.scancode == c.KEY_FULLSCREEN) {
+                if (event.key.keysym.scancode == c.SDL_SCANCODE_F11) {
                     window.toggle_fullscreen();
                 }
             }
@@ -151,7 +151,10 @@ pub fn view_menu(file: ImageFile, allocator: std.mem.Allocator) !?usize {
                     selection = 0;
                 if (event.key.keysym.scancode == c.SDL_SCANCODE_DOWN)
                     selection = 1;
-                if (event.key.keysym.scancode == c.KEY_RETURN or event.key.keysym.scancode == c.KEY_ENTER or event.key.keysym.scancode == c.KEY_SPACE) {
+                if (event.key.keysym.scancode == c.SDL_SCANCODE_RETURN or
+                    event.key.keysym.scancode == c.SDL_SCANCODE_KP_ENTER or
+                    event.key.keysym.scancode == c.SDL_SCANCODE_SPACE)
+                {
                     switch (selection) {
                         0 => {
                             curlevel = 0;
@@ -179,7 +182,7 @@ pub fn view_menu(file: ImageFile, allocator: std.mem.Allocator) !?usize {
                     }
                 }
 
-                if (event.key.keysym.scancode == c.KEY_FULLSCREEN) {
+                if (event.key.keysym.scancode == c.SDL_SCANCODE_F11) {
                     window.toggle_fullscreen();
                 }
             }
@@ -277,7 +280,7 @@ fn select_level(allocator: std.mem.Allocator) !?usize {
                     } else {}
                 }
 
-                if (event.key.keysym.scancode == c.KEY_FULLSCREEN) {
+                if (event.key.keysym.scancode == c.SDL_SCANCODE_F11) {
                     window.toggle_fullscreen();
                 }
             }

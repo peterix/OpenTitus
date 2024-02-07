@@ -31,9 +31,7 @@
  * void moveTrash(TITUS_level *level): Move objects thrown by enemies
  */
 
-#include <stdio.h>
 #include <stdlib.h>
-#include "SDL2/SDL.h"
 #include "level.h"
 #include "globals_old.h"
 #include "enemies.h"

@@ -46,8 +46,8 @@ typedef struct _TITUS_player TITUS_player;
 typedef struct _TITUS_level TITUS_level;
 
 struct _TITUS_tile {
-    SDL_Surface *tiledata; //Malloced
-    uint8_t animation[3]; //Index to animation tiles
+    SDL_Surface *tiledata; // Points to heap
+    uint8_t animation[3]; // Index to animation tiles
     enum HFLAG horizflag;
     enum FFLAG floorflag;
     enum CFLAG ceilflag;

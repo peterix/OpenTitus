@@ -154,7 +154,7 @@ pub fn backend(self: *Adlib) Backend {
             .playTrack = play_track,
             .stopTrack = stop_track,
             .playSfx = play_sfx,
-            .isPlayingATrack = is_playing_a_track,
+            .isPlayingATrack = isPlayingATrack,
         },
     };
 }
@@ -203,7 +203,7 @@ fn fillBuffer(ctx: *anyopaque, buffer: []i16, nsamples: u32) void {
     OPL3.OPL3_GenerateStream(&self.opl_chip, &buffer[0], nsamples);
 }
 
-fn is_playing_a_track(ctx: *anyopaque) bool {
+fn isPlayingATrack(ctx: *anyopaque) bool {
     const self: *Adlib = @ptrCast(@alignCast(ctx));
     return self.active_channels != 0;
 }

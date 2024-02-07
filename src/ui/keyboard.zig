@@ -41,10 +41,14 @@ pub fn waitforbutton() c_int {
 
             if (event.type == c.SDL_KEYDOWN) {
                 switch (event.key.keysym.scancode) {
-                    c.KEY_RETURN, c.KEY_ENTER, c.KEY_SPACE, c.SDL_SCANCODE_ESCAPE => {
+                    c.SDL_SCANCODE_RETURN,
+                    c.SDL_SCANCODE_KP_ENTER,
+                    c.SDL_SCANCODE_SPACE,
+                    c.SDL_SCANCODE_ESCAPE,
+                    => {
                         waiting = 0;
                     },
-                    c.KEY_FULLSCREEN => {
+                    c.SDL_SCANCODE_F11 => {
                         window.toggle_fullscreen();
                     },
                     else => {
@@ -54,7 +58,12 @@ pub fn waitforbutton() c_int {
             }
             if (event.type == c.SDL_WINDOWEVENT) {
                 switch (event.window.event) {
-                    c.SDL_WINDOWEVENT_RESIZED, c.SDL_WINDOWEVENT_SIZE_CHANGED, c.SDL_WINDOWEVENT_MAXIMIZED, c.SDL_WINDOWEVENT_RESTORED, c.SDL_WINDOWEVENT_EXPOSED => {
+                    c.SDL_WINDOWEVENT_RESIZED,
+                    c.SDL_WINDOWEVENT_SIZE_CHANGED,
+                    c.SDL_WINDOWEVENT_MAXIMIZED,
+                    c.SDL_WINDOWEVENT_RESTORED,
+                    c.SDL_WINDOWEVENT_EXPOSED,
+                    => {
                         window.window_render();
                     },
                     else => {},

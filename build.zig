@@ -55,7 +55,6 @@ fn build_game(b: *std.Build, name: []const u8, target: CrossTarget, optimize: st
     exe.addCSourceFiles(&.{
         "src/enemies.c",
         "src/objects.c",
-        "src/original.c",
         "src/player.c",
         "src/audio/opl3.c",
     }, &.{
@@ -78,7 +77,6 @@ fn build_game(b: *std.Build, name: []const u8, target: CrossTarget, optimize: st
     game_tests.addCSourceFiles(&.{
         "src/enemies.c",
         "src/objects.c",
-        "src/original.c",
         "src/player.c",
         "src/audio/opl3.c",
     }, &.{

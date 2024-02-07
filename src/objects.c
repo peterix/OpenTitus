@@ -26,15 +26,15 @@
  * Handle objects
  */
 
-#include <stdio.h>
 #include "level.h"
 #include "globals_old.h"
-#include "original.h"
 #include "player.h"
 #include "objects.h"
 #include "game.h"
 #include "sprites.h"
 #include "audio.h"
+
+#define ORIG_OBJECT_COUNT 71
 
 void shock(TITUS_level *level, TITUS_object *object);
 

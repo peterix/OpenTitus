@@ -45,28 +45,33 @@ pub fn getMenuAction() MenuAction {
             },
             c.SDL_KEYDOWN => {
                 switch (event.key.keysym.scancode) {
-                    c.KEY_ESC, c.SDL_SCANCODE_BACKSPACE => {
+                    c.SDL_SCANCODE_ESCAPE,
+                    c.SDL_SCANCODE_BACKSPACE,
+                    => {
                         return .ExitMenu;
                     },
-                    c.KEY_ENTER, c.KEY_RETURN, c.KEY_SPACE => {
+                    c.SDL_SCANCODE_KP_ENTER,
+                    c.SDL_SCANCODE_RETURN,
+                    c.SDL_SCANCODE_SPACE,
+                    => {
                         action = .Activate;
                     },
-                    c.KEY_FULLSCREEN => {
+                    c.SDL_SCANCODE_F11 => {
                         window.toggle_fullscreen();
                     },
-                    c.KEY_M => {
+                    c.SDL_SCANCODE_M => {
                         _ = audio.music_toggle_c();
                     },
-                    c.KEY_DOWN => {
+                    c.SDL_SCANCODE_DOWN => {
                         action = .Down;
                     },
-                    c.KEY_UP => {
+                    c.SDL_SCANCODE_UP => {
                         action = .Up;
                     },
-                    c.KEY_LEFT => {
+                    c.SDL_SCANCODE_LEFT => {
                         action = .Left;
                     },
-                    c.KEY_RIGHT => {
+                    c.SDL_SCANCODE_RIGHT => {
                         action = .Right;
                     },
                     else => {

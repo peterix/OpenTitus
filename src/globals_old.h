@@ -31,38 +31,6 @@
 #include "SDL2/SDL.h"
 #include <stdbool.h>
 
-#define KEY_F1 SDL_SCANCODE_F1 // Loose a life
-#define KEY_F2 SDL_SCANCODE_F2 // Game over
-#define KEY_F3 SDL_SCANCODE_F3 // Next level
-#define KEY_E SDL_SCANCODE_E   // Display energy
-#define KEY_F4 SDL_SCANCODE_F4 // Status page
-
-#define KEY_LEFT SDL_SCANCODE_LEFT
-#define KEY_A SDL_SCANCODE_A
-
-#define KEY_RIGHT SDL_SCANCODE_RIGHT
-#define KEY_D SDL_SCANCODE_D
-
-#define KEY_UP SDL_SCANCODE_UP
-#define KEY_JUMP SDL_SCANCODE_UP
-#define KEY_W SDL_SCANCODE_W
-
-#define KEY_DOWN SDL_SCANCODE_DOWN
-#define KEY_S SDL_SCANCODE_S
-
-
-#define KEY_SPACE SDL_SCANCODE_SPACE //Space
-#define KEY_ENTER SDL_SCANCODE_KP_ENTER //Enter
-#define KEY_RETURN SDL_SCANCODE_RETURN //Return
-#define KEY_ESC SDL_SCANCODE_ESCAPE //Quit
-#define KEY_P SDL_SCANCODE_P //Toggle pause
-#define KEY_Q SDL_SCANCODE_Q //Credits madness
-#define KEY_M SDL_SCANCODE_M //Cycle through all the music
-#define KEY_NOCLIP SDL_SCANCODE_N //Toggle noclip
-#define KEY_GODMODE SDL_SCANCODE_G //Toggle godmode
-#define KEY_DEBUG SDL_SCANCODE_D //Toggle debug mode
-#define KEY_FULLSCREEN SDL_SCANCODE_F11 //Toggle fullscreen
-
 #define TEST_ZONE 4
 #define MAX_X 4
 #define MAX_Y 12

@@ -35,11 +35,13 @@ const menu = @import("menu.zig");
 const MenuAction = menu.MenuAction;
 const MenuContext = menu.MenuContext;
 
+const x_baseline = 90;
+
 fn label(text: []const u8, y: i16, selected: bool) void {
     const font = if (selected) &fonts.Gold else &fonts.Gray;
     const options = fonts.Font.RenderOptions{ .transpatent = true };
     const label_width = fonts.Gold.metrics(text, options);
-    font.render(text, 70 - label_width - 4, y, options);
+    font.render(text, x_baseline - label_width - 4, y, options);
 }
 
 // TODO: maybe not... maybe we ask the audio engine for a list of things that managed to load?
@@ -60,7 +62,6 @@ const SoundTypes = enum(u8) {
 };
 
 var sound_types: SoundTypes = .Adlib;
-var music: bool = true;
 
 fn enumOptions(comptime T: type, value: *T, y: i16, selected: bool, action: MenuAction) void {
     if (@typeInfo(T) != .Enum) {
@@ -71,7 +72,7 @@ fn enumOptions(comptime T: type, value: *T, y: i16, selected: bool, action: Menu
     const fields = std.meta.fields(T);
 
     const intValue = @intFromEnum(value.*);
-    var x: u16 = 74;
+    var x: u16 = x_baseline + 4;
     inline for (fields, 0..) |f, index| {
         const value_selected = f.value == intValue;
         const enum_value: T = @enumFromInt(f.value);
@@ -122,7 +123,7 @@ fn toggle(
     if (set_value != value) {
         setter(set_value);
     }
-    var x: u16 = 74;
+    var x: u16 = x_baseline + 4;
     {
         const font = if (!value) &fonts.Gold else &fonts.Gray;
         const text = "Off";
@@ -173,7 +174,7 @@ fn slider(
     y: i16,
     selected: bool,
     action: MenuAction,
-    setter: *const fn (u8) void,
+    setter: *const fn (T) void,
 ) void {
     const options = fonts.Font.RenderOptions{ .transpatent = true };
     if (@typeInfo(T) != .Int) {
@@ -198,7 +199,7 @@ fn slider(
     if (set_value != value) {
         setter(set_value);
     }
-    var x: i16 = 74;
+    var x: i16 = x_baseline + 4;
     const font = if (selected) &fonts.Gold else &fonts.Gray;
     const label_width = fonts.Gold.metrics("[", options);
     font.render("[", x, y, options);
