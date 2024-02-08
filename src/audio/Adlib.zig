@@ -33,9 +33,7 @@ const _engine = @import("engine.zig");
 const _bytes = @import("../bytes.zig");
 const AudioEngine = _engine.AudioEngine;
 
-const OPL3 = @cImport({
-    @cInclude("./opl3.h");
-});
+const OPL3 = @import("opl3.zig");
 
 inline fn chomp_u8(bytes: *[]const u8) u8 {
     return _bytes.chompInt(u8, .Little, bytes);
