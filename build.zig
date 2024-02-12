@@ -57,6 +57,7 @@ fn build_game(b: *std.Build, name: []const u8, target: CrossTarget, optimize: st
         "src/objects.c",
         "src/player.c",
         "src/audio/opl3.c",
+        "src/audio/miniaudio.c",
     }, &.{
         "-fno-sanitize=shift",
     });
@@ -67,7 +68,6 @@ fn build_game(b: *std.Build, name: []const u8, target: CrossTarget, optimize: st
     exe.linkSystemLibrary("m");
     exe.linkSystemLibrary("SDL2");
     exe.linkSystemLibrary("SDL2main");
-    exe.linkSystemLibrary("SDL2_mixer");
 
     const game_tests = b.addTest(.{
         .root_source_file = .{ .path = "main.zig" },
@@ -79,6 +79,7 @@ fn build_game(b: *std.Build, name: []const u8, target: CrossTarget, optimize: st
         "src/objects.c",
         "src/player.c",
         "src/audio/opl3.c",
+        "src/audio/miniaudio.c",
     }, &.{
         "-fno-sanitize=shift",
     });
@@ -89,7 +90,6 @@ fn build_game(b: *std.Build, name: []const u8, target: CrossTarget, optimize: st
     game_tests.linkSystemLibrary("m");
     game_tests.linkSystemLibrary("SDL2");
     game_tests.linkSystemLibrary("SDL2main");
-    game_tests.linkSystemLibrary("SDL2_mixer");
 
     const run_game_tests = b.addRunArtifact(game_tests);
 

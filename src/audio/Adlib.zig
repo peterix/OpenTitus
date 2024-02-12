@@ -28,10 +28,14 @@
 const Adlib = @This();
 
 const std = @import("std");
+const Mutex = std.Thread.Mutex;
+
 const Backend = @import("Backend.zig");
+
 const _engine = @import("engine.zig");
-const _bytes = @import("../bytes.zig");
 const AudioEngine = _engine.AudioEngine;
+
+const _bytes = @import("../bytes.zig");
 
 const OPL3 = @import("opl3.zig");
 
@@ -124,6 +128,7 @@ perc_stat: u8 = 0,
 skip_delay: u8 = 0,
 skip_delay_counter: u8 = 0,
 current_track: ?u8 = null,
+mutex: Mutex = Mutex{},
 
 seg_reduction: u16 = 0,
 sfx_on: bool = false,
@@ -153,6 +158,8 @@ pub fn backend(self: *Adlib) Backend {
             .stopTrack = stop_track,
             .playSfx = play_sfx,
             .isPlayingATrack = isPlayingATrack,
+            .lock = lock,
+            .unlock = unlock,
         },
     };
 }
@@ -161,6 +168,7 @@ fn init(ctx: *anyopaque, engine: *AudioEngine, allocator: std.mem.Allocator, sam
     const self: *Adlib = @ptrCast(@alignCast(ctx));
     self.engine = engine;
     self.allocator = allocator;
+    self.mutex = Mutex{};
     const bytes = load_file(
         "music.bin",
         allocator,
@@ -196,9 +204,23 @@ fn deinit(ctx: *anyopaque) void {
     self.allocator.free(self.data);
 }
 
+fn lock(ctx: *anyopaque) void {
+    const self: *Adlib = @ptrCast(@alignCast(ctx));
+    self.mutex.lock();
+}
+
+fn unlock(ctx: *anyopaque) void {
+    const self: *Adlib = @ptrCast(@alignCast(ctx));
+    self.mutex.unlock();
+}
+
 fn fillBuffer(ctx: *anyopaque, buffer: []i16, nsamples: u32) void {
     const self: *Adlib = @ptrCast(@alignCast(ctx));
-    OPL3.OPL3_GenerateStream(&self.opl_chip, &buffer[0], nsamples);
+    self.mutex.lock();
+    if (nsamples > 0) {
+        OPL3.OPL3_GenerateStream(&self.opl_chip, &buffer[0], nsamples);
+    }
+    self.mutex.unlock();
 }
 
 fn isPlayingATrack(ctx: *anyopaque) bool {
@@ -641,8 +663,10 @@ fn all_vox_zero(self: *Adlib) void {
 
 fn TimerCallback(callback_data: ?*anyopaque) void {
     var self: *Adlib = @alignCast(@ptrCast(callback_data));
+    self.mutex.lock();
     // Read data until we must make a delay.
     self.fillchip();
+    self.mutex.unlock();
 
     // Schedule the next timer callback.
     // Delay is original 13.75 ms

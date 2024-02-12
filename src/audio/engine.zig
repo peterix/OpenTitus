@@ -34,8 +34,9 @@ const Order = std.math.Order;
 
 const Adlib = @import("Adlib.zig");
 const Backend = @import("Backend.zig");
-const c = @import("../c.zig");
+const miniaudio = @import("miniaudio.zig");
 const SDL = @import("../SDL.zig");
+const c = @import("../c.zig");
 const game = @import("../game.zig");
 const data = @import("../data.zig");
 
@@ -44,6 +45,7 @@ const MAX_SOUND_SLICE_TIME = 100; // ms
 
 const SampleType = i16;
 const NumChannels = 2;
+const MixingFreq = 44100;
 const Stride = @sizeOf(SampleType) * NumChannels;
 
 // Queue of callbacks waiting to be invoked.
@@ -72,10 +74,14 @@ test "test queue priority" {
 
 pub const AudioEngine = struct {
     allocator: std.mem.Allocator = undefined,
+
+    config: miniaudio.ma_device_config = undefined,
+    device: miniaudio.ma_device = undefined,
+
     adlib: Adlib = .{},
     backend: Backend = undefined,
     last_song: u8 = 0,
-    volume: u8 = c.SDL_MIX_MAXVOLUME,
+    volume: u8 = 128,
 
     // When the callback mutex is locked using OPL_Lock, callback functions are not invoked.
     callback_mutex: Mutex = Mutex{},
@@ -90,11 +96,6 @@ pub const AudioEngine = struct {
     // Temporary mixing buffer used by the mixing callback.
     mix_buffer: []SampleType = &.{},
 
-    // SDL parameters.
-    mixing_freq: c_int = undefined,
-    mixing_channels: c_int = undefined,
-    mixing_format: u16 = undefined,
-
     initialized: bool = false,
 
     pub fn init(self: *AudioEngine, allocator: std.mem.Allocator) !void {
@@ -103,50 +104,36 @@ pub const AudioEngine = struct {
         self.volume = game.settings.volume_master;
         self.backend = self.adlib.backend();
 
-        // Check if SDL_mixer has been opened already
-        // If not, we must initialize it now
-        if (c.Mix_OpenAudioDevice(
-            @intCast(44100),
-            c.AUDIO_S16SYS,
-            NumChannels,
-            1024,
-            null,
-            c.SDL_AUDIO_ALLOW_FREQUENCY_CHANGE,
-        ) < 0) {
-            std.log.err("Error initialising SDL_mixer: {s}", .{c.Mix_GetError()});
+        self.config = miniaudio.ma_device_config_init(miniaudio.ma_device_type_playback);
+        self.config.playback.format = miniaudio.ma_format_s16;
+        self.config.playback.channels = NumChannels;
+        self.config.sampleRate = MixingFreq;
+        self.config.dataCallback = data_callback;
+        self.config.pUserData = self;
+
+        if (miniaudio.ma_device_init(null, &self.config, &self.device) != miniaudio.MA_SUCCESS) {
+            std.log.err("Error initialising miniaudio.", .{});
             return error.OpenAudioDeviceFailed;
         }
-        errdefer c.Mix_CloseAudio();
+        errdefer miniaudio.ma_device_uninit(&self.device);
 
-        c.SDL_PauseAudio(0);
+        _ = miniaudio.ma_device_set_master_volume(
+            &self.device,
+            @as(f32, @floatFromInt(self.volume)) / 128.0,
+        );
 
         // Queue structure of callbacks to invoke.
         self.callback_queue = CallbackQueue.init(allocator, {});
         self.current_time = 0;
 
-        // Get the mixer frequency, format and number of channels.
-        _ = c.Mix_QuerySpec(&self.mixing_freq, &self.mixing_format, &self.mixing_channels);
-
-        // Only supports AUDIO_S16SYS
-        if (self.mixing_format != @as(u16, @intCast(c.AUDIO_S16SYS)) or self.mixing_channels != 2) {
-            std.log.err("OpenTitus only supports native signed 16-bit SYS, stereo format!", .{});
-            return error.UnexpectedMixerFormat;
-        }
-
-        // Mix buffer: four bytes per sample (16 bits * 2 channels):
-        self.mix_buffer = try allocator.alloc(SampleType, @intCast(self.mixing_freq * NumChannels));
-        errdefer allocator.free(self.mix_buffer);
-
         self.callback_mutex = Mutex{};
         self.callback_queue_mutex = Mutex{};
 
-        // Set postmix that adds the OPL music. This is deliberately done
-        // as a postmix and not using Mix_HookMusic() as the latter disables
-        // normal SDL_mixer music mixing.
-        c.Mix_SetPostMix(SDL_Mix_Callback, self);
-        errdefer c.Mix_SetPostMix(null, null);
+        try self.backend.init(self, allocator, MixingFreq);
 
-        try self.backend.init(self, allocator, 44100);
+        _ = miniaudio.ma_device_start(&self.device);
+        errdefer _ = miniaudio.ma_device_stop(&self.device);
+
         self.initialized = true;
     }
 
@@ -154,22 +141,11 @@ pub const AudioEngine = struct {
         if (!self.initialized) {
             return;
         }
+        _ = miniaudio.ma_device_stop(&self.device);
         self.backend.deinit();
-
-        // FIXME: this looks like cargo cult madness. Make sure it's actually right?
-        c.SDL_LockAudio();
-        c.Mix_SetPostMix(null, null);
-        c.SDL_UnlockAudio();
-
-        c.Mix_CloseAudio();
-        c.SDL_QuitSubSystem(c.SDL_INIT_AUDIO);
+        miniaudio.ma_device_uninit(&self.device);
 
         self.callback_queue.deinit();
-        self.allocator.free(self.mix_buffer);
-        if (c.SDL_WasInit(c.SDL_INIT_AUDIO) == 0) {
-            return;
-        }
-        c.SDL_CloseAudio();
     }
 
     // Advance time by the specified number of samples, invoking any
@@ -178,7 +154,7 @@ pub const AudioEngine = struct {
         self.callback_queue_mutex.lock();
 
         // Advance time.
-        var us: u64 = (nsamples * usecs_in_sec) / @as(u64, @intCast(self.mixing_freq));
+        const us: u64 = (nsamples * usecs_in_sec) / @as(u64, @intCast(MixingFreq));
         self.current_time += us;
 
         // Are there callbacks to invoke now?  Keep invoking them
@@ -207,62 +183,47 @@ pub const AudioEngine = struct {
 
     // Call the OPL emulator code to fill the specified buffer.
     fn fillBuffer(self: *AudioEngine, buffer: *u8, nsamples: u32) void {
-        // This seems like a reasonable assumption.  mix_buffer is
-        // 1 second long, which should always be much longer than the
-        // SDL mix buffer.
-        if (nsamples >= self.mixing_freq) {
-            unreachable;
-        }
-
-        // OPL output is generated into temporary buffer and then mixed
-        // (to avoid overflows etc.)
-        self.backend.fillBuffer(self.mix_buffer, nsamples);
-        c.SDL_MixAudioFormat(
-            buffer,
-            @ptrCast(&self.mix_buffer[0]),
-            c.AUDIO_S16SYS,
-            nsamples * @sizeOf(SampleType) * NumChannels,
-            self.volume,
-        );
+        var result: []i16 = @as([*]i16, @alignCast(@ptrCast(buffer)))[0..nsamples];
+        self.backend.fillBuffer(@ptrCast(result), nsamples);
     }
 
-    // Callback function to fill a new sound buffer:
-    fn SDL_Mix_Callback(udata: ?*anyopaque, buffer: [*c]u8, len: c_int) callconv(.C) void {
-        var self: *AudioEngine = @alignCast(@ptrCast(udata));
+    fn data_callback(pDevice: ?*anyopaque, buffer: ?*anyopaque, pInput: ?*const anyopaque, frameCount: u32) callconv(.C) void {
+        _ = pInput;
+        var device: *miniaudio.ma_device = @alignCast(@ptrCast(pDevice.?));
+        var self: *AudioEngine = @alignCast(@ptrCast(device.pUserData.?));
         var filled: u64 = 0;
-        var buffer_samples: c_uint = @as(c_uint, @intCast(len)) / Stride;
 
         // Repeatedly call the OPL emulator update function until the buffer is full.
-        while (filled < buffer_samples) {
-            var nsamples: u64 = 0;
+        while (filled < frameCount) {
+            var nFrames: u64 = 0;
 
             self.callback_queue_mutex.lock();
 
             // Work out the time until the next callback waiting in
             // the callback queue must be invoked.  We can then fill the
-            // buffer with this many samples.
+            // buffer with this many frames.
 
             if (self.callback_queue.count() == 0) {
-                nsamples = buffer_samples - filled;
+                nFrames = frameCount - filled;
             } else {
                 const next_callback_time = self.callback_queue.peek().?.time;
 
-                nsamples = (next_callback_time - self.current_time) * @as(u32, @intCast(self.mixing_freq));
-                nsamples = (nsamples + usecs_in_sec - 1) / usecs_in_sec;
+                nFrames = (next_callback_time - self.current_time) * @as(u32, @intCast(MixingFreq));
+                nFrames = (nFrames + usecs_in_sec - 1) / usecs_in_sec;
 
-                if (nsamples > buffer_samples - filled) {
-                    nsamples = buffer_samples - filled;
+                if (nFrames > frameCount - filled) {
+                    nFrames = frameCount - filled;
                 }
             }
 
             self.callback_queue_mutex.unlock();
 
             // Add emulator output to buffer.
-            self.fillBuffer(buffer + filled * Stride, @truncate(nsamples));
-            filled += nsamples;
+            self.fillBuffer(@as([*c]u8, @ptrCast(buffer)) + filled * Stride, @truncate(nFrames));
+            filled += nFrames;
 
             // Invoke callbacks for this point in time.
-            self.advanceTime(nsamples);
+            self.advanceTime(nFrames);
         }
     }
 
@@ -287,11 +248,11 @@ pub fn music_get_last_song() u8 {
 }
 
 pub export fn music_play_jingle_c(song_number: u8) void {
-    c.SDL_LockAudio();
+    audio_engine.backend.lock();
     {
         audio_engine.backend.playTrack(song_number);
     }
-    c.SDL_UnlockAudio();
+    audio_engine.backend.unlock();
 }
 
 pub fn music_select_song(song_number: u8) void {
@@ -300,21 +261,21 @@ pub fn music_select_song(song_number: u8) void {
         return;
     }
 
-    c.SDL_LockAudio();
+    audio_engine.backend.lock();
     {
         audio_engine.backend.playTrack(song_number);
     }
-    c.SDL_UnlockAudio();
+    audio_engine.backend.unlock();
 }
 
 pub export fn music_toggle_c() bool {
     game.settings.music = !game.settings.music;
     if (!game.settings.music) {
-        c.SDL_LockAudio();
+        audio_engine.backend.lock();
         {
             audio_engine.backend.stopTrack(audio_engine.last_song);
         }
-        c.SDL_UnlockAudio();
+        audio_engine.backend.unlock();
     }
     return game.settings.music;
 }
@@ -322,11 +283,11 @@ pub export fn music_toggle_c() bool {
 pub fn music_set_playing(playing: bool) void {
     game.settings.music = playing;
     if (!game.settings.music) {
-        c.SDL_LockAudio();
+        audio_engine.backend.lock();
         {
             audio_engine.backend.stopTrack(audio_engine.last_song);
         }
-        c.SDL_UnlockAudio();
+        audio_engine.backend.unlock();
     }
 }
 
@@ -373,9 +334,9 @@ pub fn music_restart_if_finished() void {
 
 pub export fn sfx_play_c(fx_number: u8) void {
     var backend = audio_engine.backend;
-    c.SDL_LockAudio();
+    audio_engine.backend.lock();
     backend.playSfx(fx_number);
-    c.SDL_UnlockAudio();
+    audio_engine.backend.unlock();
 }
 
 pub fn set_volume(volume: u8) void {
@@ -385,6 +346,10 @@ pub fn set_volume(volume: u8) void {
     }
     game.settings.volume_master = volume_clamp;
     audio_engine.volume = volume_clamp;
+    _ = miniaudio.ma_device_set_master_volume(
+        &audio_engine.device,
+        @as(f32, @floatFromInt(volume_clamp)) / 128.0,
+    );
 }
 
 pub fn get_volume() u8 {

@@ -45,6 +45,8 @@ pub const VTable = struct {
     stopTrack: *const fn (ctx: *anyopaque, song_number: u8) void,
     playSfx: *const fn (ctx: *anyopaque, sfx_number: u8) void,
     isPlayingATrack: *const fn (ctx: *anyopaque) bool,
+    lock: *const fn (ctx: *anyopaque) void,
+    unlock: *const fn (ctx: *anyopaque) void,
 };
 
 pub inline fn init(self: Backend, engine: *AudioEngine, allocator: std.mem.Allocator, sample_rate: u32) Error!void {
@@ -73,4 +75,12 @@ pub inline fn playSfx(self: Backend, sfx_number: u8) void {
 
 pub inline fn isPlayingATrack(self: Backend) bool {
     return self.vtable.isPlayingATrack(self.ptr);
+}
+
+pub inline fn lock(self: Backend) void {
+    self.vtable.lock(self.ptr);
+}
+
+pub inline fn unlock(self: Backend) void {
+    self.vtable.unlock(self.ptr);
 }
