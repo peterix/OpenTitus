@@ -4,6 +4,8 @@ const c = @import("c.zig");
 const data = @import("data.zig");
 const sprites = @import("sprites.zig");
 const ObjectData = data.ObjectData;
+const audio_engine = @import("audio/AudioEngine.zig");
+const AudioTrack = audio_engine.AudioTrack;
 
 // TODO: split the original level representation:
 //  - from internal 'initialize level stuff this way' data types
@@ -87,6 +89,7 @@ pub const Level = struct {
     width: usize = 0,
     height: usize = 0,
     tiles: [256]Tile,
+    music: AudioTrack,
 
     pub fn getTile(self: *const Level, x: usize, y: usize) u8 {
         if (x >= self.width or y >= self.height) {

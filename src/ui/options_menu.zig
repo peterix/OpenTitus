@@ -29,7 +29,7 @@ const SDL = @import("../SDL.zig");
 
 const fonts = @import("fonts.zig");
 const window = @import("../window.zig");
-const audio = @import("../audio/engine.zig");
+const audio = @import("../audio/AudioEngine.zig");
 const BackendType = audio.BackendType;
 
 const menu = @import("menu.zig");

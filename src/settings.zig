@@ -32,7 +32,8 @@ const c = @import("c.zig");
 const json = @import("json.zig");
 const ManagedJSON = json.ManagedJSON;
 const JsonList = json.JsonList;
-
+const AudioEngine = @import("audio/AudioEngine.zig");
+const BackendType = AudioEngine.BackendType;
 const Allocator = std.mem.Allocator;
 
 const settings_file_name = "settings.json";
@@ -47,6 +48,7 @@ pub const Settings = extern struct {
     volume_master: u8 = 128,
     window_width: u16 = window.game_width * 3,
     window_height: u16 = window.game_height * 3,
+    audio_backend: BackendType = .Adlib,
 
     pub fn make_new(allocator: Allocator) !ManagedJSON(Settings) {
         var seed: u32 = undefined;

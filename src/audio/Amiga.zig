@@ -31,8 +31,13 @@ const Mutex = std.Thread.Mutex;
 
 const Backend = @import("Backend.zig");
 
-const _engine = @import("engine.zig");
+const _engine = @import("AudioEngine.zig");
 const AudioEngine = _engine.AudioEngine;
+const AudioTrack = _engine.AudioTrack;
+const AudioEvent = _engine.AudioEvent;
+
+const c = @import("../c.zig");
+const data = @import("../data.zig");
 
 const pocketmod = @import("pocketmod/pocketmod.zig");
 
@@ -55,8 +60,44 @@ const track_over_mok = @embedFile("amiga/overmok.mod");
 const track_pres = @embedFile("amiga/pres.mod");
 const track_null: [0]u8 = .{};
 
+fn getTrackData(track_in: ?AudioTrack) []const u8 {
+    if (track_in == null) {
+        return &track_null;
+    }
+    const track = track_in.?;
+    if (data.game == c.Titus) switch (track) {
+        .Play1 => return track_jeu1,
+        .Play2 => return track_jeu2_ttf,
+        .Play3 => return track_jeu3_ttf,
+        .Play4 => return track_jeu4_ttf,
+        .Play5 => return track_jeu5,
+        .Bonus => return track_bonus,
+        // Amiga version doesn't really have credits music, so we just reuse title music
+        .Credits => return track_pres,
+        .Death => return track_mort,
+        .GameOver => return track_over_ttf,
+        .LevelEnd => return track_cba,
+        .MainTitle => return track_pres,
+        .Win => return track_gagne_ttf,
+    } else switch (track) {
+        .Play1 => return track_jeu1,
+        .Play2 => return track_jeu2_mok,
+        .Play3 => return track_jeu3_mok,
+        .Play4 => return track_jeu4_mok,
+        .Play5 => return track_jeu5,
+        .Bonus => return track_bonus,
+        // Amiga version doesn't really have credits music, so we just reuse title music
+        .Credits => return track_pres,
+        .Death => return track_mort,
+        .GameOver => return track_over_mok,
+        .LevelEnd => return track_cba,
+        .MainTitle => return track_pres,
+        .Win => return track_gagne_mok,
+    }
+}
+
 allocator: std.mem.Allocator = undefined,
-current_track: ?u8 = null,
+current_track: ?AudioTrack = null,
 mutex: Mutex = Mutex{},
 sample_rate: u32 = undefined,
 music_context: ?pocketmod.pocketmod_context = null,
@@ -73,8 +114,7 @@ pub fn backend(self: *Amiga) Backend {
             .deinit = deinit,
             .fillBuffer = fillBuffer,
             .playTrack = playTrack,
-            .stopTrack = stopTrack,
-            .playSfx = play_sfx,
+            .playEvent = playEvent,
             .isPlayingATrack = isPlayingATrack,
             .lock = lock,
             .unlock = unlock,
@@ -148,23 +188,26 @@ fn fillBuffer(ctx: *anyopaque, buffer: []i16, nFrames: u32) void {
     }
 }
 
-fn stopTrack(ctx: *anyopaque, song_number: u8) void {
+fn playTrack(ctx: *anyopaque, track: ?AudioTrack) void {
     const self: *Amiga = @ptrCast(@alignCast(ctx));
-    if (self.current_track) |track| {
-        if (track == song_number) {
-            self.current_track = null;
+    if (track == null) {
+        self.music_context = null;
+        self.current_track = null;
+    } else {
+        var music_context: pocketmod.pocketmod_context = undefined;
+        const track_data = getTrackData(track);
+        if (!pocketmod.pocketmod_init(&music_context, track_data.ptr, @truncate(track_data.len), self.sample_rate)) {
+            unreachable;
         }
+        self.music_context = music_context;
+        self.current_track = track;
     }
 }
 
-fn playTrack(ctx: *anyopaque, song_number: u8) void {
-    const self: *Amiga = @ptrCast(@alignCast(ctx));
-    var music_context: pocketmod.pocketmod_context = undefined;
-    if (!pocketmod.pocketmod_init(&music_context, track_jeu1.ptr, track_jeu1.len, self.sample_rate)) {
-        unreachable;
-    }
-    self.music_context = music_context;
-    self.current_track = song_number;
+// TODO: implement playing original sounds
+fn playEvent(ctx: *anyopaque, event: AudioEvent) void {
+    _ = ctx;
+    _ = event;
 }
 
 fn isPlayingATrack(ctx: *anyopaque) bool {

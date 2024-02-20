@@ -27,7 +27,19 @@
 #include <stdint.h>
 
 // TODO: reduce this to nothing.
+// TODO: add more audio events for Amiga (enemy throws, etc.)
 
-void sfx_play_c(uint8_t fx_number);
-void music_play_jingle_c(uint8_t track_number);
-bool music_toggle_c();
+enum AudioEvent {
+    Event_HitEnemy, // sfx 1
+    Event_HitPlayer, // sfx 4
+    Event_PlayerHeadImpact, // sfx 5
+    Event_PlayerPickup, // sfx 9
+    Event_PlayerPickupEnemy, // sfx 9
+    Event_PlayerThrow, // sfx 3
+    Event_BallBounce, // sfx 12
+    Event_PlayerCollectWaypoint, // jingle 5
+    Event_PlayerCollectBonus, // jingle 6
+    Event_PlayerCollectLamp, // jingle 7
+};
+
+void playEvent_c(enum AudioEvent event);

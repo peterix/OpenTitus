@@ -14,4 +14,5 @@ pub usingnamespace @cImport({
     @cInclude("game.h");
     @cInclude("time.h");
     @cInclude("common.h");
+    @cInclude("audio.h");
 });

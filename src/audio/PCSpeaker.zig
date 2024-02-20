@@ -31,8 +31,10 @@ const std = @import("std");
 
 const Backend = @import("Backend.zig");
 
-const _engine = @import("engine.zig");
+const _engine = @import("AudioEngine.zig");
 const AudioEngine = _engine.AudioEngine;
+const AudioTrack = _engine.AudioTrack;
+const AudioEvent = _engine.AudioEvent;
 
 sample_rate: u32 = undefined,
 
@@ -48,8 +50,7 @@ pub fn backend(self: *PCSpeaker) Backend {
             .deinit = deinit,
             .fillBuffer = fillBuffer,
             .playTrack = playTrack,
-            .stopTrack = stopTrack,
-            .playSfx = play_sfx,
+            .playEvent = playEvent,
             .isPlayingATrack = isPlayingATrack,
             .lock = lock,
             .unlock = unlock,
@@ -84,14 +85,14 @@ fn fillBuffer(ctx: *anyopaque, buffer: []i16, nsamples: u32) void {
     }
 }
 
-fn stopTrack(ctx: *anyopaque, song_number: u8) void {
+fn playTrack(ctx: *anyopaque, track: ?AudioTrack) void {
     _ = ctx;
-    _ = song_number;
+    _ = track;
 }
 
-fn playTrack(ctx: *anyopaque, song_number: u8) void {
+fn playEvent(ctx: *anyopaque, event: AudioEvent) void {
     _ = ctx;
-    _ = song_number;
+    _ = event;
 }
 
 fn isPlayingATrack(ctx: *anyopaque) bool {

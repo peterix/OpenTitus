@@ -24,8 +24,10 @@
 
 const std = @import("std");
 const Backend = @This();
-const _engine = @import("engine.zig");
+const _engine = @import("AudioEngine.zig");
 const AudioEngine = _engine.AudioEngine;
+const AudioTrack = _engine.AudioTrack;
+const AudioEvent = _engine.AudioEvent;
 
 pub const BackendType = enum(u8) {
     Adlib = 0,
@@ -60,9 +62,8 @@ pub const VTable = struct {
     init: *const fn (ctx: *anyopaque, engine: *AudioEngine, allocator: std.mem.Allocator, sample_rate: u32) Error!void,
     deinit: *const fn (ctx: *anyopaque) void,
     fillBuffer: *const fn (ctx: *anyopaque, buffer: []i16, nsamples: u32) void,
-    playTrack: *const fn (ctx: *anyopaque, song_number: u8) void,
-    stopTrack: *const fn (ctx: *anyopaque, song_number: u8) void,
-    playSfx: *const fn (ctx: *anyopaque, sfx_number: u8) void,
+    playTrack: *const fn (ctx: *anyopaque, track: ?AudioTrack) void,
+    playEvent: *const fn (ctx: *anyopaque, event: AudioEvent) void,
     isPlayingATrack: *const fn (ctx: *anyopaque) bool,
     lock: *const fn (ctx: *anyopaque) void,
     unlock: *const fn (ctx: *anyopaque) void,
@@ -80,16 +81,12 @@ pub inline fn fillBuffer(self: Backend, buffer: []i16, nsamples: u32) void {
     return self.vtable.fillBuffer(self.ptr, buffer, nsamples);
 }
 
-pub inline fn playTrack(self: Backend, song_number: u8) void {
+pub inline fn playTrack(self: Backend, song_number: ?AudioTrack) void {
     self.vtable.playTrack(self.ptr, song_number);
 }
 
-pub inline fn stopTrack(self: Backend, song_number: u8) void {
-    self.vtable.stopTrack(self.ptr, song_number);
-}
-
-pub inline fn playSfx(self: Backend, sfx_number: u8) void {
-    self.vtable.playSfx(self.ptr, sfx_number);
+pub inline fn playEvent(self: Backend, event: AudioEvent) void {
+    self.vtable.playEvent(self.ptr, event);
 }
 
 pub inline fn isPlayingATrack(self: Backend) bool {

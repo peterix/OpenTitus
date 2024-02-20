@@ -352,7 +352,7 @@ void shock(TITUS_level *level, TITUS_object *object) { //Falling object versus p
     }
 
     //Hit!
-    sfx_play_c(5); //Sound effect
+    playEvent_c(Event_PlayerHeadImpact);
     CHOC_FLAG = 24;
     if (object->sprite.killing) {
         if (!GODMODE) {

@@ -1,6 +1,6 @@
 const c = @import("../c.zig");
 const window = @import("../window.zig");
-const audio = @import("../audio/engine.zig");
+const audio = @import("../audio/AudioEngine.zig");
 
 pub const MenuAction = enum {
     None,
@@ -58,9 +58,6 @@ pub fn getMenuAction() MenuAction {
                     },
                     c.SDL_SCANCODE_F11 => {
                         window.toggle_fullscreen();
-                    },
-                    c.SDL_SCANCODE_M => {
-                        _ = audio.music_toggle_c();
                     },
                     c.SDL_SCANCODE_DOWN => {
                         action = .Down;

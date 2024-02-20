@@ -133,8 +133,6 @@ int move_player(ScreenContext *context, TITUS_level *level) {
                         level->lives += 1;
                     }
                 }
-            } else if (event.key.keysym.scancode == SDL_SCANCODE_M) {
-                music_toggle_c();
             } else if (event.key.keysym.scancode == SDL_SCANCODE_F11) {
                 toggle_fullscreen();
             } else if (event.key.keysym.scancode == SDL_SCANCODE_ESCAPE) {
@@ -865,7 +863,7 @@ static int CASE_BONUS(TITUS_level *level, uint8_t tileY, uint8_t tileX) {
     if (level->bonus[i].bonustile >= 255 - 2) {
         //Increase HP if tile number is >= 253
         level->bonuscollected += 1;
-        music_play_jingle_c(6);
+        playEvent_c(Event_PlayerCollectBonus);
         INC_ENERGY(level);
     }
     //Return the original tile underneath the bonus
@@ -880,17 +878,17 @@ static void CASE_PASS(ScreenContext *context, TITUS_level *level, uint8_t level_
      //if the bonus is found in the bonus list
     if (CASE_BONUS(level, tileY, tileX)) {
         // TODO: add something to tell the player what happened, but not a full screen modal...
-        music_play_jingle_c(7);
+        playEvent_c(Event_PlayerCollectLamp);
     }
 }
 
 static void CASE_SECU(TITUS_level *level, uint8_t tileY, uint8_t tileX) {
     TITUS_player *player = &(level->player);
     //Padlock, store X/Y coordinates
-    music_play_jingle_c(5);
     //if the bonus is found in the bonus list
     if (CASE_BONUS(level, tileY, tileX)) {
         // TODO: add something to tell the player what happened
+        playEvent_c(Event_PlayerCollectWaypoint);
         player->initX = player->sprite.x;
         player->initY = player->sprite.y;
         if ((player->sprite2.number == FIRST_OBJET+26) || (player->sprite2.number == FIRST_OBJET+27)) {
@@ -1126,7 +1124,7 @@ static void ACTION_PRG(TITUS_level *level, uint8_t action) {
                         }
 
                         //Take the object
-                        sfx_play_c(9); //Sound effect
+                        playEvent_c(Event_PlayerPickup);
                         FUME_FLAG = 0;
                         level->object[i].sprite.speed_y = 0;
                         level->object[i].sprite.speed_x = 0;
@@ -1216,7 +1214,7 @@ static void ACTION_PRG(TITUS_level *level, uint8_t action) {
                                 }
                             }
 
-                            sfx_play_c(9); //Sound effect
+                            playEvent_c(Event_PlayerPickupEnemy);
                             FUME_FLAG = 0;
                             level->enemy[i].sprite.speed_y = 0;
                             level->enemy[i].sprite.speed_x = 0;
@@ -1282,13 +1280,13 @@ static void ACTION_PRG(TITUS_level *level, uint8_t action) {
                         DROP_FLAG = true;
                         player->sprite2.speed_x = speed_x;
                         player->sprite2.speed_y = speed_y;
-                        sfx_play_c(3); //Sound effect
+                        playEvent_c(Event_PlayerThrow);
                     }
                 } else { //Ordinary throw
                     DROP_FLAG = true;
                     player->sprite2.speed_x = speed_x;
                     player->sprite2.speed_y = speed_y;
-                    sfx_play_c(3); //Sound effect
+                    playEvent_c(Event_PlayerThrow);
                 }
             }
             updatesprite(level, &(player->sprite), 10, true); //The same as in free fall
@@ -1550,7 +1548,7 @@ void COLLISION_OBJET(TITUS_level *level) {
 
         //If the ball lies on the ground
         if (off_object->sprite.speed_y == 0) {
-            sfx_play_c(12); //Sound effect
+            playEvent_c(Event_BallBounce);
             off_object->sprite.speed_y = 0 - player->sprite.speed_y;
             off_object->sprite.y -= off_object->sprite.speed_y >> 4;
             GRAVITY_FLAG = 4;

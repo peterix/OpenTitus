@@ -32,8 +32,10 @@ const Mutex = std.Thread.Mutex;
 
 const Backend = @import("Backend.zig");
 
-const _engine = @import("engine.zig");
+const _engine = @import("AudioEngine.zig");
 const AudioEngine = _engine.AudioEngine;
+const AudioTrack = _engine.AudioTrack;
+const AudioEvent = _engine.AudioEvent;
 
 const _bytes = @import("../bytes.zig");
 
@@ -45,6 +47,27 @@ inline fn chomp_u8(bytes: *[]const u8) u8 {
 
 inline fn chomp_u16(bytes: *[]const u8) u16 {
     return _bytes.chompInt(u16, .Little, bytes);
+}
+
+fn getTrackNumber(track_in: ?AudioTrack) ?u8 {
+    if (track_in == null) {
+        return null;
+    }
+    const track = track_in.?;
+    switch (track) {
+        .Play1 => return 3,
+        .Play2 => return 10,
+        .Play3 => return 11,
+        .Play4 => return 12,
+        .Play5 => return 13,
+        .Bonus => return 0,
+        .Credits => return 9,
+        .Death => return 1,
+        .GameOver => return 2,
+        .LevelEnd => return 4,
+        .MainTitle => return 15,
+        .Win => return 14,
+    }
 }
 
 const MUS_OFFSET = 0;
@@ -156,8 +179,7 @@ pub fn backend(self: *Adlib) Backend {
             .deinit = deinit,
             .fillBuffer = fillBuffer,
             .playTrack = playTrack,
-            .stopTrack = stopTrack,
-            .playSfx = play_sfx,
+            .playEvent = playEvent,
             .isPlayingATrack = isPlayingATrack,
             .lock = lock,
             .unlock = unlock,
@@ -240,18 +262,7 @@ fn isPlayingATrack(ctx: *anyopaque) bool {
     return self.active_channels != 0;
 }
 
-fn stopTrack(ctx: *anyopaque, song_number: u8) void {
-    const self: *Adlib = @ptrCast(@alignCast(ctx));
-    if (self.current_track) |track| {
-        if (track == song_number) {
-            self.active_channels = 0;
-            self.current_track = null;
-        }
-    }
-}
-
-fn playTrack(ctx: *anyopaque, song_number: u8) void {
-    const self: *Adlib = @ptrCast(@alignCast(ctx));
+fn playTrackNumber(self: *Adlib, song_number: u8) void {
     self.current_track = song_number;
 
     var raw_data = self.data;
@@ -337,8 +348,52 @@ fn playTrack(ctx: *anyopaque, song_number: u8) void {
     }
 }
 
-fn play_sfx(ctx: *anyopaque, fx_number: u8) void {
+fn playTrack(ctx: *anyopaque, track: ?AudioTrack) void {
     const self: *Adlib = @ptrCast(@alignCast(ctx));
+    const song_number_ = getTrackNumber(track);
+    if (song_number_ == null) {
+        // stop playing... this is probably wrong
+        self.active_channels = 0;
+        self.current_track = null;
+        return;
+    }
+    self.playTrackNumber(song_number_.?);
+}
+
+fn playEvent(ctx: *anyopaque, event: AudioEvent) void {
+    const self: *Adlib = @ptrCast(@alignCast(ctx));
+    switch (event) {
+        .Event_HitEnemy => {
+            self.playSfx(1);
+        },
+        .Event_HitPlayer => {
+            self.playSfx(4);
+        },
+        .Event_PlayerHeadImpact => {
+            self.playSfx(5);
+        },
+        .Event_PlayerPickup, .Event_PlayerPickupEnemy => {
+            self.playSfx(9);
+        },
+        .Event_PlayerThrow => {
+            self.playSfx(3);
+        },
+        .Event_BallBounce => {
+            self.playSfx(12);
+        },
+        .Event_PlayerCollectWaypoint => {
+            self.playTrackNumber(5);
+        },
+        .Event_PlayerCollectBonus => {
+            self.playTrackNumber(6);
+        },
+        .Event_PlayerCollectLamp => {
+            self.playTrackNumber(7);
+        },
+    }
+}
+
+fn playSfx(self: *Adlib, fx_number: u8) void {
     self.sfx_time = 15;
     self.sfx_on = true;
     const index: usize = @intCast(fx_number);

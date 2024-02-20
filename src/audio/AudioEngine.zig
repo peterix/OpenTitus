@@ -35,7 +35,6 @@ pub const BackendType = Backend.BackendType;
 const Adlib = @import("Adlib.zig");
 const Amiga = @import("Amiga.zig");
 const PCSpeaker = @import("PCSpeaker.zig");
-const Silence = @import("Silence.zig");
 
 const miniaudio = @import("miniaudio/miniaudio.zig");
 const SDL = @import("../SDL.zig");
@@ -75,6 +74,19 @@ test "test queue priority" {
     try std.testing.expectEqual(QueuedCallback{ .time = 2 }, queue.remove());
 }
 
+pub const AudioEvent = enum {
+    Event_HitEnemy, // sfx 1
+    Event_HitPlayer, // sfx 4
+    Event_PlayerHeadImpact, // sfx 5
+    Event_PlayerPickup, // sfx 9
+    Event_PlayerPickupEnemy, // sfx 9
+    Event_PlayerThrow, // sfx 3
+    Event_BallBounce, // sfx 12
+    Event_PlayerCollectWaypoint, // jingle 5
+    Event_PlayerCollectBonus, // jingle 6
+    Event_PlayerCollectLamp, // jingle 7
+};
+
 pub const AudioEngine = struct {
     allocator: std.mem.Allocator = undefined,
 
@@ -84,9 +96,8 @@ pub const AudioEngine = struct {
     adlib: Adlib = .{},
     amiga: Amiga = .{},
     pcSpeaker: PCSpeaker = .{},
-    silence: Silence = .{},
-    backend: Backend = undefined,
-    last_song: u8 = 0,
+    backend: ?Backend = null,
+    last_song: ?AudioTrack = null,
     volume: u8 = 128,
 
     // When the callback mutex is locked using OPL_Lock, callback functions are not invoked.
@@ -106,9 +117,8 @@ pub const AudioEngine = struct {
 
     pub fn init(self: *AudioEngine, allocator: std.mem.Allocator) !void {
         self.allocator = allocator;
-        self.last_song = 0;
+        self.last_song = null;
         self.volume = game.settings.volume_master;
-        self.backend = self.adlib.backend();
 
         self.config = miniaudio.ma_device_config_init(miniaudio.ma_device_type_playback);
         self.config.playback.format = miniaudio.ma_format_s16;
@@ -135,7 +145,7 @@ pub const AudioEngine = struct {
         self.callback_mutex = Mutex{};
         self.callback_queue_mutex = Mutex{};
 
-        try self.backend.init(self, allocator, MixingFreq);
+        set_backend_type(game.settings.audio_backend);
 
         _ = miniaudio.ma_device_start(&self.device);
         errdefer _ = miniaudio.ma_device_stop(&self.device);
@@ -148,7 +158,9 @@ pub const AudioEngine = struct {
             return;
         }
         _ = miniaudio.ma_device_stop(&self.device);
-        self.backend.deinit();
+        if (self.backend) |*backend| {
+            backend.deinit();
+        }
         miniaudio.ma_device_uninit(&self.device);
 
         self.callback_queue.deinit();
@@ -190,7 +202,11 @@ pub const AudioEngine = struct {
     // Call the OPL emulator code to fill the specified buffer.
     fn fillBuffer(self: *AudioEngine, buffer: *u8, nFrames: u32) void {
         var result: []i16 = @as([*]i16, @alignCast(@ptrCast(buffer)))[0 .. nFrames * 2];
-        self.backend.fillBuffer(@ptrCast(result), nFrames);
+        if (self.backend) |*backend| {
+            backend.fillBuffer(@ptrCast(result), nFrames);
+        } else {
+            @memset(result, 0);
+        }
     }
 
     fn data_callback(pDevice: ?*anyopaque, buffer: ?*anyopaque, pInput: ?*const anyopaque, frameCount: u32) callconv(.C) void {
@@ -256,51 +272,20 @@ pub const AudioEngine = struct {
 
 pub var audio_engine: AudioEngine = .{};
 
-pub fn music_get_last_song() u8 {
+pub fn music_get_last_song() ?AudioTrack {
     return audio_engine.last_song;
-}
-
-pub export fn music_play_jingle_c(song_number: u8) void {
-    audio_engine.backend.lock();
-    {
-        audio_engine.backend.playTrack(song_number);
-    }
-    audio_engine.backend.unlock();
-}
-
-pub fn music_select_song(song_number: u8) void {
-    audio_engine.last_song = song_number;
-    if (!game.settings.music) {
-        return;
-    }
-
-    audio_engine.backend.lock();
-    {
-        audio_engine.backend.playTrack(song_number);
-    }
-    audio_engine.backend.unlock();
-}
-
-pub export fn music_toggle_c() bool {
-    game.settings.music = !game.settings.music;
-    if (!game.settings.music) {
-        audio_engine.backend.lock();
-        {
-            audio_engine.backend.stopTrack(audio_engine.last_song);
-        }
-        audio_engine.backend.unlock();
-    }
-    return game.settings.music;
 }
 
 pub fn music_set_playing(playing: bool) void {
     game.settings.music = playing;
+
+    if (audio_engine.backend == null) {
+        return;
+    }
     if (!game.settings.music) {
-        audio_engine.backend.lock();
-        {
-            audio_engine.backend.stopTrack(audio_engine.last_song);
-        }
-        audio_engine.backend.unlock();
+        audio_engine.backend.?.lock();
+        audio_engine.backend.?.playTrack(null);
+        audio_engine.backend.?.unlock();
     }
 }
 
@@ -310,10 +295,14 @@ pub fn music_is_playing() bool {
 
 // FIXME: this is just weird
 pub fn music_wait_to_finish() void {
-    var waiting: bool = true;
     if (!game.settings.music) {
         return;
     }
+    if (audio_engine.backend == null) {
+        return;
+    }
+
+    var waiting: bool = true;
     while (waiting) {
         SDL.delay(1);
         var event: c.SDL_Event = undefined;
@@ -330,7 +319,7 @@ pub fn music_wait_to_finish() void {
                 }
             }
         }
-        if (!audio_engine.backend.isPlayingATrack()) {
+        if (!audio_engine.backend.?.isPlayingATrack()) {
             waiting = false;
         }
     }
@@ -340,16 +329,58 @@ pub fn music_restart_if_finished() void {
     if (!game.settings.music) {
         return;
     }
-    if (!audio_engine.backend.isPlayingATrack()) {
-        music_select_song(audio_engine.last_song);
+    if (audio_engine.backend == null) {
+        return;
+    }
+
+    if (!audio_engine.backend.?.isPlayingATrack()) {
+        playTrack(audio_engine.last_song);
     }
 }
 
-pub export fn sfx_play_c(fx_number: u8) void {
-    var backend = audio_engine.backend;
-    audio_engine.backend.lock();
-    backend.playSfx(fx_number);
-    audio_engine.backend.unlock();
+pub const AudioTrack = enum {
+    Play1,
+    Play2,
+    Play3,
+    Play4,
+    Play5,
+    Win,
+    LevelEnd,
+    Bonus,
+    MainTitle,
+    GameOver,
+    Death,
+    Credits,
+};
+
+pub fn playTrack(track: ?AudioTrack) void {
+    audio_engine.last_song = track;
+
+    if (!game.settings.music) {
+        return;
+    }
+    if (audio_engine.backend == null) {
+        return;
+    }
+    audio_engine.backend.?.lock();
+    {
+        audio_engine.backend.?.playTrack(track);
+    }
+    audio_engine.backend.?.unlock();
+}
+
+pub fn playEvent(event: AudioEvent) void {
+    if (audio_engine.backend == null) {
+        return;
+    }
+    var backend = &audio_engine.backend.?;
+    backend.lock();
+    backend.playEvent(event);
+    backend.unlock();
+}
+
+pub export fn playEvent_c(eventInt: c.AudioEvent) void {
+    playEvent(@enumFromInt(eventInt));
 }
 
 pub fn set_volume(volume: u8) void {
@@ -370,17 +401,25 @@ pub fn get_volume() u8 {
 }
 
 pub fn get_backend_type() BackendType {
-    return audio_engine.backend.backend_type;
+    if (audio_engine.backend == null) {
+        return .Silence;
+    }
+    return audio_engine.backend.?.backend_type;
 }
 
 pub fn set_backend_type(backend_type: BackendType) void {
-    const current_type = audio_engine.backend.backend_type;
+    const current_type = get_backend_type();
     if (current_type == backend_type) {
         return;
     }
 
+    game.settings.audio_backend = backend_type;
+
     // switch to a different backend...
-    audio_engine.backend.deinit();
+    if (audio_engine.backend) |*backend| {
+        backend.deinit();
+    }
+
     var backend = BACKEND: {
         switch (backend_type) {
             .Adlib => {
@@ -393,14 +432,16 @@ pub fn set_backend_type(backend_type: BackendType) void {
                 break :BACKEND audio_engine.pcSpeaker.backend();
             },
             .Silence => {
-                break :BACKEND audio_engine.silence.backend();
+                break :BACKEND null;
             },
         }
     };
+    if (backend) |*b| {
+        b.init(&audio_engine, audio_engine.allocator, MixingFreq) catch {
+            audio_engine.backend = null;
+            return;
+        };
+    }
 
-    backend.init(&audio_engine, audio_engine.allocator, MixingFreq) catch {
-        audio_engine.backend = audio_engine.silence.backend();
-        return;
-    };
     audio_engine.backend = backend;
 }

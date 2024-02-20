@@ -52,7 +52,7 @@ const intro_text = @import("ui/intro_text.zig");
 const keyboard = @import("ui/keyboard.zig");
 const main_menu = @import("ui/main_menu.zig");
 
-const audio = @import("audio/engine.zig");
+const audio = @import("audio/AudioEngine.zig");
 const data = @import("data.zig");
 const globals = @import("globals.zig");
 const engine = @import("engine.zig");
@@ -147,7 +147,7 @@ pub fn run() !u8 {
             state = 0;
     }
 
-    audio.music_select_song(15);
+    audio.playTrack(.MainTitle);
 
     if (state != 0) {
         retval = try image.viewImageFile(
