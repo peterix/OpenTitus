@@ -184,6 +184,14 @@ fn fillBuffer(ctx: *anyopaque, buffer: []i16, nFrames: u32) void {
             }
             to_render -= rendered_now;
             rendered += rendered_now;
+            // if we looped, stop playing
+            const looped = pocketmod.pocketmod_loop_count(music_context) == 1;
+            if (looped) {
+                @memset(buffer[rendered * 2 ..], 0);
+                self.music_context = null;
+                self.current_track = null;
+                return;
+            }
         }
     }
 }
