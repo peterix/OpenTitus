@@ -4,6 +4,8 @@
 #include <stdint.h>
 #include <stdbool.h>
 
+#define POCKETMOD_NO_INTERPOLATION
+
 typedef struct pocketmod_context pocketmod_context;
 
 bool pocketmod_init (pocketmod_context *c, const uint8_t *data, uint32_t size, uint32_t rate);
