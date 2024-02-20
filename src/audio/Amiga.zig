@@ -61,7 +61,6 @@ mutex: Mutex = Mutex{},
 sample_rate: u32 = undefined,
 music_context: ?pocketmod.pocketmod_context = null,
 
-data: []const u8 = "",
 engine: *AudioEngine = undefined,
 
 pub fn backend(self: *Amiga) Backend {
@@ -89,11 +88,16 @@ fn init(ctx: *anyopaque, engine: *AudioEngine, allocator: std.mem.Allocator, sam
     self.allocator = allocator;
     self.mutex = Mutex{};
     self.sample_rate = sample_rate;
+    self.current_track = null;
+    self.music_context = null;
 }
 
 fn deinit(ctx: *anyopaque) void {
     const self: *Amiga = @ptrCast(@alignCast(ctx));
-    self.allocator.free(self.data);
+    self.mutex = Mutex{};
+    self.sample_rate = undefined;
+    self.current_track = null;
+    self.music_context = null;
 }
 
 fn lock(ctx: *anyopaque) void {

@@ -167,6 +167,16 @@ pub fn backend(self: *Adlib) Backend {
 
 fn init(ctx: *anyopaque, engine: *AudioEngine, allocator: std.mem.Allocator, sample_rate: u32) Backend.Error!void {
     const self: *Adlib = @ptrCast(@alignCast(ctx));
+    self.active_channels = 0;
+    self.perc_stat = 0;
+    self.skip_delay = 0;
+    self.skip_delay_counter = 0;
+    self.current_track = null;
+
+    self.seg_reduction = 0;
+    self.sfx_on = false;
+    self.sfx_time = 0;
+
     self.engine = engine;
     self.allocator = allocator;
     self.mutex = Mutex{};
