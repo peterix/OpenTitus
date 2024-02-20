@@ -37,7 +37,7 @@ const AudioEngine = _engine.AudioEngine;
 
 const _bytes = @import("../bytes.zig");
 
-const OPL3 = @import("opl3.zig");
+const OPL3 = @import("opl3/opl3.zig");
 
 inline fn chomp_u8(bytes: *[]const u8) u8 {
     return _bytes.chompInt(u8, .Little, bytes);
@@ -149,13 +149,14 @@ inline fn writeRegister(self: *Adlib, reg_num: u16, value: u8) void {
 pub fn backend(self: *Adlib) Backend {
     return .{
         .name = "AdLib",
+        .backend_type = .Adlib,
         .ptr = self,
         .vtable = &.{
             .init = init,
             .deinit = deinit,
             .fillBuffer = fillBuffer,
-            .playTrack = play_track,
-            .stopTrack = stop_track,
+            .playTrack = playTrack,
+            .stopTrack = stopTrack,
             .playSfx = play_sfx,
             .isPlayingATrack = isPlayingATrack,
             .lock = lock,
@@ -201,6 +202,7 @@ fn init(ctx: *anyopaque, engine: *AudioEngine, allocator: std.mem.Allocator, sam
 
 fn deinit(ctx: *anyopaque) void {
     const self: *Adlib = @ptrCast(@alignCast(ctx));
+    self.engine.clearCallbacks();
     self.allocator.free(self.data);
 }
 
@@ -228,7 +230,7 @@ fn isPlayingATrack(ctx: *anyopaque) bool {
     return self.active_channels != 0;
 }
 
-fn stop_track(ctx: *anyopaque, song_number: u8) void {
+fn stopTrack(ctx: *anyopaque, song_number: u8) void {
     const self: *Adlib = @ptrCast(@alignCast(ctx));
     if (self.current_track) |track| {
         if (track == song_number) {
@@ -238,7 +240,7 @@ fn stop_track(ctx: *anyopaque, song_number: u8) void {
     }
 }
 
-fn play_track(ctx: *anyopaque, song_number: u8) void {
+fn playTrack(ctx: *anyopaque, song_number: u8) void {
     const self: *Adlib = @ptrCast(@alignCast(ctx));
     self.current_track = song_number;
 

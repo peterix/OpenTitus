@@ -25,16 +25,19 @@
 // General Public License for more details.
 //
 
-// TODO: implement a way to use music from the Amiga version of the game
-// TODO: research how Amiga version does sound effects, use those too
-
 const std = @import("std");
 const Mutex = std.Thread.Mutex;
 const Order = std.math.Order;
 
-const Adlib = @import("Adlib.zig");
 const Backend = @import("Backend.zig");
-const miniaudio = @import("miniaudio.zig");
+pub const BackendType = Backend.BackendType;
+
+const Adlib = @import("Adlib.zig");
+const Amiga = @import("Amiga.zig");
+const PCSpeaker = @import("PCSpeaker.zig");
+const Silence = @import("Silence.zig");
+
+const miniaudio = @import("miniaudio/miniaudio.zig");
 const SDL = @import("../SDL.zig");
 const c = @import("../c.zig");
 const game = @import("../game.zig");
@@ -79,6 +82,9 @@ pub const AudioEngine = struct {
     device: miniaudio.ma_device = undefined,
 
     adlib: Adlib = .{},
+    amiga: Amiga = .{},
+    pcSpeaker: PCSpeaker = .{},
+    silence: Silence = .{},
     backend: Backend = undefined,
     last_song: u8 = 0,
     volume: u8 = 128,
@@ -182,9 +188,9 @@ pub const AudioEngine = struct {
     }
 
     // Call the OPL emulator code to fill the specified buffer.
-    fn fillBuffer(self: *AudioEngine, buffer: *u8, nsamples: u32) void {
-        var result: []i16 = @as([*]i16, @alignCast(@ptrCast(buffer)))[0..nsamples];
-        self.backend.fillBuffer(@ptrCast(result), nsamples);
+    fn fillBuffer(self: *AudioEngine, buffer: *u8, nFrames: u32) void {
+        var result: []i16 = @as([*]i16, @alignCast(@ptrCast(buffer)))[0 .. nFrames * 2];
+        self.backend.fillBuffer(@ptrCast(result), nFrames);
     }
 
     fn data_callback(pDevice: ?*anyopaque, buffer: ?*anyopaque, pInput: ?*const anyopaque, frameCount: u32) callconv(.C) void {
@@ -194,6 +200,7 @@ pub const AudioEngine = struct {
         var filled: u64 = 0;
 
         // Repeatedly call the OPL emulator update function until the buffer is full.
+        // TODO: move this OPL mess into AdLib, expect backends to do their internal business... internally
         while (filled < frameCount) {
             var nFrames: u64 = 0;
 
@@ -237,6 +244,12 @@ pub const AudioEngine = struct {
         }) catch {
             unreachable;
         };
+        self.callback_queue_mutex.unlock();
+    }
+
+    pub fn clearCallbacks(self: *AudioEngine) void {
+        self.callback_queue_mutex.lock();
+        self.callback_queue.len = 0;
         self.callback_queue_mutex.unlock();
     }
 };
@@ -354,4 +367,40 @@ pub fn set_volume(volume: u8) void {
 
 pub fn get_volume() u8 {
     return audio_engine.volume;
+}
+
+pub fn get_backend_type() BackendType {
+    return audio_engine.backend.backend_type;
+}
+
+pub fn set_backend_type(backend_type: BackendType) void {
+    const current_type = audio_engine.backend.backend_type;
+    if (current_type == backend_type) {
+        return;
+    }
+
+    // switch to a different backend...
+    audio_engine.backend.deinit();
+    var backend = BACKEND: {
+        switch (backend_type) {
+            .Adlib => {
+                break :BACKEND audio_engine.adlib.backend();
+            },
+            .Amiga => {
+                break :BACKEND audio_engine.amiga.backend();
+            },
+            .PCSpeaker => {
+                break :BACKEND audio_engine.pcSpeaker.backend();
+            },
+            .Silence => {
+                break :BACKEND audio_engine.silence.backend();
+            },
+        }
+    };
+
+    backend.init(&audio_engine, audio_engine.allocator, MixingFreq) catch {
+        audio_engine.backend = audio_engine.silence.backend();
+        return;
+    };
+    audio_engine.backend = backend;
 }

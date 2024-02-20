@@ -56,13 +56,16 @@ fn build_game(b: *std.Build, name: []const u8, target: CrossTarget, optimize: st
         "src/enemies.c",
         "src/objects.c",
         "src/player.c",
-        "src/audio/opl3.c",
-        "src/audio/miniaudio.c",
+        "src/audio/opl3/opl3.c",
+        "src/audio/miniaudio/miniaudio.c",
+        "src/audio/pocketmod/pocketmod.c",
     }, &.{
         "-fno-sanitize=shift",
     });
     exe.addIncludePath(std.build.LazyPath.relative("src/"));
-    exe.addIncludePath(std.build.LazyPath.relative("src/audio/"));
+    exe.addIncludePath(std.build.LazyPath.relative("src/audio/opl3/"));
+    exe.addIncludePath(std.build.LazyPath.relative("src/audio/miniaudio/"));
+    exe.addIncludePath(std.build.LazyPath.relative("src/audio/pocketmod/"));
 
     exe.linkLibC();
     exe.linkSystemLibrary("m");
@@ -78,13 +81,16 @@ fn build_game(b: *std.Build, name: []const u8, target: CrossTarget, optimize: st
         "src/enemies.c",
         "src/objects.c",
         "src/player.c",
-        "src/audio/opl3.c",
-        "src/audio/miniaudio.c",
+        "src/audio/opl3/opl3.c",
+        "src/audio/miniaudio/miniaudio.c",
+        "src/audio/pocketmod/pocketmod.c",
     }, &.{
         "-fno-sanitize=shift",
     });
     game_tests.addIncludePath(std.build.LazyPath.relative("src/"));
-    game_tests.addIncludePath(std.build.LazyPath.relative("src/audio/"));
+    game_tests.addIncludePath(std.build.LazyPath.relative("src/audio/opl3/"));
+    game_tests.addIncludePath(std.build.LazyPath.relative("src/audio/miniaudio/"));
+    game_tests.addIncludePath(std.build.LazyPath.relative("src/audio/pocketmod/"));
 
     game_tests.linkLibC();
     game_tests.linkSystemLibrary("m");

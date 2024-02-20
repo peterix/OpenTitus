@@ -30,6 +30,7 @@ const SDL = @import("../SDL.zig");
 const fonts = @import("fonts.zig");
 const window = @import("../window.zig");
 const audio = @import("../audio/engine.zig");
+const BackendType = audio.BackendType;
 
 const menu = @import("menu.zig");
 const MenuAction = menu.MenuAction;
@@ -44,26 +45,14 @@ fn label(text: []const u8, y: i16, selected: bool) void {
     font.render(text, x_baseline - label_width - 4, y, options);
 }
 
-// TODO: maybe not... maybe we ask the audio engine for a list of things that managed to load?
-const SoundTypes = enum(u8) {
-    Adlib = 0,
-    Amiga,
-    PCSpeaker,
-
-    pub const NameTable = [@typeInfo(SoundTypes).Enum.fields.len][]const u8{
-        "AdLib",
-        "Amiga",
-        "PC-Speaker",
-    };
-
-    pub fn str(self: SoundTypes) []const u8 {
-        return NameTable[@intFromEnum(self)];
-    }
-};
-
-var sound_types: SoundTypes = .Adlib;
-
-fn enumOptions(comptime T: type, value: *T, y: i16, selected: bool, action: MenuAction) void {
+fn enumOptions(
+    comptime T: type,
+    value: T,
+    y: i16,
+    selected: bool,
+    action: MenuAction,
+    setter: *const fn (T) void,
+) void {
     if (@typeInfo(T) != .Enum) {
         @compileError("enumOptions can only be used with an enum type");
     }
@@ -71,7 +60,7 @@ fn enumOptions(comptime T: type, value: *T, y: i16, selected: bool, action: Menu
     const options = fonts.Font.RenderOptions{ .transpatent = true };
     const fields = std.meta.fields(T);
 
-    const intValue = @intFromEnum(value.*);
+    const intValue = @intFromEnum(value);
     var x: u16 = x_baseline + 4;
     inline for (fields, 0..) |f, index| {
         const value_selected = f.value == intValue;
@@ -79,12 +68,12 @@ fn enumOptions(comptime T: type, value: *T, y: i16, selected: bool, action: Menu
         if (selected and value_selected) switch (action) {
             .Left => {
                 if (index > 0) {
-                    value.* = @enumFromInt(fields[index - 1].value);
+                    setter(@enumFromInt(fields[index - 1].value));
                 }
             },
             .Right => {
                 if (index < fields.len - 1) {
-                    value.* = @enumFromInt(fields[index + 1].value);
+                    setter(@enumFromInt(fields[index + 1].value));
                 }
             },
             else => {
@@ -251,11 +240,12 @@ pub fn optionsMenu(menu_context: *MenuContext) ?c_int {
 
         label("Audio", y, selected == 0);
         enumOptions(
-            SoundTypes,
-            &sound_types,
+            BackendType,
+            audio.get_backend_type(),
             y,
             selected == 0,
             action,
+            audio.set_backend_type,
         );
         y += 13;
         label("Music", y, selected == 1);

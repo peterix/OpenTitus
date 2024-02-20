@@ -27,6 +27,24 @@ const Backend = @This();
 const _engine = @import("engine.zig");
 const AudioEngine = _engine.AudioEngine;
 
+pub const BackendType = enum(u8) {
+    Adlib = 0,
+    Amiga,
+    PCSpeaker,
+    Silence,
+
+    pub const NameTable = [@typeInfo(BackendType).Enum.fields.len][]const u8{
+        "AdLib",
+        "Amiga",
+        "PC-Speaker",
+        "Silence",
+    };
+
+    pub fn str(self: BackendType) []const u8 {
+        return NameTable[@intFromEnum(self)];
+    }
+};
+
 pub const Error = error{
     OutOfMemory,
     InvalidData,
@@ -36,6 +54,7 @@ pub const Error = error{
 ptr: *anyopaque,
 vtable: *const VTable,
 name: []const u8,
+backend_type: BackendType,
 
 pub const VTable = struct {
     init: *const fn (ctx: *anyopaque, engine: *AudioEngine, allocator: std.mem.Allocator, sample_rate: u32) Error!void,
