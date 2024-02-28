@@ -24,22 +24,22 @@
 
 const std = @import("std");
 const Backend = @This();
-const _engine = @import("AudioEngine.zig");
-const AudioEngine = _engine.AudioEngine;
-const AudioTrack = _engine.AudioTrack;
-const AudioEvent = _engine.AudioEvent;
+const audio = @import("audio.zig");
+const AudioEngine = audio.AudioEngine;
+const AudioTrack = audio.AudioTrack;
+const AudioEvent = audio.AudioEvent;
 
 pub const BackendType = enum(u8) {
-    Adlib = 0,
+    Silence = 0,
+    Adlib,
     Amiga,
     PCSpeaker,
-    Silence,
 
     pub const NameTable = [@typeInfo(BackendType).Enum.fields.len][]const u8{
+        "Silence",
         "AdLib",
         "Amiga",
         "PC-Speaker",
-        "Silence",
     };
 
     pub fn str(self: BackendType) []const u8 {

@@ -29,7 +29,7 @@ const SDL = @import("../SDL.zig");
 
 const fonts = @import("fonts.zig");
 const window = @import("../window.zig");
-const audio = @import("../audio/AudioEngine.zig");
+const audio = @import("../audio/audio.zig");
 const BackendType = audio.BackendType;
 
 const menu = @import("menu.zig");
@@ -241,11 +241,11 @@ pub fn optionsMenu(menu_context: *MenuContext) ?c_int {
         label("Audio", y, selected == 0);
         enumOptions(
             BackendType,
-            audio.get_backend_type(),
+            audio.getBackendType(),
             y,
             selected == 0,
             action,
-            audio.set_backend_type,
+            audio.setBackendType,
         );
         y += 13;
         label("Music", y, selected == 1);

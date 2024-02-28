@@ -52,7 +52,7 @@ const intro_text = @import("ui/intro_text.zig");
 const keyboard = @import("ui/keyboard.zig");
 const main_menu = @import("ui/main_menu.zig");
 
-const audio = @import("audio/AudioEngine.zig");
+const audio = @import("audio/audio.zig");
 const data = @import("data.zig");
 const globals = @import("globals.zig");
 const engine = @import("engine.zig");
@@ -108,8 +108,8 @@ pub fn run() !u8 {
 
     try window.window_init();
 
-    try audio.audio_engine.init(allocator);
-    defer audio.audio_engine.deinit();
+    try audio.engine.init(allocator);
+    defer audio.engine.deinit();
 
     data.init_anim_player();
 

@@ -32,10 +32,10 @@ const Mutex = std.Thread.Mutex;
 
 const Backend = @import("Backend.zig");
 
-const _engine = @import("AudioEngine.zig");
-const AudioEngine = _engine.AudioEngine;
-const AudioTrack = _engine.AudioTrack;
-const AudioEvent = _engine.AudioEvent;
+const audio = @import("audio.zig");
+const AudioEngine = audio.AudioEngine;
+const AudioTrack = audio.AudioTrack;
+const AudioEvent = audio.AudioEvent;
 
 const _bytes = @import("../bytes.zig");
 

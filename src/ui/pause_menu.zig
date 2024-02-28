@@ -30,7 +30,7 @@ const window = @import("../window.zig");
 const sprites = @import("../sprites.zig");
 const fonts = @import("fonts.zig");
 const globals = @import("../globals.zig");
-const audio = @import("../audio/AudioEngine.zig");
+const audio = @import("../audio/audio.zig");
 const options_menu = @import("options_menu.zig");
 
 const menu = @import("menu.zig");

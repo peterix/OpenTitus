@@ -27,7 +27,7 @@ const std = @import("std");
 
 const c = @import("../c.zig");
 const window = @import("../window.zig");
-const audio = @import("../audio/AudioEngine.zig");
+const audio = @import("../audio/audio.zig");
 const keyboard = @import("keyboard.zig");
 const fonts = @import("fonts.zig");
 

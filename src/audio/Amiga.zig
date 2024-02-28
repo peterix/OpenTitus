@@ -31,10 +31,10 @@ const Mutex = std.Thread.Mutex;
 
 const Backend = @import("Backend.zig");
 
-const _engine = @import("AudioEngine.zig");
-const AudioEngine = _engine.AudioEngine;
-const AudioTrack = _engine.AudioTrack;
-const AudioEvent = _engine.AudioEvent;
+const audio = @import("audio.zig");
+const AudioEngine = audio.AudioEngine;
+const AudioTrack = audio.AudioTrack;
+const AudioEvent = audio.AudioEvent;
 
 const c = @import("../c.zig");
 const data = @import("../data.zig");
@@ -59,6 +59,23 @@ const track_over_ttf = @embedFile("amiga/overttf.mod");
 const track_over_mok = @embedFile("amiga/overmok.mod");
 const track_pres = @embedFile("amiga/pres.mod");
 const track_null: [0]u8 = .{};
+
+fn loadSample(comptime N: usize, comptime input: [N:0]u8) []const i8 {
+    var output: [N]i8 = undefined;
+    @memcpy(input, output);
+    return &output;
+}
+
+const sfx_tirperso = loadSample(@embedFile("amiga/tirperso"));
+const sfx_ressort = loadSample(@embedFile("amiga/ressort"));
+const sfx_fox = loadSample(@embedFile("amiga/fox"));
+const sfx_coup = loadSample(@embedFile("amiga/coup"));
+const sfx_ballon = loadSample(@embedFile("amiga/ballon"));
+
+const Sound = struct {
+    sample: []const i8,
+    index: usize,
+};
 
 fn getTrackData(track_in: ?AudioTrack) []const u8 {
     if (track_in == null) {
@@ -101,6 +118,7 @@ current_track: ?AudioTrack = null,
 mutex: Mutex = Mutex{},
 sample_rate: u32 = undefined,
 music_context: ?pocketmod.pocketmod_context = null,
+sound_context: ?Sound = null,
 
 engine: *AudioEngine = undefined,
 
@@ -130,6 +148,7 @@ fn init(ctx: *anyopaque, engine: *AudioEngine, allocator: std.mem.Allocator, sam
     self.sample_rate = sample_rate;
     self.current_track = null;
     self.music_context = null;
+    self.sound_context = null;
 }
 
 fn deinit(ctx: *anyopaque) void {
@@ -138,6 +157,7 @@ fn deinit(ctx: *anyopaque) void {
     self.sample_rate = undefined;
     self.current_track = null;
     self.music_context = null;
+    self.sound_context = null;
 }
 
 fn lock(ctx: *anyopaque) void {

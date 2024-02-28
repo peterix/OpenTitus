@@ -25,8 +25,8 @@
 
 const std = @import("std");
 const c = @import("c.zig");
-const audio_engine = @import("audio/AudioEngine.zig");
-const AudioTrack = audio_engine.AudioTrack;
+const audio = @import("audio/audio.zig");
+const AudioTrack = audio.AudioTrack;
 
 pub export var game: c.GameType = undefined;
 

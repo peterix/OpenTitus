@@ -29,7 +29,7 @@ const globals = @import("globals.zig");
 const window = @import("window.zig");
 const scroll = @import("scroll.zig");
 const render = @import("render.zig");
-const audio = @import("audio/AudioEngine.zig");
+const audio = @import("audio/audio.zig");
 
 fn check_finish(context: *c.ScreenContext, level: *c.TITUS_level) void {
     var player = &level.player;

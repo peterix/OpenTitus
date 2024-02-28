@@ -4,8 +4,8 @@ const c = @import("c.zig");
 const data = @import("data.zig");
 const sprites = @import("sprites.zig");
 const ObjectData = data.ObjectData;
-const audio_engine = @import("audio/AudioEngine.zig");
-const AudioTrack = audio_engine.AudioTrack;
+const audio = @import("audio/audio.zig");
+const AudioTrack = audio.AudioTrack;
 
 // TODO: split the original level representation:
 //  - from internal 'initialize level stuff this way' data types

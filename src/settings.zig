@@ -32,8 +32,8 @@ const c = @import("c.zig");
 const json = @import("json.zig");
 const ManagedJSON = json.ManagedJSON;
 const JsonList = json.JsonList;
-const AudioEngine = @import("audio/AudioEngine.zig");
-const BackendType = AudioEngine.BackendType;
+const audio = @import("audio/audio.zig");
+const BackendType = audio.BackendType;
 const Allocator = std.mem.Allocator;
 
 const settings_file_name = "settings.json";

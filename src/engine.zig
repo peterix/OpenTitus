@@ -25,7 +25,7 @@
 
 const std = @import("std");
 
-const audio = @import("audio/AudioEngine.zig");
+const audio = @import("audio/audio.zig");
 const globals = @import("globals.zig");
 const sqz = @import("sqz.zig");
 const scroll = @import("scroll.zig");
