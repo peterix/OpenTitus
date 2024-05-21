@@ -40,7 +40,7 @@ pub fn screencontext_reset(context: *c.ScreenContext) void {
 }
 
 fn screencontext_initial(context: *c.ScreenContext) void {
-    var initial_clock = SDL.getTicks();
+    const initial_clock = SDL.getTicks();
     context.TARGET_CLOCK = initial_clock + tick_delay;
     context.started = true;
     SDL.delay(tick_delay);
@@ -53,7 +53,7 @@ fn screencontext_advance_29(context: *c.ScreenContext) void {
         screencontext_initial(context);
         return;
     }
-    var now = SDL.getTicks();
+    const now = SDL.getTicks();
     if (context.TARGET_CLOCK > now) {
         SDL.delay(context.TARGET_CLOCK - now);
     }
@@ -162,7 +162,7 @@ fn render_sprite(spr: *allowzero c.TITUS_sprite) void {
         return;
     }
 
-    var image = sprites.sprite_cache.getSprite(.{
+    const image = sprites.sprite_cache.getSprite(.{
         .number = spr.*.number,
         .flip = spr.*.flipped,
         .flash = spr.*.flash,
@@ -234,10 +234,10 @@ pub fn fadeout() void {
         .h = window.game_height,
     };
 
-    var image = c.SDL_ConvertSurface(window.screen, window.screen.?.format, c.SDL_SWSURFACE);
+    const image = c.SDL_ConvertSurface(window.screen, window.screen.?.format, c.SDL_SWSURFACE);
     defer c.SDL_FreeSurface(image);
 
-    var tick_start = c.SDL_GetTicks();
+    const tick_start = c.SDL_GetTicks();
     var image_alpha: c_uint = 0;
     while (image_alpha < 255) //Fade to black
     {

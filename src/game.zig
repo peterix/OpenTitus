@@ -161,7 +161,7 @@ pub fn run() !u8 {
     }
 
     while (state != 0) {
-        var curlevel = try main_menu.view_menu(
+        const curlevel = try main_menu.view_menu(
             data.constants.*.menu,
             allocator,
         );
@@ -186,7 +186,7 @@ pub fn run() !u8 {
 }
 
 fn amigaTest2() !void {
-    var amiga_music: []const u8 = sqz_amiga.unSQZ("amiga/JEU1.PAT", allocator) catch foo: {
+    const amiga_music: []const u8 = sqz_amiga.unSQZ("amiga/JEU1.PAT", allocator) catch foo: {
         std.debug.print("Too bad, Amiga file didn't uncompreess well...", .{});
         break :foo "";
     };
@@ -198,7 +198,7 @@ fn amigaTest2() !void {
 }
 
 fn amigaTest1() !void {
-    var amiga_huffman: []const u8 = sqz_amiga.unSQZ("amiga/fox.spr", allocator) catch foo: {
+    const amiga_huffman: []const u8 = sqz_amiga.unSQZ("amiga/fox.spr", allocator) catch foo: {
         std.debug.print("Too bad, Amiga file didn't uncompreess well...", .{});
         break :foo "";
     };

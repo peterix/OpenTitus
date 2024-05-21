@@ -54,11 +54,11 @@ fn render_extrabonus(level: *c.TITUS_level, last_bounds: ?Rect) Rect {
         };
         window.window_clear(&rect);
     }
-    var tmpchars: [10]u8 = .{};
-    var extrabonus = std.fmt.bufPrint(&tmpchars, "{d}", .{level.extrabonus}) catch {
+    var tmpchars = [_]u8{0} ** 10;
+    const extrabonus = std.fmt.bufPrint(&tmpchars, "{d}", .{level.extrabonus}) catch {
         unreachable;
     };
-    var extrabonus_width = fonts.Gold.metrics(extrabonus, .{ .monospace = true });
+    const extrabonus_width = fonts.Gold.metrics(extrabonus, .{ .monospace = true });
     fonts.Gold.render(extrabonus, 28 * 8 - extrabonus_width, 10 * 12, .{ .monospace = true });
     const bounds = Rect{
         .x = 28 * 8 - extrabonus_width,
@@ -81,11 +81,11 @@ fn render_lives(level: *c.TITUS_level, last_bounds: ?Rect) Rect {
         };
         _ = c.SDL_FillRect(window.screen, &rect, 0);
     }
-    var tmpchars: [10]u8 = .{};
-    var lives = std.fmt.bufPrint(&tmpchars, "{d}", .{level.lives}) catch {
+    var tmpchars = [_]u8{0} ** 10;
+    const lives = std.fmt.bufPrint(&tmpchars, "{d}", .{level.lives}) catch {
         unreachable;
     };
-    var lives_width = fonts.Gold.metrics(lives, .{ .monospace = true });
+    const lives_width = fonts.Gold.metrics(lives, .{ .monospace = true });
 
     fonts.Gold.render(lives, 28 * 8 - lives_width, 11 * 12, .{ .monospace = true });
     const bounds = Rect{
@@ -99,7 +99,7 @@ fn render_lives(level: *c.TITUS_level, last_bounds: ?Rect) Rect {
 
 pub export fn viewstatus(level: *c.TITUS_level, countbonus: bool) c_int {
     var retval: c_int = undefined;
-    var tmpchars: [10]u8 = .{};
+    var tmpchars = [_]u8{0} ** 10;
     window.window_clear(null);
 
     if (data.game == c.Titus) {
@@ -116,15 +116,15 @@ pub export fn viewstatus(level: *c.TITUS_level, countbonus: bool) c_int {
         const levelnumber = std.fmt.bufPrint(&tmpchars, "{d}", .{level.levelnumber + 1}) catch {
             return -1;
         };
-        var levelnumber_width = fonts.Gold.metrics(levelnumber, .{});
+        const levelnumber_width = fonts.Gold.metrics(levelnumber, .{});
         fonts.Gold.render(levelnumber, 25 * 8 - levelnumber_width, 12 * 5, .{});
     }
 
     {
-        var constants = data.constants;
-        var title = constants.levelfiles[level.levelnumber].title;
-        var title_width = fonts.Gold.metrics(title, .{});
-        var position = (320 - title_width) / 2;
+        const constants = data.constants;
+        const title = constants.levelfiles[level.levelnumber].title;
+        const title_width = fonts.Gold.metrics(title, .{});
+        const position = (320 - title_width) / 2;
         fonts.Gold.render(title, position, 12 * 6, .{});
     }
 

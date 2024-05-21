@@ -73,8 +73,8 @@ pub export fn toggle_fullscreen() void {
 
 pub fn window_init() !void {
     var windowflags: u32 = 0;
-    var w: c_int = game.settings.window_width;
-    var h: c_int = game.settings.window_height;
+    const w: c_int = game.settings.window_width;
+    const h: c_int = game.settings.window_height;
     if (game.settings.fullscreen) {
         windowflags = c.SDL_WINDOW_FULLSCREEN_DESKTOP;
     } else {
@@ -131,7 +131,7 @@ pub fn window_render() void {
     if (screen == null) {
         return;
     }
-    var frame = c.SDL_CreateTextureFromSurface(renderer, screen);
+    const frame = c.SDL_CreateTextureFromSurface(renderer, screen);
     // FIXME: process error.
     _ = c.SDL_RenderClear(renderer);
     var rect = c.SDL_Rect{

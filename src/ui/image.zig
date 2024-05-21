@@ -116,10 +116,10 @@ pub fn loadImage(data: []const u8, format: ImageFormat, allocator: std.mem.Alloc
     defer allocator.free(data);
 
     // FIXME: handle this returning null
-    var surface = c.SDL_CreateRGBSurface(c.SDL_SWSURFACE, 320, 200, 8, 0, 0, 0, 0);
+    const surface = c.SDL_CreateRGBSurface(c.SDL_SWSURFACE, 320, 200, 8, 0, 0, 0, 0);
     defer c.SDL_FreeSurface(surface);
     // FIXME: handle palette being null
-    var palette = surface.*.format.*.palette;
+    const palette = surface.*.format.*.palette;
 
     switch (format) {
         .PlanarGreyscale16 => {
@@ -134,7 +134,7 @@ pub fn loadImage(data: []const u8, format: ImageFormat, allocator: std.mem.Alloc
 
         .PlanarEGA16 => {
             for (0..16) |i| {
-                var ega = EGA[i];
+                const ega = EGA[i];
                 palette.*.colors[i].r = 85 * @as(u8, ega.redL) + 170 * @as(u8, ega.redH);
                 palette.*.colors[i].g = 85 * @as(u8, ega.greenL) + 170 * @as(u8, ega.greenH);
                 palette.*.colors[i].b = 85 * @as(u8, ega.blueL) + 170 * @as(u8, ega.blueH);
@@ -157,7 +157,7 @@ pub fn loadImage(data: []const u8, format: ImageFormat, allocator: std.mem.Alloc
             @memcpy(slice_out, slice_in);
         },
     }
-    var result = c.SDL_ConvertSurfaceFormat(surface, c.SDL_GetWindowPixelFormat(c.window), 0);
+    const result = c.SDL_ConvertSurfaceFormat(surface, c.SDL_GetWindowPixelFormat(c.window), 0);
     if (result == null) {
         return error.CannotConvertSurface;
     }
@@ -175,10 +175,10 @@ const keyboard = @import("keyboard.zig");
 pub fn viewImageFile(file: ImageFile, display_mode: DisplayMode, delay: c_int, allocator: std.mem.Allocator) !c_int {
     const fade_time: c_uint = 1000;
 
-    var image_data = try sqz.unSQZ(file.filename, allocator);
+    const image_data = try sqz.unSQZ(file.filename, allocator);
     var image_memory = try loadImage(image_data, file.format, allocator);
     defer image_memory.deinit();
-    var image_surface = image_memory.value;
+    const image_surface = image_memory.value;
     var src = c.SDL_Rect{
         .x = 0,
         .y = 0,
@@ -313,12 +313,12 @@ pub fn viewImageFile(file: ImageFile, display_mode: DisplayMode, delay: c_int, a
             _ = c.SDL_BlitSurface(image_surface, &src, c.screen, &dest);
             window.window_render();
 
-            var retval = keyboard.waitforbutton();
+            const retval = keyboard.waitforbutton();
             if (retval < 0) {
                 return retval;
             }
 
-            var tick_start = SDL.getTicks();
+            const tick_start = SDL.getTicks();
             while (image_alpha < 255) //Fade to black
             {
                 var event: c.SDL_Event = undefined;

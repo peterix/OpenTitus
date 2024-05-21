@@ -45,10 +45,10 @@ pub fn unSQZ(inputfile: []const u8, allocator: Allocator) ![]u8 {
 
     _ = try file.read(&header_buf);
 
-    var b1 = header_buf[0];
-    var comp_type = header_buf[1];
-    var b3 = header_buf[2];
-    var b4 = header_buf[3];
+    const b1 = header_buf[0];
+    const comp_type = header_buf[1];
+    const b3 = header_buf[2];
+    const b4 = header_buf[3];
 
     var out_len: usize = 0;
     out_len = (b1 & 0x0F);
@@ -61,17 +61,17 @@ pub fn unSQZ(inputfile: []const u8, allocator: Allocator) ![]u8 {
         return SqzError.InvalidFile;
     }
 
-    var output = try allocator.alloc(u8, out_len);
+    const output = try allocator.alloc(u8, out_len);
     errdefer {
         allocator.free(output);
     }
 
-    var file_size = try file.getEndPos();
-    var in_len = file_size - 4;
-    var inbuffer = try allocator.alloc(u8, in_len);
+    const file_size = try file.getEndPos();
+    const in_len = file_size - 4;
+    const inbuffer = try allocator.alloc(u8, in_len);
     defer allocator.free(inbuffer);
 
-    var bytes_read = try file.readAll(inbuffer);
+    const bytes_read = try file.readAll(inbuffer);
     if (in_len != bytes_read) {
         return SqzError.InvalidFile;
     }
@@ -79,7 +79,7 @@ pub fn unSQZ(inputfile: []const u8, allocator: Allocator) ![]u8 {
     if (comp_type == 0x10) {
         try lzw_decode(inbuffer, output);
     } else {
-        try huffman_decode(.Little, inbuffer, output);
+        try huffman_decode(.little, inbuffer, output);
     }
     return output;
 }
@@ -230,7 +230,7 @@ fn huffman_decode(comptime endian: Endian, input: []const u8, output: []u8) !voi
                 node = bintree_val >> 1;
             } else {
                 node = bintree_val & 0x7FFF;
-                var nodeL: u8 = @truncate(node & 0x00FF);
+                const nodeL: u8 = @truncate(node & 0x00FF);
                 if (state == 0) {
                     if (node < 0x100) {
                         last = nodeL;

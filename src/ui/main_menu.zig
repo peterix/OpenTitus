@@ -47,10 +47,10 @@ const ImageFile = image.ImageFile;
 pub fn view_menu(file: ImageFile, allocator: std.mem.Allocator) !?usize {
     var selection: usize = 0;
 
-    var menudata = try sqz.unSQZ(file.filename, allocator);
+    const menudata = try sqz.unSQZ(file.filename, allocator);
     var image_memory = try image.loadImage(menudata, file.format, allocator);
     defer image_memory.deinit();
-    var menu = image_memory.value;
+    const menu = image_memory.value;
 
     var src = c.SDL_Rect{
         .x = 0,
@@ -96,9 +96,9 @@ pub fn view_menu(file: ImageFile, allocator: std.mem.Allocator) !?usize {
     //sel_dest[1].x += 16;
 
     // FIXME: move to render.zig
-    var fade_time: c_uint = 1000;
+    const fade_time: c_uint = 1000;
     var image_alpha: c_uint = 0;
-    var tick_start: c_uint = c.SDL_GetTicks();
+    const tick_start: c_uint = c.SDL_GetTicks();
 
     // Fade in
     while (image_alpha < 255) {

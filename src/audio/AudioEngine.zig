@@ -184,7 +184,7 @@ fn advanceTimeAndRunCallbacks(self: *Self, nsamples: u64) void {
 
 // Call the OPL emulator code to fill the specified buffer.
 fn fillBuffer(self: *Self, buffer: *u8, nFrames: u32) void {
-    var result: []i16 = @as([*]i16, @alignCast(@ptrCast(buffer)))[0 .. nFrames * 2];
+    const result: []i16 = @as([*]i16, @alignCast(@ptrCast(buffer)))[0 .. nFrames * 2];
     if (self.backend) |*backend| {
         backend.fillBuffer(@ptrCast(result), nFrames);
     } else {
@@ -194,7 +194,7 @@ fn fillBuffer(self: *Self, buffer: *u8, nFrames: u32) void {
 
 fn data_callback(pDevice: ?*anyopaque, buffer: ?*anyopaque, pInput: ?*const anyopaque, frameCount: u32) callconv(.C) void {
     _ = pInput;
-    var device: *miniaudio.ma_device = @alignCast(@ptrCast(pDevice.?));
+    const device: *miniaudio.ma_device = @alignCast(@ptrCast(pDevice.?));
     var self: *Self = @alignCast(@ptrCast(device.pUserData.?));
     var filled: u64 = 0;
 

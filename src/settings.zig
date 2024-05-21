@@ -52,7 +52,7 @@ pub const Settings = extern struct {
 
     pub fn make_new(allocator: Allocator) !ManagedJSON(Settings) {
         var seed: u32 = undefined;
-        try std.os.getrandom(std.mem.asBytes(&seed));
+        try std.posix.getrandom(std.mem.asBytes(&seed));
         var arena = try allocator.create(std.heap.ArenaAllocator);
         errdefer allocator.destroy(arena);
 
@@ -118,7 +118,7 @@ pub const Settings = extern struct {
     }
 
     pub fn write(self: *Settings, allocator: Allocator) !void {
-        var data = try std.json.stringifyAlloc(allocator, self, .{ .whitespace = .indent_4, .emit_null_optional_fields = false });
+        const data = try std.json.stringifyAlloc(allocator, self, .{ .whitespace = .indent_4, .emit_null_optional_fields = false });
         defer allocator.free(data);
         try std.fs.cwd().writeFile(settings_file_name, data);
     }

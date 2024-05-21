@@ -46,12 +46,12 @@ pub const Font = struct {
     fallback: Character,
 
     fn init(self: *Font, data: []const u8) !void {
-        var rwops = c.SDL_RWFromMem(@constCast(@ptrCast(&data[0])), @intCast(data.len));
+        const rwops = c.SDL_RWFromMem(@constCast(@ptrCast(&data[0])), @intCast(data.len));
         if (rwops == null) {
             print_sdl_error("Could not load font: {s}");
             return FontError.CannotLoad;
         }
-        var image = c.SDL_LoadBMP_RW(rwops, c.SDL_TRUE);
+        const image = c.SDL_LoadBMP_RW(rwops, c.SDL_TRUE);
         if (image == null) {
             print_sdl_error("Could not load font: {s}");
             return FontError.CannotLoad;
@@ -88,7 +88,7 @@ pub const Font = struct {
 
         // Let's assume ASCII for now... original code was trying to do something with UTF-8, but had the font files have no support for that
         for (text) |character| {
-            var chardesc = self.characters[character];
+            const chardesc = self.characters[character];
             if (options.monospace) {
                 var src = c.SDL_Rect{ .x = chardesc.x_mono, .y = chardesc.y, .w = chardesc.w_mono, .h = chardesc.h };
                 dest.w = chardesc.w_mono;
@@ -111,7 +111,7 @@ pub const Font = struct {
 
         // Let's assume ASCII for now... original code was trying to do something with UTF-8, but had the font files have no support for that
         for (text) |character| {
-            var chardesc = self.characters[character];
+            const chardesc = self.characters[character];
             if (options.monospace) {
                 size += chardesc.w_mono;
             } else {
@@ -151,8 +151,8 @@ const FontError = error{
 
 fn print_sdl_error(comptime format: []const u8) void {
     var buffer: [1024:0]u8 = undefined;
-    var errstr = c.SDL_GetErrorMsg(&buffer, 1024);
-    var span = std.mem.span(errstr);
+    const errstr = c.SDL_GetErrorMsg(&buffer, 1024);
+    const span = std.mem.span(errstr);
     std.log.err(format, .{span});
 }
 
@@ -185,9 +185,9 @@ fn loadfont(image: *c.SDL_Surface, font: *Font) !void {
 
     for (0..16) |y| {
         for (0..16) |x| {
-            var xx = x * character_w;
-            var yy = y * character_h;
-            var character: u8 = @as(u8, @truncate(y)) * 16 + @as(u8, @truncate(x));
+            const xx = x * character_w;
+            const yy = y * character_h;
+            const character: u8 = @as(u8, @truncate(y)) * 16 + @as(u8, @truncate(x));
             var chardesc = &font.characters[character];
             // FIXME: read the pixels, use a special color to use the font file as a source of this information
             chardesc.x_mono = @truncate(xx);

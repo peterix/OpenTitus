@@ -39,7 +39,7 @@ fn smootherstep(edge0: f32, edge1: f32, input: f32) f32 {
     assert(edge0 < edge1);
     assert(input >= edge0 and input <= edge1);
     // Scale, and clamp input to 0..1 range
-    var x = std.math.clamp((input - edge0) / (edge1 - edge0), 0.0, 1.0);
+    const x = std.math.clamp((input - edge0) / (edge1 - edge0), 0.0, 1.0);
     // Evaluate polynomial
     return x * x * x * (x * (x * 6 - 15) + 10);
 }
@@ -53,10 +53,10 @@ const CAMERA_RANGE = CAMERA_DISTANCE * 2;
 var easing_value: i16 = 0;
 
 fn X_ADJUST(level: *c.TITUS_level) void {
-    var player = &(level.player);
+    const player = &(level.player);
     globals.g_scroll_x = true;
 
-    var player_position = player.sprite.x;
+    const player_position = player.sprite.x;
 
     // determine the right side of the world
     var right_limit: i16 = undefined;
@@ -68,14 +68,14 @@ fn X_ADJUST(level: *c.TITUS_level) void {
     }
 
     // update the camera offset from the player (using an easing function)
-    var facing_right = !level.player.sprite.flipped;
-    var easing_target: i16 = if (facing_right) EASING_RANGE else -EASING_RANGE;
+    const facing_right = !level.player.sprite.flipped;
+    const easing_target: i16 = if (facing_right) EASING_RANGE else -EASING_RANGE;
     if (easing_value < easing_target) {
         easing_value += 1;
     } else if (easing_value > easing_target) {
         easing_value -= 1;
     }
-    var real_camera_offset: i16 = @intFromFloat(@floor(smootherstep(-EASING_RANGE, EASING_RANGE, @floatFromInt(easing_value)) * CAMERA_RANGE - CAMERA_DISTANCE));
+    const real_camera_offset: i16 = @intFromFloat(@floor(smootherstep(-EASING_RANGE, EASING_RANGE, @floatFromInt(easing_value)) * CAMERA_RANGE - CAMERA_DISTANCE));
 
     // clamp the camera inside the world space
     var camera_position: i16 = player_position + real_camera_offset;
@@ -91,11 +91,11 @@ fn X_ADJUST(level: *c.TITUS_level) void {
         globals.XLIMIT_BREACHED = false;
     }
 
-    var camera_screen_px: i16 = camera_position - @as(i16, globals.BITMAP_X) * 16;
-    var scroll_px_target: i16 = 160;
-    var scroll_offset_x: i16 = scroll_px_target - camera_screen_px;
-    var tile_offset_x: i16 = @divTrunc(scroll_offset_x, 16);
-    var px_offset_x: i16 = @rem(scroll_offset_x, 16);
+    const camera_screen_px: i16 = camera_position - @as(i16, globals.BITMAP_X) * 16;
+    const scroll_px_target: i16 = 160;
+    const scroll_offset_x: i16 = scroll_px_target - camera_screen_px;
+    const tile_offset_x: i16 = @divTrunc(scroll_offset_x, 16);
+    const px_offset_x: i16 = @rem(scroll_offset_x, 16);
     if (tile_offset_x < 0) {
         globals.BITMAP_X += 1;
         globals.g_scroll_px_offset = px_offset_x;
@@ -111,11 +111,11 @@ fn X_ADJUST(level: *c.TITUS_level) void {
 }
 
 fn Y_ADJUST(level: *c.TITUS_level) void {
-    var player = &(level.player);
+    const player = &(level.player);
     if (player.sprite.speed_y == 0) {
         globals.g_scroll_y = false;
     }
-    var pstileY: i16 = (player.sprite.y >> 4) - globals.BITMAP_Y; //Player screen tile Y (0 to 11)
+    const pstileY: i16 = (player.sprite.y >> 4) - globals.BITMAP_Y; //Player screen tile Y (0 to 11)
     if (!globals.g_scroll_y) {
         if ((player.sprite.speed_y == 0) and (globals.LADDER_FLAG == false)) {
             if (pstileY >= globals.screen_height - 1) {
@@ -213,7 +213,7 @@ pub fn scroll_left(level: *c.TITUS_level) bool {
 }
 
 pub fn scroll_right(level: *c.TITUS_level) bool {
-    var maxX: i16 = if (globals.XLIMIT_BREACHED) @as(i16, @intCast(level.width)) - globals.screen_width else globals.XLIMIT;
+    const maxX: i16 = if (globals.XLIMIT_BREACHED) @as(i16, @intCast(level.width)) - globals.screen_width else globals.XLIMIT;
     if (globals.BITMAP_X >= maxX) {
         return true;
     }

@@ -21,9 +21,9 @@ pub fn unSQZ(inputfile: []const u8, allocator: Allocator) ![]u8 {
 
     const compression_type = try reader.readByte();
     _ = try reader.readByte(); // skip, original code ignores this byte
-    var out_len: u32 = try reader.readIntLittle(u32);
+    const out_len: u32 = try reader.readIntLittle(u32);
 
-    var output = try allocator.alloc(u8, out_len);
+    const output = try allocator.alloc(u8, out_len);
     errdefer {
         allocator.free(output);
     }

@@ -17,11 +17,7 @@ const readIntLittle = std.mem.readIntLittle;
 pub fn chompInt(comptime T: type, comptime endian: Endian, bytes: *[]const u8) T {
     const n = @divExact(@typeInfo(T).Int.bits, 8);
     var result: T = undefined;
-    if (endian == native_endian) {
-        result = std.mem.readIntSliceNative(T, bytes.*[0..n]);
-    } else {
-        result = std.mem.readIntSliceForeign(T, bytes.*[0..n]);
-    }
+    result = std.mem.readInt(T, bytes.*[0..n], endian);
     bytes.*.len -= n;
     bytes.*.ptr += n;
     return result;
@@ -29,9 +25,5 @@ pub fn chompInt(comptime T: type, comptime endian: Endian, bytes: *[]const u8) T
 
 pub fn getInt(comptime T: type, comptime endian: Endian, bytes: []const u8) T {
     const n = @divExact(@typeInfo(T).Int.bits, 8);
-    if (endian == native_endian) {
-        return std.mem.readIntSliceNative(T, bytes[0..n]);
-    } else {
-        return std.mem.readIntSliceForeign(T, bytes[0..n]);
-    }
+    return std.mem.readInt(T, bytes[0..n], endian);
 }

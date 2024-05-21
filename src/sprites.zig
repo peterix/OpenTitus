@@ -46,7 +46,7 @@ const SpriteDefinition = extern struct {
     refwidth: u8,
 };
 
-fn load_sprite_defs(input: []const u8) ![]SpriteDefinition {
+fn load_sprite_defs(input: []const u8) ![SPRITECOUNT]SpriteDefinition {
     @setEvalBranchQuota(100000);
     var output: [SPRITECOUNT]SpriteDefinition = undefined;
     var lineIterator = std.mem.tokenizeScalar(u8, input, '\n');
@@ -66,13 +66,14 @@ fn load_sprite_defs(input: []const u8) ![]SpriteDefinition {
         entry.refheight = try std.fmt.parseInt(u8, fieldIterator.next().?, 10);
         index += 1;
     }
-    return &output;
+    const final = output[0..output.len].*;
+    return final;
 }
 
-const titus_sprite_defs: []SpriteDefinition = load_sprite_defs(@embedFile("sprites_titus.csv")) catch {
+const titus_sprite_defs: [SPRITECOUNT]SpriteDefinition = load_sprite_defs(@embedFile("sprites_titus.csv")) catch {
     unreachable;
 };
-const moktar_sprite_defs: []SpriteDefinition = load_sprite_defs(@embedFile("sprites_moktar.csv")) catch {
+const moktar_sprite_defs: [SPRITECOUNT]SpriteDefinition = load_sprite_defs(@embedFile("sprites_moktar.csv")) catch {
     unreachable;
 };
 
@@ -84,13 +85,13 @@ pub const SpriteData = struct {
         defer allocator.free(spritedata);
 
         if (data.game == c.Titus) {
-            self.definitions = titus_sprite_defs;
+            self.definitions = &titus_sprite_defs;
         } else {
-            self.definitions = moktar_sprite_defs;
+            self.definitions = &moktar_sprite_defs;
         }
         var remaining_data = spritedata;
         for (0..SPRITECOUNT) |i| {
-            var surface = c.SDL_CreateRGBSurface(
+            const surface = c.SDL_CreateRGBSurface(
                 c.SDL_SWSURFACE,
                 self.definitions[i].width,
                 self.definitions[i].height,
@@ -133,7 +134,7 @@ pub fn deinit() void {
 pub fn load_tile(data_slice: []const u8, pixelformat: *c.SDL_PixelFormat) !*c.SDL_Surface {
     const width = 16;
     const height = 16;
-    var surface = c.SDL_CreateRGBSurface(c.SDL_SWSURFACE, width, height, 8, 0, 0, 0, 0);
+    const surface = c.SDL_CreateRGBSurface(c.SDL_SWSURFACE, width, height, 8, 0, 0, 0, 0);
     if (surface == null) {
         return error.OutOfMemory;
     }
@@ -141,7 +142,7 @@ pub fn load_tile(data_slice: []const u8, pixelformat: *c.SDL_PixelFormat) !*c.SD
 
     copypixelformat(surface.*.format, pixelformat);
     _ = try image.load_planar_16color(data_slice, width, height, surface);
-    var surface2 = c.SDL_ConvertSurfaceFormat(surface, c.SDL_GetWindowPixelFormat(window.window), 0);
+    const surface2 = c.SDL_ConvertSurfaceFormat(surface, c.SDL_GetWindowPixelFormat(window.window), 0);
     if (surface2 == 0) {
         return error.OutOfMemory;
     }
@@ -210,7 +211,7 @@ pub const SpriteCache = struct {
     // Takes the original 16 color surface and gives you a render optimized surface
     // that is flipped the right way and has the flash effect applied.
     fn copysurface(self: *SpriteCache, original: *c.SDL_Surface, flip: bool, flash: bool) !*c.SDL_Surface {
-        var surface = c.SDL_ConvertSurface(original, original.format, original.flags);
+        const surface = c.SDL_ConvertSurface(original, original.format, original.flags);
         if (surface == null)
             return error.FailedToConvertSurface;
         defer c.SDL_FreeSurface(surface);
@@ -244,17 +245,17 @@ pub const SpriteCache = struct {
                 }
             }
         }
-        var surface2 = c.SDL_ConvertSurfaceFormat(surface, self.pixelformat, 0);
+        const surface2 = c.SDL_ConvertSurfaceFormat(surface, self.pixelformat, 0);
         return (surface2);
     }
 
     pub fn getSprite(self: *SpriteCache, key: Key) !*c.SDL_Surface {
-        var spritedata = sprites.bitmaps[@as(usize, @intCast(key.number))];
+        const spritedata = sprites.bitmaps[@as(usize, @intCast(key.number))];
 
         if (self.hashmap.get(key)) |surface| {
             return surface;
         }
-        var new_surface = try copysurface(self, spritedata, key.flip, key.flash);
+        const new_surface = try copysurface(self, spritedata, key.flip, key.flash);
         try self.hashmap.put(key, new_surface);
         return new_surface;
     }

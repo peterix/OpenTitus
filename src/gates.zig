@@ -32,7 +32,7 @@ const render = @import("render.zig");
 const audio = @import("audio/audio.zig");
 
 fn check_finish(context: *c.ScreenContext, level: *c.TITUS_level) void {
-    var player = &level.player;
+    const player = &level.player;
     if (globals.boss_alive) { //There is still a boss that needs to be killed!
         return;
     }

@@ -365,7 +365,7 @@ pub const ObjectData = extern struct {
 };
 
 // TODO: just dump the processed data and put it in as a simple array with none of this bit hackery
-pub const object_data: []ObjectData = init_object_data: {
+pub const object_data: [NUM_ORIGINAL_OBJECTS]ObjectData = init_object_data: {
     var data: [NUM_ORIGINAL_OBJECTS]ObjectData = undefined;
     for (tmpobjectflag, object_maxspeedY_data, &data) |flag, maxspeedY, *object| {
         object.maxspeedY = maxspeedY;
@@ -375,7 +375,7 @@ pub const object_data: []ObjectData = init_object_data: {
         object.droptobottom = flag & 0x08 != 0;
         object.no_damage = flag & 0x10 != 0;
     }
-    break :init_object_data &data;
+    break :init_object_data data;
 };
 
 // 21930 = turn invisible (set the invisible flag)

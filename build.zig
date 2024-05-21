@@ -26,46 +26,38 @@
 const std = @import("std");
 
 const Step = std.Build.Step;
-const CrossTarget = std.zig.CrossTarget;
+const ResolvedTarget = std.Build.ResolvedTarget;
+const LazyPath = std.Build.LazyPath;
 
 const C_STANDARD = std.Build.CStd.C11;
 
-const TARGETS = [_]std.zig.CrossTarget{
-    .{ .cpu_arch = .x86_64, .os_tag = .linux, .abi = .gnu },
-    .{ .cpu_arch = .x86_64, .os_tag = .linux, .abi = .musl },
-    .{ .cpu_arch = .aarch64, .os_tag = .linux },
-    .{ .cpu_arch = .x86_64, .os_tag = .windows },
-    .{ .cpu_arch = .aarch64, .os_tag = .macos },
-};
-
-fn build_game(b: *std.Build, name: []const u8, target: CrossTarget, optimize: std.builtin.Mode) *Step.Compile {
+fn build_game(b: *std.Build, name: []const u8, target: ResolvedTarget, optimize: std.builtin.Mode) *Step.Compile {
     const exe = b.addExecutable(.{
         .name = name,
         .root_source_file = .{ .path = "main.zig" },
         .target = target,
         .optimize = optimize,
     });
-    if (target.os_tag == .windows) {
+    if (target.query.os_tag == .windows) {
         exe.subsystem = .Windows;
     }
-    exe.c_std = C_STANDARD;
 
     // NOTE: the use of bit shifts of negative numbers is quite extensive, so we disable ubsan shooting us in the foot with those...
     // FIXME: remove the UB-ness
-    exe.addCSourceFiles(&.{
+    exe.addCSourceFiles(.{ .files = &.{
         "src/enemies.c",
         "src/objects.c",
         "src/player.c",
         "src/audio/opl3/opl3.c",
         "src/audio/miniaudio/miniaudio.c",
         "src/audio/pocketmod/pocketmod.c",
-    }, &.{
+    }, .flags = &.{
         "-fno-sanitize=shift",
-    });
-    exe.addIncludePath(std.build.LazyPath.relative("src/"));
-    exe.addIncludePath(std.build.LazyPath.relative("src/audio/opl3/"));
-    exe.addIncludePath(std.build.LazyPath.relative("src/audio/miniaudio/"));
-    exe.addIncludePath(std.build.LazyPath.relative("src/audio/pocketmod/"));
+    } });
+    exe.addIncludePath(LazyPath.relative("src/"));
+    exe.addIncludePath(LazyPath.relative("src/audio/opl3/"));
+    exe.addIncludePath(LazyPath.relative("src/audio/miniaudio/"));
+    exe.addIncludePath(LazyPath.relative("src/audio/pocketmod/"));
 
     exe.linkLibC();
     exe.linkSystemLibrary("m");
@@ -77,20 +69,20 @@ fn build_game(b: *std.Build, name: []const u8, target: CrossTarget, optimize: st
         .target = target,
         .optimize = optimize,
     });
-    game_tests.addCSourceFiles(&.{
+    game_tests.addCSourceFiles(.{ .files = &.{
         "src/enemies.c",
         "src/objects.c",
         "src/player.c",
         "src/audio/opl3/opl3.c",
         "src/audio/miniaudio/miniaudio.c",
         "src/audio/pocketmod/pocketmod.c",
-    }, &.{
+    }, .flags = &.{
         "-fno-sanitize=shift",
-    });
-    game_tests.addIncludePath(std.build.LazyPath.relative("src/"));
-    game_tests.addIncludePath(std.build.LazyPath.relative("src/audio/opl3/"));
-    game_tests.addIncludePath(std.build.LazyPath.relative("src/audio/miniaudio/"));
-    game_tests.addIncludePath(std.build.LazyPath.relative("src/audio/pocketmod/"));
+    } });
+    game_tests.addIncludePath(LazyPath.relative("src/"));
+    game_tests.addIncludePath(LazyPath.relative("src/audio/opl3/"));
+    game_tests.addIncludePath(LazyPath.relative("src/audio/miniaudio/"));
+    game_tests.addIncludePath(LazyPath.relative("src/audio/pocketmod/"));
 
     game_tests.linkLibC();
     game_tests.linkSystemLibrary("m");

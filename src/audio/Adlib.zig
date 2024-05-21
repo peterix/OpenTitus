@@ -42,11 +42,11 @@ const _bytes = @import("../bytes.zig");
 const OPL3 = @import("opl3/opl3.zig");
 
 inline fn chomp_u8(bytes: *[]const u8) u8 {
-    return _bytes.chompInt(u8, .Little, bytes);
+    return _bytes.chompInt(u8, .little, bytes);
 }
 
 inline fn chomp_u16(bytes: *[]const u8) u16 {
-    return _bytes.chompInt(u16, .Little, bytes);
+    return _bytes.chompInt(u16, .little, bytes);
 }
 
 fn getTrackNumber(track_in: ?AudioTrack) ?u8 {
@@ -273,7 +273,7 @@ fn playTrackNumber(self: *Adlib, song_number: u8) void {
 
     for (0..song_number) |_| {
         while (true) {
-            var temp = chomp_u16(&instrument_buffer);
+            const temp = chomp_u16(&instrument_buffer);
             if (temp == 0xFFFF) {
                 break;
             }
@@ -327,7 +327,7 @@ fn playTrackNumber(self: *Adlib, song_number: u8) void {
 
     for (0..song_number) |_| {
         while (true) {
-            var offset = chomp_u16(&mus_buffer);
+            const offset = chomp_u16(&mus_buffer);
             if (offset == 0xFFFF) {
                 break;
             }
@@ -336,7 +336,7 @@ fn playTrackNumber(self: *Adlib, song_number: u8) void {
 
     self.active_channels = 0;
     for (0..ChannelCount) |i| {
-        var offset = chomp_u16(&mus_buffer);
+        const offset = chomp_u16(&mus_buffer);
         if (offset == 0xFFFF) {
             break;
         }
@@ -612,8 +612,8 @@ fn fillchip_channel(self: *Adlib, i: usize) void {
             if (channel.lie_late != 1) {
                 self.writeRegister(0xB0 + channel.vox, 0); //Silence the channel
             }
-            var tmp1 = (channel.octave + 2) & 0x07; //Octave (3 bits)
-            var tmp2 = @as(u8, @truncate((gamme[channel.freq] >> 8) & 0x03)); //Frequency (higher 2 bits)
+            const tmp1 = (channel.octave + 2) & 0x07; //Octave (3 bits)
+            const tmp2 = @as(u8, @truncate((gamme[channel.freq] >> 8) & 0x03)); //Frequency (higher 2 bits)
             self.writeRegister(0xB0 + channel.vox, 0x20 + (tmp1 << 2) + tmp2); //Voices the channel, and output octave and last bits of frequency
             channel.lie_late = channel.lie;
         } else {
@@ -650,7 +650,7 @@ fn fillchip_channel(self: *Adlib, i: usize) void {
                 self.writeRegister(0x40 + tmp2, @truncate(tmp1));
             }
             const percussion_bit = @as(c_int, channel.vox) - 6;
-            var tmpC = @as(u8, 0x10) >> @intCast(percussion_bit);
+            const tmpC = @as(u8, 0x10) >> @intCast(percussion_bit);
             self.writeRegister(0xBD, self.perc_stat & ~tmpC); //Output perc_stat with one bit removed
             if (channel.vox == 6) {
                 self.writeRegister(0xA6, 0x57); //

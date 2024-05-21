@@ -34,9 +34,9 @@ const fonts = @import("fonts.zig");
 // Like replace the (missing) manual with an intro sequence to give the player some context.
 pub fn viewintrotext(allocator: std.mem.Allocator) !c_int {
     var rawtime = c.time(null);
-    var timeinfo = c.localtime(&rawtime);
+    const timeinfo = c.localtime(&rawtime);
 
-    var year = try std.fmt.allocPrint(
+    const year = try std.fmt.allocPrint(
         allocator,
         "     You are still playing Moktar in {d} !!",
         .{timeinfo.*.tm_year + 1900},
@@ -50,7 +50,7 @@ pub fn viewintrotext(allocator: std.mem.Allocator) !c_int {
 
     window.window_render();
 
-    var retval = keyboard.waitforbutton();
+    const retval = keyboard.waitforbutton();
     if (retval < 0)
         return retval;
 

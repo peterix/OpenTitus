@@ -61,7 +61,7 @@ pub fn playtitus(firstlevel: u16, allocator: std.mem.Allocator) !c_int {
 
     level.c_level.pixelformat = &data.titus_pixelformat;
 
-    var spritedata = sqz.unSQZ(data.constants.*.sprites, allocator) catch {
+    const spritedata = sqz.unSQZ(data.constants.*.sprites, allocator) catch {
         std.debug.print("Failed to uncompress sprites file: {s}\n", .{data.constants.*.sprites});
         return -1;
     };
@@ -92,7 +92,7 @@ pub fn playtitus(firstlevel: u16, allocator: std.mem.Allocator) !c_int {
         level.music = current_constants.music;
 
         const level_index = @as(usize, @intCast(level.c_level.levelnumber));
-        var leveldata = sqz.unSQZ(
+        const leveldata = sqz.unSQZ(
             data.constants.*.levelfiles[level_index].filename,
             allocator,
         ) catch {
@@ -105,7 +105,7 @@ pub fn playtitus(firstlevel: u16, allocator: std.mem.Allocator) !c_int {
             &level.c_level,
             allocator,
             leveldata,
-            data.object_data,
+            &data.object_data,
             @constCast(&data.constants.levelfiles[level.c_level.levelnumber].color),
         );
         allocator.free(leveldata);

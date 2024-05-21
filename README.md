@@ -10,7 +10,7 @@ This is a fork that aims to modernize the codebase, clean everything up, fix bug
 
 ## Building:
 You need:
-* [zig 0.11.0](https://ziglang.org/download/#release-0.11.0)
+* [zig 0.12.0](https://ziglang.org/download/#release-0.12.0)
 * SDL and SDL_mixer libraries available and usable for development
 
 This should get things built and ready for testing/use:

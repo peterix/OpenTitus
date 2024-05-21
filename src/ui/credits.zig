@@ -44,7 +44,7 @@ const credits: [8][2][:0]const u8 = .{
 };
 
 pub export fn credits_screen() c_int {
-    var last_song = audio.music_get_last_song();
+    const last_song = audio.music_get_last_song();
     audio.playTrack(.Credits);
 
     // TODO: have a way for the event loop to re-run this rendering code... maybe to animate it?
@@ -62,7 +62,7 @@ pub export fn credits_screen() c_int {
     fonts.Gold.render_center("Cristelle, Ana Luisa, Corinne and Manou.", y, options);
     window.window_render();
 
-    var retval = keyboard.waitforbutton();
+    const retval = keyboard.waitforbutton();
     if (retval < 0)
         return retval;
 

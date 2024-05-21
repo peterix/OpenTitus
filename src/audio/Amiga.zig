@@ -198,7 +198,7 @@ fn fillBuffer(ctx: *anyopaque, buffer: []i16, nFrames: u32) void {
                 to_render * frameSize,
             ) / frameSize;
             for (rendered..rendered + rendered_now) |i| {
-                var ii = i * 2;
+                const ii = i * 2;
                 buffer[ii] = @intFromFloat(std.math.clamp(floatBuffer[ii], -1.0, 1.0) * std.math.maxInt(i16));
                 buffer[ii + 1] = @intFromFloat(std.math.clamp(floatBuffer[ii + 1], -1.0, 1.0) * std.math.maxInt(i16));
             }
