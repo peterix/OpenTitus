@@ -234,8 +234,8 @@ pub fn fadeout() void {
         .h = window.game_height,
     };
 
-    const image = c.SDL_ConvertSurface(window.screen, window.screen.?.format, c.SDL_SWSURFACE);
-    defer c.SDL_FreeSurface(image);
+    const image = SDL.convertSurface(window.screen, window.screen.?.format, c.SDL_SWSURFACE);
+    defer SDL.freeSurface(image);
 
     const tick_start = c.SDL_GetTicks();
     var image_alpha: c_uint = 0;

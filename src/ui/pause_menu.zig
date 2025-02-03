@@ -67,8 +67,8 @@ fn renderLabel(text: []const u8, y: i16, selected: bool) void {
 pub export fn pauseMenu(context: *c.ScreenContext) c_int {
 
     // take a screenshot and use it as a background that fades to black a bit
-    const image = c.SDL_ConvertSurface(window.screen.?, window.screen.?.format, c.SDL_SWSURFACE);
-    defer c.SDL_FreeSurface(image);
+    const image = SDL.convertSurface(window.screen.?, window.screen.?.format, c.SDL_SWSURFACE);
+    defer SDL.freeSurface(image);
 
     defer render.screencontext_reset(context);
 

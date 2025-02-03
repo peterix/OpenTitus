@@ -34,7 +34,7 @@ const C_STANDARD = std.Build.CStd.C11;
 fn build_game(b: *std.Build, name: []const u8, target: ResolvedTarget, optimize: std.builtin.Mode) *Step.Compile {
     const exe = b.addExecutable(.{
         .name = name,
-        .root_source_file = .{ .path = "main.zig" },
+        .root_source_file = b.path("main.zig"),
         .target = target,
         .optimize = optimize,
     });
@@ -54,10 +54,10 @@ fn build_game(b: *std.Build, name: []const u8, target: ResolvedTarget, optimize:
     }, .flags = &.{
         "-fno-sanitize=shift",
     } });
-    exe.addIncludePath(LazyPath.relative("src/"));
-    exe.addIncludePath(LazyPath.relative("src/audio/opl3/"));
-    exe.addIncludePath(LazyPath.relative("src/audio/miniaudio/"));
-    exe.addIncludePath(LazyPath.relative("src/audio/pocketmod/"));
+    exe.addIncludePath(b.path("src/"));
+    exe.addIncludePath(b.path("src/audio/opl3/"));
+    exe.addIncludePath(b.path("src/audio/miniaudio/"));
+    exe.addIncludePath(b.path("src/audio/pocketmod/"));
 
     exe.linkLibC();
     exe.linkSystemLibrary("m");
@@ -65,7 +65,7 @@ fn build_game(b: *std.Build, name: []const u8, target: ResolvedTarget, optimize:
     exe.linkSystemLibrary("SDL2main");
 
     const game_tests = b.addTest(.{
-        .root_source_file = .{ .path = "main.zig" },
+        .root_source_file = b.path("main.zig"),
         .target = target,
         .optimize = optimize,
     });
@@ -79,10 +79,10 @@ fn build_game(b: *std.Build, name: []const u8, target: ResolvedTarget, optimize:
     }, .flags = &.{
         "-fno-sanitize=shift",
     } });
-    game_tests.addIncludePath(LazyPath.relative("src/"));
-    game_tests.addIncludePath(LazyPath.relative("src/audio/opl3/"));
-    game_tests.addIncludePath(LazyPath.relative("src/audio/miniaudio/"));
-    game_tests.addIncludePath(LazyPath.relative("src/audio/pocketmod/"));
+    game_tests.addIncludePath(b.path("src/"));
+    game_tests.addIncludePath(b.path("src/audio/opl3/"));
+    game_tests.addIncludePath(b.path("src/audio/miniaudio/"));
+    game_tests.addIncludePath(b.path("src/audio/pocketmod/"));
 
     game_tests.linkLibC();
     game_tests.linkSystemLibrary("m");

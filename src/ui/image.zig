@@ -36,7 +36,7 @@ pub const ManagedSurface = struct {
 
     pub fn deinit(self: *Self) void {
         if (self.value != null) {
-            c.SDL_FreeSurface(self.value);
+            SDL.freeSurface(self.value);
         }
     }
 
@@ -116,8 +116,8 @@ pub fn loadImage(data: []const u8, format: ImageFormat, allocator: std.mem.Alloc
     defer allocator.free(data);
 
     // FIXME: handle this returning null
-    const surface = c.SDL_CreateRGBSurface(c.SDL_SWSURFACE, 320, 200, 8, 0, 0, 0, 0);
-    defer c.SDL_FreeSurface(surface);
+    const surface = SDL.createRGBSurface(c.SDL_SWSURFACE, 320, 200, 8, 0, 0, 0, 0);
+    defer SDL.freeSurface(surface);
     // FIXME: handle palette being null
     const palette = surface.*.format.*.palette;
 
@@ -157,7 +157,7 @@ pub fn loadImage(data: []const u8, format: ImageFormat, allocator: std.mem.Alloc
             @memcpy(slice_out, slice_in);
         },
     }
-    const result = c.SDL_ConvertSurfaceFormat(surface, c.SDL_GetWindowPixelFormat(c.window), 0);
+    const result = SDL.convertSurfaceFormat(surface, c.SDL_GetWindowPixelFormat(c.window), 0);
     if (result == null) {
         return error.CannotConvertSurface;
     }

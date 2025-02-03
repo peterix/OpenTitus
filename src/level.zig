@@ -1,6 +1,7 @@
 const std = @import("std");
 const spr = @import("sprites.zig");
 const c = @import("c.zig");
+const SDL = @import("SDL.zig");
 const data = @import("data.zig");
 const sprites = @import("sprites.zig");
 const ObjectData = data.ObjectData;
@@ -254,8 +255,6 @@ pub fn loadlevel(
     level.player.inithp = 16;
     level.player.cageX = 0;
     level.player.cageY = 0;
-
-    // try std.fs.cwd().writeFile("level.fox", leveldata);
 
     // read tilemap
     {
@@ -524,7 +523,7 @@ pub fn freelevel(level: *Level, allocator: std.mem.Allocator) void {
     allocator.free(level.tilemap);
 
     for (0..256) |i| {
-        c.SDL_FreeSurface(level.c_level.tile[i].tiledata);
+        SDL.freeSurface(level.c_level.tile[i].tiledata);
     }
 }
 

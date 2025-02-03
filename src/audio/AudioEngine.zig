@@ -246,7 +246,7 @@ pub fn setCallback(self: *Self, us: u64, callback: Callback, callback_data: ?*an
 
 pub fn clearCallbacks(self: *Self) void {
     self.callback_queue_mutex.lock();
-    self.callback_queue.len = 0;
+    self.callback_queue.items.len = 0;
     self.callback_queue_mutex.unlock();
 }
 

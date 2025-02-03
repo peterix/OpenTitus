@@ -26,6 +26,7 @@
 const std = @import("std");
 
 const c = @import("../c.zig");
+const SDL = @import("../SDL.zig");
 
 const window = @import("../window.zig");
 const globals = @import("../globals.zig");
@@ -51,7 +52,7 @@ pub const Font = struct {
             print_sdl_error("Could not load font: {s}");
             return FontError.CannotLoad;
         }
-        const image = c.SDL_LoadBMP_RW(rwops, c.SDL_TRUE);
+        const image = SDL.loadBMP_RW(rwops, c.SDL_TRUE);
         if (image == null) {
             print_sdl_error("Could not load font: {s}");
             return FontError.CannotLoad;
@@ -59,7 +60,7 @@ pub const Font = struct {
         try loadfont(image, self);
     }
     fn deinit(self: *Font) void {
-        c.SDL_FreeSurface(self.sheet);
+        SDL.freeSurface(self.sheet);
     }
 
     pub const RenderOptions = packed struct {
@@ -157,7 +158,7 @@ fn print_sdl_error(comptime format: []const u8) void {
 }
 
 fn loadfont(image: *c.SDL_Surface, font: *Font) !void {
-    defer c.SDL_FreeSurface(image);
+    defer SDL.freeSurface(image);
 
     const surface_w = @as(u16, @intCast(image.*.w));
     if (@rem(surface_w, 16) != 0) {
@@ -171,7 +172,7 @@ fn loadfont(image: *c.SDL_Surface, font: *Font) !void {
         return FontError.NotDivisibleBy16;
     }
 
-    const sheet = c.SDL_ConvertSurfaceFormat(image, c.SDL_GetWindowPixelFormat(window.window), 0);
+    const sheet = SDL.convertSurfaceFormat(image, c.SDL_GetWindowPixelFormat(window.window), 0);
     if (sheet == null) {
         print_sdl_error("Cannot convert font surface: {s}");
         return FontError.CannotLoad;

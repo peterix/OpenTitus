@@ -26,6 +26,7 @@
 const std = @import("std");
 
 const c = @import("c.zig");
+const SDL = @import("SDL.zig");
 const globals = @import("globals.zig");
 const game = @import("game.zig");
 const data = @import("data.zig");
@@ -102,13 +103,13 @@ pub fn window_init() !void {
         renderer = null;
     }
 
-    screen = c.SDL_CreateRGBSurfaceWithFormat(0, game_width, game_height, 32, c.SDL_GetWindowPixelFormat(window));
+    screen = SDL.createRGBSurfaceWithFormat(0, game_width, game_height, 32, c.SDL_GetWindowPixelFormat(window));
     if (screen == null) {
         std.debug.print("Unable to create screen surface: {s}\n", .{c.SDL_GetError()});
         return WindowError.Other;
     }
     errdefer {
-        c.SDL_FreeSurface(screen);
+        SDL.freeSurface(screen);
         screen = null;
     }
     black = c.SDL_MapRGB(screen.?.*.format, 0, 0, 0);

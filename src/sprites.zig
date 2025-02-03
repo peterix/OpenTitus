@@ -27,6 +27,7 @@
 
 const std = @import("std");
 const c = @import("c.zig");
+const SDL = @import("SDL.zig");
 const image = @import("ui/image.zig");
 const window = @import("window.zig");
 const data = @import("data.zig");
@@ -91,7 +92,7 @@ pub const SpriteData = struct {
         }
         var remaining_data = spritedata;
         for (0..SPRITECOUNT) |i| {
-            const surface = c.SDL_CreateRGBSurface(
+            const surface = SDL.createRGBSurface(
                 c.SDL_SWSURFACE,
                 self.definitions[i].width,
                 self.definitions[i].height,
@@ -111,7 +112,7 @@ pub const SpriteData = struct {
     }
     fn deinit(self: *SpriteData) void {
         for (self.bitmaps) |ptr| {
-            c.SDL_FreeSurface(ptr);
+            SDL.freeSurface(ptr);
         }
     }
 
@@ -134,15 +135,15 @@ pub fn deinit() void {
 pub fn load_tile(data_slice: []const u8, pixelformat: *c.SDL_PixelFormat) !*c.SDL_Surface {
     const width = 16;
     const height = 16;
-    const surface = c.SDL_CreateRGBSurface(c.SDL_SWSURFACE, width, height, 8, 0, 0, 0, 0);
+    const surface = SDL.createRGBSurface(c.SDL_SWSURFACE, width, height, 8, 0, 0, 0, 0);
     if (surface == null) {
         return error.OutOfMemory;
     }
-    defer c.SDL_FreeSurface(surface);
+    defer SDL.freeSurface(surface);
 
     copypixelformat(surface.*.format, pixelformat);
     _ = try image.load_planar_16color(data_slice, width, height, surface);
-    const surface2 = c.SDL_ConvertSurfaceFormat(surface, c.SDL_GetWindowPixelFormat(window.window), 0);
+    const surface2 = SDL.convertSurfaceFormat(surface, c.SDL_GetWindowPixelFormat(window.window), 0);
     if (surface2 == 0) {
         return error.OutOfMemory;
     }
@@ -200,21 +201,19 @@ pub const SpriteCache = struct {
         self.hashmap = HashMap.init(allocator);
         self.pixelformat = pixelformat;
     }
+
     pub fn deinit(self: *SpriteCache) void {
-        var iter = self.hashmap.iterator();
-        while (iter.next()) |*entry| {
-            c.SDL_FreeSurface(entry.value_ptr.*);
-        }
+        evictAll(self);
         self.hashmap.deinit();
     }
 
     // Takes the original 16 color surface and gives you a render optimized surface
     // that is flipped the right way and has the flash effect applied.
     fn copysurface(self: *SpriteCache, original: *c.SDL_Surface, flip: bool, flash: bool) !*c.SDL_Surface {
-        const surface = c.SDL_ConvertSurface(original, original.format, original.flags);
+        const surface = SDL.convertSurface(original, original.format, original.flags);
         if (surface == null)
             return error.FailedToConvertSurface;
-        defer c.SDL_FreeSurface(surface);
+        defer SDL.freeSurface(surface);
 
         _ = c.SDL_SetColorKey(surface, c.SDL_TRUE | c.SDL_RLEACCEL, 0); //Set transparent colour
 
@@ -245,7 +244,7 @@ pub const SpriteCache = struct {
                 }
             }
         }
-        const surface2 = c.SDL_ConvertSurfaceFormat(surface, self.pixelformat, 0);
+        const surface2 = SDL.convertSurfaceFormat(surface, self.pixelformat, 0);
         return (surface2);
     }
 
@@ -261,6 +260,12 @@ pub const SpriteCache = struct {
     }
 
     pub fn evictAll(self: *SpriteCache) void {
+        var index: u32 = 0;
+        var iter = self.hashmap.iterator();
+        while (iter.next()) |*entry| {
+            SDL.freeSurface(entry.value_ptr.*);
+            index += 1;
+        }
         self.hashmap.clearAndFree();
     }
 };

@@ -26,6 +26,7 @@
 const std = @import("std");
 
 const c = @import("c.zig");
+const SDL = @import("SDL.zig");
 const sqz = @import("sqz.zig");
 const sqz_amiga = @import("sqz_amiga.zig");
 
@@ -100,11 +101,11 @@ pub fn run() !u8 {
     game_state = &game_state_mem.value;
     defer game_state_mem.deinit();
 
-    if (c.SDL_Init(c.SDL_INIT_VIDEO | c.SDL_INIT_TIMER | c.SDL_INIT_AUDIO) != 0) {
+    if (SDL.init(allocator, c.SDL_INIT_VIDEO | c.SDL_INIT_TIMER | c.SDL_INIT_AUDIO) != 0) {
         std.debug.print("Unable to initialize SDL: {s}\n", .{std.mem.span(c.SDL_GetError())});
         return TitusError.CannotInitSDL;
     }
-    defer c.SDL_Quit();
+    defer SDL.deinit();
 
     try window.window_init();
 
