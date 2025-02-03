@@ -85,7 +85,7 @@ pub fn init(allocator: Allocator, flags: c.Uint32) c_int {
     sdl_allocator = allocator;
     tracking_map = TrackingHashMap.init(allocator);
     sdl_allocations = std.AutoHashMap(usize, usize).init(allocator);
-    //_ = c.SDL_SetMemoryFunctions(sdl_malloc, sdl_calloc, sdl_realloc, sdl_free);
+    _ = c.SDL_SetMemoryFunctions(sdl_malloc, sdl_calloc, sdl_realloc, sdl_free);
     return c.SDL_Init(flags);
 }
 
