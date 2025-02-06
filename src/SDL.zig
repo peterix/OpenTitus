@@ -63,7 +63,9 @@ const TrackingHashMap = std.AutoHashMap(*Surface, void);
 
 var tracking_map: TrackingHashMap = undefined;
 
-var sdl_allocator: ?std.mem.Allocator = null;
+const sdl_gpa_type = std.heap.GeneralPurposeAllocator(.{.retain_metadata = true, .never_unmap = true });
+var sdl_gpa = sdl_gpa_type{};
+var sdl_allocator: std.mem.Allocator = undefined;
 var sdl_allocations: ?std.AutoHashMap(usize, usize) = null;
 var sdl_mutex: std.Thread.Mutex = .{};
 const sdl_alignment = 16;
@@ -72,7 +74,7 @@ fn sdl_malloc(size: usize) callconv(.C) ?*anyopaque {
     sdl_mutex.lock();
     defer sdl_mutex.unlock();
 
-    const mem = sdl_allocator.?.alignedAlloc(
+    const mem = sdl_allocator.alignedAlloc(
         u8,
         sdl_alignment,
         size,
@@ -87,7 +89,7 @@ fn sdl_calloc(size: usize, count: usize) callconv(.C) ?*anyopaque {
     sdl_mutex.lock();
     defer sdl_mutex.unlock();
 
-    const mem = sdl_allocator.?.alignedAlloc(
+    const mem = sdl_allocator.alignedAlloc(
         u8,
         sdl_alignment,
         size * count,
@@ -109,7 +111,7 @@ fn sdl_realloc(ptr: ?*anyopaque, size: usize) callconv(.C) ?*anyopaque {
     else
         @as([*]align(sdl_alignment) u8, undefined)[0..0];
 
-    const new_mem = sdl_allocator.?.realloc(old_mem, size) catch @panic("SDL: out of memory");
+    const new_mem = sdl_allocator.realloc(old_mem, size) catch @panic("SDL: out of memory");
 
     if (ptr != null) {
         const removed = sdl_allocations.?.remove(@intFromPtr(ptr.?));
@@ -129,7 +131,7 @@ fn sdl_free(maybe_ptr: ?*anyopaque) callconv(.C) void {
         if (sdl_allocations.?.fetchRemove(@intFromPtr(ptr))) |kv| {
             const size = kv.value;
             const mem = @as([*]align(sdl_alignment) u8, @ptrCast(@alignCast(ptr)))[0..size];
-            sdl_allocator.?.free(mem);
+            sdl_allocator.free(mem);
         }
         else
         {
@@ -139,7 +141,7 @@ fn sdl_free(maybe_ptr: ?*anyopaque) callconv(.C) void {
 }
 
 pub fn init(allocator: Allocator) c_int {
-    sdl_allocator = allocator;
+    sdl_allocator = sdl_gpa.allocator();
     tracking_map = TrackingHashMap.init(allocator);
     sdl_allocations = std.AutoHashMap(usize, usize).init(allocator);
     _ = @This().SDL_SetMemoryFunctions(sdl_malloc, sdl_calloc, sdl_realloc, sdl_free);
@@ -151,7 +153,10 @@ pub fn deinit() void {
     @This().SDL_Quit();
     sdl_allocations.?.deinit();
     sdl_allocations = null;
-    sdl_allocator = null;
+    if (sdl_gpa.deinit() == .leak)
+    {
+        std.log.err("SDL memory leaked!", .{});
+    }
 }
 
 // Timers

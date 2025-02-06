@@ -27,6 +27,5 @@
 */
 
 #pragma once
-//#include "SDL2/SDL.h"
 
 void toggle_fullscreen();
