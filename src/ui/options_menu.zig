@@ -150,9 +150,9 @@ const grey_colors: []const Color = &.{
 };
 
 fn line(x: i16, y: i16, width: u16, colors: []const Color, index: usize) void {
-    var bar = c.SDL_Rect{ .x = x, .y = y, .w = width, .h = 1 };
-    const color = c.SDL_MapRGB(window.screen.?.format, colors[index].r, colors[index].g, colors[index].b);
-    _ = c.SDL_FillRect(window.screen.?, &bar, color);
+    var bar = SDL.Rect{ .x = x, .y = y, .w = width, .h = 1 };
+    const color = SDL.mapRGB(window.screen.?.format, colors[index].r, colors[index].g, colors[index].b);
+    _ = SDL.fillRect(window.screen.?, &bar, color);
 }
 
 fn slider(
@@ -234,8 +234,8 @@ pub fn optionsMenu(menu_context: *MenuContext) ?c_int {
         var y: i16 = 8;
         fonts.Gold.render_center("OPTIONS", y, .{ .transpatent = true });
         y += 12;
-        const bar = c.SDL_Rect{ .x = 160 - title_width / 2, .y = y, .w = title_width, .h = 1 };
-        _ = c.SDL_FillRect(window.screen.?, &bar, c.SDL_MapRGB(window.screen.?.format, 0xd0, 0xb0, 0x00));
+        const bar = SDL.Rect{ .x = 160 - title_width / 2, .y = y, .w = title_width, .h = 1 };
+        _ = SDL.fillRect(window.screen.?, &bar, SDL.mapRGB(window.screen.?.format, 0xd0, 0xb0, 0x00));
         y += 27;
 
         label("Audio", y, selected == 0);

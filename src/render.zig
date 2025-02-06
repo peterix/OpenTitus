@@ -94,13 +94,13 @@ pub fn render_tiles(level: *c.TITUS_level) void {
             }
             const tileY = @as(usize, @intCast(checkY));
 
-            var dest: c.SDL_Rect = undefined;
+            var dest: SDL.Rect = undefined;
             dest.x = x * 16 + globals.g_scroll_px_offset;
             dest.y = y * 16 + y_offset;
             var parent_level: *lvl.Level = @ptrCast(@alignCast(level.parent));
             const tile = parent_level.getTile(tileX, tileY);
-            const surface = level.tile[level.tile[tile].animation[globals.tile_anim]].tiledata;
-            _ = c.SDL_BlitSurface(surface, null, window.screen, &dest);
+            const surface = parent_level.tiles[level.tile[tile].animation[globals.tile_anim]].tiledata;
+            _ = SDL.blitSurface(@ptrCast(@alignCast(surface)), null, window.screen, &dest);
         }
     }
 }
@@ -143,7 +143,7 @@ fn render_sprite(spr: *allowzero c.TITUS_sprite) void {
     }
     spr.visible = false;
 
-    var dest: c.SDL_Rect = undefined;
+    var dest: SDL.Rect = undefined;
     if (!spr.flipped) {
         // FIXME: crash in final level!
         dest.x = spr.x - spr.spritedata.*.refwidth - (globals.BITMAP_X * 16) + globals.g_scroll_px_offset;
@@ -167,20 +167,20 @@ fn render_sprite(spr: *allowzero c.TITUS_sprite) void {
         .flip = spr.*.flipped,
         .flash = spr.*.flash,
     }) catch {
-        _ = c.SDL_FillRect(window.screen, &dest, c.SDL_MapRGB(window.screen.?.format, 255, 180, 128));
+        _ = SDL.fillRect(window.screen, &dest, SDL.mapRGB(window.screen.?.format, 255, 180, 128));
         spr.visible = true;
         spr.flash = false;
         return;
     };
 
-    var src = c.SDL_Rect{
+    var src = SDL.Rect{
         .x = 0,
         .y = 0,
         .w = image.w,
         .h = image.h,
     };
 
-    _ = c.SDL_BlitSurface(image, &src, window.screen, &dest);
+    _ = SDL.blitSurface(image, &src, window.screen, &dest);
 
     spr.visible = true;
     spr.flash = false;
@@ -192,7 +192,7 @@ pub fn render_health_bars(level: *c.TITUS_level) void {
         return;
     }
 
-    const white = c.SDL_MapRGB(window.screen.?.format, 255, 255, 255);
+    const white = SDL.mapRGB(window.screen.?.format, 255, 255, 255);
     if (globals.BAR_FLAG <= 0) {
         return;
     }
@@ -200,26 +200,26 @@ pub fn render_health_bars(level: *c.TITUS_level) void {
 
     //render big bars (4px*16px, spacing 4px)
     for (0..level.player.hp) |_| {
-        const dest = c.SDL_Rect{
+        const dest = SDL.Rect{
             .x = offset,
             .y = 9,
             .w = 4,
             .h = 16,
         };
 
-        _ = c.SDL_FillRect(window.screen, &dest, white);
+        _ = SDL.fillRect(window.screen, &dest, white);
         offset += 8;
     }
 
     //render small bars (4px*4px, spacing 4px)
     for (0..@as(usize, c.MAXIMUM_ENERGY) - level.player.hp) |_| {
-        const dest = c.SDL_Rect{
+        const dest = SDL.Rect{
             .x = offset,
             .y = 15,
             .w = 4,
             .h = 3,
         };
-        _ = c.SDL_FillRect(window.screen, &dest, white);
+        _ = SDL.fillRect(window.screen, &dest, white);
         offset += 8;
     }
 }
@@ -227,48 +227,50 @@ pub fn render_health_bars(level: *c.TITUS_level) void {
 pub fn fadeout() void {
     const fade_time: c_uint = 1000;
 
-    var rect = c.SDL_Rect{
+    var rect = SDL.Rect{
         .x = 0,
         .y = 0,
         .w = window.game_width,
         .h = window.game_height,
     };
 
-    const image = SDL.convertSurface(window.screen, window.screen.?.format, c.SDL_SWSURFACE);
+    const image = SDL.convertSurface(window.screen.?, window.screen.?.format, SDL.SWSURFACE) catch {
+        @panic("OOPS");
+    };
     defer SDL.freeSurface(image);
 
-    const tick_start = c.SDL_GetTicks();
+    const tick_start = SDL.getTicks();
     var image_alpha: c_uint = 0;
     while (image_alpha < 255) //Fade to black
     {
-        var event: c.SDL_Event = undefined;
-        if (c.SDL_PollEvent(&event) == 0) {
-            if (event.type == c.SDL_QUIT) {
+        var event: SDL.Event = undefined;
+        while (SDL.pollEvent(&event)) {
+            if (event.type == SDL.QUIT) {
                 // FIXME: handle this better
                 return;
             }
 
-            if (event.type == c.SDL_KEYDOWN) {
-                if (event.key.keysym.scancode == c.SDL_SCANCODE_ESCAPE) {
+            if (event.type == SDL.KEYDOWN) {
+                if (event.key.keysym.scancode == SDL.SCANCODE_ESCAPE) {
                     // FIXME: handle this better
                     return;
                 }
-                if (event.key.keysym.scancode == c.SDL_SCANCODE_F11) {
+                if (event.key.keysym.scancode == SDL.SCANCODE_F11) {
                     window.toggle_fullscreen();
                 }
             }
         }
 
-        image_alpha = (c.SDL_GetTicks() - tick_start) * 256 / fade_time;
+        image_alpha = (SDL.getTicks() - tick_start) * 256 / fade_time;
 
         if (image_alpha > 255) {
             image_alpha = 255;
         }
 
-        _ = c.SDL_SetSurfaceAlphaMod(image, 255 - @as(u8, @truncate(image_alpha)));
-        _ = c.SDL_SetSurfaceBlendMode(image, c.SDL_BLENDMODE_BLEND);
+        _ = SDL.setSurfaceAlphaMod(image, 255 - @as(u8, @truncate(image_alpha)));
+        _ = SDL.setSurfaceBlendMode(image, SDL.BLENDMODE_BLEND);
         window.window_clear(null);
-        _ = c.SDL_BlitSurface(image, &rect, window.screen, &rect);
+        _ = SDL.blitSurface(image, &rect, window.screen, &rect);
         window.window_render();
 
         SDL.delay(1);

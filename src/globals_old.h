@@ -28,7 +28,6 @@
 
 #pragma once
 
-#include "SDL2/SDL.h"
 #include <stdbool.h>
 
 #define TEST_ZONE 4

@@ -45,7 +45,7 @@ const Rect = struct {
 // TODO: return the rect this has drawn over and blank it in the next iteration
 fn render_extrabonus(level: *c.TITUS_level, last_bounds: ?Rect) Rect {
     if (last_bounds != null) {
-        var rect = c.SDL_Rect{
+        var rect = SDL.Rect{
             // FIXME: move all UI screens to an overlay that's independent from the scroll buffer madness
             .x = last_bounds.?.x,
             .y = last_bounds.?.y,
@@ -72,14 +72,14 @@ fn render_extrabonus(level: *c.TITUS_level, last_bounds: ?Rect) Rect {
 // TODO: return the rect this has drawn over and blank it in the next iteration
 fn render_lives(level: *c.TITUS_level, last_bounds: ?Rect) Rect {
     if (last_bounds != null) {
-        var rect = c.SDL_Rect{
+        var rect = SDL.Rect{
             // FIXME: move all UI screens to an overlay that's independent from the scroll buffer madness
             .x = last_bounds.?.x,
             .y = last_bounds.?.y,
             .w = last_bounds.?.w,
             .h = last_bounds.?.h,
         };
-        _ = c.SDL_FillRect(window.screen, &rect, 0);
+        _ = SDL.fillRect(window.screen, &rect, 0);
     }
     var tmpchars = [_]u8{0} ** 10;
     const lives = std.fmt.bufPrint(&tmpchars, "{d}", .{level.lives}) catch {

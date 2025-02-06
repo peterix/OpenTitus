@@ -70,14 +70,14 @@ pub fn music_wait_to_finish() void {
     var waiting: bool = true;
     while (waiting) {
         SDL.delay(1);
-        var event: c.SDL_Event = undefined;
-        while (c.SDL_PollEvent(&event) != 0) {
-            if (event.type == c.SDL_QUIT) {
+        var event: SDL.Event = undefined;
+        while (SDL.pollEvent(&event)) {
+            if (event.type == SDL.QUIT) {
                 // FIXME: handle this better
                 //return TITUS_ERROR_QUIT;
                 return;
-            } else if (event.type == c.SDL_KEYDOWN) {
-                if (event.key.keysym.scancode == c.SDL_SCANCODE_ESCAPE) {
+            } else if (event.type == SDL.KEYDOWN) {
+                if (event.key.keysym.scancode == SDL.SCANCODE_ESCAPE) {
                     // FIXME: handle this better
                     // return TITUS_ERROR_QUIT;
                     return;

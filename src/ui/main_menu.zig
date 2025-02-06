@@ -52,22 +52,22 @@ pub fn view_menu(file: ImageFile, allocator: std.mem.Allocator) !?usize {
     defer image_memory.deinit();
     const menu = image_memory.value;
 
-    var src = c.SDL_Rect{
+    var src = SDL.Rect{
         .x = 0,
         .y = 0,
         .w = menu.*.w,
         .h = menu.*.h,
     };
 
-    var dest = c.SDL_Rect{
+    var dest = SDL.Rect{
         .x = 0,
         .y = 0,
         .w = menu.*.w,
         .h = menu.*.h,
     };
 
-    var sel: [2]c.SDL_Rect = undefined;
-    var sel_dest: [2]c.SDL_Rect = undefined;
+    var sel: [2]SDL.Rect = undefined;
+    var sel_dest: [2]SDL.Rect = undefined;
 
     if (data.game == c.Titus) {
         sel[0].x = 120;
@@ -98,38 +98,38 @@ pub fn view_menu(file: ImageFile, allocator: std.mem.Allocator) !?usize {
     // FIXME: move to render.zig
     const fade_time: c_uint = 1000;
     var image_alpha: c_uint = 0;
-    const tick_start: c_uint = c.SDL_GetTicks();
+    const tick_start: c_uint = SDL.getTicks();
 
     // Fade in
     while (image_alpha < 255) {
-        var event: c.SDL_Event = undefined;
-        if (c.SDL_PollEvent(&event) != c.SDL_FALSE) {
-            if (event.type == c.SDL_QUIT) {
+        var event: SDL.Event = undefined;
+        while (SDL.pollEvent(&event)) {
+            if (event.type == SDL.QUIT) {
                 return null;
             }
 
-            if (event.type == c.SDL_KEYDOWN) {
-                if (event.key.keysym.scancode == c.SDL_SCANCODE_ESCAPE) {
+            if (event.type == SDL.KEYDOWN) {
+                if (event.key.keysym.scancode == SDL.SCANCODE_ESCAPE) {
                     return null;
                 }
-                if (event.key.keysym.scancode == c.SDL_SCANCODE_F11) {
+                if (event.key.keysym.scancode == SDL.SCANCODE_F11) {
                     window.toggle_fullscreen();
                 }
             }
         }
 
-        image_alpha = (c.SDL_GetTicks() - tick_start) * 256 / fade_time;
+        image_alpha = (SDL.getTicks() - tick_start) * 256 / fade_time;
 
         if (image_alpha > 255)
             image_alpha = 255;
 
         window.window_clear(null);
         // FIXME: handle errors?
-        _ = c.SDL_SetSurfaceBlendMode(menu, c.SDL_BLENDMODE_BLEND);
-        _ = c.SDL_SetSurfaceAlphaMod(menu, @truncate(image_alpha));
-        _ = c.SDL_BlitSurface(menu, &src, window.screen, &dest);
-        _ = c.SDL_BlitSurface(menu, &sel[1], window.screen, &sel_dest[0]);
-        _ = c.SDL_BlitSurface(menu, &sel[0], window.screen, &sel_dest[selection]);
+        _ = SDL.setSurfaceBlendMode(menu, SDL.BLENDMODE_BLEND);
+        _ = SDL.setSurfaceAlphaMod(menu, @truncate(image_alpha));
+        _ = SDL.blitSurface(menu, &src, window.screen, &dest);
+        _ = SDL.blitSurface(menu, &sel[1], window.screen, &sel_dest[0]);
+        _ = SDL.blitSurface(menu, &sel[0], window.screen, &sel_dest[selection]);
         window.window_render();
         SDL.delay(1);
     }
@@ -137,23 +137,23 @@ pub fn view_menu(file: ImageFile, allocator: std.mem.Allocator) !?usize {
     var curlevel: ?usize = null;
     // View the menu
     MENULOOP: while (true) {
-        var event: c.SDL_Event = undefined;
-        if (c.SDL_PollEvent(&event) != c.SDL_FALSE) {
-            if (event.type == c.SDL_QUIT) {
+        var event: SDL.Event = undefined;
+        while (SDL.pollEvent(&event)) {
+            if (event.type == SDL.QUIT) {
                 return null;
             }
 
-            if (event.type == c.SDL_KEYDOWN) {
-                if (event.key.keysym.scancode == c.SDL_SCANCODE_ESCAPE) {
+            if (event.type == SDL.KEYDOWN) {
+                if (event.key.keysym.scancode == SDL.SCANCODE_ESCAPE) {
                     return null;
                 }
-                if (event.key.keysym.scancode == c.SDL_SCANCODE_UP)
+                if (event.key.keysym.scancode == SDL.SCANCODE_UP)
                     selection = 0;
-                if (event.key.keysym.scancode == c.SDL_SCANCODE_DOWN)
+                if (event.key.keysym.scancode == SDL.SCANCODE_DOWN)
                     selection = 1;
-                if (event.key.keysym.scancode == c.SDL_SCANCODE_RETURN or
-                    event.key.keysym.scancode == c.SDL_SCANCODE_KP_ENTER or
-                    event.key.keysym.scancode == c.SDL_SCANCODE_SPACE)
+                if (event.key.keysym.scancode == SDL.SCANCODE_RETURN or
+                    event.key.keysym.scancode == SDL.SCANCODE_KP_ENTER or
+                    event.key.keysym.scancode == SDL.SCANCODE_SPACE)
                 {
                     switch (selection) {
                         0 => {
@@ -182,16 +182,16 @@ pub fn view_menu(file: ImageFile, allocator: std.mem.Allocator) !?usize {
                     }
                 }
 
-                if (event.key.keysym.scancode == c.SDL_SCANCODE_F11) {
+                if (event.key.keysym.scancode == SDL.SCANCODE_F11) {
                     window.toggle_fullscreen();
                 }
             }
         }
 
         window.window_clear(null);
-        _ = c.SDL_BlitSurface(menu, &src, window.screen, &dest);
-        _ = c.SDL_BlitSurface(menu, &sel[1], window.screen, &sel_dest[0]);
-        _ = c.SDL_BlitSurface(menu, &sel[0], window.screen, &sel_dest[selection]);
+        _ = SDL.blitSurface(menu, &src, window.screen, &dest);
+        _ = SDL.blitSurface(menu, &sel[1], window.screen, &sel_dest[0]);
+        _ = SDL.blitSurface(menu, &sel[0], window.screen, &sel_dest[selection]);
         window.window_render();
         SDL.delay(1);
     }
@@ -254,33 +254,33 @@ fn select_level(allocator: std.mem.Allocator) !?usize {
     }
 
     while (true) {
-        var event: c.SDL_Event = undefined;
-        if (c.SDL_PollEvent(&event) != c.SDL_FALSE) {
-            if (event.type == c.SDL_QUIT) {
+        var event: SDL.Event = undefined;
+        while (SDL.pollEvent(&event)) {
+            if (event.type == SDL.QUIT) {
                 return null;
             }
 
-            if (event.type == c.SDL_KEYDOWN) {
-                if (event.key.keysym.scancode == c.SDL_SCANCODE_ESCAPE) {
+            if (event.type == SDL.KEYDOWN) {
+                if (event.key.keysym.scancode == SDL.SCANCODE_ESCAPE) {
                     return null;
                 }
-                if (event.key.keysym.scancode == c.SDL_SCANCODE_DOWN) {
+                if (event.key.keysym.scancode == SDL.SCANCODE_DOWN) {
                     if (selection < level_list.items.len - 1) {
                         selection += 1;
                     }
                 }
-                if (event.key.keysym.scancode == c.SDL_SCANCODE_UP) {
+                if (event.key.keysym.scancode == SDL.SCANCODE_UP) {
                     if (selection > 0) {
                         selection -= 1;
                     }
                 }
-                if (event.key.keysym.scancode == c.SDL_SCANCODE_RETURN) {
+                if (event.key.keysym.scancode == SDL.SCANCODE_RETURN) {
                     if (game.game_state.isUnlocked(selection)) {
                         return selection;
                     } else {}
                 }
 
-                if (event.key.keysym.scancode == c.SDL_SCANCODE_F11) {
+                if (event.key.keysym.scancode == SDL.SCANCODE_F11) {
                     window.toggle_fullscreen();
                 }
             }

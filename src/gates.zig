@@ -25,6 +25,7 @@
 
 const std = @import("std");
 const c = @import("c.zig");
+const SDL = @import("SDL.zig");
 const globals = @import("globals.zig");
 const window = @import("window.zig");
 const scroll = @import("scroll.zig");
@@ -113,7 +114,7 @@ const incX: usize = rwidth / (step_count * 2);
 const incY: usize = rheight / (step_count * 2);
 
 pub export fn CLOSE_SCREEN(context: *c.ScreenContext) void {
-    var dest: c.SDL_Rect = undefined;
+    var dest: SDL.Rect = undefined;
     for (0..step_count) |i| {
         //Clear top
         dest.x = 0;
@@ -148,7 +149,7 @@ pub export fn CLOSE_SCREEN(context: *c.ScreenContext) void {
 }
 
 pub export fn OPEN_SCREEN(context: *c.ScreenContext, level: *c.TITUS_level) void {
-    var dest: c.SDL_Rect = undefined;
+    var dest: SDL.Rect = undefined;
     var i: u32 = step_count - 1;
     while (i >= 2) : (i -= 2) {
         // render all tiles

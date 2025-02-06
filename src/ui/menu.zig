@@ -1,3 +1,4 @@
+const SDL = @import("../SDL.zig");
 const c = @import("../c.zig");
 const window = @import("../window.zig");
 
@@ -14,20 +15,20 @@ pub const MenuAction = enum {
 
 pub const MenuContext = struct {
     background_fade: u8,
-    background_image: *c.SDL_Surface,
+    background_image: *SDL.Surface,
 
     /// Render the background - should be the first thing a menu renderer calls
     pub fn renderBackground(self: *MenuContext) void {
         window.window_clear(null);
-        _ = c.SDL_BlitSurface(self.background_image, null, window.screen, null);
+        _ = SDL.blitSurface(self.background_image, null, window.screen, null);
     }
 
     /// Update the background, returns number of milliseconds until next update
     pub fn updateBackground(self: *MenuContext) u32 {
         if (self.background_fade < 200) {
             self.background_fade += 1;
-            _ = c.SDL_SetSurfaceAlphaMod(self.background_image, 255 - self.background_fade);
-            _ = c.SDL_SetSurfaceBlendMode(self.background_image, c.SDL_BLENDMODE_BLEND);
+            _ = SDL.setSurfaceAlphaMod(self.background_image, 255 - self.background_fade);
+            _ = SDL.setSurfaceBlendMode(self.background_image, SDL.BLENDMODE_BLEND);
             return 1;
         }
         return 10;
@@ -36,38 +37,38 @@ pub const MenuContext = struct {
 
 pub fn getMenuAction() MenuAction {
     var action: MenuAction = .None;
-    var event: c.SDL_Event = undefined;
-    while (c.SDL_PollEvent(&event) != 0) {
+    var event: SDL.Event = undefined;
+    while (SDL.pollEvent(&event)) {
         switch (event.type) {
-            c.SDL_QUIT => {
+            SDL.QUIT => {
                 return .Quit;
             },
-            c.SDL_KEYDOWN => {
+            SDL.KEYDOWN => {
                 switch (event.key.keysym.scancode) {
-                    c.SDL_SCANCODE_ESCAPE,
-                    c.SDL_SCANCODE_BACKSPACE,
+                    SDL.SCANCODE_ESCAPE,
+                    SDL.SCANCODE_BACKSPACE,
                     => {
                         return .ExitMenu;
                     },
-                    c.SDL_SCANCODE_KP_ENTER,
-                    c.SDL_SCANCODE_RETURN,
-                    c.SDL_SCANCODE_SPACE,
+                    SDL.SCANCODE_KP_ENTER,
+                    SDL.SCANCODE_RETURN,
+                    SDL.SCANCODE_SPACE,
                     => {
                         action = .Activate;
                     },
-                    c.SDL_SCANCODE_F11 => {
+                    SDL.SCANCODE_F11 => {
                         window.toggle_fullscreen();
                     },
-                    c.SDL_SCANCODE_DOWN => {
+                    SDL.SCANCODE_DOWN => {
                         action = .Down;
                     },
-                    c.SDL_SCANCODE_UP => {
+                    SDL.SCANCODE_UP => {
                         action = .Up;
                     },
-                    c.SDL_SCANCODE_LEFT => {
+                    SDL.SCANCODE_LEFT => {
                         action = .Left;
                     },
-                    c.SDL_SCANCODE_RIGHT => {
+                    SDL.SCANCODE_RIGHT => {
                         action = .Right;
                     },
                     else => {

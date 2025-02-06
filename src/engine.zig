@@ -25,12 +25,14 @@
 
 const std = @import("std");
 
+const SDL = @import("SDL.zig");
+const c = @import("c.zig");
+
 const audio = @import("audio/audio.zig");
 const globals = @import("globals.zig");
 const sqz = @import("sqz.zig");
 const scroll = @import("scroll.zig");
 const sprites = @import("sprites.zig");
-const c = @import("c.zig");
 const data = @import("data.zig");
 const window = @import("window.zig");
 const elevators = @import("elevators.zig");
@@ -38,7 +40,6 @@ const game_state = @import("game_state.zig");
 const render = @import("render.zig");
 const reset = @import("reset.zig");
 const gates = @import("gates.zig");
-const spr = @import("sprites.zig");
 const lvl = @import("level.zig");
 
 const image = @import("ui/image.zig");
@@ -59,29 +60,29 @@ pub fn playtitus(firstlevel: u16, allocator: std.mem.Allocator) !c_int {
     level.c_level.lives = 2;
     level.c_level.extrabonus = 0;
 
-    level.c_level.pixelformat = &data.titus_pixelformat;
+    level.pixelformat = &data.titus_pixelformat;
 
     const spritedata = sqz.unSQZ(data.constants.*.sprites, allocator) catch {
         std.debug.print("Failed to uncompress sprites file: {s}\n", .{data.constants.*.sprites});
         return -1;
     };
 
-    spr.init(
+    sprites.init(
         allocator,
         spritedata,
-        level.c_level.pixelformat,
+        level.pixelformat,
     ) catch |err| {
         std.debug.print("Failed to load sprites: {}\n", .{err});
         return -1;
     };
-    defer spr.deinit();
+    defer sprites.deinit();
 
-    const pixelformat = c.SDL_GetWindowPixelFormat(window.window);
-    spr.sprite_cache.init(pixelformat, allocator) catch |err| {
+    const pixelformat = SDL.getWindowPixelFormat(window.window);
+    sprites.sprite_cache.init(pixelformat, allocator) catch |err| {
         std.debug.print("Failed to initialize sprite cache: {}\n", .{err});
         return -1;
     };
-    defer spr.sprite_cache.deinit();
+    defer sprites.sprite_cache.deinit();
 
     level.c_level.levelnumber = firstlevel;
     while (level.c_level.levelnumber < data.constants.*.levelfiles.len) : (level.c_level.levelnumber += 1) {
@@ -270,7 +271,7 @@ fn death(context: [*c]c.ScreenContext, level: *c.TITUS_level) void {
 
     audio.playTrack(.Death);
     _ = c.FORCE_POSE(level);
-    spr.updatesprite(level, &(player.sprite), 13, true); //Death
+    sprites.updatesprite(level, &(player.sprite), 13, true); //Death
     player.sprite.speed_y = 15;
     for (0..60) |_| {
         render.render_tiles(level);
@@ -293,12 +294,12 @@ fn gameover(context: [*c]c.ScreenContext, level: *c.TITUS_level) void {
     var player = &(level.player);
 
     audio.playTrack(.GameOver);
-    spr.updatesprite(level, &(player.sprite), 13, true); //Death
-    spr.updatesprite(level, &(player.sprite2), 333, true); //Game
+    sprites.updatesprite(level, &(player.sprite), 13, true); //Death
+    sprites.updatesprite(level, &(player.sprite2), 333, true); //Game
     player.sprite2.x = @as(i16, globals.BITMAP_X << 4) - (120 - 2);
     player.sprite2.y = @as(i16, globals.BITMAP_Y << 4) + 100;
     //over
-    spr.updatesprite(level, &(player.sprite3), 334, true); //Over
+    sprites.updatesprite(level, &(player.sprite3), 334, true); //Over
     player.sprite3.x = @as(i16, globals.BITMAP_X << 4) + (window.game_width + 120 - 2);
     player.sprite3.y = @as(i16, globals.BITMAP_Y << 4) + 100;
     for (0..31) |_| {

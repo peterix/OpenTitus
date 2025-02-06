@@ -67,7 +67,9 @@ fn renderLabel(text: []const u8, y: i16, selected: bool) void {
 pub export fn pauseMenu(context: *c.ScreenContext) c_int {
 
     // take a screenshot and use it as a background that fades to black a bit
-    const image = SDL.convertSurface(window.screen.?, window.screen.?.format, c.SDL_SWSURFACE);
+    const image = SDL.convertSurface(window.screen.?, window.screen.?.format, SDL.SWSURFACE) catch {
+        @panic("OOPS");
+    };
     defer SDL.freeSurface(image);
 
     defer render.screencontext_reset(context);
@@ -113,8 +115,8 @@ pub export fn pauseMenu(context: *c.ScreenContext) c_int {
         var y: i16 = 40;
         fonts.Gold.render_center("PAUSED", y, .{ .transpatent = true });
         y += 12;
-        const bar = c.SDL_Rect{ .x = 160 - title_width / 2, .y = y, .w = title_width, .h = 1 };
-        _ = c.SDL_FillRect(window.screen.?, &bar, c.SDL_MapRGB(window.screen.?.format, 0xd0, 0xb0, 0x00));
+        const bar = SDL.Rect{ .x = 160 - title_width / 2, .y = y, .w = title_width, .h = 1 };
+        _ = SDL.fillRect(window.screen.?, &bar, SDL.mapRGB(window.screen.?.format, 0xd0, 0xb0, 0x00));
         y += 27;
         for (menu_entries, 0..) |entry, i| {
             renderLabel(entry.text, y, selected == i);

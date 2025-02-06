@@ -24,6 +24,7 @@
 //
 
 const globals = @import("globals.zig");
+const SDL = @import("SDL.zig");
 const c = @import("c.zig");
 const sprites = @import("sprites.zig");
 const scroll = @import("scroll.zig");
@@ -112,20 +113,20 @@ pub fn play(context: *c.ScreenContext, level: *c.TITUS_level) c_int {
         render.render_sprites(level);
         render.flip_screen(context, true);
 
-        c.SDL_PumpEvents(); //Update keyboard state
+        SDL.pumpEvents(); //Update keyboard state
 
-        var event: c.SDL_Event = undefined;
+        var event: SDL.Event = undefined;
         //Check all events
-        while (c.SDL_PollEvent(&event) != 0) {
-            if (event.type == c.SDL_QUIT) {
+        while (SDL.pollEvent(&event)) {
+            if (event.type == SDL.QUIT) {
                 return c.TITUS_ERROR_QUIT;
-            } else if (event.type == c.SDL_KEYDOWN) {
-                if (event.key.keysym.scancode == c.SDL_SCANCODE_F11) {
+            } else if (event.type == SDL.KEYDOWN) {
+                if (event.key.keysym.scancode == SDL.SCANCODE_F11) {
                     window.toggle_fullscreen();
-                } else if (event.key.keysym.scancode == c.SDL_SCANCODE_RETURN or
-                    event.key.keysym.scancode == c.SDL_SCANCODE_KP_ENTER or
-                    event.key.keysym.scancode == c.SDL_SCANCODE_SPACE or
-                    event.key.keysym.scancode == c.SDL_SCANCODE_ESCAPE)
+                } else if (event.key.keysym.scancode == SDL.SCANCODE_RETURN or
+                    event.key.keysym.scancode == SDL.SCANCODE_KP_ENTER or
+                    event.key.keysym.scancode == SDL.SCANCODE_SPACE or
+                    event.key.keysym.scancode == SDL.SCANCODE_ESCAPE)
                 {
                     pass = true;
                     break;

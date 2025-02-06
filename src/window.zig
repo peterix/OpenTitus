@@ -50,9 +50,9 @@ pub const game_height = 200;
 
 var black: u32 = 0;
 
-pub export var screen: ?*c.struct_SDL_Surface = null;
-pub export var window: ?*c.struct_SDL_Window = null;
-var renderer: ?*c.struct_SDL_Renderer = null;
+pub export var screen: ?*SDL.Surface = null;
+pub export var window: ?*SDL.Window = null;
+var renderer: ?*SDL.Renderer = null;
 
 const WindowError = error{
     CannotSetDisplayMode,
@@ -63,11 +63,11 @@ const WindowError = error{
 pub export fn toggle_fullscreen() void {
     if (!game.settings.fullscreen) {
         // FIXME: process error.
-        _ = c.SDL_SetWindowFullscreen(window, c.SDL_WINDOW_FULLSCREEN_DESKTOP);
+        _ = SDL.setWindowFullscreen(window, SDL.WINDOW_FULLSCREEN_DESKTOP);
         game.settings.fullscreen = true;
     } else {
         // FIXME: process error.
-        _ = c.SDL_SetWindowFullscreen(window, 0);
+        _ = SDL.setWindowFullscreen(window, 0);
         game.settings.fullscreen = false;
     }
 }
@@ -77,72 +77,72 @@ pub fn window_init() !void {
     const w: c_int = game.settings.window_width;
     const h: c_int = game.settings.window_height;
     if (game.settings.fullscreen) {
-        windowflags = c.SDL_WINDOW_FULLSCREEN_DESKTOP;
+        windowflags = SDL.WINDOW_FULLSCREEN_DESKTOP;
     } else {
-        windowflags = c.SDL_WINDOW_RESIZABLE;
+        windowflags = SDL.WINDOW_RESIZABLE;
     }
 
-    window = c.SDL_CreateWindow(getGameTitle(), c.SDL_WINDOWPOS_UNDEFINED, c.SDL_WINDOWPOS_UNDEFINED, w, h, windowflags);
+    window = SDL.createWindow(getGameTitle(), SDL.WINDOWPOS_UNDEFINED, SDL.WINDOWPOS_UNDEFINED, w, h, windowflags);
     if (window == null) {
-        std.debug.print("Unable to create window: {s}\n", .{c.SDL_GetError()});
+        std.debug.print("Unable to create window: {s}\n", .{SDL.getError()});
         return WindowError.CannotCreateWindow;
     }
     errdefer {
-        c.SDL_DestroyWindow(window);
+        SDL.destroyWindow(window);
         window = null;
     }
-    c.SDL_SetWindowMinimumSize(window, game_width, game_height);
+    SDL.setWindowMinimumSize(window, game_width, game_height);
 
-    renderer = c.SDL_CreateRenderer(window, -1, c.SDL_RENDERER_ACCELERATED);
+    renderer = SDL.createRenderer(window, -1, SDL.RENDERER_ACCELERATED);
     if (renderer == null) {
-        std.debug.print("Unable to set video mode: {s}\n", .{c.SDL_GetError()});
+        std.debug.print("Unable to set video mode: {s}\n", .{SDL.getError()});
         return WindowError.CannotSetDisplayMode;
     }
     errdefer {
-        c.SDL_DestroyRenderer(renderer);
+        SDL.destroyRenderer(renderer);
         renderer = null;
     }
 
-    screen = SDL.createRGBSurfaceWithFormat(0, game_width, game_height, 32, c.SDL_GetWindowPixelFormat(window));
+    screen = SDL.createRGBSurfaceWithFormat(0, game_width, game_height, 32, SDL.getWindowPixelFormat(window));
     if (screen == null) {
-        std.debug.print("Unable to create screen surface: {s}\n", .{c.SDL_GetError()});
+        std.debug.print("Unable to create screen surface: {s}\n", .{SDL.getError()});
         return WindowError.Other;
     }
     errdefer {
         SDL.freeSurface(screen);
         screen = null;
     }
-    black = c.SDL_MapRGB(screen.?.*.format, 0, 0, 0);
+    black = SDL.mapRGB(screen.?.*.format, 0, 0, 0);
 
-    if (c.SDL_RenderSetLogicalSize(renderer, game_width, game_height) != 0) {
+    if (SDL.renderSetLogicalSize(renderer, game_width, game_height) != 0) {
         return WindowError.Other;
     }
 
-    if (c.SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255) != 0) {
+    if (SDL.setRenderDrawColor(renderer, 0, 0, 0, 255) != 0) {
         return WindowError.Other;
     }
 }
 
-pub fn window_clear(rect: [*c]c.SDL_Rect) void {
+pub fn window_clear(rect: [*c]SDL.Rect) void {
     // FIXME: process error.
-    _ = c.SDL_FillRect(screen, rect, black);
+    _ = SDL.fillRect(screen, rect, black);
 }
 
 pub fn window_render() void {
     if (screen == null) {
         return;
     }
-    const frame = c.SDL_CreateTextureFromSurface(renderer, screen);
+    const frame = SDL.createTextureFromSurface(renderer, screen);
     // FIXME: process error.
-    _ = c.SDL_RenderClear(renderer);
-    var rect = c.SDL_Rect{
+    _ = SDL.renderClear(renderer);
+    var rect = SDL.Rect{
         .x = 0,
         .y = 0,
         .w = game_width,
         .h = game_height,
     };
     // FIXME: process error.
-    _ = c.SDL_RenderCopy(renderer, frame, &rect, &rect);
-    c.SDL_RenderPresent(renderer);
-    c.SDL_DestroyTexture(frame);
+    _ = SDL.renderCopy(renderer, frame, &rect, &rect);
+    SDL.renderPresent(renderer);
+    SDL.destroyTexture(frame);
 }

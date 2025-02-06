@@ -28,9 +28,10 @@
 
 #pragma once
 
-#include "SDL2/SDL.h"
+#include <stddef.h>
 #include <stdbool.h>
 #include <stdint.h>
+#include <stdlib.h>
 #include "globals_old.h"
 
 typedef struct _TITUS_tile TITUS_tile;
@@ -46,7 +47,6 @@ typedef struct _TITUS_player TITUS_player;
 typedef struct _TITUS_level TITUS_level;
 
 struct _TITUS_tile {
-    SDL_Surface *tiledata; // Points to heap
     uint8_t animation[3]; // Index to animation tiles
     enum HFLAG horizflag;
     enum FFLAG floorflag;
@@ -215,7 +215,6 @@ struct _TITUS_level {
     int finishX, finishY;
     //TITUS_enemy *boss; //Pointer to the boss; NULL if there is no boss
     //TITUS_object *finish_object; // Pointer to the required object to carry to finish; NULL if there is no such object
-    SDL_PixelFormat *pixelformat; // Pointer to a global pixelformat variabl
 
     TITUS_player player;
 

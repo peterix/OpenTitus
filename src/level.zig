@@ -1,5 +1,4 @@
 const std = @import("std");
-const spr = @import("sprites.zig");
 const c = @import("c.zig");
 const SDL = @import("SDL.zig");
 const data = @import("data.zig");
@@ -76,7 +75,7 @@ pub const CFlag = enum(u8) {
 };
 
 pub const Tile = struct {
-    tiledata: *c.SDL_Surface,
+    tiledata: *SDL.Surface,
     animated: bool, // technically not even used
     animation: [3]u8,
     horizflag: HFlag,
@@ -91,6 +90,7 @@ pub const Level = struct {
     height: usize = 0,
     tiles: [256]Tile,
     music: AudioTrack,
+    pixelformat: *SDL.PixelFormat,
 
     pub fn getTile(self: *const Level, x: usize, y: usize) u8 {
         if (x >= self.width or y >= self.height) {
@@ -250,7 +250,7 @@ pub fn loadlevel(
     allocator: std.mem.Allocator,
     leveldata: []const u8,
     objectdata: []const ObjectData,
-    levelcolor: *c.SDL_Color,
+    levelcolor: *SDL.Color,
 ) !c_int {
     level.player.inithp = 16;
     level.player.cageX = 0;
@@ -271,11 +271,11 @@ pub fn loadlevel(
         @memcpy(level_wrap.tilemap, leveldata[0 .. width * height]);
     }
 
-    level.pixelformat.*.palette.*.colors[14].r = levelcolor.r;
-    level.pixelformat.*.palette.*.colors[14].g = levelcolor.g;
-    level.pixelformat.*.palette.*.colors[14].b = levelcolor.b;
+    level_wrap.pixelformat.*.palette.*.colors[14].r = levelcolor.r;
+    level_wrap.pixelformat.*.palette.*.colors[14].g = levelcolor.g;
+    level_wrap.pixelformat.*.palette.*.colors[14].b = levelcolor.b;
 
-    level.spritedata = @ptrCast(&spr.sprites.definitions[0]);
+    level.spritedata = @ptrCast(&sprites.sprites.definitions[0]);
     // NOTE: evil ptrCast from `*ObjectData` to `*struct _TITUS_objectdata`
     level.objectdata = @ptrCast(&objectdata[0]);
 
@@ -283,7 +283,7 @@ pub fn loadlevel(
     {
         var j: usize = 256; //j is used for "last tile with animation flag"
         for (0..256) |i| {
-            level.tile[i].tiledata = try spr.load_tile(&other_data.tile_images[i].data, level.pixelformat);
+            level_wrap.tiles[i].tiledata = @ptrCast(try sprites.load_tile(&other_data.tile_images[i].data, level_wrap.pixelformat));
             level.tile[i].horizflag = other_data.horiz_flags[i];
             level.tile[i].floorflag = other_data.floor_flags[i];
             level.tile[i].ceilflag = other_data.ceil_flags[i].ceil;
@@ -510,7 +510,7 @@ pub fn loadlevel(
     level.finishX = other_data.finishX;
     level.finishY = other_data.finishY;
 
-    sprites.sprites.setPixelFormat(level.pixelformat);
+    sprites.sprites.setPixelFormat(level_wrap.pixelformat);
     sprites.sprite_cache.evictAll();
 
     for (0..4) |i| {
@@ -523,7 +523,7 @@ pub fn freelevel(level: *Level, allocator: std.mem.Allocator) void {
     allocator.free(level.tilemap);
 
     for (0..256) |i| {
-        SDL.freeSurface(level.c_level.tile[i].tiledata);
+        SDL.freeSurface(@ptrCast(@alignCast(level.tiles[i].tiledata)));
     }
 }
 

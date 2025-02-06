@@ -28,20 +28,20 @@ const std = @import("std");
 const sqz = @import("../sqz.zig");
 const c = @import("../c.zig");
 const SDL = @import("../SDL.zig");
+const window = @import("../window.zig");
+const keyboard = @import("keyboard.zig");
 
 pub const ManagedSurface = struct {
-    value: [*c]c.SDL_Surface,
+    value: *SDL.Surface,
 
     const Self = @This();
 
     pub fn deinit(self: *Self) void {
-        if (self.value != null) {
-            SDL.freeSurface(self.value);
-        }
+        SDL.freeSurface(self.value);
     }
 
     pub fn dump(self: *Self, filename: [:0]const u8) !void {
-        if (c.SDL_SaveBMP(self.value, &filename[0]) != 0) {
+        if (SDL.saveBMP(self.value, &filename[0]) != 0) {
             return error.DumpError;
         }
     }
@@ -86,7 +86,7 @@ pub const ImageFile = struct {
     format: ImageFormat,
 };
 
-pub fn load_planar_16color(data: []const u8, width: u16, height: u16, surface: *c.SDL_Surface) ![]const u8 {
+pub fn load_planar_16color(data: []const u8, width: u16, height: u16, surface: *SDL.Surface) ![]const u8 {
     const groupsize = ((@as(u16, width) * @as(u16, height)) >> 3);
     if (data.len < groupsize * 4) {
         return error.NotEnoughData;
@@ -116,7 +116,7 @@ pub fn loadImage(data: []const u8, format: ImageFormat, allocator: std.mem.Alloc
     defer allocator.free(data);
 
     // FIXME: handle this returning null
-    const surface = SDL.createRGBSurface(c.SDL_SWSURFACE, 320, 200, 8, 0, 0, 0, 0);
+    const surface = try SDL.createRGBSurface(SDL.SWSURFACE, 320, 200, 8, 0, 0, 0, 0);
     defer SDL.freeSurface(surface);
     // FIXME: handle palette being null
     const palette = surface.*.format.*.palette;
@@ -157,20 +157,13 @@ pub fn loadImage(data: []const u8, format: ImageFormat, allocator: std.mem.Alloc
             @memcpy(slice_out, slice_in);
         },
     }
-    const result = SDL.convertSurfaceFormat(surface, c.SDL_GetWindowPixelFormat(c.window), 0);
-    if (result == null) {
-        return error.CannotConvertSurface;
-    }
-    return ManagedSurface{ .value = result };
+    return ManagedSurface{ .value = try SDL.convertSurfaceFormat(surface, SDL.getWindowPixelFormat(window.window), 0) };
 }
 
 pub const DisplayMode = enum(c_int) {
     FadeInFadeOut = 0,
     FadeOut = 1,
 };
-
-const window = @import("../window.zig");
-const keyboard = @import("keyboard.zig");
 
 pub fn viewImageFile(file: ImageFile, display_mode: DisplayMode, delay: c_int, allocator: std.mem.Allocator) !c_int {
     const fade_time: c_uint = 1000;
@@ -179,14 +172,14 @@ pub fn viewImageFile(file: ImageFile, display_mode: DisplayMode, delay: c_int, a
     var image_memory = try loadImage(image_data, file.format, allocator);
     defer image_memory.deinit();
     const image_surface = image_memory.value;
-    var src = c.SDL_Rect{
+    var src = SDL.Rect{
         .x = 0,
         .y = 0,
         .w = image_surface.*.w,
         .h = image_surface.*.h,
     };
 
-    var dest = c.SDL_Rect{
+    var dest = SDL.Rect{
         .x = 0,
         .y = 0,
         .w = image_surface.*.w,
@@ -194,29 +187,29 @@ pub fn viewImageFile(file: ImageFile, display_mode: DisplayMode, delay: c_int, a
     };
     switch (display_mode) {
         .FadeInFadeOut => {
-            var tick_start = c.SDL_GetTicks();
+            var tick_start = SDL.getTicks();
             var image_alpha: c_uint = 0;
             var activedelay = true;
             var fadeoutskip: c_uint = 0;
             while ((image_alpha < 255) and activedelay) //Fade to visible
             {
-                var event: c.SDL_Event = undefined;
-                if (c.SDL_PollEvent(&event) != 0) {
-                    if (event.type == c.SDL_QUIT) {
+                var event: SDL.Event = undefined;
+                while (SDL.pollEvent(&event)) {
+                    if (event.type == SDL.QUIT) {
                         return (-1);
                     }
 
-                    if (event.type == c.SDL_KEYDOWN) {
-                        if (event.key.keysym.scancode == c.SDL_SCANCODE_RETURN or
-                            event.key.keysym.scancode == c.SDL_SCANCODE_KP_ENTER or
-                            event.key.keysym.scancode == c.SDL_SCANCODE_SPACE or
-                            event.key.keysym.scancode == c.SDL_SCANCODE_ESCAPE)
+                    if (event.type == SDL.KEYDOWN) {
+                        if (event.key.keysym.scancode == SDL.SCANCODE_RETURN or
+                            event.key.keysym.scancode == SDL.SCANCODE_KP_ENTER or
+                            event.key.keysym.scancode == SDL.SCANCODE_SPACE or
+                            event.key.keysym.scancode == SDL.SCANCODE_ESCAPE)
                         {
                             activedelay = false;
                             fadeoutskip = 255 - image_alpha;
                         }
 
-                        if (event.key.keysym.scancode == c.SDL_SCANCODE_F11) {
+                        if (event.key.keysym.scancode == SDL.SCANCODE_F11) {
                             window.toggle_fullscreen();
                         }
                     }
@@ -227,41 +220,41 @@ pub fn viewImageFile(file: ImageFile, display_mode: DisplayMode, delay: c_int, a
                 if (image_alpha > 255)
                     image_alpha = 255;
 
-                _ = c.SDL_SetSurfaceAlphaMod(image_surface, @truncate(image_alpha));
-                _ = c.SDL_SetSurfaceBlendMode(image_surface, c.SDL_BLENDMODE_BLEND);
+                _ = SDL.setSurfaceAlphaMod(image_surface, @truncate(image_alpha));
+                _ = SDL.setSurfaceBlendMode(image_surface, SDL.BLENDMODE_BLEND);
                 window.window_clear(null);
-                _ = c.SDL_BlitSurface(image_surface, &src, c.screen, &dest);
+                _ = SDL.blitSurface(image_surface, &src, window.screen, &dest);
                 window.window_render();
                 SDL.delay(1);
             }
 
             while (activedelay) //Visible delay
             {
-                var event: c.SDL_Event = undefined;
-                if (c.SDL_PollEvent(&event) != 0) {
-                    if (event.type == c.SDL_QUIT) {
+                var event: SDL.Event = undefined;
+                while (SDL.pollEvent(&event)) {
+                    if (event.type == SDL.QUIT) {
                         return (-1);
                     }
 
-                    if (event.type == c.SDL_KEYDOWN) {
-                        if (event.key.keysym.scancode == c.SDL_SCANCODE_RETURN or
-                            event.key.keysym.scancode == c.SDL_SCANCODE_KP_ENTER or
-                            event.key.keysym.scancode == c.SDL_SCANCODE_SPACE or
-                            event.key.keysym.scancode == c.SDL_SCANCODE_ESCAPE)
+                    if (event.type == SDL.KEYDOWN) {
+                        if (event.key.keysym.scancode == SDL.SCANCODE_RETURN or
+                            event.key.keysym.scancode == SDL.SCANCODE_KP_ENTER or
+                            event.key.keysym.scancode == SDL.SCANCODE_SPACE or
+                            event.key.keysym.scancode == SDL.SCANCODE_ESCAPE)
                             activedelay = false;
 
-                        if (event.key.keysym.scancode == c.SDL_SCANCODE_F11) {
+                        if (event.key.keysym.scancode == SDL.SCANCODE_F11) {
                             window.toggle_fullscreen();
                         }
                     }
 
-                    if (event.type == c.SDL_WINDOWEVENT) {
+                    if (event.type == SDL.WINDOWEVENT) {
                         switch (event.window.event) {
-                            c.SDL_WINDOWEVENT_RESIZED,
-                            c.SDL_WINDOWEVENT_SIZE_CHANGED,
-                            c.SDL_WINDOWEVENT_MAXIMIZED,
-                            c.SDL_WINDOWEVENT_RESTORED,
-                            c.SDL_WINDOWEVENT_EXPOSED,
+                            SDL.WINDOWEVENT_RESIZED,
+                            SDL.WINDOWEVENT_SIZE_CHANGED,
+                            SDL.WINDOWEVENT_MAXIMIZED,
+                            SDL.WINDOWEVENT_RESTORED,
+                            SDL.WINDOWEVENT_EXPOSED,
                             => {
                                 window.window_render();
                             },
@@ -280,14 +273,14 @@ pub fn viewImageFile(file: ImageFile, display_mode: DisplayMode, delay: c_int, a
             tick_start = SDL.getTicks();
             // Fade to black
             while (image_alpha < 255) {
-                var event: c.SDL_Event = undefined;
-                if (c.SDL_PollEvent(&event) != 0) {
-                    if (event.type == c.SDL_QUIT) {
+                var event: SDL.Event = undefined;
+                while (SDL.pollEvent(&event)) {
+                    if (event.type == SDL.QUIT) {
                         return (-1);
                     }
 
-                    if (event.type == c.SDL_KEYDOWN) {
-                        if (event.key.keysym.scancode == c.SDL_SCANCODE_F11) {
+                    if (event.type == SDL.KEYDOWN) {
+                        if (event.key.keysym.scancode == SDL.SCANCODE_F11) {
                             window.toggle_fullscreen();
                         }
                     }
@@ -298,10 +291,10 @@ pub fn viewImageFile(file: ImageFile, display_mode: DisplayMode, delay: c_int, a
                 if (image_alpha > 255)
                     image_alpha = 255;
 
-                _ = c.SDL_SetSurfaceAlphaMod(image_surface, 255 - @as(u8, @truncate(image_alpha)));
-                _ = c.SDL_SetSurfaceBlendMode(image_surface, c.SDL_BLENDMODE_BLEND);
+                _ = SDL.setSurfaceAlphaMod(image_surface, 255 - @as(u8, @truncate(image_alpha)));
+                _ = SDL.setSurfaceBlendMode(image_surface, SDL.BLENDMODE_BLEND);
                 window.window_clear(null);
-                _ = c.SDL_BlitSurface(image_surface, &src, c.screen, &dest);
+                _ = SDL.blitSurface(image_surface, &src, window.screen, &dest);
                 window.window_render();
                 SDL.delay(1);
             }
@@ -310,7 +303,7 @@ pub fn viewImageFile(file: ImageFile, display_mode: DisplayMode, delay: c_int, a
             var image_alpha: c_uint = 0;
 
             window.window_clear(null);
-            _ = c.SDL_BlitSurface(image_surface, &src, c.screen, &dest);
+            _ = SDL.blitSurface(image_surface, &src, window.screen, &dest);
             window.window_render();
 
             const retval = keyboard.waitforbutton();
@@ -321,28 +314,28 @@ pub fn viewImageFile(file: ImageFile, display_mode: DisplayMode, delay: c_int, a
             const tick_start = SDL.getTicks();
             while (image_alpha < 255) //Fade to black
             {
-                var event: c.SDL_Event = undefined;
-                if (c.SDL_PollEvent(&event) != 0) {
-                    if (event.type == c.SDL_QUIT) {
+                var event: SDL.Event = undefined;
+                while (SDL.pollEvent(&event)) {
+                    if (event.type == SDL.QUIT) {
                         return (-1);
                     }
 
-                    if (event.type == c.SDL_KEYDOWN) {
-                        if (event.key.keysym.scancode == c.SDL_SCANCODE_F11) {
+                    if (event.type == SDL.KEYDOWN) {
+                        if (event.key.keysym.scancode == SDL.SCANCODE_F11) {
                             window.toggle_fullscreen();
                         }
                     }
                 }
 
-                image_alpha = (c.SDL_GetTicks() - tick_start) * 256 / fade_time;
+                image_alpha = (SDL.getTicks() - tick_start) * 256 / fade_time;
 
                 if (image_alpha > 255)
                     image_alpha = 255;
 
-                _ = c.SDL_SetSurfaceAlphaMod(image_surface, 255 - @as(u8, @truncate(image_alpha)));
-                _ = c.SDL_SetSurfaceBlendMode(image_surface, c.SDL_BLENDMODE_BLEND);
+                _ = SDL.setSurfaceAlphaMod(image_surface, 255 - @as(u8, @truncate(image_alpha)));
+                _ = SDL.setSurfaceBlendMode(image_surface, SDL.BLENDMODE_BLEND);
                 window.window_clear(null);
-                _ = c.SDL_BlitSurface(image_surface, &src, c.screen, &dest);
+                _ = SDL.blitSurface(image_surface, &src, window.screen, &dest);
                 window.window_render();
                 SDL.delay(1);
             }

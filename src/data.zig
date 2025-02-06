@@ -25,6 +25,7 @@
 
 const std = @import("std");
 const c = @import("c.zig");
+const SDL = @import("SDL.zig");
 const audio = @import("audio/audio.zig");
 const AudioTrack = audio.AudioTrack;
 
@@ -36,7 +37,7 @@ const ImageFile = image.ImageFile;
 pub const LevelDescriptor = struct {
     filename: []const u8,
     title: []const u8,
-    color: c.SDL_Color,
+    color: SDL.Color,
     has_cage: bool = false,
     is_finish: bool = false,
     boss_power: u8 = 10,
@@ -271,7 +272,7 @@ const moktar_consts: Constants = .{
 
 pub var constants: *const Constants = undefined;
 
-var titus_colors: [16]c.SDL_Color = .{
+var titus_colors: [16]SDL.Color = .{
     // Transparent color, needs to be different from the others
     .{ .r = 1 * 4, .g = 1 * 4, .b = 1 * 4, .a = 0 },
     .{ .r = 60 * 4, .g = 60 * 4, .b = 60 * 4, .a = 255 },
@@ -293,15 +294,15 @@ var titus_colors: [16]c.SDL_Color = .{
     .{ .r = 8 * 4, .g = 8 * 4, .b = 24 * 4, .a = 255 },
 };
 
-var titus_palette = c.SDL_Palette{
+var titus_palette = SDL.Palette{
     .ncolors = 16,
     .version = 0,
     .refcount = 1,
     .colors = &titus_colors,
 };
 
-pub var titus_pixelformat = c.SDL_PixelFormat{
-    .format = 0,
+pub var titus_pixelformat = SDL.PixelFormat{
+    .format = SDL.PIXELFORMAT_INDEX8,
     .palette = &titus_palette,
     .padding = .{ 0, 0 },
 

@@ -32,23 +32,23 @@ const globals = @import("../globals.zig");
 const window = @import("../window.zig");
 
 pub fn waitforbutton() c_int {
-    var event: c.SDL_Event = undefined;
+    var event: SDL.Event = undefined;
     var waiting: c_int = 1;
     while (waiting > 0) {
-        if (c.SDL_PollEvent(&event) != 0) {
-            if (event.type == c.SDL_QUIT)
+        if (SDL.pollEvent(&event)) {
+            if (event.type == SDL.QUIT)
                 waiting = -1;
 
-            if (event.type == c.SDL_KEYDOWN) {
+            if (event.type == SDL.KEYDOWN) {
                 switch (event.key.keysym.scancode) {
-                    c.SDL_SCANCODE_RETURN,
-                    c.SDL_SCANCODE_KP_ENTER,
-                    c.SDL_SCANCODE_SPACE,
-                    c.SDL_SCANCODE_ESCAPE,
+                    SDL.SCANCODE_RETURN,
+                    SDL.SCANCODE_KP_ENTER,
+                    SDL.SCANCODE_SPACE,
+                    SDL.SCANCODE_ESCAPE,
                     => {
                         waiting = 0;
                     },
-                    c.SDL_SCANCODE_F11 => {
+                    SDL.SCANCODE_F11 => {
                         window.toggle_fullscreen();
                     },
                     else => {
@@ -56,13 +56,13 @@ pub fn waitforbutton() c_int {
                     },
                 }
             }
-            if (event.type == c.SDL_WINDOWEVENT) {
+            if (event.type == SDL.WINDOWEVENT) {
                 switch (event.window.event) {
-                    c.SDL_WINDOWEVENT_RESIZED,
-                    c.SDL_WINDOWEVENT_SIZE_CHANGED,
-                    c.SDL_WINDOWEVENT_MAXIMIZED,
-                    c.SDL_WINDOWEVENT_RESTORED,
-                    c.SDL_WINDOWEVENT_EXPOSED,
+                    SDL.WINDOWEVENT_RESIZED,
+                    SDL.WINDOWEVENT_SIZE_CHANGED,
+                    SDL.WINDOWEVENT_MAXIMIZED,
+                    SDL.WINDOWEVENT_RESTORED,
+                    SDL.WINDOWEVENT_EXPOSED,
                     => {
                         window.window_render();
                     },

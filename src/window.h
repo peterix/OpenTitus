@@ -27,10 +27,6 @@
 */
 
 #pragma once
-#include "SDL2/SDL.h"
+//#include "SDL2/SDL.h"
 
 void toggle_fullscreen();
-void window_clear(const SDL_Rect * rect);
-
-extern SDL_Window *window;
-extern SDL_Surface *screen;
