@@ -1,4 +1,4 @@
-/*   
+/*
  * Copyright (C) 2008 - 2011 The OpenTitus team
  *
  * Authors:
@@ -31,6 +31,5 @@
 #include "level.h"
 #include "render.h"
 
-int move_player(ScreenContext *context, TITUS_level *level);
 TITUS_object *FORCE_POSE(TITUS_level *level);
 void DEC_ENERGY(TITUS_level *level);

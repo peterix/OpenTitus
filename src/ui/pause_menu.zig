@@ -76,7 +76,6 @@ pub export fn pauseMenu(context: *c.ScreenContext) c_int {
 
     var menu_context: MenuContext = .{
         .background_image = image,
-        .background_fade = 0,
     };
     var selected: u8 = 0;
     while (true) {

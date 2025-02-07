@@ -39,18 +39,18 @@ pub fn screencontext_reset(context: *c.ScreenContext) void {
     context.* = std.mem.zeroInit(c.ScreenContext, .{});
 }
 
-fn screencontext_initial(context: *c.ScreenContext) void {
+fn screencontext_initial(context: *c.ScreenContext, ticks: u32) void {
     const initial_clock = SDL.getTicks();
-    context.TARGET_CLOCK = initial_clock + tick_delay;
+    context.TARGET_CLOCK = initial_clock + ticks;
     context.started = true;
-    SDL.delay(tick_delay);
+    SDL.delay(ticks);
     context.LAST_CLOCK = SDL.getTicks();
-    context.TARGET_CLOCK += tick_delay;
+    context.TARGET_CLOCK += ticks;
 }
 
-fn screencontext_advance_29(context: *c.ScreenContext) void {
+fn screencontext_advance(context: *c.ScreenContext, ticks: u32) void {
     if (!context.started) {
-        screencontext_initial(context);
+        screencontext_initial(context, ticks);
         return;
     }
     const now = SDL.getTicks();
@@ -58,13 +58,13 @@ fn screencontext_advance_29(context: *c.ScreenContext) void {
         SDL.delay(context.TARGET_CLOCK - now);
     }
     context.LAST_CLOCK = SDL.getTicks();
-    context.TARGET_CLOCK = context.LAST_CLOCK + tick_delay;
+    context.TARGET_CLOCK = context.LAST_CLOCK + ticks;
 }
 
 pub fn flip_screen(context: *c.ScreenContext, slow: bool) void {
     window.window_render();
     if (slow) {
-        screencontext_advance_29(context);
+        screencontext_advance(context, tick_delay);
     } else {
         SDL.delay(10);
         screencontext_reset(context);

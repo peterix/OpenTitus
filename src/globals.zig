@@ -95,9 +95,6 @@ pub export var GRAVITY_FLAG: u8 = 0;
 //Smoke when object hits the floor
 pub export var FUME_FLAG: u8 = 0;
 
-//Keyboard state
-pub export var keystate: [*c]const u8 = null;
-
 pub export var YFALL: u8 = 0;
 
 pub export var POCKET_FLAG: bool = false;

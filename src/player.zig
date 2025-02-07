@@ -130,8 +130,8 @@ pub fn move_player(arg_context: [*c]c.ScreenContext, arg_level: [*c]c.TITUS_leve
     globals.X_FLAG = player.x_axis != 0;
     globals.Y_FLAG = player.y_axis != 0;
     if (globals.NOCLIP) {
-        player.*.sprite.speed_x = @as(i16, @bitCast(@as(c_short, @truncate(@as(c_int, @bitCast(@as(c_int, player.*.x_axis))) * @as(c_int, 100)))));
-        player.*.sprite.speed_y = @as(i16, @bitCast(@as(c_short, @truncate(@as(c_int, @bitCast(@as(c_int, player.*.y_axis))) * @as(c_int, 100)))));
+        player.*.sprite.speed_x = @as(i16, @bitCast(@as(c_short, @truncate(@as(c_int, @bitCast(@as(c_int, player.*.x_axis))) * 100))));
+        player.*.sprite.speed_y = @as(i16, @bitCast(@as(c_short, @truncate(@as(c_int, @bitCast(@as(c_int, player.*.y_axis))) * 100))));
         player.*.sprite.x += @as(i16, @bitCast(@as(c_short, @truncate(@as(c_int, @bitCast(@as(c_int, player.*.sprite.speed_x))) >> @intCast(4)))));
         player.*.sprite.y += @as(i16, @bitCast(@as(c_short, @truncate(@as(c_int, @bitCast(@as(c_int, player.*.sprite.speed_y))) >> @intCast(4)))));
         return 0;
@@ -152,10 +152,10 @@ pub fn move_player(arg_context: [*c]c.ScreenContext, arg_level: [*c]c.TITUS_leve
             action = 6;
         } else if ((!globals.PRIER_FLAG and (@as(c_int, @bitCast(@as(c_int, player.*.y_axis))) < 0)) and (@as(c_int, @bitCast(@as(c_uint, globals.SAUT_FLAG))) == 0)) {
             action = 2;
-            if (@as(c_int, @bitCast(@as(c_uint, globals.LAST_ORDER))) == @as(c_int, 5)) {
+            if (@as(c_int, @bitCast(@as(c_uint, globals.LAST_ORDER))) == 5) {
                 globals.FURTIF_FLAG = 100;
             }
-        } else if ((@as(c_int, @intFromBool(globals.PRIER_FLAG)) != 0) or ((@as(c_int, @bitCast(@as(c_uint, globals.SAUT_FLAG))) != @as(c_int, 6)) and (@as(c_int, @bitCast(@as(c_int, player.*.y_axis))) > 0))) {
+        } else if ((@as(c_int, @intFromBool(globals.PRIER_FLAG)) != 0) or ((@as(c_int, @bitCast(@as(c_uint, globals.SAUT_FLAG))) != 6) and (@as(c_int, @bitCast(@as(c_int, player.*.y_axis))) > 0))) {
             if (globals.X_FLAG) {
                 action = 3;
             } else {
@@ -168,7 +168,7 @@ pub fn move_player(arg_context: [*c]c.ScreenContext, arg_level: [*c]c.TITUS_leve
         }
         if ((@as(c_int, @intFromBool(player.*.action_pressed)) != 0) and !globals.PRIER_FLAG) {
             if (!globals.DROP_FLAG) {
-                if ((@as(c_int, @bitCast(@as(c_uint, action))) == @as(c_int, 3)) or (@as(c_int, @bitCast(@as(c_uint, action))) == @as(c_int, 5))) {
+                if ((@as(c_int, @bitCast(@as(c_uint, action))) == 3) or (@as(c_int, @bitCast(@as(c_uint, action))) == 5)) {
                     globals.DROPREADY_FLAG = false;
                     action = 7;
                 } else if ((@as(c_int, @intFromBool(globals.CARRY_FLAG)) != 0) and (@as(c_int, @intFromBool(globals.DROPREADY_FLAG)) != 0)) {
@@ -181,18 +181,18 @@ pub fn move_player(arg_context: [*c]c.ScreenContext, arg_level: [*c]c.TITUS_leve
         }
     }
     if (globals.CARRY_FLAG) {
-        action +%= @as(u8, @bitCast(@as(i8, @truncate(@as(c_int, 16)))));
+        action +%= @as(u8, @bitCast(@as(i8, @truncate(16))));
     }
     if ((@as(c_int, @bitCast(@as(c_uint, globals.CHOC_FLAG))) != 0) or (@as(c_int, @bitCast(@as(c_uint, globals.KICK_FLAG))) != 0)) {
         if (@as(c_int, @bitCast(@as(c_int, globals.SENSX))) < 0) {
-            newsensX = @as(i8, @bitCast(@as(i8, @truncate(-@as(c_int, 1)))));
+            newsensX = @as(i8, @bitCast(@as(i8, @truncate(-1))));
         } else {
             newsensX = 0;
         }
     } else if (@as(c_int, @bitCast(@as(c_int, player.*.x_axis))) != 0) {
         newsensX = player.*.x_axis;
-    } else if (@as(c_int, @bitCast(@as(c_int, globals.SENSX))) == -@as(c_int, 1)) {
-        newsensX = @as(i8, @bitCast(@as(i8, @truncate(-@as(c_int, 1)))));
+    } else if (@as(c_int, @bitCast(@as(c_int, globals.SENSX))) == -1) {
+        newsensX = @as(i8, @bitCast(@as(i8, @truncate(-1))));
     } else if (@as(c_int, @bitCast(@as(c_uint, action))) == 0) {
         newsensX = 0;
     } else {
@@ -202,27 +202,27 @@ pub fn move_player(arg_context: [*c]c.ScreenContext, arg_level: [*c]c.TITUS_leve
         globals.SENSX = newsensX;
         globals.ACTION_TIMER = 1;
     } else {
-        if (((@as(c_int, @bitCast(@as(c_uint, action))) == 0) or (@as(c_int, @bitCast(@as(c_uint, action))) == @as(c_int, 1))) and (@as(c_int, @bitCast(@as(c_uint, globals.FURTIF_FLAG))) != 0)) {
-            action +%= @as(u8, @bitCast(@as(i8, @truncate(@as(c_int, 9)))));
+        if (((@as(c_int, @bitCast(@as(c_uint, action))) == 0) or (@as(c_int, @bitCast(@as(c_uint, action))) == 1)) and (@as(c_int, @bitCast(@as(c_uint, globals.FURTIF_FLAG))) != 0)) {
+            action +%= @as(u8, @bitCast(@as(i8, @truncate(9))));
         }
         if (@as(c_int, @bitCast(@as(c_uint, action))) != @as(c_int, @bitCast(@as(c_uint, globals.LAST_ORDER)))) {
             globals.ACTION_TIMER = 1;
-        } else if (@as(c_int, @bitCast(@as(c_uint, globals.ACTION_TIMER))) < @as(c_int, 255)) {
-            globals.ACTION_TIMER +%= @as(u8, @bitCast(@as(i8, @truncate(@as(c_int, 1)))));
+        } else if (@as(c_int, @bitCast(@as(c_uint, globals.ACTION_TIMER))) < 255) {
+            globals.ACTION_TIMER +%= @as(u8, @bitCast(@as(i8, @truncate(1))));
         }
     }
     ACTION_PRG(level, action);
-    if (((@as(c_int, @bitCast(@as(c_int, player.*.sprite.speed_x))) < 0) and ((@as(c_int, @bitCast(@as(c_int, player.*.sprite.x))) + (@as(c_int, @bitCast(@as(c_int, player.*.sprite.speed_x))) >> @intCast(4))) >= @as(c_int, 8))) or ((@as(c_int, @bitCast(@as(c_int, player.*.sprite.speed_x))) > 0) and ((@as(c_int, @bitCast(@as(c_int, player.*.sprite.x))) + (@as(c_int, @bitCast(@as(c_int, player.*.sprite.speed_x))) >> @intCast(4))) <= ((@as(c_int, @bitCast(@as(c_int, level.*.width))) << @intCast(4)) - @as(c_int, 8))))) {
+    if (((@as(c_int, @bitCast(@as(c_int, player.*.sprite.speed_x))) < 0) and ((@as(c_int, @bitCast(@as(c_int, player.*.sprite.x))) + (@as(c_int, @bitCast(@as(c_int, player.*.sprite.speed_x))) >> @intCast(4))) >= 8)) or ((@as(c_int, @bitCast(@as(c_int, player.*.sprite.speed_x))) > 0) and ((@as(c_int, @bitCast(@as(c_int, player.*.sprite.x))) + (@as(c_int, @bitCast(@as(c_int, player.*.sprite.speed_x))) >> @intCast(4))) <= ((@as(c_int, @bitCast(@as(c_int, level.*.width))) << @intCast(4)) - 8)))) {
         player.*.sprite.x += @as(i16, @bitCast(@as(c_short, @truncate(@as(c_int, @bitCast(@as(c_int, player.*.sprite.speed_x))) >> @intCast(4)))));
     }
     player.*.sprite.y += @as(i16, @bitCast(@as(c_short, @truncate(@as(c_int, @bitCast(@as(c_int, player.*.sprite.speed_y))) >> @intCast(4)))));
     BRK_COLLISION(context, level);
     if (globals.DROP_FLAG) {
         newX = @as(i16, @bitCast(@as(c_short, @truncate((@as(c_int, @bitCast(@as(c_int, player.*.sprite2.speed_x))) >> @intCast(4)) + @as(c_int, @bitCast(@as(c_int, player.*.sprite2.x)))))));
-        if ((((@as(c_int, @bitCast(@as(c_int, newX))) < (@as(c_int, @bitCast(@as(c_int, level.*.width))) << @intCast(4))) and (@as(c_int, @bitCast(@as(c_int, newX))) >= 0)) and (@as(c_int, @bitCast(@as(c_int, newX))) >= ((@as(c_int, @bitCast(@as(c_int, globals.BITMAP_X))) << @intCast(4)) - @as(c_int, 40)))) and (@as(c_int, @bitCast(@as(c_int, newX))) <= (((@as(c_int, @bitCast(@as(c_int, globals.BITMAP_X))) << @intCast(4)) + (@as(c_int, 20) << @intCast(4))) + @as(c_int, 40)))) {
+        if ((((@as(c_int, @bitCast(@as(c_int, newX))) < (@as(c_int, @bitCast(@as(c_int, level.*.width))) << @intCast(4))) and (@as(c_int, @bitCast(@as(c_int, newX))) >= 0)) and (@as(c_int, @bitCast(@as(c_int, newX))) >= ((@as(c_int, @bitCast(@as(c_int, globals.BITMAP_X))) << @intCast(4)) - 40))) and (@as(c_int, @bitCast(@as(c_int, newX))) <= (((@as(c_int, @bitCast(@as(c_int, globals.BITMAP_X))) << @intCast(4)) + (20 << @intCast(4))) + 40))) {
             player.*.sprite2.x = newX;
             newY = @as(i16, @bitCast(@as(c_short, @truncate((@as(c_int, @bitCast(@as(c_int, player.*.sprite2.speed_y))) >> @intCast(4)) + @as(c_int, @bitCast(@as(c_int, player.*.sprite2.y)))))));
-            if ((((@as(c_int, @bitCast(@as(c_int, newY))) < (@as(c_int, @bitCast(@as(c_int, level.*.height))) << @intCast(4))) and (@as(c_int, @bitCast(@as(c_int, newY))) >= 0)) and (@as(c_int, @bitCast(@as(c_int, newY))) >= ((@as(c_int, @bitCast(@as(c_int, globals.BITMAP_Y))) << @intCast(4)) - @as(c_int, 20)))) and (@as(c_int, @bitCast(@as(c_int, newY))) <= (((@as(c_int, @bitCast(@as(c_int, globals.BITMAP_Y))) << @intCast(4)) + (@as(c_int, 12) << @intCast(4))) + @as(c_int, 20)))) {
+            if ((((@as(c_int, @bitCast(@as(c_int, newY))) < (@as(c_int, @bitCast(@as(c_int, level.*.height))) << @intCast(4))) and (@as(c_int, @bitCast(@as(c_int, newY))) >= 0)) and (@as(c_int, @bitCast(@as(c_int, newY))) >= ((@as(c_int, @bitCast(@as(c_int, globals.BITMAP_Y))) << @intCast(4)) - 20))) and (@as(c_int, @bitCast(@as(c_int, newY))) <= (((@as(c_int, @bitCast(@as(c_int, globals.BITMAP_Y))) << @intCast(4)) + (12 << @intCast(4))) + 20))) {
                 player.*.sprite2.y = newY;
             } else {
                 player.*.sprite2.enabled = false;
@@ -233,23 +233,23 @@ pub fn move_player(arg_context: [*c]c.ScreenContext, arg_level: [*c]c.TITUS_leve
             globals.DROP_FLAG = false;
         }
     } else if (globals.CARRY_FLAG) {
-        if (!globals.LADDER_FLAG and ((@as(c_int, @bitCast(@as(c_uint, globals.LAST_ORDER))) == (@as(c_int, 16) + @as(c_int, 5))) or (@as(c_int, @bitCast(@as(c_uint, globals.LAST_ORDER))) == (@as(c_int, 16) + @as(c_int, 7))))) {
-            player.*.sprite2.y = @as(i16, @bitCast(@as(c_short, @truncate(@as(c_int, @bitCast(@as(c_int, player.*.sprite.y))) - @as(c_int, 4)))));
+        if (!globals.LADDER_FLAG and ((@as(c_int, @bitCast(@as(c_uint, globals.LAST_ORDER))) == (16 + 5)) or (@as(c_int, @bitCast(@as(c_uint, globals.LAST_ORDER))) == (16 + 7)))) {
+            player.*.sprite2.y = @as(i16, @bitCast(@as(c_short, @truncate(@as(c_int, @bitCast(@as(c_int, player.*.sprite.y))) - 4))));
             if (player.*.sprite.flipped) {
-                player.*.sprite2.x = @as(i16, @bitCast(@as(c_short, @truncate(@as(c_int, @bitCast(@as(c_int, player.*.sprite.x))) - @as(c_int, 10)))));
+                player.*.sprite2.x = @as(i16, @bitCast(@as(c_short, @truncate(@as(c_int, @bitCast(@as(c_int, player.*.sprite.x))) - 10))));
             } else {
-                player.*.sprite2.x = @as(i16, @bitCast(@as(c_short, @truncate(@as(c_int, @bitCast(@as(c_int, player.*.sprite.x))) + @as(c_int, 12)))));
+                player.*.sprite2.x = @as(i16, @bitCast(@as(c_short, @truncate(@as(c_int, @bitCast(@as(c_int, player.*.sprite.x))) + 12))));
             }
         } else {
-            if ((@as(c_int, @bitCast(@as(c_int, player.*.sprite.number))) == @as(c_int, 14)) or (((@as(c_int, @bitCast(@as(c_uint, globals.LAST_ORDER))) & @as(c_int, 15)) != @as(c_int, 7)) and ((@as(c_int, @bitCast(@as(c_uint, globals.LAST_ORDER))) & @as(c_int, 15)) != @as(c_int, 8)))) {
-                player.*.sprite2.x = @as(i16, @bitCast(@as(c_short, @truncate(@as(c_int, @bitCast(@as(c_int, player.*.sprite.x))) + @as(c_int, 2)))));
-                if ((@as(c_int, @bitCast(@as(c_int, player.*.sprite.number))) == @as(c_int, 23)) or (@as(c_int, @bitCast(@as(c_int, player.*.sprite.number))) == @as(c_int, 24))) {
-                    player.*.sprite2.x -= @as(i16, @bitCast(@as(c_short, @truncate(@as(c_int, 10)))));
+            if ((@as(c_int, @bitCast(@as(c_int, player.*.sprite.number))) == 14) or (((@as(c_int, @bitCast(@as(c_uint, globals.LAST_ORDER))) & 15) != 7) and ((@as(c_int, @bitCast(@as(c_uint, globals.LAST_ORDER))) & 15) != 8))) {
+                player.*.sprite2.x = @as(i16, @bitCast(@as(c_short, @truncate(@as(c_int, @bitCast(@as(c_int, player.*.sprite.x))) + 2))));
+                if ((@as(c_int, @bitCast(@as(c_int, player.*.sprite.number))) == 23) or (@as(c_int, @bitCast(@as(c_int, player.*.sprite.number))) == 24)) {
+                    player.*.sprite2.x -= @as(i16, @bitCast(@as(c_short, @truncate(10))));
                     if (player.*.sprite.flipped) {
-                        player.*.sprite2.x += @as(i16, @bitCast(@as(c_short, @truncate(@as(c_int, 18)))));
+                        player.*.sprite2.x += @as(i16, @bitCast(@as(c_short, @truncate(18))));
                     }
                 }
-                player.*.sprite2.y = @as(i16, @bitCast(@as(c_short, @truncate((@as(c_int, @bitCast(@as(c_int, player.*.sprite.y))) - @as(c_int, @bitCast(@as(c_uint, player.*.sprite.spritedata.*.collheight)))) + @as(c_int, 1)))));
+                player.*.sprite2.y = @as(i16, @bitCast(@as(c_short, @truncate((@as(c_int, @bitCast(@as(c_int, player.*.sprite.y))) - @as(c_int, @bitCast(@as(c_uint, player.*.sprite.spritedata.*.collheight)))) + 1))));
             }
         }
     }
@@ -273,9 +273,9 @@ pub fn move_player(arg_context: [*c]c.ScreenContext, arg_level: [*c]c.TITUS_leve
         globals.KICK_FLAG = 0;
     }
     c.subto0(&globals.FUME_FLAG);
-    if ((@as(c_int, @bitCast(@as(c_uint, globals.FUME_FLAG))) != 0) and ((@as(c_int, @bitCast(@as(c_uint, globals.FUME_FLAG))) & @as(c_int, 3)) == 0)) {
-        c.updatesprite(level, &player.*.sprite2, @as(i16, @bitCast(@as(c_short, @truncate(@as(c_int, @bitCast(@as(c_int, player.*.sprite2.number))) + @as(c_int, 1))))), false);
-        if (@as(c_int, @bitCast(@as(c_int, player.*.sprite2.number))) == (@as(c_int, 30) + @as(c_int, 19))) {
+    if ((@as(c_int, @bitCast(@as(c_uint, globals.FUME_FLAG))) != 0) and ((@as(c_int, @bitCast(@as(c_uint, globals.FUME_FLAG))) & 3) == 0)) {
+        c.updatesprite(level, &player.*.sprite2, @as(i16, @bitCast(@as(c_short, @truncate(@as(c_int, @bitCast(@as(c_int, player.*.sprite2.number))) + 1)))), false);
+        if (@as(c_int, @bitCast(@as(c_int, player.*.sprite2.number))) == (30 + 19)) {
             player.*.sprite2.enabled = false;
             globals.FUME_FLAG = 0;
         }
@@ -310,34 +310,34 @@ fn BRK_COLLISION(context: [*c]c.ScreenContext, level: [*c]c.TITUS_level) void {
     var first: bool = undefined;
     var hflag: c.enum_HFLAG = undefined;
     tileX = @as(u8, @bitCast(@as(i8, @truncate(@as(c_int, @bitCast(@as(c_int, player.*.sprite.x))) >> @intCast(4)))));
-    tileY = @as(i16, @bitCast(@as(c_short, @truncate((@as(c_int, @bitCast(@as(c_int, player.*.sprite.y))) >> @intCast(4)) - @as(c_int, 1)))));
+    tileY = @as(i16, @bitCast(@as(c_short, @truncate((@as(c_int, @bitCast(@as(c_int, player.*.sprite.y))) >> @intCast(4)) - 1))));
     initY = tileY;
-    if ((@as(c_int, @bitCast(@as(c_int, player.*.sprite.y))) > ((@as(c_int, @bitCast(@as(c_int, level.*.height))) + @as(c_int, 1)) << @intCast(4))) and !globals.NOCLIP) {
+    if ((@as(c_int, @bitCast(@as(c_int, player.*.sprite.y))) > ((@as(c_int, @bitCast(@as(c_int, level.*.height))) + 1) << @intCast(4))) and !globals.NOCLIP) {
         CASE_DEAD_IM(level);
     }
     globals.YFALL = 0;
-    colltest = @as(i16, @bitCast(@as(c_short, @truncate(@as(c_int, @bitCast(@as(c_int, player.*.sprite.x))) & @as(c_int, 15)))));
-    if (@as(c_int, @bitCast(@as(c_int, colltest))) < @as(c_int, 4)) {
-        colltest += @as(i16, @bitCast(@as(c_short, @truncate(@as(c_int, 256)))));
+    colltest = @as(i16, @bitCast(@as(c_short, @truncate(@as(c_int, @bitCast(@as(c_int, player.*.sprite.x))) & 15))));
+    if (@as(c_int, @bitCast(@as(c_int, colltest))) < 4) {
+        colltest += @as(i16, @bitCast(@as(c_short, @truncate(256))));
         tileX -%= 1;
     }
-    colltest -= @as(i16, @bitCast(@as(c_short, @truncate(@as(c_int, 4)))));
+    colltest -= @as(i16, @bitCast(@as(c_short, @truncate(4))));
     left_tileX = tileX;
     TAKE_BLK_AND_YTEST(context, level, tileY, tileX);
-    if (@as(c_int, @bitCast(@as(c_uint, globals.YFALL))) == @as(c_int, 1)) {
-        colltest += @as(i16, @bitCast(@as(c_short, @truncate(@as(c_int, 4) * @as(c_int, 2)))));
-        if (@as(c_int, @bitCast(@as(c_int, colltest))) > @as(c_int, 15)) {
+    if (@as(c_int, @bitCast(@as(c_uint, globals.YFALL))) == 1) {
+        colltest += @as(i16, @bitCast(@as(c_short, @truncate(4 * 2))));
+        if (@as(c_int, @bitCast(@as(c_int, colltest))) > 15) {
             tileX +%= 1;
         }
         if (@as(c_int, @bitCast(@as(c_uint, tileX))) != @as(c_int, @bitCast(@as(c_uint, left_tileX)))) {
             TAKE_BLK_AND_YTEST(context, level, tileY, tileX);
         }
-        if (@as(c_int, @bitCast(@as(c_uint, globals.YFALL))) == @as(c_int, 1)) {
+        if (@as(c_int, @bitCast(@as(c_uint, globals.YFALL))) == 1) {
             if ((@as(c_int, @bitCast(@as(c_uint, globals.CROSS_FLAG))) == 0) and (@as(c_int, @bitCast(@as(c_uint, globals.CHOC_FLAG))) == 0)) {
                 COLLISION_TRP(level);
-                if (@as(c_int, @bitCast(@as(c_uint, globals.YFALL))) == @as(c_int, 1)) {
+                if (@as(c_int, @bitCast(@as(c_uint, globals.YFALL))) == 1) {
                     COLLISION_OBJET(level);
-                    if (@as(c_int, @bitCast(@as(c_uint, globals.YFALL))) == @as(c_int, 1)) {
+                    if (@as(c_int, @bitCast(@as(c_uint, globals.YFALL))) == 1) {
                         ARAB_TOMBE(level);
                     } else {
                         player.*.GLISSE = 0;
@@ -348,14 +348,14 @@ fn BRK_COLLISION(context: [*c]c.ScreenContext, level: [*c]c.TITUS_level) void {
             }
         }
     }
-    changeX = @as(i16, @bitCast(@as(c_short, @truncate(@as(c_int, 4) + @as(c_int, 4)))));
+    changeX = @as(i16, @bitCast(@as(c_short, @truncate(4 + 4))));
     if (@as(c_int, @bitCast(@as(c_int, player.*.sprite.speed_x))) < 0) {
         changeX = @as(i16, @bitCast(@as(c_short, @truncate(0 - @as(c_int, @bitCast(@as(c_int, changeX)))))));
     } else if (@as(c_int, @bitCast(@as(c_int, player.*.sprite.speed_x))) == 0) {
         changeX = 0;
     }
     height = @as(i16, @bitCast(@as(c_ushort, player.*.sprite.spritedata.*.collheight)));
-    if (((@as(c_int, @bitCast(@as(c_int, player.*.sprite.y))) > (-@as(c_int, 1) + @as(c_int, 1))) and (@as(c_int, @bitCast(@as(c_int, initY))) >= 0)) and (@as(c_int, @bitCast(@as(c_int, initY))) < @as(c_int, @bitCast(@as(c_int, level.*.height))))) {
+    if (((@as(c_int, @bitCast(@as(c_int, player.*.sprite.y))) > (-1 + 1)) and (@as(c_int, @bitCast(@as(c_int, initY))) >= 0)) and (@as(c_int, @bitCast(@as(c_int, initY))) < @as(c_int, @bitCast(@as(c_int, level.*.height))))) {
         tileX = @as(u8, @bitCast(@as(i8, @truncate((@as(c_int, @bitCast(@as(c_int, player.*.sprite.x))) + @as(c_int, @bitCast(@as(c_int, changeX)))) >> @intCast(4)))));
         tileY = initY;
         first = true;
@@ -371,7 +371,7 @@ fn BRK_COLLISION(context: [*c]c.ScreenContext, level: [*c]c.TITUS_level) void {
                 return;
             }
             tileY -= 1;
-            height -= @as(i16, @bitCast(@as(c_short, @truncate(@as(c_int, 16)))));
+            height -= @as(i16, @bitCast(@as(c_short, @truncate(16))));
             if (!(@as(c_int, @bitCast(@as(c_int, height))) > 0)) break;
         }
     }
@@ -386,37 +386,37 @@ fn TAKE_BLK_AND_YTEST(context: [*c]c.ScreenContext, level: [*c]c.TITUS_level, ti
     globals.LADDER_FLAG = false;
     var change: i8 = undefined;
     _ = &change;
-    if ((@as(c_int, @bitCast(@as(c_int, player.*.sprite.y))) <= -@as(c_int, 1)) or (@as(c_int, @bitCast(@as(c_int, tileY))) < -@as(c_int, 1))) {
+    if ((@as(c_int, @bitCast(@as(c_int, player.*.sprite.y))) <= -1) or (@as(c_int, @bitCast(@as(c_int, tileY))) < -1)) {
         ARAB_TOMBE(level);
         globals.YFALL = 255;
         return;
     }
-    if ((@as(c_int, @bitCast(@as(c_int, tileY))) + @as(c_int, 1)) >= @as(c_int, @bitCast(@as(c_int, level.*.height)))) {
+    if ((@as(c_int, @bitCast(@as(c_int, tileY))) + 1) >= @as(c_int, @bitCast(@as(c_int, level.*.height)))) {
         ARAB_TOMBE(level);
         globals.YFALL = 255;
         return;
     }
-    if (@as(c_int, @bitCast(@as(c_int, tileY))) == -@as(c_int, 1)) {
+    if (@as(c_int, @bitCast(@as(c_int, tileY))) == -1) {
         tileY = 0;
     }
-    var floor_1: c.enum_FFLAG = c.get_floorflag(level, @as(i16, @bitCast(@as(c_short, @truncate(@as(c_int, @bitCast(@as(c_int, tileY))) + @as(c_int, 1))))), @as(i16, @bitCast(@as(c_ushort, tileX))));
+    var floor_1: c.enum_FFLAG = c.get_floorflag(level, @as(i16, @bitCast(@as(c_short, @truncate(@as(c_int, @bitCast(@as(c_int, tileY))) + 1)))), @as(i16, @bitCast(@as(c_ushort, tileX))));
     _ = &floor_1;
     var floor_above: c.enum_FFLAG = c.get_floorflag(level, tileY, @as(i16, @bitCast(@as(c_ushort, tileX))));
     _ = &floor_above;
-    if ((@as(c_int, @bitCast(@as(c_uint, globals.LAST_ORDER))) & @as(c_int, 15)) != @as(c_int, 2)) {
-        BLOCK_YYPRG(context, level, floor_1, floor_above, @as(u8, @bitCast(@as(i8, @truncate(@as(c_int, @bitCast(@as(c_int, tileY))) + @as(c_int, 1))))), tileX);
+    if ((@as(c_int, @bitCast(@as(c_uint, globals.LAST_ORDER))) & 15) != 2) {
+        BLOCK_YYPRG(context, level, floor_1, floor_above, @as(u8, @bitCast(@as(i8, @truncate(@as(c_int, @bitCast(@as(c_int, tileY))) + 1)))), tileX);
     }
-    if ((@as(c_int, @bitCast(@as(c_int, tileY))) < @as(c_int, 1)) or (@as(c_int, @bitCast(@as(c_int, player.*.sprite.speed_y))) > 0)) {
+    if ((@as(c_int, @bitCast(@as(c_int, tileY))) < 1) or (@as(c_int, @bitCast(@as(c_int, player.*.sprite.speed_y))) > 0)) {
         return;
     }
-    var cflag: c.enum_CFLAG = c.get_ceilflag(level, @as(i16, @bitCast(@as(c_short, @truncate(@as(c_int, @bitCast(@as(c_int, tileY))) - @as(c_int, 1))))), @as(i16, @bitCast(@as(c_ushort, tileX))));
+    var cflag: c.enum_CFLAG = c.get_ceilflag(level, @as(i16, @bitCast(@as(c_short, @truncate(@as(c_int, @bitCast(@as(c_int, tileY))) - 1)))), @as(i16, @bitCast(@as(c_ushort, tileX))));
     _ = &cflag;
-    BLOCK_YYPRGD(level, cflag, @as(u8, @bitCast(@as(i8, @truncate(@as(c_int, @bitCast(@as(c_int, tileY))) - @as(c_int, 1))))), tileX);
+    BLOCK_YYPRGD(level, cflag, @as(u8, @bitCast(@as(i8, @truncate(@as(c_int, @bitCast(@as(c_int, tileY))) - 1)))), tileX);
     var horiz: c.enum_HFLAG = c.get_horizflag(level, tileY, @as(i16, @bitCast(@as(c_ushort, tileX))));
     _ = &horiz;
-    if ((((@as(c_int, @bitCast(@as(c_uint, horiz))) == @as(c_int, @bitCast(@as(c_uint, c.HFLAG_WALL)))) or (@as(c_int, @bitCast(@as(c_uint, horiz))) == @as(c_int, @bitCast(@as(c_uint, c.HFLAG_DEADLY))))) or (@as(c_int, @bitCast(@as(c_uint, horiz))) == @as(c_int, @bitCast(@as(c_uint, c.HFLAG_PADLOCK))))) and (@as(c_int, @bitCast(@as(c_int, player.*.sprite.y))) > (-@as(c_int, 1) + @as(c_int, 1)))) {
+    if ((((@as(c_int, @bitCast(@as(c_uint, horiz))) == @as(c_int, @bitCast(@as(c_uint, c.HFLAG_WALL)))) or (@as(c_int, @bitCast(@as(c_uint, horiz))) == @as(c_int, @bitCast(@as(c_uint, c.HFLAG_DEADLY))))) or (@as(c_int, @bitCast(@as(c_uint, horiz))) == @as(c_int, @bitCast(@as(c_uint, c.HFLAG_PADLOCK))))) and (@as(c_int, @bitCast(@as(c_int, player.*.sprite.y))) > (-1 + 1))) {
         if (@as(c_int, @bitCast(@as(c_int, player.*.sprite.speed_x))) > 0) {
-            change = @as(i8, @bitCast(@as(i8, @truncate(-@as(c_int, 1)))));
+            change = @as(i8, @bitCast(@as(i8, @truncate(-1))));
         } else {
             change = 1;
         }
@@ -448,9 +448,9 @@ fn BLOCK_YYPRGD(level: [*c]c.TITUS_level, cflag: c.enum_CFLAG, tileY_in: u8, til
                     CASE_DEAD_IM(level);
                 } else if (@as(c_int, @bitCast(@as(c_int, player.*.sprite.speed_y))) != 0) {
                     player.*.sprite.speed_y = 0;
-                    player.*.sprite.y = @as(i16, @bitCast(@as(c_short, @truncate((@as(c_int, @bitCast(@as(c_int, player.*.sprite.y))) & @as(c_int, 65520)) + @as(c_int, 16)))));
+                    player.*.sprite.y = @as(i16, @bitCast(@as(c_short, @truncate((@as(c_int, @bitCast(@as(c_int, player.*.sprite.y))) & 65520) + 16))));
                     globals.SAUT_COUNT = 255;
-                } else if (((@as(c_int, @bitCast(@as(c_int, player.*.sprite.number))) != @as(c_int, 10)) and (@as(c_int, @bitCast(@as(c_int, player.*.sprite.number))) != @as(c_int, 21))) and (@as(c_int, @bitCast(@as(c_uint, globals.SAUT_FLAG))) != @as(c_int, 6))) {
+                } else if (((@as(c_int, @bitCast(@as(c_int, player.*.sprite.number))) != 10) and (@as(c_int, @bitCast(@as(c_int, player.*.sprite.number))) != 21)) and (@as(c_int, @bitCast(@as(c_uint, globals.SAUT_FLAG))) != 6)) {
                     globals.PRIER_FLAG = true;
                     if (globals.CARRY_FLAG) {
                         object = FORCE_POSE(level);
@@ -463,9 +463,9 @@ fn BLOCK_YYPRGD(level: [*c]c.TITUS_level, cflag: c.enum_CFLAG, tileY_in: u8, til
                                 tileX -%= 1;
                                 hflag = c.get_horizflag(level, @as(i16, @bitCast(@as(c_ushort, tileY))), @as(i16, @bitCast(@as(c_ushort, tileX))));
                                 if (((@as(c_int, @bitCast(@as(c_uint, hflag))) == @as(c_int, @bitCast(@as(c_uint, c.HFLAG_WALL)))) or (@as(c_int, @bitCast(@as(c_uint, hflag))) == @as(c_int, @bitCast(@as(c_uint, c.HFLAG_DEADLY))))) or (@as(c_int, @bitCast(@as(c_uint, hflag))) == @as(c_int, @bitCast(@as(c_uint, c.HFLAG_PADLOCK))))) {
-                                    object.*.sprite.x += @as(i16, @bitCast(@as(c_short, @truncate(@as(c_int, 16)))));
+                                    object.*.sprite.x += @as(i16, @bitCast(@as(c_short, @truncate(16))));
                                 } else {
-                                    object.*.sprite.x -= @as(i16, @bitCast(@as(c_short, @truncate(@as(c_int, 16)))));
+                                    object.*.sprite.x -= @as(i16, @bitCast(@as(c_short, @truncate(16))));
                                 }
                             }
                         }
@@ -529,7 +529,7 @@ fn BLOCK_XXPRG(arg_context: [*c]c.ScreenContext, arg_level: [*c]c.TITUS_level, a
                 break;
             },
             @as(c_int, @bitCast(@as(c_uint, @as(u8, 6)))) => {
-                CASE_PASS(context, level, @as(u8, @bitCast(@as(i8, @truncate(@as(c_int, 14) - @as(c_int, 1))))), tileY, tileX);
+                CASE_PASS(context, level, @as(u8, @bitCast(@as(i8, @truncate(14 - 1)))), tileY, tileX);
                 break;
             },
             else => {},
@@ -545,7 +545,7 @@ fn ARAB_BLOCKX(arg_level: [*c]c.TITUS_level) void {
     _ = &player;
     player.*.sprite.x -= @as(i16, @bitCast(@as(c_short, @truncate(@as(c_int, @bitCast(@as(c_int, player.*.sprite.speed_x))) >> @intCast(4)))));
     player.*.sprite.speed_x = 0;
-    if ((@as(c_int, @bitCast(@as(c_uint, globals.KICK_FLAG))) != 0) and (@as(c_int, @bitCast(@as(c_uint, globals.SAUT_FLAG))) != @as(c_int, 6))) {
+    if ((@as(c_int, @bitCast(@as(c_uint, globals.KICK_FLAG))) != 0) and (@as(c_int, @bitCast(@as(c_uint, globals.SAUT_FLAG))) != 6)) {
         globals.CHOC_FLAG = 20;
         globals.KICK_FLAG = 0;
     }
@@ -558,7 +558,7 @@ pub export fn FORCE_POSE(level: [*c]c.TITUS_level) [*c]c.TITUS_object {
     if ((@as(c_int, @intFromBool(sprite2.*.enabled)) != 0) and (@as(c_int, @intFromBool(globals.CARRY_FLAG)) != 0)) {
         i = 0;
         while (true) {
-            if (@as(c_int, @bitCast(@as(c_int, i))) > @as(c_int, 40)) {
+            if (@as(c_int, @bitCast(@as(c_int, i))) > 40) {
                 std.log.err("FORCE_POSE returned NULL.", .{});
                 return null;
             }
@@ -569,7 +569,7 @@ pub export fn FORCE_POSE(level: [*c]c.TITUS_level) [*c]c.TITUS_object {
         c.updateobjectsprite(level, object, sprite2.*.number, true);
         sprite2.*.enabled = false;
         object.*.sprite.killing = false;
-        if (@as(c_int, @bitCast(@as(c_int, object.*.sprite.number))) < @as(c_int, 101)) {
+        if (@as(c_int, @bitCast(@as(c_int, object.*.sprite.number))) < 101) {
             object.*.sprite.droptobottom = false;
         } else {
             object.*.sprite.droptobottom = true;
@@ -598,14 +598,14 @@ fn ARAB_TOMBE(arg_level: [*c]c.TITUS_level) void {
     if (@as(c_int, @bitCast(@as(c_uint, globals.KICK_FLAG))) != 0) {
         return;
     }
-    XACCELERATION(player, @as(i16, @bitCast(@as(c_short, @truncate(@as(c_int, 4) * @as(c_int, 16))))));
-    YACCELERATION(player, @as(i16, @bitCast(@as(c_short, @truncate(@as(c_int, 12) * @as(c_int, 16))))));
+    XACCELERATION(player, 4 * 16);
+    YACCELERATION(player, 12 * 16);
     if (@as(c_int, @bitCast(@as(c_uint, globals.CHOC_FLAG))) != 0) {
-        c.updatesprite(level, &player.*.sprite, @as(i16, @bitCast(@as(c_short, @truncate(@as(c_int, 15))))), true);
+        c.updatesprite(level, &player.*.sprite, 15, true);
     } else if (@as(c_int, @intFromBool(globals.CARRY_FLAG)) == 0) {
-        c.updatesprite(level, &player.*.sprite, @as(i16, @bitCast(@as(c_short, @truncate(@as(c_int, 10))))), true);
+        c.updatesprite(level, &player.*.sprite, 10, true);
     } else {
-        c.updatesprite(level, &player.*.sprite, @as(i16, @bitCast(@as(c_short, @truncate(@as(c_int, 21))))), true);
+        c.updatesprite(level, &player.*.sprite, 21, true);
     }
     player.*.sprite.flipped = @as(c_int, @bitCast(@as(c_int, globals.SENSX))) < 0;
 }
@@ -636,8 +636,8 @@ fn YACCELERATION(arg_player: [*c]c.TITUS_player, arg_maxspeed: i16) void {
     _ = &player;
     var maxspeed = arg_maxspeed;
     _ = &maxspeed;
-    if ((@as(c_int, @bitCast(@as(c_int, player.*.sprite.speed_y))) + @divTrunc(@as(c_int, 32), @as(c_int, 2))) < @as(c_int, @bitCast(@as(c_int, maxspeed)))) {
-        player.*.sprite.speed_y = @as(i16, @bitCast(@as(c_short, @truncate(@as(c_int, @bitCast(@as(c_int, player.*.sprite.speed_y))) + @divTrunc(@as(c_int, 32), @as(c_int, 2))))));
+    if ((@as(c_int, @bitCast(@as(c_int, player.*.sprite.speed_y))) + @divTrunc(32, 2)) < @as(c_int, @bitCast(@as(c_int, maxspeed)))) {
+        player.*.sprite.speed_y = @as(i16, @bitCast(@as(c_short, @truncate(@as(c_int, @bitCast(@as(c_int, player.*.sprite.speed_y))) + @divTrunc(32, 2)))));
     } else {
         player.*.sprite.speed_y = maxspeed;
     }
@@ -699,22 +699,22 @@ fn BLOCK_YYPRG(arg_context: [*c]c.ScreenContext, arg_level: [*c]c.TITUS_level, a
                     ARAB_TOMBE_F();
                     return;
                 }
-                order = @as(u8, @bitCast(@as(i8, @truncate(@as(c_int, @bitCast(@as(c_uint, globals.LAST_ORDER))) & @as(c_int, 15)))));
-                if ((((@as(c_int, @bitCast(@as(c_uint, order))) == @as(c_int, 1)) or (@as(c_int, @bitCast(@as(c_uint, order))) == @as(c_int, 3))) or (@as(c_int, @bitCast(@as(c_uint, order))) == @as(c_int, 7))) or (@as(c_int, @bitCast(@as(c_uint, order))) == @as(c_int, 8))) {
+                order = @as(u8, @bitCast(@as(i8, @truncate(@as(c_int, @bitCast(@as(c_uint, globals.LAST_ORDER))) & 15))));
+                if ((((@as(c_int, @bitCast(@as(c_uint, order))) == 1) or (@as(c_int, @bitCast(@as(c_uint, order))) == 3)) or (@as(c_int, @bitCast(@as(c_uint, order))) == 7)) or (@as(c_int, @bitCast(@as(c_uint, order))) == 8)) {
                     ARAB_BLOCK_YU(player);
                     return;
                 }
-                if (@as(c_int, @bitCast(@as(c_uint, order))) == @as(c_int, 5)) {
+                if (@as(c_int, @bitCast(@as(c_uint, order))) == 5) {
                     ARAB_TOMBE_F();
-                    c.updatesprite(level, &player.*.sprite, @as(i16, @bitCast(@as(c_short, @truncate(@as(c_int, 14))))), true);
-                    player.*.sprite.y += @as(i16, @bitCast(@as(c_short, @truncate(@as(c_int, 8)))));
+                    c.updatesprite(level, &player.*.sprite, @as(i16, @bitCast(@as(c_short, @truncate(14)))), true);
+                    player.*.sprite.y += @as(i16, @bitCast(@as(c_short, @truncate(8))));
                 }
-                if (@as(c_int, @bitCast(@as(c_uint, floor_above))) != @as(c_int, 6)) {
+                if (@as(c_int, @bitCast(@as(c_uint, floor_above))) != 6) {
                     if (@as(c_int, @bitCast(@as(c_uint, order))) == 0) {
                         ARAB_BLOCK_YU(player);
                         return;
                     }
-                    if ((@as(c_int, @bitCast(@as(c_int, player.*.y_axis))) < 0) and (@as(c_int, @bitCast(@as(c_uint, order))) == @as(c_int, 6))) {
+                    if ((@as(c_int, @bitCast(@as(c_int, player.*.y_axis))) < 0) and (@as(c_int, @bitCast(@as(c_uint, order))) == 6)) {
                         ARAB_BLOCK_YU(player);
                         return;
                     }
@@ -746,7 +746,7 @@ fn BLOCK_YYPRG(arg_context: [*c]c.ScreenContext, arg_level: [*c]c.TITUS_level, a
                 break;
             },
             @as(c_int, @bitCast(@as(c_uint, @as(u8, 13)))) => {
-                CASE_PASS(context, level, @as(u8, @bitCast(@as(i8, @truncate(@as(c_int, 14) - @as(c_int, 1))))), tileY, tileX);
+                CASE_PASS(context, level, @as(u8, @bitCast(@as(i8, @truncate(14 - 1)))), tileY, tileX);
                 break;
             },
             else => {},
@@ -756,7 +756,7 @@ fn BLOCK_YYPRG(arg_context: [*c]c.ScreenContext, arg_level: [*c]c.TITUS_level, a
 }
 
 fn ARAB_TOMBE_F() void {
-    globals.YFALL = @as(u8, @bitCast(@as(i8, @truncate(@as(c_int, @bitCast(@as(c_uint, globals.YFALL))) | @as(c_int, 1)))));
+    globals.YFALL = @as(u8, @bitCast(@as(i8, @truncate(@as(c_int, @bitCast(@as(c_uint, globals.YFALL))) | 1))));
 }
 
 fn ARAB_BLOCK_YU(arg_player: [*c]c.TITUS_player) void {
@@ -765,10 +765,10 @@ fn ARAB_BLOCK_YU(arg_player: [*c]c.TITUS_player) void {
     globals.POCKET_FLAG = true;
     player.*.GLISSE = 0;
     if (@as(c_int, @bitCast(@as(c_int, player.*.sprite.speed_y))) < 0) {
-        globals.YFALL = @as(u8, @bitCast(@as(i8, @truncate(@as(c_int, @bitCast(@as(c_uint, globals.YFALL))) | @as(c_int, 1)))));
+        globals.YFALL = @as(u8, @bitCast(@as(i8, @truncate(@as(c_int, @bitCast(@as(c_uint, globals.YFALL))) | 1))));
         return;
     }
-    player.*.sprite.y = @as(i16, @bitCast(@as(c_short, @truncate(@as(c_int, @bitCast(@as(c_int, player.*.sprite.y))) & @as(c_int, 65520)))));
+    player.*.sprite.y = @as(i16, @bitCast(@as(c_short, @truncate(@as(c_int, @bitCast(@as(c_int, player.*.sprite.y))) & 65520))));
     player.*.sprite.speed_y = 0;
     c.subto0(&globals.SAUT_FLAG);
     globals.SAUT_COUNT = 0;
@@ -780,15 +780,15 @@ fn CASE_BONUS(arg_level: [*c]c.TITUS_level, tileY: u8, tileX: u8) c_int {
     _ = &level;
     var i: u16 = 0;
     while (true) {
-        if (@as(c_int, @bitCast(@as(c_uint, i))) >= @as(c_int, 100)) {
+        if (@as(c_int, @bitCast(@as(c_uint, i))) >= 100) {
             return 0;
         }
         i +%= 1;
-        if (!((@as(c_int, @bitCast(@as(c_uint, level.*.bonus[@as(c_uint, @intCast(@as(c_int, @bitCast(@as(c_uint, i))) - @as(c_int, 1)))].x))) != @as(c_int, @bitCast(@as(c_uint, tileX)))) or (@as(c_int, @bitCast(@as(c_uint, level.*.bonus[@as(c_uint, @intCast(@as(c_int, @bitCast(@as(c_uint, i))) - @as(c_int, 1)))].y))) != @as(c_int, @bitCast(@as(c_uint, tileY)))))) break;
+        if (!((@as(c_int, @bitCast(@as(c_uint, level.*.bonus[@as(c_uint, @intCast(@as(c_int, @bitCast(@as(c_uint, i))) - 1))].x))) != @as(c_int, @bitCast(@as(c_uint, tileX)))) or (@as(c_int, @bitCast(@as(c_uint, level.*.bonus[@as(c_uint, @intCast(@as(c_int, @bitCast(@as(c_uint, i))) - 1))].y))) != @as(c_int, @bitCast(@as(c_uint, tileY)))))) break;
     }
     i -%= 1;
-    if (@as(c_int, @bitCast(@as(c_uint, level.*.bonus[i].bonustile))) >= (@as(c_int, 255) - @as(c_int, 2))) {
-        level.*.bonuscollected +%= @as(usize, @bitCast(@as(c_long, @as(c_int, 1))));
+    if (@as(c_int, @bitCast(@as(c_uint, level.*.bonus[i].bonustile))) >= (255 - 2)) {
+        level.*.bonuscollected +%= @as(usize, @bitCast(@as(c_long, 1)));
         c.playEvent_c(@as(c_uint, @bitCast(c.Event_PlayerCollectBonus)));
         INC_ENERGY(level);
     }
@@ -819,7 +819,7 @@ fn CASE_SECU(level: [*c]c.TITUS_level, tileY: u8, tileX: u8) void {
         c.playEvent_c(@as(c_uint, @bitCast(c.Event_PlayerCollectWaypoint)));
         player.*.initX = player.*.sprite.x;
         player.*.initY = player.*.sprite.y;
-        if ((@as(c_int, @bitCast(@as(c_int, player.*.sprite2.number))) == (@as(c_int, 30) + @as(c_int, 26))) or (@as(c_int, @bitCast(@as(c_int, player.*.sprite2.number))) == (@as(c_int, 30) + @as(c_int, 27)))) {
+        if ((@as(c_int, @bitCast(@as(c_int, player.*.sprite2.number))) == (30 + 26)) or (@as(c_int, @bitCast(@as(c_int, player.*.sprite2.number))) == (30 + 27))) {
             player.*.cageX = player.*.sprite.x;
             player.*.cageY = player.*.sprite.y;
         }
@@ -829,8 +829,8 @@ fn CASE_SECU(level: [*c]c.TITUS_level, tileY: u8, tileX: u8) void {
 fn INC_ENERGY(level: [*c]c.TITUS_level) void {
     const player: [*c]c.TITUS_player = &level.*.player;
     globals.BAR_FLAG = 50;
-    if (@as(c_int, @bitCast(@as(c_uint, player.*.hp))) == @as(c_int, 16)) {
-        level.*.extrabonus += @as(c_int, 1);
+    if (@as(c_int, @bitCast(@as(c_uint, player.*.hp))) == 16) {
+        level.*.extrabonus += 1;
     } else {
         player.*.hp +%= 1;
     }
@@ -877,11 +877,11 @@ fn ACTION_PRG(arg_level: [*c]c.TITUS_level, arg_action: u8) callconv(.C) void {
     _ = &speed_y;
     while (true) {
         switch (action) {
-            0, @as(c_int, 9), @as(c_int, 16) => {
+            0, 9, 16 => {
                 globals.LAST_ORDER = action;
                 DECELERATION(player);
-                if ((c.abs(@as(c_int, @bitCast(@as(c_int, player.*.sprite.speed_x)))) >= (@as(c_int, 1) * @as(c_int, 16))) and (@as(c_int, @intFromBool(player.*.sprite.flipped)) == @intFromBool(@as(c_int, @bitCast(@as(c_int, player.*.sprite.speed_x))) < 0))) {
-                    player.*.sprite.animation = data.get_anim_player(@as(u8, @bitCast(@as(i8, @truncate(@as(c_int, 4) + @as(c_int, @bitCast(@as(c_uint, add_carry()))))))));
+                if ((c.abs(@as(c_int, @bitCast(@as(c_int, player.*.sprite.speed_x)))) >= (1 * 16)) and (@as(c_int, @intFromBool(player.*.sprite.flipped)) == @intFromBool(@as(c_int, @bitCast(@as(c_int, player.*.sprite.speed_x))) < 0))) {
+                    player.*.sprite.animation = data.get_anim_player(@as(u8, @bitCast(@as(i8, @truncate(4 + @as(c_int, @bitCast(@as(c_uint, add_carry()))))))));
                 } else {
                     player.*.sprite.animation = data.get_anim_player(action);
                 }
@@ -889,87 +889,87 @@ fn ACTION_PRG(arg_level: [*c]c.TITUS_level, arg_action: u8) callconv(.C) void {
                 player.*.sprite.flipped = @as(c_int, @bitCast(@as(c_int, globals.SENSX))) < 0;
                 break;
             },
-            @as(c_int, 1), @as(c_int, 17), @as(c_int, 19) => {
-                XACCELERATION(player, @as(i16, @bitCast(@as(c_short, @truncate(@as(c_int, 4) * @as(c_int, 16))))));
+            1, 17, 19 => {
+                XACCELERATION(player, @as(i16, @bitCast(@as(c_short, @truncate(4 * 16)))));
                 NEW_FORM(player, action);
                 GET_IMAGE(level);
                 break;
             },
-            @as(c_int, 2), @as(c_int, 18) => {
-                if (@as(c_int, @bitCast(@as(c_uint, globals.SAUT_COUNT))) >= @as(c_int, 3)) {
+            2, 18 => {
+                if (@as(c_int, @bitCast(@as(c_uint, globals.SAUT_COUNT))) >= 3) {
                     globals.SAUT_FLAG = 6;
                 } else {
                     globals.SAUT_COUNT +%= 1;
-                    YACCELERATION_NEG(player, @as(i16, @bitCast(@as(c_short, @truncate(@divTrunc(@as(c_int, 12) * @as(c_int, 16), @as(c_int, 4)))))));
-                    XACCELERATION(player, @as(i16, @bitCast(@as(c_short, @truncate(@as(c_int, 4) * @as(c_int, 16))))));
+                    YACCELERATION_NEG(player, @as(i16, @bitCast(@as(c_short, @truncate(@divTrunc(12 * 16, 4))))));
+                    XACCELERATION(player, @as(i16, @bitCast(@as(c_short, @truncate(4 * 16)))));
                     NEW_FORM(player, action);
                     GET_IMAGE(level);
                 }
                 break;
             },
-            @as(c_int, 3) => {
+            3 => {
                 NEW_FORM(player, action);
                 GET_IMAGE(level);
-                XACCELERATION(player, @as(i16, @bitCast(@as(c_short, @truncate(@divTrunc(@as(c_int, 4) * @as(c_int, 16), @as(c_int, 2)))))));
-                if (c.abs(@as(c_int, @bitCast(@as(c_int, player.*.sprite.speed_x)))) < (@as(c_int, 2) * @as(c_int, 16))) {
-                    c.updatesprite(level, &player.*.sprite, @as(i16, @bitCast(@as(c_short, @truncate(@as(c_int, 6))))), true);
+                XACCELERATION(player, @as(i16, @bitCast(@as(c_short, @truncate(@divTrunc(4 * 16, 2))))));
+                if (c.abs(@as(c_int, @bitCast(@as(c_int, player.*.sprite.speed_x)))) < (2 * 16)) {
+                    c.updatesprite(level, &player.*.sprite, @as(i16, @bitCast(@as(c_short, @truncate(6)))), true);
                     player.*.sprite.flipped = @as(c_int, @bitCast(@as(c_int, globals.SENSX))) < 0;
                 }
                 break;
             },
-            @as(c_int, 4), @as(c_int, 14), @as(c_int, 15), @as(c_int, 20), @as(c_int, 25), @as(c_int, 26) => break,
-            @as(c_int, 5) => {
+            4, 14, 15, 20, 25, 26 => break,
+            5 => {
                 NEW_FORM(player, action);
                 GET_IMAGE(level);
                 DECELERATION(player);
-                if (@as(c_int, @bitCast(@as(c_uint, globals.ACTION_TIMER))) == @as(c_int, 15)) {
+                if (@as(c_int, @bitCast(@as(c_uint, globals.ACTION_TIMER))) == 15) {
                     globals.CROSS_FLAG = 6;
                     player.*.sprite.speed_y = 0;
                 }
                 break;
             },
-            @as(c_int, 6), @as(c_int, 22) => {
+            6, 22 => {
                 if (@as(c_int, @intFromBool(globals.X_FLAG)) != 0) {
-                    XACCELERATION(player, @as(i16, @bitCast(@as(c_short, @truncate(@as(c_int, 4) * @as(c_int, 16))))));
+                    XACCELERATION(player, @as(i16, @bitCast(@as(c_short, @truncate(4 * 16)))));
                 } else {
                     DECELERATION(player);
                 }
-                if (@as(c_int, @bitCast(@as(c_uint, globals.ACTION_TIMER))) <= @as(c_int, 1)) {
+                if (@as(c_int, @bitCast(@as(c_uint, globals.ACTION_TIMER))) <= 1) {
                     if (@as(c_int, @intFromBool(globals.CARRY_FLAG)) == 0) {
-                        c.updatesprite(level, &player.*.sprite, @as(i16, @bitCast(@as(c_short, @truncate(@as(c_int, 12))))), true);
+                        c.updatesprite(level, &player.*.sprite, @as(i16, @bitCast(@as(c_short, @truncate(12)))), true);
                     } else {
-                        c.updatesprite(level, &player.*.sprite, @as(i16, @bitCast(@as(c_short, @truncate(@as(c_int, 23))))), true);
+                        c.updatesprite(level, &player.*.sprite, @as(i16, @bitCast(@as(c_short, @truncate(23)))), true);
                     }
                 }
                 if (@as(c_int, @intFromBool(globals.Y_FLAG)) != 0) {
-                    NEW_FORM(player, @as(u8, @bitCast(@as(i8, @truncate(@as(c_int, 6) + @as(c_int, @bitCast(@as(c_uint, add_carry()))))))));
+                    NEW_FORM(player, @as(u8, @bitCast(@as(i8, @truncate(6 + @as(c_int, @bitCast(@as(c_uint, add_carry()))))))));
                     GET_IMAGE(level);
-                    player.*.sprite.x = @as(i16, @bitCast(@as(c_short, @truncate((@as(c_int, @bitCast(@as(c_int, player.*.sprite.x))) & @as(c_int, 65520)) + @as(c_int, 8)))));
+                    player.*.sprite.x = @as(i16, @bitCast(@as(c_short, @truncate((@as(c_int, @bitCast(@as(c_int, player.*.sprite.x))) & 65520) + 8))));
                     tileX = @as(u8, @bitCast(@as(i8, @truncate(@as(c_int, @bitCast(@as(c_int, player.*.sprite.x))) >> @intCast(4)))));
-                    tileY = @as(u8, @bitCast(@as(i8, @truncate((@as(c_int, @bitCast(@as(c_int, player.*.sprite.y))) & @as(c_int, 65520)) >> @intCast(4)))));
+                    tileY = @as(u8, @bitCast(@as(i8, @truncate((@as(c_int, @bitCast(@as(c_int, player.*.sprite.y))) & 65520) >> @intCast(4)))));
                     if (@as(c_int, @bitCast(@as(c_uint, c.get_floorflag(level, @as(i16, @bitCast(@as(c_ushort, tileY))), @as(i16, @bitCast(@as(c_ushort, tileX))))))) != @as(c_int, @bitCast(@as(c_uint, c.FFLAG_LADDER)))) {
-                        if (@as(c_int, @bitCast(@as(c_uint, c.get_floorflag(level, @as(i16, @bitCast(@as(c_ushort, tileY))), @as(i16, @bitCast(@as(c_short, @truncate(@as(c_int, @bitCast(@as(c_uint, tileX))) - @as(c_int, 1))))))))) == @as(c_int, @bitCast(@as(c_uint, c.FFLAG_LADDER)))) {
-                            player.*.sprite.x -= @as(i16, @bitCast(@as(c_short, @truncate(@as(c_int, 16)))));
-                        } else if (@as(c_int, @bitCast(@as(c_uint, c.get_floorflag(level, @as(i16, @bitCast(@as(c_ushort, tileY))), @as(i16, @bitCast(@as(c_short, @truncate(@as(c_int, @bitCast(@as(c_uint, tileX))) + @as(c_int, 1))))))))) == @as(c_int, @bitCast(@as(c_uint, c.FFLAG_LADDER)))) {
-                            player.*.sprite.x += @as(i16, @bitCast(@as(c_short, @truncate(@as(c_int, 16)))));
+                        if (@as(c_int, @bitCast(@as(c_uint, c.get_floorflag(level, @as(i16, @bitCast(@as(c_ushort, tileY))), @as(i16, @bitCast(@as(c_short, @truncate(@as(c_int, @bitCast(@as(c_uint, tileX))) - 1)))))))) == @as(c_int, @bitCast(@as(c_uint, c.FFLAG_LADDER)))) {
+                            player.*.sprite.x -= @as(i16, @bitCast(@as(c_short, @truncate(16))));
+                        } else if (@as(c_int, @bitCast(@as(c_uint, c.get_floorflag(level, @as(i16, @bitCast(@as(c_ushort, tileY))), @as(i16, @bitCast(@as(c_short, @truncate(@as(c_int, @bitCast(@as(c_uint, tileX))) + 1)))))))) == @as(c_int, @bitCast(@as(c_uint, c.FFLAG_LADDER)))) {
+                            player.*.sprite.x += @as(i16, @bitCast(@as(c_short, @truncate(16))));
                         }
                     }
                     if (@as(c_int, @bitCast(@as(c_int, player.*.y_axis))) >= 0) {
-                        player.*.sprite.speed_y = @as(i16, @bitCast(@as(c_short, @truncate(@as(c_int, 4) * @as(c_int, 16)))));
+                        player.*.sprite.speed_y = @as(i16, @bitCast(@as(c_short, @truncate(4 * 16))));
                     } else {
-                        player.*.sprite.speed_y = @as(i16, @bitCast(@as(c_short, @truncate(0 - (@as(c_int, 4) * @as(c_int, 16))))));
+                        player.*.sprite.speed_y = @as(i16, @bitCast(@as(c_short, @truncate(0 - (4 * 16)))));
                     }
                 } else {
                     player.*.sprite.speed_y = 0;
                 }
                 break;
             },
-            @as(c_int, 7), @as(c_int, 23) => {
+            7, 23 => {
                 NEW_FORM(player, action);
                 GET_IMAGE(level);
                 DECELERATION(player);
                 if (!globals.POSEREADY_FLAG) {
-                    if ((@as(c_int, @bitCast(@as(c_uint, globals.ACTION_TIMER))) == @as(c_int, 1)) and (@as(c_int, @intFromBool(globals.CARRY_FLAG)) != 0)) {
+                    if ((@as(c_int, @bitCast(@as(c_uint, globals.ACTION_TIMER))) == 1) and (@as(c_int, @intFromBool(globals.CARRY_FLAG)) != 0)) {
                         object = FORCE_POSE(level);
                         if (object != @as([*c]c.TITUS_object, @ptrCast(@alignCast(@as(?*anyopaque, @ptrFromInt(0)))))) {
                             tileX = @as(u8, @bitCast(@as(i8, @truncate(@as(c_int, @bitCast(@as(c_int, object.*.sprite.x))) >> @intCast(4)))));
@@ -979,9 +979,9 @@ fn ACTION_PRG(arg_level: [*c]c.TITUS_level, arg_action: u8) callconv(.C) void {
                                 tileX +%= 1;
                                 fflag = c.get_floorflag(level, @as(i16, @bitCast(@as(c_ushort, tileY))), @as(i16, @bitCast(@as(c_ushort, tileX))));
                                 if ((@as(c_int, @bitCast(@as(c_uint, fflag))) != @as(c_int, @bitCast(@as(c_uint, c.FFLAG_NOFLOOR)))) and (@as(c_int, @bitCast(@as(c_uint, fflag))) != @as(c_int, @bitCast(@as(c_uint, c.FFLAG_WATER))))) {
-                                    object.*.sprite.speed_x = @as(i16, @bitCast(@as(c_short, @truncate(@as(c_int, 16) * @as(c_int, 3)))));
+                                    object.*.sprite.speed_x = @as(i16, @bitCast(@as(c_short, @truncate(16 * 3))));
                                 } else {
-                                    object.*.sprite.speed_x = @as(i16, @bitCast(@as(c_short, @truncate(0 - (@as(c_int, 16) * @as(c_int, 3))))));
+                                    object.*.sprite.speed_x = @as(i16, @bitCast(@as(c_short, @truncate(0 - (16 * 3)))));
                                 }
                             }
                         }
@@ -989,8 +989,8 @@ fn ACTION_PRG(arg_level: [*c]c.TITUS_level, arg_action: u8) callconv(.C) void {
                         if (!globals.CARRY_FLAG) {
                             {
                                 i = 0;
-                                while (@as(c_int, @bitCast(@as(c_int, i))) < @as(c_int, 40)) : (i += 1) {
-                                    if (!level.*.object[@as(c_ushort, @intCast(i))].sprite.enabled or (c.abs(@as(c_int, @bitCast(@as(c_int, player.*.sprite.y))) - @as(c_int, @bitCast(@as(c_int, level.*.object[@as(c_ushort, @intCast(i))].sprite.y)))) >= @as(c_int, 20))) {
+                                while (@as(c_int, @bitCast(@as(c_int, i))) < 40) : (i += 1) {
+                                    if (!level.*.object[@as(c_ushort, @intCast(i))].sprite.enabled or (c.abs(@as(c_int, @bitCast(@as(c_int, player.*.sprite.y))) - @as(c_int, @bitCast(@as(c_int, level.*.object[@as(c_ushort, @intCast(i))].sprite.y)))) >= 20)) {
                                         continue;
                                     }
                                     diffX = @as(i16, @bitCast(@as(c_short, @truncate(@as(c_int, @bitCast(@as(c_int, player.*.sprite.x))) - @as(c_int, @bitCast(@as(c_int, level.*.object[@as(c_ushort, @intCast(i))].sprite.x)))))));
@@ -998,16 +998,16 @@ fn ACTION_PRG(arg_level: [*c]c.TITUS_level, arg_action: u8) callconv(.C) void {
                                         diffX = @as(i16, @bitCast(@as(c_short, @truncate(0 - @as(c_int, @bitCast(@as(c_int, diffX)))))));
                                     }
                                     if (c.game == @as(c_uint, @bitCast(c.Moktar))) {
-                                        if (@as(c_int, @bitCast(@as(c_int, diffX))) >= @as(c_int, 25)) {
+                                        if (@as(c_int, @bitCast(@as(c_int, diffX))) >= 25) {
                                             continue;
                                         }
                                     } else if (c.game == @as(c_uint, @bitCast(c.Titus))) {
-                                        if (@as(c_int, @bitCast(@as(c_int, diffX))) >= @as(c_int, 20)) {
+                                        if (@as(c_int, @bitCast(@as(c_int, diffX))) >= 20) {
                                             continue;
                                         }
                                     }
                                     if (@as(c_int, @bitCast(@as(c_int, level.*.object[@as(c_ushort, @intCast(i))].sprite.x))) > @as(c_int, @bitCast(@as(c_int, player.*.sprite.x)))) {
-                                        if (@as(c_int, @bitCast(@as(c_int, level.*.object[@as(c_ushort, @intCast(i))].sprite.x))) > (@as(c_int, @bitCast(@as(c_int, player.*.sprite.x))) + @as(c_int, 32))) {
+                                        if (@as(c_int, @bitCast(@as(c_int, level.*.object[@as(c_ushort, @intCast(i))].sprite.x))) > (@as(c_int, @bitCast(@as(c_int, player.*.sprite.x))) + 32)) {
                                             continue;
                                         }
                                     } else {
@@ -1016,11 +1016,11 @@ fn ACTION_PRG(arg_level: [*c]c.TITUS_level, arg_action: u8) callconv(.C) void {
                                         }
                                     }
                                     if (@as(c_int, @bitCast(@as(c_int, level.*.object[@as(c_ushort, @intCast(i))].sprite.y))) < @as(c_int, @bitCast(@as(c_int, player.*.sprite.y)))) {
-                                        if (@as(c_int, @bitCast(@as(c_int, level.*.object[@as(c_ushort, @intCast(i))].sprite.y))) <= (@as(c_int, @bitCast(@as(c_int, player.*.sprite.y))) - @as(c_int, 10))) {
+                                        if (@as(c_int, @bitCast(@as(c_int, level.*.object[@as(c_ushort, @intCast(i))].sprite.y))) <= (@as(c_int, @bitCast(@as(c_int, player.*.sprite.y))) - 10)) {
                                             continue;
                                         }
                                     } else {
-                                        if (((@as(c_int, @bitCast(@as(c_int, level.*.object[@as(c_ushort, @intCast(i))].sprite.y))) - @as(c_int, @bitCast(@as(c_uint, level.*.object[@as(c_ushort, @intCast(i))].sprite.spritedata.*.collheight)))) + @as(c_int, 1)) >= @as(c_int, @bitCast(@as(c_int, player.*.sprite.y)))) {
+                                        if (((@as(c_int, @bitCast(@as(c_int, level.*.object[@as(c_ushort, @intCast(i))].sprite.y))) - @as(c_int, @bitCast(@as(c_uint, level.*.object[@as(c_ushort, @intCast(i))].sprite.spritedata.*.collheight)))) + 1) >= @as(c_int, @bitCast(@as(c_int, player.*.sprite.y)))) {
                                             continue;
                                         }
                                     }
@@ -1033,22 +1033,22 @@ fn ACTION_PRG(arg_level: [*c]c.TITUS_level, arg_action: u8) callconv(.C) void {
                                     level.*.object[@as(c_ushort, @intCast(i))].sprite.enabled = false;
                                     globals.CARRY_FLAG = true;
                                     globals.SEECHOC_FLAG = 0;
-                                    if (@as(c_int, @bitCast(@as(c_int, player.*.sprite2.number))) == (@as(c_int, 30) + @as(c_int, 19))) {
+                                    if (@as(c_int, @bitCast(@as(c_int, player.*.sprite2.number))) == (30 + 19)) {
                                         globals.TAPISWAIT_FLAG = 0;
                                     }
-                                    player.*.sprite2.y = @as(i16, @bitCast(@as(c_short, @truncate(@as(c_int, @bitCast(@as(c_int, player.*.sprite.y))) - @as(c_int, 4)))));
+                                    player.*.sprite2.y = @as(i16, @bitCast(@as(c_short, @truncate(@as(c_int, @bitCast(@as(c_int, player.*.sprite.y))) - 4))));
                                     if (player.*.sprite.flipped) {
-                                        player.*.sprite2.x = @as(i16, @bitCast(@as(c_short, @truncate(@as(c_int, @bitCast(@as(c_int, player.*.sprite.x))) - @as(c_int, 10)))));
+                                        player.*.sprite2.x = @as(i16, @bitCast(@as(c_short, @truncate(@as(c_int, @bitCast(@as(c_int, player.*.sprite.x))) - 10))));
                                     } else {
-                                        player.*.sprite2.x = @as(i16, @bitCast(@as(c_short, @truncate(@as(c_int, @bitCast(@as(c_int, player.*.sprite.x))) + @as(c_int, 12)))));
+                                        player.*.sprite2.x = @as(i16, @bitCast(@as(c_short, @truncate(@as(c_int, @bitCast(@as(c_int, player.*.sprite.x))) + 12))));
                                     }
                                     break;
                                 }
                             }
                             if (!globals.CARRY_FLAG) {
                                 i = 0;
-                                while (@as(c_int, @bitCast(@as(c_int, i))) < @as(c_int, 50)) : (i += 1) {
-                                    if (!level.*.enemy[@as(c_ushort, @intCast(i))].sprite.enabled or (c.abs(@as(c_int, @bitCast(@as(c_int, player.*.sprite.y))) - @as(c_int, @bitCast(@as(c_int, level.*.enemy[@as(c_ushort, @intCast(i))].sprite.y)))) >= @as(c_int, 20))) {
+                                while (@as(c_int, @bitCast(@as(c_int, i))) < 50) : (i += 1) {
+                                    if (!level.*.enemy[@as(c_ushort, @intCast(i))].sprite.enabled or (c.abs(@as(c_int, @bitCast(@as(c_int, player.*.sprite.y))) - @as(c_int, @bitCast(@as(c_int, level.*.enemy[@as(c_ushort, @intCast(i))].sprite.y)))) >= 20)) {
                                         continue;
                                     }
                                     diffX = @as(i16, @bitCast(@as(c_short, @truncate(@as(c_int, @bitCast(@as(c_int, player.*.sprite.x))) - @as(c_int, @bitCast(@as(c_int, level.*.enemy[@as(c_ushort, @intCast(i))].sprite.x)))))));
@@ -1056,19 +1056,19 @@ fn ACTION_PRG(arg_level: [*c]c.TITUS_level, arg_action: u8) callconv(.C) void {
                                         diffX = @as(i16, @bitCast(@as(c_short, @truncate(0 - @as(c_int, @bitCast(@as(c_int, diffX)))))));
                                     }
                                     if (c.game == @as(c_uint, @bitCast(c.Moktar))) {
-                                        if (@as(c_int, @bitCast(@as(c_int, diffX))) >= @as(c_int, 25)) {
+                                        if (@as(c_int, @bitCast(@as(c_int, diffX))) >= 25) {
                                             continue;
                                         }
                                     } else if (c.game == @as(c_uint, @bitCast(c.Titus))) {
-                                        if (@as(c_int, @bitCast(@as(c_int, diffX))) >= @as(c_int, 20)) {
+                                        if (@as(c_int, @bitCast(@as(c_int, diffX))) >= 20) {
                                             continue;
                                         }
                                     }
-                                    if (@as(c_int, @bitCast(@as(c_int, level.*.enemy[@as(c_ushort, @intCast(i))].carry_sprite))) == -@as(c_int, 1)) {
+                                    if (@as(c_int, @bitCast(@as(c_int, level.*.enemy[@as(c_ushort, @intCast(i))].carry_sprite))) == -1) {
                                         continue;
                                     }
                                     if (@as(c_int, @bitCast(@as(c_int, level.*.enemy[@as(c_ushort, @intCast(i))].sprite.x))) > @as(c_int, @bitCast(@as(c_int, player.*.sprite.x)))) {
-                                        if (@as(c_int, @bitCast(@as(c_int, level.*.enemy[@as(c_ushort, @intCast(i))].sprite.x))) > (@as(c_int, @bitCast(@as(c_int, player.*.sprite.x))) + @as(c_int, 32))) {
+                                        if (@as(c_int, @bitCast(@as(c_int, level.*.enemy[@as(c_ushort, @intCast(i))].sprite.x))) > (@as(c_int, @bitCast(@as(c_int, player.*.sprite.x))) + 32)) {
                                             continue;
                                         }
                                     } else {
@@ -1077,15 +1077,15 @@ fn ACTION_PRG(arg_level: [*c]c.TITUS_level, arg_action: u8) callconv(.C) void {
                                         }
                                     }
                                     if (@as(c_int, @bitCast(@as(c_int, level.*.enemy[@as(c_ushort, @intCast(i))].sprite.y))) < @as(c_int, @bitCast(@as(c_int, player.*.sprite.y)))) {
-                                        if (@as(c_int, @bitCast(@as(c_int, level.*.enemy[@as(c_ushort, @intCast(i))].sprite.y))) <= (@as(c_int, @bitCast(@as(c_int, player.*.sprite.y))) - @as(c_int, 10))) {
+                                        if (@as(c_int, @bitCast(@as(c_int, level.*.enemy[@as(c_ushort, @intCast(i))].sprite.y))) <= (@as(c_int, @bitCast(@as(c_int, player.*.sprite.y))) - 10)) {
                                             continue;
                                         }
                                     } else {
-                                        if (((@as(c_int, @bitCast(@as(c_int, level.*.enemy[@as(c_ushort, @intCast(i))].sprite.y))) - @as(c_int, @bitCast(@as(c_uint, level.*.enemy[@as(c_ushort, @intCast(i))].sprite.spritedata.*.collheight)))) - @as(c_int, 1)) >= @as(c_int, @bitCast(@as(c_int, player.*.sprite.y)))) {
+                                        if (((@as(c_int, @bitCast(@as(c_int, level.*.enemy[@as(c_ushort, @intCast(i))].sprite.y))) - @as(c_int, @bitCast(@as(c_uint, level.*.enemy[@as(c_ushort, @intCast(i))].sprite.spritedata.*.collheight)))) - 1) >= @as(c_int, @bitCast(@as(c_int, player.*.sprite.y)))) {
                                             continue;
                                         }
                                     }
-                                    if (@as(c_int, @bitCast(@as(c_int, level.*.enemy[@as(c_ushort, @intCast(i))].sprite.number))) >= @as(c_int, 101)) {
+                                    if (@as(c_int, @bitCast(@as(c_int, level.*.enemy[@as(c_ushort, @intCast(i))].sprite.number))) >= 101) {
                                         diffX = @as(i16, @bitCast(@as(c_short, @truncate(@as(c_int, @bitCast(@as(c_int, player.*.sprite.x))) - @as(c_int, @bitCast(@as(c_int, level.*.enemy[@as(c_ushort, @intCast(i))].sprite.x)))))));
                                         if (level.*.enemy[@as(c_ushort, @intCast(i))].sprite.flipped) {
                                             diffX = @as(i16, @bitCast(@as(c_short, @truncate(0 - @as(c_int, @bitCast(@as(c_int, diffX)))))));
@@ -1106,11 +1106,11 @@ fn ACTION_PRG(arg_level: [*c]c.TITUS_level, arg_action: u8) callconv(.C) void {
                                     level.*.enemy[@as(c_ushort, @intCast(i))].sprite.enabled = false;
                                     globals.CARRY_FLAG = true;
                                     globals.SEECHOC_FLAG = 0;
-                                    player.*.sprite2.y = @as(i16, @bitCast(@as(c_short, @truncate(@as(c_int, @bitCast(@as(c_int, player.*.sprite.y))) - @as(c_int, 4)))));
+                                    player.*.sprite2.y = @as(i16, @bitCast(@as(c_short, @truncate(@as(c_int, @bitCast(@as(c_int, player.*.sprite.y))) - 4))));
                                     if (player.*.sprite.flipped) {
-                                        player.*.sprite2.x = @as(i16, @bitCast(@as(c_short, @truncate(@as(c_int, @bitCast(@as(c_int, player.*.sprite.x))) - @as(c_int, 10)))));
+                                        player.*.sprite2.x = @as(i16, @bitCast(@as(c_short, @truncate(@as(c_int, @bitCast(@as(c_int, player.*.sprite.x))) - 10))));
                                     } else {
-                                        player.*.sprite2.x = @as(i16, @bitCast(@as(c_short, @truncate(@as(c_int, @bitCast(@as(c_int, player.*.sprite.x))) + @as(c_int, 12)))));
+                                        player.*.sprite2.x = @as(i16, @bitCast(@as(c_short, @truncate(@as(c_int, @bitCast(@as(c_int, player.*.sprite.x))) + 12))));
                                     }
                                     break;
                                 }
@@ -1121,21 +1121,21 @@ fn ACTION_PRG(arg_level: [*c]c.TITUS_level, arg_action: u8) callconv(.C) void {
                 globals.POSEREADY_FLAG = true;
                 break;
             },
-            @as(c_int, 8), @as(c_int, 24) => {
+            8, 24 => {
                 NEW_FORM(player, action);
                 GET_IMAGE(level);
                 DECELERATION(player);
                 if (globals.CARRY_FLAG) {
                     if (@as(c_int, @bitCast(@as(c_int, player.*.y_axis))) >= 0) {
-                        speed_x = @as(i16, @bitCast(@as(c_short, @truncate(@as(c_int, 14) * @as(c_int, 16)))));
+                        speed_x = @as(i16, @bitCast(@as(c_short, @truncate(14 * 16))));
                         speed_y = 0;
                         if (player.*.sprite.flipped) {
                             speed_x = @as(i16, @bitCast(@as(c_short, @truncate(0 - @as(c_int, @bitCast(@as(c_int, speed_x)))))));
                         }
-                        player.*.sprite2.y = @as(i16, @bitCast(@as(c_short, @truncate(@as(c_int, @bitCast(@as(c_int, player.*.sprite.y))) - @as(c_int, 16)))));
+                        player.*.sprite2.y = @as(i16, @bitCast(@as(c_short, @truncate(@as(c_int, @bitCast(@as(c_int, player.*.sprite.y))) - 16))));
                     } else {
                         speed_x = 0;
-                        speed_y = @as(i16, @bitCast(@as(c_short, @truncate(0 - (@as(c_int, 10) * @as(c_int, 16))))));
+                        speed_y = @as(i16, @bitCast(@as(c_short, @truncate(0 - (10 * 16)))));
                     }
                     if (@as(c_int, @bitCast(@as(c_int, speed_y))) != 0) {
                         object = FORCE_POSE(level);
@@ -1144,9 +1144,9 @@ fn ACTION_PRG(arg_level: [*c]c.TITUS_level, arg_action: u8) callconv(.C) void {
                             object.*.sprite.speed_x = @as(i16, @bitCast(@as(c_short, @truncate(@as(c_int, @bitCast(@as(c_int, speed_x))) - (@as(c_int, @bitCast(@as(c_int, speed_x))) >> @intCast(2))))));
                         }
                     } else {
-                        if (@as(c_int, @bitCast(@as(c_int, player.*.sprite2.number))) < @as(c_int, 101)) {
+                        if (@as(c_int, @bitCast(@as(c_int, player.*.sprite2.number))) < 101) {
                             if ((blk: {
-                                const tmp = @as(c_int, @bitCast(@as(c_int, player.*.sprite2.number))) - @as(c_int, 30);
+                                const tmp = @as(c_int, @bitCast(@as(c_int, player.*.sprite2.number))) - 30;
                                 if (tmp >= 0) break :blk level.*.objectdata + @as(usize, @intCast(tmp)) else break :blk level.*.objectdata - ~@as(usize, @bitCast(@as(isize, @intCast(tmp)) +% -1));
                             }).*.gravity) {
                                 object = FORCE_POSE(level);
@@ -1167,37 +1167,37 @@ fn ACTION_PRG(arg_level: [*c]c.TITUS_level, arg_action: u8) callconv(.C) void {
                             c.playEvent_c(@as(c_uint, @bitCast(c.Event_PlayerThrow)));
                         }
                     }
-                    c.updatesprite(level, &player.*.sprite, @as(i16, @bitCast(@as(c_short, @truncate(@as(c_int, 10))))), true);
+                    c.updatesprite(level, &player.*.sprite, @as(i16, @bitCast(@as(c_short, @truncate(10)))), true);
                     player.*.sprite.flipped = @as(c_int, @bitCast(@as(c_int, globals.SENSX))) < 0;
                     globals.CARRY_FLAG = false;
                 }
                 break;
             },
-            @as(c_int, 10) => {
-                XACCELERATION(player, @as(i16, @bitCast(@as(c_short, @truncate((@as(c_int, 4) - @as(c_int, 1)) * @as(c_int, 16))))));
+            10 => {
+                XACCELERATION(player, @as(i16, @bitCast(@as(c_short, @truncate((4 - 1) * 16)))));
                 NEW_FORM(player, action);
                 GET_IMAGE(level);
                 break;
             },
-            @as(c_int, 11) => {
+            11 => {
                 player.*.sprite.speed_x = 0;
                 NEW_FORM(player, action);
                 GET_IMAGE(level);
                 break;
             },
-            @as(c_int, 12), @as(c_int, 13), @as(c_int, 28), @as(c_int, 29) => {
-                YACCELERATION(player, @as(i16, @bitCast(@as(c_short, @truncate(@as(c_int, 12) * @as(c_int, 16))))));
+            12, 13, 28, 29 => {
+                YACCELERATION(player, @as(i16, @bitCast(@as(c_short, @truncate(12 * 16)))));
                 NEW_FORM(player, action);
                 GET_IMAGE(level);
                 break;
             },
-            @as(c_int, 21) => {
+            21 => {
                 NEW_FORM(player, action);
                 GET_IMAGE(level);
                 DECELERATION(player);
                 break;
             },
-            @as(c_int, 27) => {
+            27 => {
                 _ = FORCE_POSE(level);
                 player.*.sprite.speed_x = 0;
                 NEW_FORM(player, action);
@@ -1246,10 +1246,10 @@ fn GET_IMAGE(arg_level: [*c]c.TITUS_level) void {
     var frame: i16 = player.*.sprite.animation.*;
     _ = &frame;
     if (@as(c_int, @bitCast(@as(c_int, frame))) < 0) {
-        if (@as(c_int, @bitCast(@as(c_int, frame))) == -@as(c_int, 1)) {
-            std.log.err("Player frame is -1, advancing by {}\n", .{@divTrunc(@as(c_int, @bitCast(@as(c_int, frame))), @as(c_int, 2))});
+        if (@as(c_int, @bitCast(@as(c_int, frame))) == -1) {
+            std.log.err("Player frame is -1, advancing by {}\n", .{@divTrunc(@as(c_int, @bitCast(@as(c_int, frame))), 2)});
         }
-        player.*.sprite.animation += @as(usize, @bitCast(@as(isize, @intCast(@divTrunc(@as(c_int, @bitCast(@as(c_int, frame))), @as(c_int, 2))))));
+        player.*.sprite.animation += @as(usize, @bitCast(@as(isize, @intCast(@divTrunc(@as(c_int, @bitCast(@as(c_int, frame))), 2)))));
         frame = player.*.sprite.animation.*;
     }
     c.updatesprite(level, &player.*.sprite, frame, true);
@@ -1263,7 +1263,7 @@ fn YACCELERATION_NEG(arg_player: [*c]c.TITUS_player, arg_maxspeed: i16) void {
     var maxspeed = arg_maxspeed;
     _ = &maxspeed;
     maxspeed = @as(i16, @bitCast(@as(c_short, @truncate(0 - @as(c_int, @bitCast(@as(c_int, maxspeed)))))));
-    var speed: i16 = @as(i16, @bitCast(@as(c_short, @truncate(@as(c_int, @bitCast(@as(c_int, player.*.sprite.speed_y))) - @as(c_int, 32)))));
+    var speed: i16 = @as(i16, @bitCast(@as(c_short, @truncate(@as(c_int, @bitCast(@as(c_int, player.*.sprite.speed_y))) - 32))));
     _ = &speed;
     if (@as(c_int, @bitCast(@as(c_int, speed))) >= @as(c_int, @bitCast(@as(c_int, maxspeed)))) {
         speed = maxspeed;
@@ -1283,8 +1283,8 @@ fn COLLISION_TRP(arg_level: [*c]c.TITUS_level) void {
     if ((@as(c_int, @bitCast(@as(c_int, player.*.sprite.speed_y))) >= 0) and (@as(c_int, @bitCast(@as(c_uint, globals.CROSS_FLAG))) == 0)) {
         {
             i = 0;
-            while (@as(c_int, @bitCast(@as(c_uint, i))) < @as(c_int, 10)) : (i +%= 1) {
-                if (((!elevator[i].enabled or !elevator[i].sprite.visible) or (c.abs(@as(c_int, @bitCast(@as(c_int, elevator[i].sprite.x))) - @as(c_int, @bitCast(@as(c_int, player.*.sprite.x)))) >= @as(c_int, 64))) or (c.abs(@as(c_int, @bitCast(@as(c_int, elevator[i].sprite.y))) - @as(c_int, @bitCast(@as(c_int, player.*.sprite.y)))) >= @as(c_int, 16))) {
+            while (@as(c_int, @bitCast(@as(c_uint, i))) < 10) : (i +%= 1) {
+                if (((!elevator[i].enabled or !elevator[i].sprite.visible) or (c.abs(@as(c_int, @bitCast(@as(c_int, elevator[i].sprite.x))) - @as(c_int, @bitCast(@as(c_int, player.*.sprite.x)))) >= 64)) or (c.abs(@as(c_int, @bitCast(@as(c_int, elevator[i].sprite.y))) - @as(c_int, @bitCast(@as(c_int, player.*.sprite.y)))) >= 16)) {
                     continue;
                 }
                 if ((@as(c_int, @bitCast(@as(c_int, player.*.sprite.x))) - @as(c_int, @bitCast(@as(c_uint, level.*.spritedata[@as(c_uint, @intCast(0))].refwidth)))) < @as(c_int, @bitCast(@as(c_int, elevator[i].sprite.x)))) {
@@ -1296,16 +1296,16 @@ fn COLLISION_TRP(arg_level: [*c]c.TITUS_level) void {
                         continue;
                     }
                 }
-                if ((@as(c_int, @bitCast(@as(c_int, player.*.sprite.y))) - @as(c_int, 6)) < @as(c_int, @bitCast(@as(c_int, elevator[i].sprite.y)))) {
-                    if (((@as(c_int, @bitCast(@as(c_int, player.*.sprite.y))) - @as(c_int, 6)) + @as(c_int, 8)) <= @as(c_int, @bitCast(@as(c_int, elevator[i].sprite.y)))) {
+                if ((@as(c_int, @bitCast(@as(c_int, player.*.sprite.y))) - 6) < @as(c_int, @bitCast(@as(c_int, elevator[i].sprite.y)))) {
+                    if (((@as(c_int, @bitCast(@as(c_int, player.*.sprite.y))) - 6) + 8) <= @as(c_int, @bitCast(@as(c_int, elevator[i].sprite.y)))) {
                         continue;
                     }
                 } else {
-                    if ((@as(c_int, @bitCast(@as(c_int, player.*.sprite.y))) - @as(c_int, 6)) >= (@as(c_int, @bitCast(@as(c_int, elevator[i].sprite.y))) + @as(c_int, @bitCast(@as(c_uint, elevator[i].sprite.spritedata.*.collheight))))) {
+                    if ((@as(c_int, @bitCast(@as(c_int, player.*.sprite.y))) - 6) >= (@as(c_int, @bitCast(@as(c_int, elevator[i].sprite.y))) + @as(c_int, @bitCast(@as(c_uint, elevator[i].sprite.spritedata.*.collheight))))) {
                         continue;
                     }
                 }
-                if (@as(c_int, @bitCast(@as(c_uint, globals.ACTION_TIMER))) == @as(c_int, 14)) {
+                if (@as(c_int, @bitCast(@as(c_uint, globals.ACTION_TIMER))) == 14) {
                     globals.ACTION_TIMER = 16;
                 }
                 globals.YFALL = 0;
@@ -1338,24 +1338,24 @@ fn COLLISION_OBJET(arg_level: [*c]c.TITUS_level) void {
         return;
     }
     player.*.sprite.y = @as(i16, @bitCast(@as(c_short, @truncate(@as(c_int, @bitCast(@as(c_int, off_object.*.sprite.y))) - @as(c_int, @bitCast(@as(c_uint, off_object.*.sprite.spritedata.*.collheight)))))));
-    if ((@as(c_int, @bitCast(@as(c_int, off_object.*.sprite.number))) == (@as(c_int, 30) + @as(c_int, 24))) or (@as(c_int, @bitCast(@as(c_int, off_object.*.sprite.number))) == (@as(c_int, 30) + @as(c_int, 25)))) {
-        off_object.*.sprite.UNDER = @as(u8, @bitCast(@as(i8, @truncate(@as(c_int, @bitCast(@as(c_uint, off_object.*.sprite.UNDER))) | @as(c_int, 2)))));
+    if ((@as(c_int, @bitCast(@as(c_int, off_object.*.sprite.number))) == (30 + 24)) or (@as(c_int, @bitCast(@as(c_int, off_object.*.sprite.number))) == (30 + 25))) {
+        off_object.*.sprite.UNDER = @as(u8, @bitCast(@as(i8, @truncate(@as(c_int, @bitCast(@as(c_uint, off_object.*.sprite.UNDER))) | 2))));
         off_object.*.sprite.ONTOP = &player.*.sprite;
     }
-    if ((@as(c_int, @bitCast(@as(c_int, off_object.*.sprite.number))) == (@as(c_int, 30) + @as(c_int, 21))) or (@as(c_int, @bitCast(@as(c_int, off_object.*.sprite.number))) == (@as(c_int, 30) + @as(c_int, 22)))) {
+    if ((@as(c_int, @bitCast(@as(c_int, off_object.*.sprite.number))) == (30 + 21)) or (@as(c_int, @bitCast(@as(c_int, off_object.*.sprite.number))) == (30 + 22))) {
         if (!player.*.sprite.flipped) {
-            off_object.*.sprite.speed_x = @as(i16, @bitCast(@as(c_short, @truncate(@as(c_int, 6) * @as(c_int, 16)))));
+            off_object.*.sprite.speed_x = @as(i16, @bitCast(@as(c_short, @truncate(6 * 16))));
         } else {
-            off_object.*.sprite.speed_x = @as(i16, @bitCast(@as(c_short, @truncate(0 - (@as(c_int, 6) * @as(c_int, 16))))));
+            off_object.*.sprite.speed_x = @as(i16, @bitCast(@as(c_short, @truncate(0 - (6 * 16)))));
         }
         off_object.*.sprite.flipped = player.*.sprite.flipped;
         globals.GRAVITY_FLAG = 4;
         globals.TAPISWAIT_FLAG = 0;
-    } else if ((((@as(c_int, @bitCast(@as(c_uint, globals.ACTION_TIMER))) > @as(c_int, 10)) and ((@as(c_int, @bitCast(@as(c_uint, globals.LAST_ORDER))) & @as(c_int, 15)) == 0)) and (@as(c_int, @bitCast(@as(c_int, player.*.sprite.speed_y))) == 0)) and ((@as(c_int, @bitCast(@as(c_int, off_object.*.sprite.number))) == @as(c_int, 83)) or (@as(c_int, @bitCast(@as(c_int, off_object.*.sprite.number))) == @as(c_int, 94)))) {
+    } else if ((((@as(c_int, @bitCast(@as(c_uint, globals.ACTION_TIMER))) > 10) and ((@as(c_int, @bitCast(@as(c_uint, globals.LAST_ORDER))) & 15) == 0)) and (@as(c_int, @bitCast(@as(c_int, player.*.sprite.speed_y))) == 0)) and ((@as(c_int, @bitCast(@as(c_int, off_object.*.sprite.number))) == 83) or (@as(c_int, @bitCast(@as(c_int, off_object.*.sprite.number))) == 94))) {
         if (!player.*.sprite.flipped) {
-            off_object.*.sprite.speed_x = @as(i16, @bitCast(@as(c_short, @truncate(@as(c_int, 16) * @as(c_int, 3)))));
+            off_object.*.sprite.speed_x = @as(i16, @bitCast(@as(c_short, @truncate(16 * 3))));
         } else {
-            off_object.*.sprite.speed_x = @as(i16, @bitCast(@as(c_short, @truncate(0 - (@as(c_int, 16) * @as(c_int, 3))))));
+            off_object.*.sprite.speed_x = @as(i16, @bitCast(@as(c_short, @truncate(0 - (16 * 3)))));
         }
         off_object.*.sprite.flipped = player.*.sprite.flipped;
         globals.GRAVITY_FLAG = 4;
@@ -1363,16 +1363,16 @@ fn COLLISION_OBJET(arg_level: [*c]c.TITUS_level) void {
     if (@as(c_int, @bitCast(@as(c_int, off_object.*.sprite.speed_x))) < 0) {
         player.*.sprite.speed_x = off_object.*.sprite.speed_x;
     } else if (@as(c_int, @bitCast(@as(c_int, off_object.*.sprite.speed_x))) > 0) {
-        player.*.sprite.speed_x = @as(i16, @bitCast(@as(c_short, @truncate(@as(c_int, @bitCast(@as(c_int, off_object.*.sprite.speed_x))) + @as(c_int, 16)))));
+        player.*.sprite.speed_x = @as(i16, @bitCast(@as(c_short, @truncate(@as(c_int, @bitCast(@as(c_int, off_object.*.sprite.speed_x))) + 16))));
     }
-    if (((@as(c_int, @bitCast(@as(c_uint, globals.CROSS_FLAG))) == 0) and (@as(c_int, @bitCast(@as(c_int, player.*.sprite.speed_y))) > (@as(c_int, 16) * @as(c_int, 3)))) and (@as(c_int, @intFromBool(off_object.*.objectdata.*.bounce)) != 0)) {
+    if (((@as(c_int, @bitCast(@as(c_uint, globals.CROSS_FLAG))) == 0) and (@as(c_int, @bitCast(@as(c_int, player.*.sprite.speed_y))) > (16 * 3))) and (@as(c_int, @intFromBool(off_object.*.objectdata.*.bounce)) != 0)) {
         if (@as(c_int, @bitCast(@as(c_int, player.*.y_axis))) > 0) {
             player.*.sprite.speed_y = 0;
         } else {
             if (@as(c_int, @bitCast(@as(c_int, player.*.y_axis))) < 0) {
-                player.*.sprite.speed_y += @as(i16, @bitCast(@as(c_short, @truncate(@as(c_int, 16) * @as(c_int, 3)))));
+                player.*.sprite.speed_y += @as(i16, @bitCast(@as(c_short, @truncate(16 * 3))));
             } else {
-                player.*.sprite.speed_y -= @as(i16, @bitCast(@as(c_short, @truncate(@as(c_int, 16)))));
+                player.*.sprite.speed_y -= @as(i16, @bitCast(@as(c_short, @truncate(16))));
             }
             player.*.sprite.speed_y = @as(i16, @bitCast(@as(c_short, @truncate(0 - @as(c_int, @bitCast(@as(c_int, player.*.sprite.speed_y)))))));
             if (@as(c_int, @bitCast(@as(c_int, player.*.sprite.speed_y))) > 0) {

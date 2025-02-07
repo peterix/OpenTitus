@@ -33,5 +33,3 @@
 void move_objects(TITUS_level *level);
 bool SPRITES_VS_SPRITES(TITUS_level* level, TITUS_sprite* sprite1, const TITUS_spritedata* sprite1data, TITUS_object** object2); //check if there is an object below that can support the input object
 void updateobjectsprite(TITUS_level *level, TITUS_object *obj, int16_t number, bool clearflags);
-int loadobjects(TITUS_objectdata ***objects, uint16_t *count);
-void freeobjects(TITUS_objectdata ***objects, uint16_t count);

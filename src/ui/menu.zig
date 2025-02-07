@@ -14,7 +14,7 @@ pub const MenuAction = enum {
 };
 
 pub const MenuContext = struct {
-    background_fade: u8,
+    background_fade: u8 = 0,
     background_image: *SDL.Surface,
 
     /// Render the background - should be the first thing a menu renderer calls

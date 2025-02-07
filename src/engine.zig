@@ -41,6 +41,7 @@ const render = @import("render.zig");
 const reset = @import("reset.zig");
 const gates = @import("gates.zig");
 const lvl = @import("level.zig");
+const player = @import("player.zig");
 
 const image = @import("ui/image.zig");
 const keyboard = @import("ui/keyboard.zig");
@@ -242,7 +243,7 @@ fn playlevel(context: [*c]c.ScreenContext, level: *c.TITUS_level) c_int {
         globals.IMAGE_COUNTER = (globals.IMAGE_COUNTER + 1) & 0x0FFF; //Cycle from 0 to 0x0FFF
         elevators.move(level);
         c.move_objects(level); //Object gravity
-        retval = c.move_player(context, level); //Key input, update and move player, handle carried object and decrease timers
+        retval = player.move_player(context, level); //Key input, update and move player, handle carried object and decrease timers
         if (retval == c.TITUS_ERROR_QUIT) {
             return retval;
         }
@@ -267,22 +268,22 @@ fn playlevel(context: [*c]c.ScreenContext, level: *c.TITUS_level) c_int {
 }
 
 fn death(context: [*c]c.ScreenContext, level: *c.TITUS_level) void {
-    var player = &(level.player);
+    var plr = &(level.player);
 
     audio.playTrack(.Death);
-    _ = c.FORCE_POSE(level);
-    sprites.updatesprite(level, &(player.sprite), 13, true); //Death
-    player.sprite.speed_y = 15;
+    _ = player.FORCE_POSE(level);
+    sprites.updatesprite(level, &(plr.sprite), 13, true); //Death
+    plr.sprite.speed_y = 15;
     for (0..60) |_| {
         render.render_tiles(level);
         //TODO! GRAVITY();
         render.render_sprites(level);
         render.flip_screen(context, true);
-        player.sprite.speed_y -= 1;
-        if (player.sprite.speed_y < -16) {
-            player.sprite.speed_y = -16;
+        plr.sprite.speed_y -= 1;
+        if (plr.sprite.speed_y < -16) {
+            plr.sprite.speed_y = -16;
         }
-        player.sprite.y -= player.sprite.speed_y;
+        plr.sprite.y -= plr.sprite.speed_y;
     }
 
     audio.music_wait_to_finish();
@@ -291,23 +292,23 @@ fn death(context: [*c]c.ScreenContext, level: *c.TITUS_level) void {
 }
 
 fn gameover(context: [*c]c.ScreenContext, level: *c.TITUS_level) void {
-    var player = &(level.player);
+    var plr = &(level.player);
 
     audio.playTrack(.GameOver);
-    sprites.updatesprite(level, &(player.sprite), 13, true); //Death
-    sprites.updatesprite(level, &(player.sprite2), 333, true); //Game
-    player.sprite2.x = @as(i16, globals.BITMAP_X << 4) - (120 - 2);
-    player.sprite2.y = @as(i16, globals.BITMAP_Y << 4) + 100;
+    sprites.updatesprite(level, &(plr.sprite), 13, true); //Death
+    sprites.updatesprite(level, &(plr.sprite2), 333, true); //Game
+    plr.sprite2.x = @as(i16, globals.BITMAP_X << 4) - (120 - 2);
+    plr.sprite2.y = @as(i16, globals.BITMAP_Y << 4) + 100;
     //over
-    sprites.updatesprite(level, &(player.sprite3), 334, true); //Over
-    player.sprite3.x = @as(i16, globals.BITMAP_X << 4) + (window.game_width + 120 - 2);
-    player.sprite3.y = @as(i16, globals.BITMAP_Y << 4) + 100;
+    sprites.updatesprite(level, &(plr.sprite3), 334, true); //Over
+    plr.sprite3.x = @as(i16, globals.BITMAP_X << 4) + (window.game_width + 120 - 2);
+    plr.sprite3.y = @as(i16, globals.BITMAP_Y << 4) + 100;
     for (0..31) |_| {
         render.render_tiles(level);
         render.render_sprites(level);
         render.flip_screen(context, true);
-        player.sprite2.x += 8;
-        player.sprite3.x -= 8;
+        plr.sprite2.x += 8;
+        plr.sprite3.x -= 8;
     }
     if (keyboard.waitforbutton() < 0)
         return;

@@ -105,7 +105,6 @@ extern uint8_t TAPISFLY_FLAG; //When non-zero, the flying carpet is flying
 extern uint8_t CROSS_FLAG; //When non-zero, fall through certain floors (after key down)
 extern uint8_t GRAVITY_FLAG; //When zero, skip object gravity function
 extern uint8_t FUME_FLAG; //Smoke when object hits the floor
-extern const uint8_t *keystate; //Keyboard state
 extern uint8_t YFALL;
 extern bool POCKET_FLAG;
 extern uint8_t loop_cycle; //Increased every loop in game loop

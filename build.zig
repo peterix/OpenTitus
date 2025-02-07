@@ -47,7 +47,6 @@ fn build_game(b: *std.Build, name: []const u8, target: ResolvedTarget, optimize:
     exe.addCSourceFiles(.{ .files = &.{
         "src/enemies.c",
         "src/objects.c",
-        "src/player.c",
         "src/audio/opl3/opl3.c",
         "src/audio/miniaudio/miniaudio.c",
         "src/audio/pocketmod/pocketmod.c",
@@ -72,7 +71,6 @@ fn build_game(b: *std.Build, name: []const u8, target: ResolvedTarget, optimize:
     game_tests.addCSourceFiles(.{ .files = &.{
         "src/enemies.c",
         "src/objects.c",
-        "src/player.c",
         "src/audio/opl3/opl3.c",
         "src/audio/miniaudio/miniaudio.c",
         "src/audio/pocketmod/pocketmod.c",

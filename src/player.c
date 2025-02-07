@@ -26,21 +26,20 @@
  * Handles player movement and keyboard handling
  */
 
-#include "player.h"
-#include "SDL2/SDL.h"
+#include <SDL2/SDL_events.h>
+#include <SDL2/SDL_scancode.h>
+
 #include "audio.h"
 #include "common.h"
 #include "game.h"
-#include "gates.h"
 #include "globals_old.h"
 #include "level.h"
 #include "objects.h"
+#include "player.h"
 #include "render.h"
 #include "sprites.h"
 #include "tituserror.h"
 #include "window.h"
-#include <stdio.h>
-#include <stdlib.h>
 
 static void TAKE_BLK_AND_YTEST(ScreenContext *context, TITUS_level *level,
                                int16_t tileY, uint8_t tileX);
@@ -109,8 +108,8 @@ int move_player(ScreenContext *context, TITUS_level *level) {
   bool pause = false;
 
   // Part 1: Check keyboard input
-  SDL_PumpEvents(); // Update keyboard state
-  keystate = SDL_GetKeyboardState(NULL);
+  SDL_PumpEvents();
+  const uint8_t *keystate = SDL_GetKeyboardState(NULL);
 
   // TODO: move this to input.zig or some such place
   while (SDL_PollEvent(&event)) { // Check all events
