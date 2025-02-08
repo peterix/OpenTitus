@@ -53,18 +53,18 @@ static void DECELERATION(TITUS_player *player);
 static void BLOCK_YYPRG(ScreenContext *context, TITUS_level *level,
                         enum FFLAG floor, enum FFLAG floor_above, uint8_t tileY,
                         uint8_t tileX);
-static int CASE_BONUS(TITUS_level *level, uint8_t tileY, uint8_t tileX);
-static void CASE_PASS(ScreenContext *context, TITUS_level *level,
+static int collect_bonus(TITUS_level *level, uint8_t tileY, uint8_t tileX);
+static void collect_level_unlock(ScreenContext *context, TITUS_level *level,
                       uint8_t viewlevel, uint8_t tileY, uint8_t tileX);
-static void CASE_SECU(TITUS_level *level, uint8_t tileY, uint8_t tileX);
+static void collect_checkpoint(TITUS_level *level, uint8_t tileY, uint8_t tileX);
 static void NEW_FORM(TITUS_player *player, uint8_t action);
 static void GET_IMAGE(TITUS_level *level);
 static void YACCELERATION_NEG(TITUS_player *player, int16_t maxspeed);
 static void ACTION_PRG(TITUS_level *level, uint8_t action);
 static void CASE_DEAD_IM(TITUS_level *level);
-static void BRK_COLLISION(ScreenContext *context, TITUS_level *level);
-static void COLLISION_TRP(TITUS_level *level);
-static void COLLISION_OBJET(TITUS_level *level);
+static void player_collision(ScreenContext *context, TITUS_level *level);
+static void collide_with_elevators(TITUS_level *level);
+static void collide_with_objects(TITUS_level *level);
 static void ARAB_TOMBE(TITUS_level *level);
 static void ARAB_TOMBE_F();
 static void ARAB_BLOCKX(TITUS_level *level);
@@ -285,7 +285,7 @@ int move_player(ScreenContext *context, TITUS_level *level) {
   // Move player in Y
   player->sprite.y += (player->sprite.speed_y >> 4);
   // Test for collisions
-  BRK_COLLISION(context, level);
+  player_collision(context, level);
 
   // Part 4: Move the throwed/carried object
   // Move throwed/carried object
@@ -398,7 +398,7 @@ void CASE_DEAD_IM(TITUS_level *level) {
   RESETLEVEL_FLAG = 2;
 }
 
-void BRK_COLLISION(ScreenContext *context, TITUS_level *level) {
+void player_collision(ScreenContext *context, TITUS_level *level) {
   // Collision detection between player
   // and tiles/objects/elevators
   // Point the foot on the block!
@@ -451,9 +451,9 @@ void BRK_COLLISION(ScreenContext *context, TITUS_level *level) {
     }
     if (YFALL == 1) {
       if ((CROSS_FLAG == 0) && (CHOC_FLAG == 0)) {
-        COLLISION_TRP(level); // Player versus elevators
+        collide_with_elevators(level); // Player versus elevators
         if (YFALL == 1) {
-          COLLISION_OBJET(level); // Player versus objects
+          collide_with_objects(level); // Player versus objects
           if (YFALL == 1) {
             ARAB_TOMBE(level); // No wall/elevator/object under the player; fall down!
           } else {
@@ -562,8 +562,7 @@ static void TAKE_BLK_AND_YTEST(ScreenContext *context, TITUS_level *level,
   }
 }
 
-static void BLOCK_YYPRGD(TITUS_level *level, enum CFLAG cflag, uint8_t tileY,
-                         uint8_t tileX) {
+static void BLOCK_YYPRGD(TITUS_level *level, enum CFLAG cflag, uint8_t tileY, uint8_t tileX) {
   TITUS_player *player = &(level->player);
   TITUS_object *object;
 
@@ -615,7 +614,7 @@ static void BLOCK_YYPRGD(TITUS_level *level, enum CFLAG cflag, uint8_t tileY,
     break;
 
   case CFLAG_PADLOCK:
-    CASE_SECU(level, tileY, tileX);
+    collect_checkpoint(level, tileY, tileX);
     break;
   }
 }
@@ -632,7 +631,7 @@ static void BLOCK_XXPRG(ScreenContext *context, TITUS_level *level,
     break;
 
   case HFLAG_BONUS:
-    CASE_BONUS(level, tileY, tileX);
+    collect_bonus(level, tileY, tileX);
     break;
 
   case HFLAG_DEADLY:
@@ -644,15 +643,15 @@ static void BLOCK_XXPRG(ScreenContext *context, TITUS_level *level,
     break;
 
   case HFLAG_CODE:
-    CASE_PASS(context, level, level->levelnumber, tileY, tileX);
+    collect_level_unlock(context, level, level->levelnumber, tileY, tileX);
     break;
 
   case HFLAG_PADLOCK:
-    CASE_SECU(level, tileY, tileX);
+    collect_checkpoint(level, tileY, tileX);
     break;
 
   case HFLAG_LEVEL14:
-    CASE_PASS(context, level, 14 - 1, tileY, tileX);
+    collect_level_unlock(context, level, 14 - 1, tileY, tileX);
     break;
   }
 }
@@ -834,7 +833,7 @@ static void BLOCK_YYPRG(ScreenContext *context, TITUS_level *level,
     break;
 
   case FFLAG_BONUS:
-    CASE_BONUS(level, tileY, tileX);
+    collect_bonus(level, tileY, tileX);
     break;
 
   case FFLAG_WATER:
@@ -848,15 +847,15 @@ static void BLOCK_YYPRG(ScreenContext *context, TITUS_level *level,
     break;
 
   case FFLAG_CODE:
-    CASE_PASS(context, level, level->levelnumber, tileY, tileX);
+    collect_level_unlock(context, level, level->levelnumber, tileY, tileX);
     break;
 
   case FFLAG_PADLOCK:
-    CASE_SECU(level, tileY, tileX);
+    collect_checkpoint(level, tileY, tileX);
     break;
 
   case FFLAG_LEVEL14:
-    CASE_PASS(context, level, 14 - 1, tileY, tileX);
+    collect_level_unlock(context, level, 14 - 1, tileY, tileX);
     break;
   }
 }
@@ -881,7 +880,7 @@ void ARAB_BLOCK_YU(TITUS_player *player) {
   YFALL = 2;
 }
 
-static int CASE_BONUS(TITUS_level *level, uint8_t tileY, uint8_t tileX) {
+static int collect_bonus(TITUS_level *level, uint8_t tileY, uint8_t tileX) {
   // Handle bonuses. Increase energy if HP, and change the bonus tile to normal
   // tile
   uint16_t i = 0;
@@ -907,22 +906,22 @@ static int CASE_BONUS(TITUS_level *level, uint8_t tileY, uint8_t tileX) {
   return true; // No problems, bonus handling done correctly!
 }
 
-static void CASE_PASS(ScreenContext *context, TITUS_level *level,
+static void collect_level_unlock(ScreenContext *context, TITUS_level *level,
                       uint8_t level_index, uint8_t tileY, uint8_t tileX) {
   // Codelamp
   // if the bonus is found in the bonus list
-  if (CASE_BONUS(level, tileY, tileX)) {
+  if (collect_bonus(level, tileY, tileX)) {
     // TODO: add something to tell the player what happened, but not a full
     // screen modal...
     playEvent_c(Event_PlayerCollectLamp);
   }
 }
 
-static void CASE_SECU(TITUS_level *level, uint8_t tileY, uint8_t tileX) {
+static void collect_checkpoint(TITUS_level *level, uint8_t tileY, uint8_t tileX) {
   TITUS_player *player = &(level->player);
   // Padlock, store X/Y coordinates
   // if the bonus is found in the bonus list
-  if (CASE_BONUS(level, tileY, tileX)) {
+  if (collect_bonus(level, tileY, tileX)) {
     // TODO: add something to tell the player what happened
     playEvent_c(Event_PlayerCollectWaypoint);
     player->initX = player->sprite.x;
@@ -1473,7 +1472,7 @@ static void YACCELERATION_NEG(TITUS_player *player, int16_t maxspeed) {
   player->sprite.speed_y = speed;
 }
 
-void COLLISION_TRP(TITUS_level *level) {
+void collide_with_elevators(TITUS_level *level) {
   // Player versus elevators
   // Change player's location according to the elevator
   uint8_t i;
@@ -1531,7 +1530,7 @@ void COLLISION_TRP(TITUS_level *level) {
   }
 }
 
-void COLLISION_OBJET(TITUS_level *level) {
+void collide_with_objects(TITUS_level *level) {
   // Player versus objects
   // Collision, spring state, speed up carpet/scooter/skateboard, bounce bouncy
   // objects
