@@ -278,12 +278,8 @@ int move_player(ScreenContext *context, TITUS_level *level) {
   // Part 3: Move the player + collision detection
   // Move the player in X if the new position doesn't exceed 8 pixels from the
   // edges
-  if (((player->sprite.speed_x < 0) &&
-       ((player->sprite.x + (player->sprite.speed_x >> 4)) >=
-        8)) || // Going left
-      ((player->sprite.speed_x > 0) &&
-       ((player->sprite.x + (player->sprite.speed_x >> 4)) <=
-        (level->width << 4) - 8))) { // Going right
+  if (((player->sprite.speed_x < 0) && ((player->sprite.x + (player->sprite.speed_x >> 4)) >= 8)) || // Going left
+      ((player->sprite.speed_x > 0) && ((player->sprite.x + (player->sprite.speed_x >> 4)) <= (level->width << 4) - 8))) { // Going right
     player->sprite.x += player->sprite.speed_x >> 4;
   }
   // Move player in Y
@@ -402,9 +398,9 @@ void CASE_DEAD_IM(TITUS_level *level) {
   RESETLEVEL_FLAG = 2;
 }
 
-void BRK_COLLISION(ScreenContext *context,
-                   TITUS_level *level) { // Collision detection between player
-                                         // and tiles/objects/elevators
+void BRK_COLLISION(ScreenContext *context, TITUS_level *level) {
+  // Collision detection between player
+  // and tiles/objects/elevators
   // Point the foot on the block!
   TITUS_player *player = &(level->player);
   int16_t changeX;
@@ -451,8 +447,7 @@ void BRK_COLLISION(ScreenContext *context,
       tileX++;
     }
     if (tileX != left_tileX) {
-      TAKE_BLK_AND_YTEST(context, level, tileY,
-                         tileX); // Also test the left tile
+      TAKE_BLK_AND_YTEST(context, level, tileY, tileX); // Also test the left tile
     }
     if (YFALL == 1) {
       if ((CROSS_FLAG == 0) && (CHOC_FLAG == 0)) {
@@ -460,8 +455,7 @@ void BRK_COLLISION(ScreenContext *context,
         if (YFALL == 1) {
           COLLISION_OBJET(level); // Player versus objects
           if (YFALL == 1) {
-            ARAB_TOMBE(
-                level); // No wall/elevator/object under the player; fall down!
+            ARAB_TOMBE(level); // No wall/elevator/object under the player; fall down!
           } else {
             player->GLISSE = 0;
           }
@@ -775,7 +769,7 @@ static void BLOCK_YYPRG(ScreenContext *context, TITUS_level *level,
     ARAB_TOMBE_F();
     break;
 
-  case FFLAG_FLOOR: // Floor
+  case FFLAG_FLOOR:
     ARAB_BLOCK_YU(player);
     break;
 
@@ -979,8 +973,7 @@ static void ACTION_PRG(TITUS_level *level, uint8_t action) {
     // Rest. Handle deacceleration and slide
     LAST_ORDER = action;
     DECELERATION(player);
-    if ((abs(player->sprite.speed_x) >= 1 * 16) &&
-        (player->sprite.flipped == (player->sprite.speed_x < 0))) {
+    if ((abs(player->sprite.speed_x) >= 1 * 16) && (player->sprite.flipped == (player->sprite.speed_x < 0))) {
       player->sprite.animation = get_anim_player(4 + add_carry());
     } else {
       player->sprite.animation = get_anim_player(action);
@@ -1496,28 +1489,22 @@ void COLLISION_TRP(TITUS_level *level) {
       }
 
       // Real test
-      if (player->sprite.x - level->spritedata[0].refwidth <
-          elevator[i].sprite.x) { // The elevator is right
-        if (player->sprite.x - level->spritedata[0].refwidth +
-                level->spritedata[0].collwidth <=
-            elevator[i].sprite.x) { // player->sprite must be 0
+      if (player->sprite.x - level->spritedata[0].refwidth < elevator[i].sprite.x) { // The elevator is right
+        if (player->sprite.x - level->spritedata[0].refwidth + level->spritedata[0].collwidth <= elevator[i].sprite.x) { // player->sprite must be 0
           continue;                 // The elevator is too far right
         }
       } else { // The elevator is left
-        if (player->sprite.x - level->spritedata[0].refwidth >=
-            elevator[i].sprite.x + elevator[i].sprite.spritedata->collwidth) {
+        if (player->sprite.x - level->spritedata[0].refwidth >= elevator[i].sprite.x + elevator[i].sprite.spritedata->collwidth) {
           continue; // The elevator is too far left
         }
       }
 
-      if (player->sprite.y - 6 < elevator[i].sprite.y) { // The elevator is
-                                                         // below
+      if (player->sprite.y - 6 < elevator[i].sprite.y) { // The elevator is below
         if (player->sprite.y - 6 + 8 <= elevator[i].sprite.y) {
           continue; // The elevator is too far below
         }
       } else { // The elevator is above
-        if (player->sprite.y - 6 >=
-            elevator[i].sprite.y + elevator[i].sprite.spritedata->collheight) {
+        if (player->sprite.y - 6 >= elevator[i].sprite.y + elevator[i].sprite.spritedata->collheight) {
           continue; // The elevator is too far above
         }
       }
