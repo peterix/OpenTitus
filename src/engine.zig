@@ -271,7 +271,7 @@ fn death(context: [*c]c.ScreenContext, level: *c.TITUS_level) void {
     var plr = &(level.player);
 
     audio.playTrack(.Death);
-    _ = player.FORCE_POSE(level);
+    _ = player.player_drop_carried(level);
     sprites.updatesprite(level, &(plr.sprite), 13, true); //Death
     plr.sprite.speed_y = 15;
     for (0..60) |_| {

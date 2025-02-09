@@ -594,7 +594,7 @@ static void BLOCK_YYPRGD(TITUS_level *level, enum CFLAG cflag, uint8_t tileY,
                (SAUT_FLAG != 6)) {              //
       PRIER_FLAG = true;
       if (CARRY_FLAG) {
-        object = FORCE_POSE(level);
+        object = player_drop_carried(level);
         if (object != NULL) {
           tileX = object->sprite.x >> 4;
           tileY = object->sprite.y >> 4;
@@ -676,7 +676,7 @@ void player_block_x(TITUS_level *level) {
   }
 }
 
-TITUS_object *FORCE_POSE(TITUS_level *level) {
+TITUS_object *player_drop_carried(TITUS_level *level) {
   // Move object from sprite2 to TMPFP
   TITUS_sprite *sprite2 = &(level->player.sprite2);
   TITUS_object *object;
@@ -686,7 +686,7 @@ TITUS_object *FORCE_POSE(TITUS_level *level) {
     i = 0;
     do {
       if (i > OBJECT_CAPACITY) {
-        printf("ERROR: FORCE_POSE returned NULL\n");
+        printf("ERROR: player_drop_carried returned NULL\n");
         return NULL;
       }
       if (!(level->object[i].sprite.enabled))
@@ -1098,7 +1098,7 @@ static void ACTION_PRG(TITUS_level *level, uint8_t action) {
     if (!POSEREADY_FLAG) {
       if ((ACTION_TIMER == 1) && (CARRY_FLAG)) {
         // If the object is placed in a block, fix a speed_x
-        object = FORCE_POSE(level);
+        object = player_drop_carried(level);
         if (object != NULL) {
           tileX = object->sprite.x >> 4;
           tileY = object->sprite.y >> 4;
@@ -1314,7 +1314,7 @@ static void ACTION_PRG(TITUS_level *level, uint8_t action) {
       }
       if (speed_y != 0) {
         // Throw up
-        object = FORCE_POSE(level);
+        object = player_drop_carried(level);
         if (object != NULL) {
           object->sprite.speed_y = speed_y;
           object->sprite.speed_x = speed_x - (speed_x >> 2);
@@ -1325,7 +1325,7 @@ static void ACTION_PRG(TITUS_level *level, uint8_t action) {
                          // object sprite
           if (level->objectdata[player->sprite2.number - FIRST_OBJET].gravity) {
             // Gravity throw
-            object = FORCE_POSE(level);
+            object = player_drop_carried(level);
             if (object != NULL) {
               object->sprite.speed_y = speed_y;
               object->sprite.speed_x = speed_x - (speed_x >> 2);
@@ -1405,7 +1405,7 @@ static void ACTION_PRG(TITUS_level *level, uint8_t action) {
 
   case 27:
     // Headache (c)
-    FORCE_POSE(level);
+    player_drop_carried(level);
     player->sprite.speed_x = 0;
     NEW_FORM(player, action);
     GET_IMAGE(level);

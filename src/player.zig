@@ -50,7 +50,7 @@ fn handle_player_input(player: *c.TITUS_player, keystate: []const u8) void {
     player.action_pressed = keystate[SDL.SCANCODE_SPACE] != 0;
 }
 
-pub fn move_player(arg_context: [*c]c.ScreenContext, arg_level: [*c]c.TITUS_level) c_int {
+pub fn move_player(arg_context: *c.ScreenContext, arg_level: *c.TITUS_level) c_int {
     // Part 1: Check keyboard input
     // Part 2: Determine the player's action, and execute action dependent code
     // Part 3: Move the player + collision detection
@@ -234,56 +234,83 @@ pub fn move_player(arg_context: [*c]c.ScreenContext, arg_level: [*c]c.TITUS_leve
     // Part 3: Move the player + collision detection
     // Move the player in X if the new position doesn't exceed 8 pixels from the
     // edges
-    if (((@as(c_int, @bitCast(@as(c_int, player.*.sprite.speed_x))) < 0) and ((@as(c_int, @bitCast(@as(c_int, player.*.sprite.x))) + (@as(c_int, @bitCast(@as(c_int, player.*.sprite.speed_x))) >> @intCast(4))) >= 8)) or ((@as(c_int, @bitCast(@as(c_int, player.*.sprite.speed_x))) > 0) and ((@as(c_int, @bitCast(@as(c_int, player.*.sprite.x))) + (@as(c_int, @bitCast(@as(c_int, player.*.sprite.speed_x))) >> @intCast(4))) <= ((@as(c_int, @bitCast(@as(c_int, level.*.width))) << @intCast(4)) - 8)))) {
-        player.*.sprite.x += @as(i16, @bitCast(@as(c_short, @truncate(@as(c_int, @bitCast(@as(c_int, player.*.sprite.speed_x))) >> @intCast(4)))));
+    if (((player.sprite.speed_x < 0) and ((player.sprite.x + (player.sprite.speed_x >> 4)) >= 8)) or // Going left
+        ((player.sprite.speed_x > 0) and ((player.sprite.x + (player.sprite.speed_x >> 4)) <= (level.width << 4) - 8))) // Going right
+    {
+        player.sprite.x += player.sprite.speed_x >> 4;
     }
     // Move player in Y
-    player.*.sprite.y += @as(i16, @bitCast(@as(c_short, @truncate(@as(c_int, @bitCast(@as(c_int, player.*.sprite.speed_y))) >> @intCast(4)))));
+    player.sprite.y += player.sprite.speed_y >> 4;
     // Test for collisions
     player_collide(level);
 
     // Part 4: Move the throwed/carried object
     // Move throwed/carried object
-    if (globals.DROP_FLAG) {
-        newX = @as(i16, @bitCast(@as(c_short, @truncate((@as(c_int, @bitCast(@as(c_int, player.*.sprite2.speed_x))) >> @intCast(4)) + @as(c_int, @bitCast(@as(c_int, player.*.sprite2.x)))))));
-        if ((((@as(c_int, @bitCast(@as(c_int, newX))) < (@as(c_int, @bitCast(@as(c_int, level.*.width))) << @intCast(4))) and (@as(c_int, @bitCast(@as(c_int, newX))) >= 0)) and (@as(c_int, @bitCast(@as(c_int, newX))) >= ((@as(c_int, @bitCast(@as(c_int, globals.BITMAP_X))) << @intCast(4)) - 40))) and (@as(c_int, @bitCast(@as(c_int, newX))) <= (((@as(c_int, @bitCast(@as(c_int, globals.BITMAP_X))) << @intCast(4)) + (20 << @intCast(4))) + 40))) {
-            player.*.sprite2.x = newX;
-            newY = @as(i16, @bitCast(@as(c_short, @truncate((@as(c_int, @bitCast(@as(c_int, player.*.sprite2.speed_y))) >> @intCast(4)) + @as(c_int, @bitCast(@as(c_int, player.*.sprite2.y)))))));
-            if ((((@as(c_int, @bitCast(@as(c_int, newY))) < (@as(c_int, @bitCast(@as(c_int, level.*.height))) << @intCast(4))) and (@as(c_int, @bitCast(@as(c_int, newY))) >= 0)) and (@as(c_int, @bitCast(@as(c_int, newY))) >= ((@as(c_int, @bitCast(@as(c_int, globals.BITMAP_Y))) << @intCast(4)) - 20))) and (@as(c_int, @bitCast(@as(c_int, newY))) <= (((@as(c_int, @bitCast(@as(c_int, globals.BITMAP_Y))) << @intCast(4)) + (12 << @intCast(4))) + 20))) {
-                player.*.sprite2.y = newY;
+    if (c.DROP_FLAG) {
+        // sprite2: throwed or dropped object
+        newX = (player.sprite2.speed_x >> 4) + player.sprite2.x;
+        if ((newX < (level.width << 4)) and // Left for right level edge
+            (newX >= 0) and // Right for level left edge
+            (newX >=
+            (c.BITMAP_X << 4) -
+            c.GESTION_X) and // Max 40 pixels left for screen (bug: the purpose
+            // was probably one screen left for the screen)
+            (newX <= (c.BITMAP_X << 4) + (c.screen_width << 4) +
+            c.GESTION_X))
+        { // Max 40 pixels right for screen
+            player.sprite2.x = newX;
+            newY = (player.sprite2.speed_y >> 4) + player.sprite2.y;
+            if ((newY < (level.height << 4)) and // Above bottom edge of level
+                (newY >= 0) and // Below top edge of level
+                (newY >=
+                (c.BITMAP_Y << 4) -
+                c.GESTION_Y) and // Max 20 pixels above the screen (bug: the purpose
+                // was probably one screen above the screen)
+                (newY <= (c.BITMAP_Y << 4) + (c.screen_height << 4) +
+                c.GESTION_Y))
+            { // Max 20 pixels below the screen
+                player.sprite2.y = newY;
             } else {
-                player.*.sprite2.enabled = false;
-                globals.DROP_FLAG = false;
+                player.sprite2.enabled = false;
+                c.DROP_FLAG = false;
             }
         } else {
-            player.*.sprite2.enabled = false;
-            globals.DROP_FLAG = false;
+            player.sprite2.enabled = false;
+            c.DROP_FLAG = false;
         }
-    } else if (globals.CARRY_FLAG) {
-        if (!globals.LADDER_FLAG and ((@as(c_int, @bitCast(@as(c_uint, globals.LAST_ORDER))) == (16 + 5)) or (@as(c_int, @bitCast(@as(c_uint, globals.LAST_ORDER))) == (16 + 7)))) {
-            player.*.sprite2.y = @as(i16, @bitCast(@as(c_short, @truncate(@as(c_int, @bitCast(@as(c_int, player.*.sprite.y))) - 4))));
-            if (player.*.sprite.flipped) {
-                player.*.sprite2.x = @as(i16, @bitCast(@as(c_short, @truncate(@as(c_int, @bitCast(@as(c_int, player.*.sprite.x))) - 10))));
+    } else if (c.CARRY_FLAG) { // Place the object on top of or beside the player
+        if (!c.LADDER_FLAG and ((c.LAST_ORDER == 16 + 5) or
+            (c.LAST_ORDER == 16 + 7)))
+        { // Kneestand or take
+            player.sprite2.y = player.sprite.y - 4;
+            if (player.sprite.flipped) {
+                player.sprite2.x = player.sprite.x - 10;
             } else {
-                player.*.sprite2.x = @as(i16, @bitCast(@as(c_short, @truncate(@as(c_int, @bitCast(@as(c_int, player.*.sprite.x))) + 12))));
+                player.sprite2.x = player.sprite.x + 12;
             }
         } else {
-            if ((@as(c_int, @bitCast(@as(c_int, player.*.sprite.number))) == 14) or (((@as(c_int, @bitCast(@as(c_uint, globals.LAST_ORDER))) & 15) != 7) and ((@as(c_int, @bitCast(@as(c_uint, globals.LAST_ORDER))) & 15) != 8))) {
-                player.*.sprite2.x = @as(i16, @bitCast(@as(c_short, @truncate(@as(c_int, @bitCast(@as(c_int, player.*.sprite.x))) + 2))));
-                if ((@as(c_int, @bitCast(@as(c_int, player.*.sprite.number))) == 23) or (@as(c_int, @bitCast(@as(c_int, player.*.sprite.number))) == 24)) {
-                    player.*.sprite2.x -= @as(i16, @bitCast(@as(c_short, @truncate(10))));
-                    if (player.*.sprite.flipped) {
-                        player.*.sprite2.x += @as(i16, @bitCast(@as(c_short, @truncate(18))));
+            if ((player.sprite.number == 14) or // Sliding down the ladder OR
+                (((c.LAST_ORDER & 0x0F) != 7) and // Not taking
+                ((c.LAST_ORDER & 0x0F) != 8)))
+            { // Not throwing/dropping
+                player.sprite2.x = player.sprite.x + 2;
+                if ((player.sprite.number == 23) or // Climbing (c)
+                    (player.sprite.number == 24))
+                { // Climbing (c) (2nd sprite)
+                    player.sprite2.x -= 10;
+                    if (player.sprite.flipped) {
+                        player.sprite2.x += 18;
                     }
                 }
-                player.*.sprite2.y = @as(i16, @bitCast(@as(c_short, @truncate((@as(c_int, @bitCast(@as(c_int, player.*.sprite.y))) - @as(c_int, @bitCast(@as(c_uint, player.*.sprite.spritedata.*.collheight)))) + 1))));
+                player.sprite2.y =
+                    player.sprite.y - player.sprite.spritedata.*.collheight + 1;
             }
         }
     }
-    if (@as(c_int, @bitCast(@as(c_uint, globals.SEECHOC_FLAG))) != 0) {
-        globals.SEECHOC_FLAG -%= 1;
-        if (@as(c_int, @bitCast(@as(c_uint, globals.SEECHOC_FLAG))) == 0) {
-            player.*.sprite2.enabled = false;
+    if (c.SEECHOC_FLAG != 0) {
+        c.SEECHOC_FLAG -= 1;
+        if (c.SEECHOC_FLAG == 0) {
+            player.sprite2.enabled = false;
         }
     }
 
@@ -335,8 +362,8 @@ fn player_collide(level: *c.TITUS_level) void {
     // and tiles/objects/elevators
     // Point the foot on the block!
     const player = &level.player;
-    var tileX: u8 = @as(u8, @bitCast(@as(i8, @truncate(@as(c_int, @bitCast(@as(c_int, player.*.sprite.x))) >> @intCast(4)))));
-    var tileY: i16 = @as(i16, @bitCast(@as(c_short, @truncate((@as(c_int, @bitCast(@as(c_int, player.*.sprite.y))) >> @intCast(4)) - 1))));
+    var tileX: i16 = player.sprite.x >> 4;
+    var tileY: i16 = (player.*.sprite.y >> 4) - 1;
     const initY = tileY;
 
     // if too low then die!
@@ -392,31 +419,31 @@ fn player_collide(level: *c.TITUS_level) void {
     }
 
     // How will the player move in X?
-    var changeX: i16 = @as(i16, @bitCast(@as(c_short, @truncate(TEST_ZONE + 4))));
-    if (@as(c_int, @bitCast(@as(c_int, player.*.sprite.speed_x))) < 0) {
-        changeX = @as(i16, @bitCast(@as(c_short, @truncate(0 - @as(c_int, @bitCast(@as(c_int, changeX)))))));
-    } else if (@as(c_int, @bitCast(@as(c_int, player.*.sprite.speed_x))) == 0) {
+    var changeX: i16 = TEST_ZONE + 4;
+    if (player.sprite.speed_x < 0) {
+        changeX = 0 - changeX;
+    } else if (player.sprite.speed_x == 0) {
         changeX = 0;
     }
-    var height: i16 = @as(i16, @bitCast(@as(c_ushort, player.*.sprite.spritedata.*.collheight)));
-    if (((@as(c_int, @bitCast(@as(c_int, player.*.sprite.y))) > (-1 + 1)) and (@as(c_int, @bitCast(@as(c_int, initY))) >= 0)) and (@as(c_int, @bitCast(@as(c_int, initY))) < @as(c_int, @bitCast(@as(c_int, level.*.height))))) {
-        tileX = @as(u8, @bitCast(@as(i8, @truncate((@as(c_int, @bitCast(@as(c_int, player.*.sprite.x))) + @as(c_int, @bitCast(@as(c_int, changeX)))) >> @intCast(4)))));
+    var height: i16 = player.sprite.spritedata.*.collheight;
+    if ((player.sprite.y > c.MAP_LIMIT_Y + 1) and (initY >= 0) and (initY < level.height)) {
+        tileX = (player.sprite.x + changeX) >> 4;
         tileY = initY;
         var first = true;
         while (true) {
-            const hflag = c.get_horizflag(level, tileY, @as(i16, @bitCast(@as(c_ushort, tileX))));
+            const hflag = c.get_horizflag(level, tileY, tileX);
             if (first) {
-                BLOCK_XXPRG(level, hflag, @as(u8, @bitCast(@as(i8, @truncate(tileY)))), tileX);
+                BLOCK_XXPRG(level, hflag, tileY, tileX);
                 first = false;
-            } else if ((@as(c_int, @bitCast(@as(c_uint, hflag))) == @as(c_int, @bitCast(@as(c_uint, c.HFLAG_CODE)))) or (@as(c_int, @bitCast(@as(c_uint, hflag))) == @as(c_int, @bitCast(@as(c_uint, c.HFLAG_BONUS))))) {
-                BLOCK_XXPRG(level, hflag, @as(u8, @bitCast(@as(i8, @truncate(tileY)))), tileX);
+            } else if (hflag == c.HFLAG_CODE or hflag == c.HFLAG_BONUS) {
+                BLOCK_XXPRG(level, hflag, tileY, tileX);
             }
-            if (@as(c_int, @bitCast(@as(c_int, tileY))) == 0) {
+            if (tileY == 0) {
                 return;
             }
             tileY -= 1;
-            height -= @as(i16, @bitCast(@as(c_short, @truncate(16))));
-            if (!(@as(c_int, @bitCast(@as(c_int, height))) > 0)) break;
+            height -= 16;
+            if (!(height > 0)) break;
         }
     }
 }
@@ -506,7 +533,7 @@ fn BLOCK_YYPRGD(level: *c.TITUS_level, cflag: c.enum_CFLAG, tileY_in: i16, tileX
             {
                 globals.PRIER_FLAG = true;
                 if (globals.CARRY_FLAG) {
-                    object = FORCE_POSE(level);
+                    object = player_drop_carried(level);
                     if (object != null) {
                         tileX = object.*.sprite.x >> 4;
                         tileY = object.*.sprite.y >> 4;
@@ -577,31 +604,24 @@ fn player_block_x(level: *c.TITUS_level) void {
     }
 }
 
-pub export fn FORCE_POSE(level: [*c]c.TITUS_level) [*c]c.TITUS_object {
-    const sprite2: [*c]c.TITUS_sprite = &level.*.player.sprite2;
-    var i: i16 = undefined;
-    _ = &i;
-    if ((@as(c_int, @intFromBool(sprite2.*.enabled)) != 0) and (@as(c_int, @intFromBool(globals.CARRY_FLAG)) != 0)) {
-        i = 0;
-        while (true) {
-            if (@as(c_int, @bitCast(@as(c_int, i))) > 40) {
-                std.log.err("FORCE_POSE returned NULL.", .{});
-                return null;
-            }
-            if (!level.*.object[@as(c_ushort, @intCast(i))].sprite.enabled) break;
-            i += 1;
-        }
-        const object = &level.*.object[@as(c_ushort, @intCast(i))];
-        c.updateobjectsprite(level, object, sprite2.*.number, true);
-        sprite2.*.enabled = false;
-        object.*.sprite.killing = false;
-        if (@as(c_int, @bitCast(@as(c_int, object.*.sprite.number))) < 101) {
-            object.*.sprite.droptobottom = false;
+pub export fn player_drop_carried(level: [*c]c.TITUS_level) [*c]c.TITUS_object {
+    const sprite2 = &level.*.player.sprite2;
+    if (!sprite2.enabled or !globals.CARRY_FLAG)
+        return null;
+
+    for (&level.*.object) |*object| {
+        if (object.sprite.enabled)
+            continue;
+        c.updateobjectsprite(level, object, sprite2.number, true);
+        sprite2.enabled = false;
+        object.sprite.killing = false;
+        if (object.sprite.number < c.FIRST_NMI) {
+            object.sprite.droptobottom = false;
         } else {
-            object.*.sprite.droptobottom = true;
+            object.sprite.droptobottom = true;
         }
-        object.sprite.x = sprite2.*.x;
-        object.sprite.y = sprite2.*.y;
+        object.sprite.x = sprite2.x;
+        object.sprite.y = sprite2.y;
         object.momentum = 0;
         object.sprite.speed_y = 0;
         object.sprite.speed_x = 0;
@@ -612,6 +632,7 @@ pub export fn FORCE_POSE(level: [*c]c.TITUS_level) [*c]c.TITUS_object {
         globals.CARRY_FLAG = false;
         return object;
     }
+    std.log.err("Could not drop carried object: it was not found!", .{});
     return null;
 }
 
@@ -744,7 +765,7 @@ fn BLOCK_YYPRG(level: *c.TITUS_level, floor: c.enum_FFLAG, floor_above: c.enum_F
             }
         },
         c.FFLAG_CODE => {
-            collect_level_unlock(level, @as(u8, @bitCast(@as(u8, @truncate(level.*.levelnumber)))), tileY, tileX);
+            collect_level_unlock(level, @truncate(level.levelnumber), tileY, tileX);
         },
         c.FFLAG_PADLOCK => {
             collect_checkpoint(level, tileY, tileX);
@@ -951,7 +972,7 @@ fn ACTION_PRG(level: *c.TITUS_level, action: u8) void {
             if (!globals.POSEREADY_FLAG) {
                 if (globals.ACTION_TIMER == 1 and globals.CARRY_FLAG) {
                     // If the object is placed in a block, fix a speed_x
-                    const object = FORCE_POSE(level);
+                    const object = player_drop_carried(level);
                     if (object != null) {
                         tileX = object.*.sprite.x >> 4;
                         tileY = object.*.sprite.y >> 4;
@@ -1108,7 +1129,7 @@ fn ACTION_PRG(level: *c.TITUS_level, action: u8) void {
                             } // for loop, enemy
                         } // condition (!CARRY_FLAG), check for enemy pickup
                     } // condition (!CARRY_FLAG), check for object/enemy pickup
-                } // condition ((ACTION_TIMER == 1) && (CARRY_FLAG)),
+                } // condition ((ACTION_TIMER == 1) and (CARRY_FLAG)),
             } // condition (POSEREADY_FLAG == 0)
             globals.POSEREADY_FLAG = true;
         },
@@ -1134,7 +1155,7 @@ fn ACTION_PRG(level: *c.TITUS_level, action: u8) void {
             }
             if (speed_y != 0) {
                 // Throw up
-                const object = FORCE_POSE(level);
+                const object = player_drop_carried(level);
                 if (object != null) {
                     object.*.sprite.speed_y = speed_y;
                     object.*.sprite.speed_x = speed_x - speed_x >> 2;
@@ -1143,7 +1164,7 @@ fn ACTION_PRG(level: *c.TITUS_level, action: u8) void {
                 if (player.sprite2.number < c.FIRST_NMI) {
                     if (level.objectdata[@intCast(player.sprite2.number - c.FIRST_OBJET)].gravity) {
                         // Gravity throw
-                        const object = FORCE_POSE(level);
+                        const object = player_drop_carried(level);
                         if (object != null) {
                             object.*.sprite.speed_y = speed_y;
                             object.*.sprite.speed_x = speed_x - (speed_x >> 2);
@@ -1167,7 +1188,7 @@ fn ACTION_PRG(level: *c.TITUS_level, action: u8) void {
             globals.CARRY_FLAG = false;
         },
         10 => {
-            XACCELERATION(player, @as(i16, @bitCast(@as(c_short, @truncate((4 - 1) * 16)))));
+            XACCELERATION(player, (c.MAX_X - 1) * 16);
             NEW_FORM(player, action);
             GET_IMAGE(level);
         },
@@ -1177,7 +1198,7 @@ fn ACTION_PRG(level: *c.TITUS_level, action: u8) void {
             GET_IMAGE(level);
         },
         12, 13, 28, 29 => {
-            YACCELERATION(player, @as(i16, @bitCast(@as(c_short, @truncate(12 * 16)))));
+            YACCELERATION(player, c.MAX_Y * 16);
             NEW_FORM(player, action);
             GET_IMAGE(level);
         },
@@ -1187,7 +1208,7 @@ fn ACTION_PRG(level: *c.TITUS_level, action: u8) void {
             player_friction(player);
         },
         27 => {
-            _ = FORCE_POSE(level);
+            _ = player_drop_carried(level);
             player.*.sprite.speed_x = 0;
             NEW_FORM(player, action);
             GET_IMAGE(level);

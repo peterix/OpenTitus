@@ -1279,7 +1279,7 @@ void KICK_ASH(TITUS_level *level, TITUS_sprite *enemysprite, int16_t power) {
         p_sprite->speed_x = 0 - p_sprite->speed_x;
     }
     p_sprite->speed_y = -8*16;
-    FORCE_POSE(level);
+    player_drop_carried(level);
 }
 
 
