@@ -235,4 +235,4 @@ struct _TITUS_level {
 enum HFLAG get_horizflag(TITUS_level *level, int16_t tileY, int16_t tileX);
 enum FFLAG get_floorflag(TITUS_level *level, int16_t tileY, int16_t tileX);
 enum CFLAG get_ceilflag(TITUS_level *level, int16_t tileY, int16_t tileX);
-void set_tile(TITUS_level *level, uint8_t tileY, uint8_t tileX, uint8_t tile);
+void set_tile(TITUS_level *level, int16_t tileY, int16_t tileX, uint8_t tile);

@@ -49,26 +49,28 @@ static void BLOCK_XXPRG(ScreenContext *context, TITUS_level *level,
                         enum HFLAG hflag, uint8_t tileY, uint8_t tileX);
 static void XACCELERATION(TITUS_player *player, int16_t maxspeed);
 static void YACCELERATION(TITUS_player *player, int16_t maxspeed);
-static void DECELERATION(TITUS_player *player);
+static void player_friction(TITUS_player *player);
 static void BLOCK_YYPRG(ScreenContext *context, TITUS_level *level,
                         enum FFLAG floor, enum FFLAG floor_above, uint8_t tileY,
                         uint8_t tileX);
 static int collect_bonus(TITUS_level *level, uint8_t tileY, uint8_t tileX);
 static void collect_level_unlock(ScreenContext *context, TITUS_level *level,
-                      uint8_t viewlevel, uint8_t tileY, uint8_t tileX);
-static void collect_checkpoint(TITUS_level *level, uint8_t tileY, uint8_t tileX);
+                                 uint8_t viewlevel, uint8_t tileY,
+                                 uint8_t tileX);
+static void collect_checkpoint(TITUS_level *level, uint8_t tileY,
+                               uint8_t tileX);
 static void NEW_FORM(TITUS_player *player, uint8_t action);
 static void GET_IMAGE(TITUS_level *level);
 static void YACCELERATION_NEG(TITUS_player *player, int16_t maxspeed);
 static void ACTION_PRG(TITUS_level *level, uint8_t action);
 static void CASE_DEAD_IM(TITUS_level *level);
-static void player_collision(ScreenContext *context, TITUS_level *level);
-static void collide_with_elevators(TITUS_level *level);
-static void collide_with_objects(TITUS_level *level);
-static void ARAB_TOMBE(TITUS_level *level);
-static void ARAB_TOMBE_F();
-static void ARAB_BLOCKX(TITUS_level *level);
-static void ARAB_BLOCK_YU(TITUS_player *player);
+static void player_collide(ScreenContext *context, TITUS_level *level);
+static void player_collide_with_elevators(TITUS_level *level);
+static void player_collide_with_objects(TITUS_level *level);
+static void player_fall(TITUS_level *level);
+static void player_fall_F();
+static void player_block_x(TITUS_level *level);
+static void player_block_yu(TITUS_player *player);
 static void INC_ENERGY(TITUS_level *level);
 
 uint8_t add_carry() {
@@ -278,14 +280,18 @@ int move_player(ScreenContext *context, TITUS_level *level) {
   // Part 3: Move the player + collision detection
   // Move the player in X if the new position doesn't exceed 8 pixels from the
   // edges
-  if (((player->sprite.speed_x < 0) && ((player->sprite.x + (player->sprite.speed_x >> 4)) >= 8)) || // Going left
-      ((player->sprite.speed_x > 0) && ((player->sprite.x + (player->sprite.speed_x >> 4)) <= (level->width << 4) - 8))) { // Going right
+  if (((player->sprite.speed_x < 0) &&
+       ((player->sprite.x + (player->sprite.speed_x >> 4)) >=
+        8)) || // Going left
+      ((player->sprite.speed_x > 0) &&
+       ((player->sprite.x + (player->sprite.speed_x >> 4)) <=
+        (level->width << 4) - 8))) { // Going right
     player->sprite.x += player->sprite.speed_x >> 4;
   }
   // Move player in Y
   player->sprite.y += (player->sprite.speed_y >> 4);
   // Test for collisions
-  player_collision(context, level);
+  player_collide(context, level);
 
   // Part 4: Move the throwed/carried object
   // Move throwed/carried object
@@ -398,7 +404,7 @@ void CASE_DEAD_IM(TITUS_level *level) {
   RESETLEVEL_FLAG = 2;
 }
 
-void player_collision(ScreenContext *context, TITUS_level *level) {
+void player_collide(ScreenContext *context, TITUS_level *level) {
   // Collision detection between player
   // and tiles/objects/elevators
   // Point the foot on the block!
@@ -447,21 +453,23 @@ void player_collision(ScreenContext *context, TITUS_level *level) {
       tileX++;
     }
     if (tileX != left_tileX) {
-      TAKE_BLK_AND_YTEST(context, level, tileY, tileX); // Also test the left tile
+      TAKE_BLK_AND_YTEST(context, level, tileY,
+                         tileX); // Also test the left tile
     }
     if (YFALL == 1) {
       if ((CROSS_FLAG == 0) && (CHOC_FLAG == 0)) {
-        collide_with_elevators(level); // Player versus elevators
+        player_collide_with_elevators(level); // Player versus elevators
         if (YFALL == 1) {
-          collide_with_objects(level); // Player versus objects
+          player_collide_with_objects(level); // Player versus objects
           if (YFALL == 1) {
-            ARAB_TOMBE(level); // No wall/elevator/object under the player; fall down!
+            player_fall(
+                level); // No wall/elevator/object under the player; fall down!
           } else {
             player->GLISSE = 0;
           }
         }
       } else {
-        ARAB_TOMBE(level); // Fall down!
+        player_fall(level); // Fall down!
       }
     }
   }
@@ -510,12 +518,12 @@ static void TAKE_BLK_AND_YTEST(ScreenContext *context, TITUS_level *level,
   int8_t change;
   if ((player->sprite.y <= MAP_LIMIT_Y) ||
       (tileY < -1)) { // if player is too high (<= -1), skip test
-    ARAB_TOMBE(level);
+    player_fall(level);
     YFALL = 0xFF;
     return;
   }
   if (tileY + 1 >= level->height) { // if player is too low, skip test
-    ARAB_TOMBE(level);
+    player_fall(level);
     YFALL = 0xFF;
     return;
   }
@@ -562,7 +570,8 @@ static void TAKE_BLK_AND_YTEST(ScreenContext *context, TITUS_level *level,
   }
 }
 
-static void BLOCK_YYPRGD(TITUS_level *level, enum CFLAG cflag, uint8_t tileY, uint8_t tileX) {
+static void BLOCK_YYPRGD(TITUS_level *level, enum CFLAG cflag, uint8_t tileY,
+                         uint8_t tileX) {
   TITUS_player *player = &(level->player);
   TITUS_object *object;
 
@@ -627,7 +636,7 @@ static void BLOCK_XXPRG(ScreenContext *context, TITUS_level *level,
     break;
 
   case HFLAG_WALL:
-    ARAB_BLOCKX(level);
+    player_block_x(level);
     break;
 
   case HFLAG_BONUS:
@@ -638,7 +647,7 @@ static void BLOCK_XXPRG(ScreenContext *context, TITUS_level *level,
     if (!GODMODE) {
       CASE_DEAD_IM(level);
     } else {
-      ARAB_BLOCKX(level); // Godmode: wall
+      player_block_x(level); // Godmode: wall
     }
     break;
 
@@ -656,7 +665,7 @@ static void BLOCK_XXPRG(ScreenContext *context, TITUS_level *level,
   }
 }
 
-void ARAB_BLOCKX(TITUS_level *level) {
+void player_block_x(TITUS_level *level) {
   TITUS_player *player = &(level->player);
   // Horizontal hit (wall), stop the player
   player->sprite.x -= player->sprite.speed_x >> 4;
@@ -708,7 +717,7 @@ TITUS_object *FORCE_POSE(TITUS_level *level) {
   return NULL;
 }
 
-void ARAB_TOMBE(TITUS_level *level) {
+void player_fall(TITUS_level *level) {
   // No wall under the player; fall down!
   TITUS_player *player = &(level->player);
   SAUT_FLAG = 6;
@@ -765,34 +774,34 @@ static void BLOCK_YYPRG(ScreenContext *context, TITUS_level *level,
   switch (floor) {
 
   case FFLAG_NOFLOOR: // No floor
-    ARAB_TOMBE_F();
+    player_fall_F();
     break;
 
   case FFLAG_FLOOR:
-    ARAB_BLOCK_YU(player);
+    player_block_yu(player);
     break;
 
   case FFLAG_SSFLOOR: // Slightly slippery floor
-    ARAB_BLOCK_YU(player);
+    player_block_yu(player);
     player->GLISSE = 1;
     break;
 
   case FFLAG_SFLOOR: // Slippery floor
-    ARAB_BLOCK_YU(player);
+    player_block_yu(player);
     player->GLISSE = 2;
     break;
 
   case FFLAG_VSFLOOR: // Very slippery floor
-    ARAB_BLOCK_YU(player);
+    player_block_yu(player);
     player->GLISSE = 3;
     break;
 
   case FFLAG_DROP: // Drop-through if kneestanding
     player->GLISSE = 0;
     if (CROSS_FLAG == 0) {
-      ARAB_BLOCK_YU(player);
+      player_block_yu(player);
     } else {
-      ARAB_TOMBE_F(); // Drop through!
+      player_fall_F(); // Drop through!
     }
     break;
 
@@ -800,27 +809,27 @@ static void BLOCK_YYPRG(ScreenContext *context, TITUS_level *level,
     // Fall if hit
     // Skip if walking/crawling
     if (CHOC_FLAG != 0) {
-      ARAB_TOMBE_F(); // Free fall
+      player_fall_F(); // Free fall
       return;
     }
     order = LAST_ORDER & 0x0F;
     if ((order == 1) || (order == 3) || (order == 7) || (order == 8)) {
-      ARAB_BLOCK_YU(player); // Stop fall
+      player_block_yu(player); // Stop fall
       return;
     }
-    if (order == 5) { // action baisse
-      ARAB_TOMBE_F(); // Free fall
+    if (order == 5) {  // action baisse
+      player_fall_F(); // Free fall
       updatesprite(level, &(player->sprite), 14,
                    true); // sprite: start climbing down
       player->sprite.y += 8;
     }
-    if (floor_above != 6) {    // ladder
-      if (order == 0) {        // action repos
-        ARAB_BLOCK_YU(player); // Stop fall
+    if (floor_above != 6) {      // ladder
+      if (order == 0) {          // action repos
+        player_block_yu(player); // Stop fall
         return;
       }
       if (player->y_axis < 0 && order == 6) { // action UP + climb ladder
-        ARAB_BLOCK_YU(player);                // Stop fall
+        player_block_yu(player);              // Stop fall
         return;
       }
     }
@@ -842,7 +851,7 @@ static void BLOCK_YYPRG(ScreenContext *context, TITUS_level *level,
     if (!GODMODE) {
       CASE_DEAD_IM(level);
     } else {
-      ARAB_BLOCK_YU(player); // If godmode; ordinary floor
+      player_block_yu(player); // If godmode; ordinary floor
     }
     break;
 
@@ -860,12 +869,12 @@ static void BLOCK_YYPRG(ScreenContext *context, TITUS_level *level,
   }
 }
 
-void ARAB_TOMBE_F() {
+void player_fall_F() {
   // Player free fall (doesn't touch floor)
   YFALL = YFALL | 0x01;
 }
 
-void ARAB_BLOCK_YU(TITUS_player *player) {
+void player_block_yu(TITUS_player *player) {
   // Floor; the player will not fall through
   POCKET_FLAG = true;
   player->GLISSE = 0;
@@ -907,7 +916,8 @@ static int collect_bonus(TITUS_level *level, uint8_t tileY, uint8_t tileX) {
 }
 
 static void collect_level_unlock(ScreenContext *context, TITUS_level *level,
-                      uint8_t level_index, uint8_t tileY, uint8_t tileX) {
+                                 uint8_t level_index, uint8_t tileY,
+                                 uint8_t tileX) {
   // Codelamp
   // if the bonus is found in the bonus list
   if (collect_bonus(level, tileY, tileX)) {
@@ -917,7 +927,8 @@ static void collect_level_unlock(ScreenContext *context, TITUS_level *level,
   }
 }
 
-static void collect_checkpoint(TITUS_level *level, uint8_t tileY, uint8_t tileX) {
+static void collect_checkpoint(TITUS_level *level, uint8_t tileY,
+                               uint8_t tileX) {
   TITUS_player *player = &(level->player);
   // Padlock, store X/Y coordinates
   // if the bonus is found in the bonus list
@@ -971,8 +982,9 @@ static void ACTION_PRG(TITUS_level *level, uint8_t action) {
   case 16:
     // Rest. Handle deacceleration and slide
     LAST_ORDER = action;
-    DECELERATION(player);
-    if ((abs(player->sprite.speed_x) >= 1 * 16) && (player->sprite.flipped == (player->sprite.speed_x < 0))) {
+    player_friction(player);
+    if ((abs(player->sprite.speed_x) >= 1 * 16) &&
+        (player->sprite.flipped == (player->sprite.speed_x < 0))) {
       player->sprite.animation = get_anim_player(4 + add_carry());
     } else {
       player->sprite.animation = get_anim_player(action);
@@ -1029,7 +1041,7 @@ static void ACTION_PRG(TITUS_level *level, uint8_t action) {
     // Kneestand
     NEW_FORM(player, action);
     GET_IMAGE(level);
-    DECELERATION(player);
+    player_friction(player);
     if (ACTION_TIMER == 15) {
       CROSS_FLAG = 6;
       player->sprite.speed_y = 0;
@@ -1042,7 +1054,7 @@ static void ACTION_PRG(TITUS_level *level, uint8_t action) {
     if (X_FLAG != 0) {
       XACCELERATION(player, MAX_X * 16);
     } else {
-      DECELERATION(player);
+      player_friction(player);
     }
     if (ACTION_TIMER <= 1) {
       if (CARRY_FLAG == 0) {
@@ -1082,7 +1094,7 @@ static void ACTION_PRG(TITUS_level *level, uint8_t action) {
     // Take a box
     NEW_FORM(player, action);
     GET_IMAGE(level);
-    DECELERATION(player);
+    player_friction(player);
     if (!POSEREADY_FLAG) {
       if ((ACTION_TIMER == 1) && (CARRY_FLAG)) {
         // If the object is placed in a block, fix a speed_x
@@ -1210,32 +1222,18 @@ static void ACTION_PRG(TITUS_level *level, uint8_t action) {
                 }
               }
               // The ordinary test
-              // X
               if (level->enemy[i].carry_sprite ==
                   -1) { // Test if the enemy can be picked up from behind
                 continue;
               }
 
-              //   if (player->x > player->x) { //Bug: the first expression
-              //   should have been enemy[i]
-              //       if (player->x + 32 < player->x) { //This will never
-              //       execute
-              //           continue;
-              //       }
-              //   } else {
-              //       if (player->x + enemy[i].sprite.spritedata->collwidth <
-              //       player->x) {
-              //           continue; //This should not execute
-              //       }
-              //   }
-
-              // What it probably should have been
+              // X
               if (level->enemy[i].sprite.x >
                   player->sprite.x) { // The enemy is right
                 if (level->enemy[i].sprite.x > player->sprite.x + 32) {
                   continue; // The enemy is too far right
                 }
-              } else { // The object is left
+              } else { // The enemy is left
                 if (level->enemy[i].sprite.x +
                         level->enemy[i].sprite.spritedata->collwidth <
                     player->sprite.x) {
@@ -1301,7 +1299,7 @@ static void ACTION_PRG(TITUS_level *level, uint8_t action) {
     // Throw
     NEW_FORM(player, action);
     GET_IMAGE(level);
-    DECELERATION(player);
+    player_friction(player);
     if (CARRY_FLAG) {
       if (player->y_axis >= 0) { // Ordinary throw
         speed_x = 0x0E * 16;
@@ -1394,7 +1392,7 @@ static void ACTION_PRG(TITUS_level *level, uint8_t action) {
     // Kneestand with box
     NEW_FORM(player, action);
     GET_IMAGE(level);
-    DECELERATION(player);
+    player_friction(player);
     break;
 
     // case 22: same as case 6
@@ -1417,7 +1415,7 @@ static void ACTION_PRG(TITUS_level *level, uint8_t action) {
   }
 }
 
-void DECELERATION(TITUS_player *player) {
+void player_friction(TITUS_player *player) {
   // Stop acceleration
   uint8_t friction = (3 * 4) >> player->GLISSE;
   int16_t speed;
@@ -1472,7 +1470,7 @@ static void YACCELERATION_NEG(TITUS_player *player, int16_t maxspeed) {
   player->sprite.speed_y = speed;
 }
 
-void collide_with_elevators(TITUS_level *level) {
+void player_collide_with_elevators(TITUS_level *level) {
   // Player versus elevators
   // Change player's location according to the elevator
   uint8_t i;
@@ -1488,22 +1486,28 @@ void collide_with_elevators(TITUS_level *level) {
       }
 
       // Real test
-      if (player->sprite.x - level->spritedata[0].refwidth < elevator[i].sprite.x) { // The elevator is right
-        if (player->sprite.x - level->spritedata[0].refwidth + level->spritedata[0].collwidth <= elevator[i].sprite.x) { // player->sprite must be 0
+      if (player->sprite.x - level->spritedata[0].refwidth <
+          elevator[i].sprite.x) { // The elevator is right
+        if (player->sprite.x - level->spritedata[0].refwidth +
+                level->spritedata[0].collwidth <=
+            elevator[i].sprite.x) { // player->sprite must be 0
           continue;                 // The elevator is too far right
         }
       } else { // The elevator is left
-        if (player->sprite.x - level->spritedata[0].refwidth >= elevator[i].sprite.x + elevator[i].sprite.spritedata->collwidth) {
+        if (player->sprite.x - level->spritedata[0].refwidth >=
+            elevator[i].sprite.x + elevator[i].sprite.spritedata->collwidth) {
           continue; // The elevator is too far left
         }
       }
 
-      if (player->sprite.y - 6 < elevator[i].sprite.y) { // The elevator is below
+      if (player->sprite.y - 6 <
+          elevator[i].sprite.y) { // The elevator is below
         if (player->sprite.y - 6 + 8 <= elevator[i].sprite.y) {
           continue; // The elevator is too far below
         }
       } else { // The elevator is above
-        if (player->sprite.y - 6 >= elevator[i].sprite.y + elevator[i].sprite.spritedata->collheight) {
+        if (player->sprite.y - 6 >=
+            elevator[i].sprite.y + elevator[i].sprite.spritedata->collheight) {
           continue; // The elevator is too far above
         }
       }
@@ -1530,7 +1534,7 @@ void collide_with_elevators(TITUS_level *level) {
   }
 }
 
-void collide_with_objects(TITUS_level *level) {
+void player_collide_with_objects(TITUS_level *level) {
   // Player versus objects
   // Collision, spring state, speed up carpet/scooter/skateboard, bounce bouncy
   // objects

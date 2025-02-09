@@ -573,7 +573,7 @@ pub export fn get_ceilflag(level: *c.TITUS_level, tileY: i16, tileX: i16) c.CFLA
     }
 }
 
-pub export fn set_tile(level: *c.TITUS_level, tileY: u8, tileX: u8, tile: u8) void {
+pub export fn set_tile(level: *c.TITUS_level, tileY: i16, tileX: i16, tile: u8) void {
     if ((tileY < 0) or
         (tileY >= level.height) or
         (tileX < 0) or
@@ -582,5 +582,5 @@ pub export fn set_tile(level: *c.TITUS_level, tileY: u8, tileX: u8, tile: u8) vo
         return;
     }
     var parent_level: *Level = @ptrCast(@alignCast(level.parent));
-    parent_level.setTile(tileX, tileY, tile);
+    parent_level.setTile(@intCast(tileX), @intCast(tileY), tile);
 }
