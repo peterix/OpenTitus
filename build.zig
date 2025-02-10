@@ -45,8 +45,6 @@ fn build_game(b: *std.Build, name: []const u8, target: ResolvedTarget, optimize:
     // NOTE: the use of bit shifts of negative numbers is quite extensive, so we disable ubsan shooting us in the foot with those...
     // FIXME: remove the UB-ness
     exe.addCSourceFiles(.{ .files = &.{
-        "src/enemies.c",
-        "src/objects.c",
         "src/audio/opl3/opl3.c",
         "src/audio/miniaudio/miniaudio.c",
         "src/audio/pocketmod/pocketmod.c",
@@ -69,8 +67,6 @@ fn build_game(b: *std.Build, name: []const u8, target: ResolvedTarget, optimize:
         .optimize = optimize,
     });
     game_tests.addCSourceFiles(.{ .files = &.{
-        "src/enemies.c",
-        "src/objects.c",
         "src/audio/opl3/opl3.c",
         "src/audio/miniaudio/miniaudio.c",
         "src/audio/pocketmod/pocketmod.c",

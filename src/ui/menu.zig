@@ -1,5 +1,4 @@
 const SDL = @import("../SDL.zig");
-const c = @import("../c.zig");
 const window = @import("../window.zig");
 
 pub const MenuAction = enum {

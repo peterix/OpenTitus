@@ -26,7 +26,6 @@
 const std = @import("std");
 
 const sqz = @import("../sqz.zig");
-const c = @import("../c.zig");
 const SDL = @import("../SDL.zig");
 const window = @import("../window.zig");
 const keyboard = @import("keyboard.zig");

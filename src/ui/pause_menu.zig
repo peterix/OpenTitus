@@ -22,10 +22,10 @@
 // General Public License for more details.
 //
 
-const c = @import("../c.zig");
 const SDL = @import("../SDL.zig");
 
 const render = @import("../render.zig");
+const ScreenContext = render.ScreenContext;
 const window = @import("../window.zig");
 const sprites = @import("../sprites.zig");
 const fonts = @import("fonts.zig");
@@ -64,7 +64,7 @@ fn renderLabel(text: []const u8, y: i16, selected: bool) void {
     font.render_center(text, y, options);
 }
 
-pub export fn pauseMenu(context: *c.ScreenContext) c_int {
+pub export fn pauseMenu(context: *ScreenContext) c_int {
 
     // take a screenshot and use it as a background that fades to black a bit
     const image = SDL.convertSurface(window.screen.?, window.screen.?.format, SDL.SWSURFACE) catch {
@@ -85,7 +85,7 @@ pub export fn pauseMenu(context: *c.ScreenContext) c_int {
         const action = menu.getMenuAction();
         switch (action) {
             .Quit => {
-                return c.TITUS_ERROR_QUIT;
+                return -1; //c.TITUS_ERROR_QUIT;
             },
             .ExitMenu => {
                 return 0;

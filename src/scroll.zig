@@ -26,9 +26,9 @@
 const std = @import("std");
 const assert = std.debug.assert;
 
-const c = @import("c.zig");
 const globals = @import("globals.zig");
 const window = @import("window.zig");
+const lvl = @import("level.zig");
 
 /// Easign function for the camera.
 ///
@@ -52,7 +52,7 @@ const CAMERA_RANGE = CAMERA_DISTANCE * 2;
 // TODO: put this on the player struct
 var easing_value: i16 = 0;
 
-fn X_ADJUST(level: *c.TITUS_level) void {
+fn X_ADJUST(level: *lvl.TITUS_level) void {
     const player = &(level.player);
     globals.g_scroll_x = true;
 
@@ -110,7 +110,7 @@ fn X_ADJUST(level: *c.TITUS_level) void {
     }
 }
 
-fn Y_ADJUST(level: *c.TITUS_level) void {
+fn Y_ADJUST(level: *lvl.TITUS_level) void {
     const player = &(level.player);
     if (player.sprite.speed_y == 0) {
         globals.g_scroll_y = false;
@@ -183,7 +183,7 @@ pub fn animate_tiles() void {
     }
 }
 
-pub fn scrollToPlayer(level: *c.TITUS_level) void {
+pub fn scrollToPlayer(level: *lvl.TITUS_level) void {
     globals.BITMAP_X = 0;
     globals.BITMAP_Y = 0;
 
@@ -194,7 +194,7 @@ pub fn scrollToPlayer(level: *c.TITUS_level) void {
     }
 }
 
-pub fn scroll(level: *c.TITUS_level) void {
+pub fn scroll(level: *lvl.TITUS_level) void {
     animate_tiles();
     //Scroll
     if (!globals.NOSCROLL_FLAG) {
@@ -203,7 +203,7 @@ pub fn scroll(level: *c.TITUS_level) void {
     }
 }
 
-pub fn scroll_left(level: *c.TITUS_level) bool {
+pub fn scroll_left(level: *lvl.TITUS_level) bool {
     _ = level;
     if (globals.BITMAP_X == 0) {
         return true;
@@ -212,7 +212,7 @@ pub fn scroll_left(level: *c.TITUS_level) bool {
     return false;
 }
 
-pub fn scroll_right(level: *c.TITUS_level) bool {
+pub fn scroll_right(level: *lvl.TITUS_level) bool {
     const maxX: i16 = if (globals.XLIMIT_BREACHED) @as(i16, @intCast(level.width)) - globals.screen_width else globals.XLIMIT;
     if (globals.BITMAP_X >= maxX) {
         return true;
@@ -221,7 +221,7 @@ pub fn scroll_right(level: *c.TITUS_level) bool {
     return false;
 }
 
-pub fn scroll_up(level: *c.TITUS_level) bool {
+pub fn scroll_up(level: *lvl.TITUS_level) bool {
     _ = level;
     if (globals.BITMAP_Y == 0) {
         return true;
@@ -230,7 +230,7 @@ pub fn scroll_up(level: *c.TITUS_level) bool {
     return false;
 }
 
-pub fn scroll_down(level: *c.TITUS_level) bool {
+pub fn scroll_down(level: *lvl.TITUS_level) bool {
     if (globals.BITMAP_Y >= (level.height - globals.screen_height)) {
         return true;
     }

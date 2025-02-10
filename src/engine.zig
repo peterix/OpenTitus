@@ -26,7 +26,6 @@
 const std = @import("std");
 
 const SDL = @import("SDL.zig");
-const c = @import("c.zig");
 
 const audio = @import("audio/audio.zig");
 const globals = @import("globals.zig");
@@ -36,8 +35,11 @@ const sprites = @import("sprites.zig");
 const data = @import("data.zig");
 const window = @import("window.zig");
 const elevators = @import("elevators.zig");
+const objects = @import("objects.zig");
+const enemies = @import("enemies.zig");
 const game_state = @import("game_state.zig");
 const render = @import("render.zig");
+const ScreenContext = render.ScreenContext;
 const reset = @import("reset.zig");
 const gates = @import("gates.zig");
 const lvl = @import("level.zig");
@@ -49,8 +51,7 @@ const status = @import("ui/status.zig");
 const final_cutscene = @import("final_cutscene.zig");
 
 pub fn playtitus(firstlevel: u16, allocator: std.mem.Allocator) !c_int {
-    var context: c.ScreenContext = undefined;
-    render.screencontext_reset(&context);
+    var context = render.ScreenContext{};
 
     var retval: c_int = 0;
 
@@ -207,7 +208,7 @@ pub fn playtitus(firstlevel: u16, allocator: std.mem.Allocator) !c_int {
 }
 
 // FIXME: most of the different return values are meaningless and unused
-fn resetLevel(context: *c.ScreenContext, level: *c.TITUS_level) c_int {
+fn resetLevel(context: *ScreenContext, level: *lvl.TITUS_level) c_int {
     if (globals.NEWLEVEL_FLAG) {
         return 1;
     }
@@ -229,7 +230,7 @@ fn resetLevel(context: *c.ScreenContext, level: *c.TITUS_level) c_int {
     return 0;
 }
 
-fn playlevel(context: [*c]c.ScreenContext, level: *c.TITUS_level) c_int {
+fn playlevel(context: *ScreenContext, level: *lvl.TITUS_level) c_int {
     var retval: c_int = 0;
     var firstrun = true;
 
@@ -242,14 +243,14 @@ fn playlevel(context: [*c]c.ScreenContext, level: *c.TITUS_level) c_int {
         firstrun = false;
         globals.IMAGE_COUNTER = (globals.IMAGE_COUNTER + 1) & 0x0FFF; //Cycle from 0 to 0x0FFF
         elevators.move(level);
-        c.move_objects(level); //Object gravity
+        objects.move_objects(level); //Object gravity
         retval = player.move_player(context, level); //Key input, update and move player, handle carried object and decrease timers
-        if (retval == c.TITUS_ERROR_QUIT) {
+        if (retval == -1) { //c.TITUS_ERROR_QUIT) {
             return retval;
         }
-        c.moveEnemies(level); //Move enemies
-        c.moveTrash(level); //Move enemy throwed objects
-        c.SET_NMI(level); //Handle enemies on the screen
+        enemies.moveEnemies(level); //Move enemies
+        enemies.moveTrash(level); //Move enemy throwed objects
+        enemies.SET_NMI(level); //Handle enemies on the screen
         gates.CROSSING_GATE(context, level); //Check and handle level completion, and if the player does a kneestand on a secret entrance
         sprites.animateSprites(level); //Animate player and objects
         scroll.scroll(level); //X- and Y-scrolling
@@ -267,7 +268,7 @@ fn playlevel(context: [*c]c.ScreenContext, level: *c.TITUS_level) c_int {
     return (0);
 }
 
-fn death(context: [*c]c.ScreenContext, level: *c.TITUS_level) void {
+fn death(context: *ScreenContext, level: *lvl.TITUS_level) void {
     var plr = &(level.player);
 
     audio.playTrack(.Death);
@@ -291,7 +292,7 @@ fn death(context: [*c]c.ScreenContext, level: *c.TITUS_level) void {
     gates.CLOSE_SCREEN(context);
 }
 
-fn gameover(context: [*c]c.ScreenContext, level: *c.TITUS_level) void {
+fn gameover(context: *ScreenContext, level: *lvl.TITUS_level) void {
     var plr = &(level.player);
 
     audio.playTrack(.GameOver);

@@ -26,11 +26,11 @@
 const std = @import("std");
 
 const globals = @import("globals.zig");
-const c = @import("c.zig");
+const lvl = @import("level.zig");
 
-pub fn move(level: *c.TITUS_level) void {
+pub fn move(level: *lvl.TITUS_level) void {
     var elevators = &level.elevator;
-    for (0..c.ELEVATOR_CAPACITY) |i| {
+    for (0..lvl.ELEVATOR_CAPACITY) |i| {
         var elevator = &elevators[i];
         if (elevator.enabled == false) {
             continue;
@@ -48,9 +48,9 @@ pub fn move(level: *c.TITUS_level) void {
 
         // if elevators are out of the screen space, turn them invisible
         if (((elevator.sprite.x + 16 - (globals.BITMAP_X * 16)) >= 0) and // +16: closer to center
-            ((elevator.sprite.x - 16 - (globals.BITMAP_X * 16)) <= c.screen_width * 16) and // -16: closer to center
+            ((elevator.sprite.x - 16 - (globals.BITMAP_X * 16)) <= globals.screen_width * 16) and // -16: closer to center
             ((elevator.sprite.y - (globals.BITMAP_Y * 16)) >= 0) and
-            ((elevator.sprite.y - (globals.BITMAP_Y * 16)) - 16 <= c.screen_height * 16))
+            ((elevator.sprite.y - (globals.BITMAP_Y * 16)) - 16 <= globals.screen_height * 16))
         {
             elevator.sprite.invisible = false;
         } else {

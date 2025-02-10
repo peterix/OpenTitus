@@ -25,7 +25,6 @@
 
 const std = @import("std");
 
-const c = @import("../c.zig");
 const SDL = @import("../SDL.zig");
 
 const window = @import("../window.zig");
@@ -33,6 +32,7 @@ const keyboard = @import("keyboard.zig");
 const data = @import("../data.zig");
 const fonts = @import("fonts.zig");
 const globals = @import("../globals.zig");
+const lvl = @import("../level.zig");
 
 const Rect = struct {
     x: u16,
@@ -43,7 +43,7 @@ const Rect = struct {
 
 // FIXME: deduplicate these two...
 // TODO: return the rect this has drawn over and blank it in the next iteration
-fn render_extrabonus(level: *c.TITUS_level, last_bounds: ?Rect) Rect {
+fn render_extrabonus(level: *lvl.TITUS_level, last_bounds: ?Rect) Rect {
     if (last_bounds != null) {
         var rect = SDL.Rect{
             // FIXME: move all UI screens to an overlay that's independent from the scroll buffer madness
@@ -70,7 +70,7 @@ fn render_extrabonus(level: *c.TITUS_level, last_bounds: ?Rect) Rect {
 }
 
 // TODO: return the rect this has drawn over and blank it in the next iteration
-fn render_lives(level: *c.TITUS_level, last_bounds: ?Rect) Rect {
+fn render_lives(level: *lvl.TITUS_level, last_bounds: ?Rect) Rect {
     if (last_bounds != null) {
         var rect = SDL.Rect{
             // FIXME: move all UI screens to an overlay that's independent from the scroll buffer madness
@@ -97,16 +97,16 @@ fn render_lives(level: *c.TITUS_level, last_bounds: ?Rect) Rect {
     return bounds;
 }
 
-pub export fn viewstatus(level: *c.TITUS_level, countbonus: bool) c_int {
+pub export fn viewstatus(level: *lvl.TITUS_level, countbonus: bool) c_int {
     var retval: c_int = undefined;
     var tmpchars = [_]u8{0} ** 10;
     window.window_clear(null);
 
-    if (data.game == c.Titus) {
+    if (data.game == .Titus) {
         fonts.Gold.render("Level", 13 * 8, 12 * 5, .{});
         fonts.Gold.render("Extra Bonus", 10 * 8, 10 * 12, .{});
         fonts.Gold.render("Lives", 10 * 8, 11 * 12, .{});
-    } else if (data.game == c.Moktar) {
+    } else if (data.game == .Moktar) {
         fonts.Gold.render("Etape", 13 * 8, 12 * 5, .{});
         fonts.Gold.render("Extra Bonus", 10 * 8, 10 * 12, .{});
         fonts.Gold.render("Vie", 10 * 8, 11 * 12, .{});

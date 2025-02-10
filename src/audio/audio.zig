@@ -31,7 +31,6 @@ pub const BackendType = AudioEngine.BackendType;
 
 const game = @import("../game.zig");
 const SDL = @import("../SDL.zig");
-const c = @import("../c.zig");
 
 const miniaudio = @import("miniaudio/miniaudio.zig");
 
@@ -127,10 +126,6 @@ pub fn playEvent(event: AudioEvent) void {
     backend.lock();
     backend.playEvent(event);
     backend.unlock();
-}
-
-pub export fn playEvent_c(eventInt: c.AudioEvent) void {
-    playEvent(@enumFromInt(eventInt));
 }
 
 pub fn set_volume(volume: u8) void {

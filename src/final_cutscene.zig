@@ -25,19 +25,20 @@
 
 const globals = @import("globals.zig");
 const SDL = @import("SDL.zig");
-const c = @import("c.zig");
 const sprites = @import("sprites.zig");
 const scroll = @import("scroll.zig");
 const render = @import("render.zig");
+const ScreenContext = render.ScreenContext;
 const window = @import("window.zig");
 const keyboard = @import("ui/keyboard.zig");
+const lvl = @import("level.zig");
 
 const anim_zoubida: []const i16 = &.{ 337, 337, 337, 338, 338, 338, 339, 339, 339, 340, 340, 340, 341, 341, 341, 342, 342, 342, -18 };
 const anim_moktar: []const i16 = &.{ 343, 343, 343, 344, 344, 344, 345, 345, 345, -9 };
 const anim_smoke: []const i16 = &.{ 347, 347, 348, 348, 349, 349, 350, 350, 351, 351, 352, 352, 353, 353, 354, 354, -16 };
 const heart_animation: []const i16 = &.{ 153, 142, 153, 142, 153, 142, 139, 148, 139, 148, 139, 148, 139, 162, 139, 162, 139, 162, 152, 171, 152, 171, 152, 171, 171, 165, 171, 165, 171, 165, 170, 147, 170, 147, 170, 147, -12 * 3 };
 
-fn advanceAnimation(level: *c.TITUS_level, spr: *c.TITUS_sprite) void {
+fn advanceAnimation(level: *lvl.TITUS_level, spr: *lvl.TITUS_sprite) void {
     var pointer = spr.animation + 1;
     while (pointer.* < 0) {
         // this is just ugly...
@@ -47,7 +48,7 @@ fn advanceAnimation(level: *c.TITUS_level, spr: *c.TITUS_sprite) void {
     spr.animation = pointer;
 }
 
-pub fn play(context: *c.ScreenContext, level: *c.TITUS_level) c_int {
+pub fn play(context: *ScreenContext, level: *lvl.TITUS_level) c_int {
     var player = &level.player;
     globals.BITMAP_X = 0;
     globals.NOSCROLL_FLAG = true;
@@ -119,7 +120,7 @@ pub fn play(context: *c.ScreenContext, level: *c.TITUS_level) c_int {
         //Check all events
         while (SDL.pollEvent(&event)) {
             if (event.type == SDL.QUIT) {
-                return c.TITUS_ERROR_QUIT;
+                return -1; //c.TITUS_ERROR_QUIT;
             } else if (event.type == SDL.KEYDOWN) {
                 if (event.key.keysym.scancode == SDL.SCANCODE_F11) {
                     window.toggle_fullscreen();

@@ -27,7 +27,6 @@ const std = @import("std");
 
 const window = @import("window.zig");
 const game = @import("game.zig");
-const c = @import("c.zig");
 
 const json = @import("json.zig");
 const ManagedJSON = json.ManagedJSON;

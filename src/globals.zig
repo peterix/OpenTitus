@@ -28,6 +28,18 @@ const std = @import("std");
 pub const screen_width = 20;
 pub const screen_height = 12;
 
+pub const TEST_ZONE = 4;
+pub const MAX_X = 4;
+pub const MAX_Y = 12;
+pub const MAP_LIMIT_Y = -1;
+pub const FIRST_OBJET = 30;
+pub const FIRST_NMI = 101;
+pub const MAXIMUM_BONUS = 100;
+pub const MAXIMUM_ENERGY = 16;
+pub const GESTION_X = 40;
+pub const GESTION_Y = 20;
+pub const MAX_SPEED_DEAD = 20;
+
 pub const TileCoord = i16;
 pub const PixelCoord = i16;
 

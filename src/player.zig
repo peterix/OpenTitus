@@ -26,11 +26,16 @@
 const std = @import("std");
 
 const globals = @import("globals.zig");
-const c = @import("c.zig");
 const SDL = @import("SDL.zig");
 const game = @import("game.zig");
 const window = @import("window.zig");
 const data = @import("data.zig");
+const objects = @import("objects.zig");
+const lvl = @import("level.zig");
+const render = @import("render.zig");
+const audio = @import("audio/audio.zig");
+const sprites = @import("sprites.zig");
+const common = @import("common.zig");
 
 const credits = @import("ui/credits.zig");
 const pause_menu = @import("ui/pause_menu.zig");
@@ -44,13 +49,13 @@ fn add_carry() u8 {
     }
 }
 
-fn handle_player_input(player: *c.TITUS_player, keystate: []const u8) void {
+fn handle_player_input(player: *lvl.TITUS_player, keystate: []const u8) void {
     player.x_axis = @as(i8, @intCast(keystate[SDL.SCANCODE_RIGHT] | keystate[SDL.SCANCODE_D])) - @as(i8, @intCast(keystate[SDL.SCANCODE_LEFT] | keystate[SDL.SCANCODE_A]));
     player.y_axis = @as(i8, @intCast(keystate[SDL.SCANCODE_DOWN] | keystate[SDL.SCANCODE_S])) - @as(i8, @intCast(keystate[SDL.SCANCODE_UP] | keystate[SDL.SCANCODE_W]));
     player.action_pressed = keystate[SDL.SCANCODE_SPACE] != 0;
 }
 
-pub fn move_player(arg_context: *c.ScreenContext, arg_level: *c.TITUS_level) c_int {
+pub fn move_player(arg_context: *render.ScreenContext, arg_level: *lvl.TITUS_level) c_int {
     // Part 1: Check keyboard input
     // Part 2: Determine the player's action, and execute action dependent code
     // Part 3: Move the player + collision detection
@@ -246,41 +251,41 @@ pub fn move_player(arg_context: *c.ScreenContext, arg_level: *c.TITUS_level) c_i
 
     // Part 4: Move the throwed/carried object
     // Move throwed/carried object
-    if (c.DROP_FLAG) {
+    if (globals.DROP_FLAG) {
         // sprite2: throwed or dropped object
         newX = (player.sprite2.speed_x >> 4) + player.sprite2.x;
         if ((newX < (level.width << 4)) and // Left for right level edge
             (newX >= 0) and // Right for level left edge
             (newX >=
-            (c.BITMAP_X << 4) -
-            c.GESTION_X) and // Max 40 pixels left for screen (bug: the purpose
+            (globals.BITMAP_X << 4) -
+            globals.GESTION_X) and // Max 40 pixels left for screen (bug: the purpose
             // was probably one screen left for the screen)
-            (newX <= (c.BITMAP_X << 4) + (c.screen_width << 4) +
-            c.GESTION_X))
+            (newX <= (globals.BITMAP_X << 4) + (globals.screen_width << 4) +
+            globals.GESTION_X))
         { // Max 40 pixels right for screen
             player.sprite2.x = newX;
             newY = (player.sprite2.speed_y >> 4) + player.sprite2.y;
             if ((newY < (level.height << 4)) and // Above bottom edge of level
                 (newY >= 0) and // Below top edge of level
                 (newY >=
-                (c.BITMAP_Y << 4) -
-                c.GESTION_Y) and // Max 20 pixels above the screen (bug: the purpose
+                (globals.BITMAP_Y << 4) -
+                globals.GESTION_Y) and // Max 20 pixels above the screen (bug: the purpose
                 // was probably one screen above the screen)
-                (newY <= (c.BITMAP_Y << 4) + (c.screen_height << 4) +
-                c.GESTION_Y))
+                (newY <= (globals.BITMAP_Y << 4) + (globals.screen_height << 4) +
+                globals.GESTION_Y))
             { // Max 20 pixels below the screen
                 player.sprite2.y = newY;
             } else {
                 player.sprite2.enabled = false;
-                c.DROP_FLAG = false;
+                globals.DROP_FLAG = false;
             }
         } else {
             player.sprite2.enabled = false;
-            c.DROP_FLAG = false;
+            globals.DROP_FLAG = false;
         }
-    } else if (c.CARRY_FLAG) { // Place the object on top of or beside the player
-        if (!c.LADDER_FLAG and ((c.LAST_ORDER == 16 + 5) or
-            (c.LAST_ORDER == 16 + 7)))
+    } else if (globals.CARRY_FLAG) { // Place the object on top of or beside the player
+        if (!globals.LADDER_FLAG and ((globals.LAST_ORDER == 16 + 5) or
+            (globals.LAST_ORDER == 16 + 7)))
         { // Kneestand or take
             player.sprite2.y = player.sprite.y - 4;
             if (player.sprite.flipped) {
@@ -290,8 +295,8 @@ pub fn move_player(arg_context: *c.ScreenContext, arg_level: *c.TITUS_level) c_i
             }
         } else {
             if ((player.sprite.number == 14) or // Sliding down the ladder OR
-                (((c.LAST_ORDER & 0x0F) != 7) and // Not taking
-                ((c.LAST_ORDER & 0x0F) != 8)))
+                (((globals.LAST_ORDER & 0x0F) != 7) and // Not taking
+                ((globals.LAST_ORDER & 0x0F) != 8)))
             { // Not throwing/dropping
                 player.sprite2.x = player.sprite.x + 2;
                 if ((player.sprite.number == 23) or // Climbing (c)
@@ -307,31 +312,31 @@ pub fn move_player(arg_context: *c.ScreenContext, arg_level: *c.TITUS_level) c_i
             }
         }
     }
-    if (c.SEECHOC_FLAG != 0) {
-        c.SEECHOC_FLAG -= 1;
-        if (c.SEECHOC_FLAG == 0) {
+    if (globals.SEECHOC_FLAG != 0) {
+        globals.SEECHOC_FLAG -= 1;
+        if (globals.SEECHOC_FLAG == 0) {
             player.sprite2.enabled = false;
         }
     }
 
     // Part 5: decrease the timers
-    c.subto0(&globals.INVULNERABLE_FLAG);
-    c.subto0(&globals.RESETLEVEL_FLAG);
-    c.subto0(&globals.TAPISFLY_FLAG);
-    c.subto0(&globals.CROSS_FLAG);
-    c.subto0(&globals.GRAVITY_FLAG);
-    c.subto0(&globals.FURTIF_FLAG);
-    c.subto0(&globals.KICK_FLAG);
+    common.subto0(&globals.INVULNERABLE_FLAG);
+    common.subto0(&globals.RESETLEVEL_FLAG);
+    common.subto0(&globals.TAPISFLY_FLAG);
+    common.subto0(&globals.CROSS_FLAG);
+    common.subto0(&globals.GRAVITY_FLAG);
+    common.subto0(&globals.FURTIF_FLAG);
+    common.subto0(&globals.KICK_FLAG);
     if (player.sprite.speed_y == 0) {
-        c.subto0(&globals.CHOC_FLAG);
+        common.subto0(&globals.CHOC_FLAG);
     }
     if (player.*.sprite.speed_x == 0 and player.*.sprite.speed_y == 0) {
         globals.KICK_FLAG = 0;
     }
-    c.subto0(&globals.FUME_FLAG);
+    common.subto0(&globals.FUME_FLAG);
     if ((globals.FUME_FLAG != 0) and ((globals.FUME_FLAG & 0x03) == 0)) {
-        c.updatesprite(level, &player.sprite2, player.sprite2.number + 1, false);
-        if (player.sprite2.number == c.FIRST_OBJET + 19) {
+        sprites.updatesprite(level, &player.sprite2, player.sprite2.number + 1, false);
+        if (player.sprite2.number == globals.FIRST_OBJET + 19) {
             player.sprite2.enabled = false;
             globals.FUME_FLAG = 0;
         }
@@ -339,7 +344,7 @@ pub fn move_player(arg_context: *c.ScreenContext, arg_level: *c.TITUS_level) c_i
     return 0;
 }
 
-fn DEC_LIFE(level: *c.TITUS_level) void {
+fn DEC_LIFE(level: *lvl.TITUS_level) void {
     globals.RESETLEVEL_FLAG = 10;
     globals.BAR_FLAG = 0;
     if (level.lives == 0) {
@@ -349,7 +354,7 @@ fn DEC_LIFE(level: *c.TITUS_level) void {
     }
 }
 
-fn CASE_DEAD_IM(level: *c.TITUS_level) void {
+fn CASE_DEAD_IM(level: *lvl.TITUS_level) void {
     // Kill the player immediately (spikes/water/flames etc.
     // Sets RESET_FLAG to 2, in opposite to being killed as a result of 0 HP (then
     // RESET_FLAG is 10)
@@ -357,7 +362,7 @@ fn CASE_DEAD_IM(level: *c.TITUS_level) void {
     globals.RESETLEVEL_FLAG = 2;
 }
 
-fn player_collide(level: *c.TITUS_level) void {
+fn player_collide(level: *lvl.TITUS_level) void {
     // Collision detection between player
     // and tiles/objects/elevators
     // Point the foot on the block!
@@ -426,16 +431,16 @@ fn player_collide(level: *c.TITUS_level) void {
         changeX = 0;
     }
     var height: i16 = player.sprite.spritedata.*.collheight;
-    if ((player.sprite.y > c.MAP_LIMIT_Y + 1) and (initY >= 0) and (initY < level.height)) {
+    if ((player.sprite.y > globals.MAP_LIMIT_Y + 1) and (initY >= 0) and (initY < level.height)) {
         tileX = (player.sprite.x + changeX) >> 4;
         tileY = initY;
         var first = true;
         while (true) {
-            const hflag = c.get_horizflag(level, tileY, tileX);
+            const hflag = lvl.get_horizflag(level, tileY, tileX);
             if (first) {
                 BLOCK_XXPRG(level, hflag, tileY, tileX);
                 first = false;
-            } else if (hflag == c.HFLAG_CODE or hflag == c.HFLAG_BONUS) {
+            } else if (hflag == .HFLAG_CODE or hflag == .HFLAG_BONUS) {
                 BLOCK_XXPRG(level, hflag, tileY, tileX);
             }
             if (tileY == 0) {
@@ -448,7 +453,7 @@ fn player_collide(level: *c.TITUS_level) void {
     }
 }
 
-fn TAKE_BLK_AND_YTEST(level: *c.TITUS_level, tileY_in: i16, tileX_in: i16) void {
+fn TAKE_BLK_AND_YTEST(level: *lvl.TITUS_level, tileY_in: i16, tileX_in: i16) void {
     var tileY = tileY_in;
     var tileX = tileX_in;
     const player = &level.*.player;
@@ -472,8 +477,8 @@ fn TAKE_BLK_AND_YTEST(level: *c.TITUS_level, tileY_in: i16, tileX_in: i16) void 
     if (tileY == -1) {
         tileY = 0;
     }
-    const floor = c.get_floorflag(level, tileY + 1, tileX);
-    const floor_above: c.enum_FFLAG = c.get_floorflag(level, tileY, tileX);
+    const floor = lvl.get_floorflag(level, tileY + 1, tileX);
+    const floor_above = lvl.get_floorflag(level, tileY, tileX);
 
     if (globals.LAST_ORDER & 0x0F != 2) { // 2=SAUTER
         // Player versus floor
@@ -483,12 +488,12 @@ fn TAKE_BLK_AND_YTEST(level: *c.TITUS_level, tileY_in: i16, tileX_in: i16) void 
     if (tileY < 1 or player.sprite.speed_y > 0) {
         return;
     }
-    const cflag = c.get_ceilflag(level, tileY - 1, tileX);
+    const cflag = lvl.get_ceilflag(level, tileY - 1, tileX);
     BLOCK_YYPRGD(level, cflag, tileY - 1, tileX);
 
-    var horiz = c.get_horizflag(level, tileY, tileX);
-    if ((horiz == c.HFLAG_WALL or horiz == c.HFLAG_DEADLY or horiz == c.HFLAG_PADLOCK) and // Step on a hard tile?
-        player.*.sprite.y > c.MAP_LIMIT_Y + 1)
+    var horiz = lvl.get_horizflag(level, tileY, tileX);
+    if ((horiz == .HFLAG_WALL or horiz == .HFLAG_DEADLY or horiz == .HFLAG_PADLOCK) and // Step on a hard tile?
+        player.*.sprite.y > globals.MAP_LIMIT_Y + 1)
     {
         if (player.sprite.speed_x > 0) {
             change = -1;
@@ -496,13 +501,13 @@ fn TAKE_BLK_AND_YTEST(level: *c.TITUS_level, tileY_in: i16, tileX_in: i16) void 
             change = 1;
         }
         tileX +%= change;
-        horiz = c.get_horizflag(level, tileY, tileX);
+        horiz = lvl.get_horizflag(level, tileY, tileX);
         if (horiz == 0) { // No wall
             player.sprite.x += change << 1;
         } else {
             change = 0 - change;
             tileX +%= change + change;
-            horiz = c.get_horizflag(level, tileY, tileX);
+            horiz = lvl.get_horizflag(level, tileY, tileX);
             if (horiz == 0) {
                 player.sprite.x += change << 1;
             }
@@ -510,17 +515,17 @@ fn TAKE_BLK_AND_YTEST(level: *c.TITUS_level, tileY_in: i16, tileX_in: i16) void 
     }
 }
 
-fn BLOCK_YYPRGD(level: *c.TITUS_level, cflag: c.enum_CFLAG, tileY_in: i16, tileX_in: i16) void {
+fn BLOCK_YYPRGD(level: *lvl.TITUS_level, cflag: lvl.CFlag, tileY_in: i16, tileX_in: i16) void {
     var tileX = tileX_in;
     var tileY = tileY_in;
     const player = &level.player;
-    var object: [*c]c.TITUS_object = undefined;
+    var object: [*c]lvl.TITUS_object = undefined;
 
     // Action on different ceiling flags
     switch (cflag) {
-        c.CFLAG_NOCEILING => {},
-        c.CFLAG_CEILING, c.CFLAG_DEADLY => {
-            if (cflag == c.CFLAG_DEADLY and !globals.GODMODE) {
+        .CFLAG_NOCEILING => {},
+        .CFLAG_CEILING, .CFLAG_DEADLY => {
+            if (cflag == .CFLAG_DEADLY and !globals.GODMODE) {
                 CASE_DEAD_IM(level);
             } else if (player.sprite.speed_y != 0) {
                 // Stop movement
@@ -537,11 +542,11 @@ fn BLOCK_YYPRGD(level: *c.TITUS_level, cflag: c.enum_CFLAG, tileY_in: i16, tileX
                     if (object != null) {
                         tileX = object.*.sprite.x >> 4;
                         tileY = object.*.sprite.y >> 4;
-                        var hflag = c.get_horizflag(level, tileY, tileX);
-                        if (hflag == c.HFLAG_WALL or hflag == c.HFLAG_DEADLY or hflag == c.HFLAG_PADLOCK) {
+                        var hflag = lvl.get_horizflag(level, tileY, tileX);
+                        if (hflag == .HFLAG_WALL or hflag == .HFLAG_DEADLY or hflag == .HFLAG_PADLOCK) {
                             tileX -%= 1;
-                            hflag = c.get_horizflag(level, tileY, tileX);
-                            if (hflag == c.HFLAG_WALL or hflag == c.HFLAG_DEADLY or hflag == c.HFLAG_PADLOCK) {
+                            hflag = lvl.get_horizflag(level, tileY, tileX);
+                            if (hflag == .HFLAG_WALL or hflag == .HFLAG_DEADLY or hflag == .HFLAG_PADLOCK) {
                                 object.*.sprite.x += 16;
                             } else {
                                 object.*.sprite.x -= 16;
@@ -551,49 +556,49 @@ fn BLOCK_YYPRGD(level: *c.TITUS_level, cflag: c.enum_CFLAG, tileY_in: i16, tileX
                 }
             }
         },
-        c.CFLAG_LADDER => {
+        .CFLAG_LADDER => {
             if (player.sprite.speed_y < 0 and player.sprite.speed_x == 0) {
                 globals.SAUT_COUNT = 10;
                 globals.LADDER_FLAG = true;
             }
         },
-        c.CFLAG_PADLOCK => {
+        .CFLAG_PADLOCK => {
             collect_checkpoint(level, tileY, tileX);
         },
         else => {},
     }
 }
 
-fn BLOCK_XXPRG(level: *c.TITUS_level, hflag: c.enum_HFLAG, tileY: i16, tileX: i16) void {
+fn BLOCK_XXPRG(level: *lvl.TITUS_level, hflag: lvl.HFlag, tileY: i16, tileX: i16) void {
     switch (hflag) {
-        c.HFLAG_NOWALL => {},
-        c.HFLAG_WALL => {
+        .HFLAG_NOWALL => {},
+        .HFLAG_WALL => {
             player_block_x(level);
         },
-        c.HFLAG_BONUS => {
+        .HFLAG_BONUS => {
             _ = collect_bonus(level, tileY, tileX);
         },
-        c.HFLAG_DEADLY => {
+        .HFLAG_DEADLY => {
             if (!globals.GODMODE) {
                 CASE_DEAD_IM(level);
             } else {
                 player_block_x(level);
             }
         },
-        c.HFLAG_CODE => {
+        .HFLAG_CODE => {
             collect_level_unlock(level, @truncate(level.levelnumber), tileY, tileX);
         },
-        c.HFLAG_PADLOCK => {
+        .HFLAG_PADLOCK => {
             collect_checkpoint(level, tileY, tileX);
         },
-        c.HFLAG_LEVEL14 => {
+        .HFLAG_LEVEL14 => {
             collect_level_unlock(level, 14 - 1, tileY, tileX);
         },
         else => {},
     }
 }
 
-fn player_block_x(level: *c.TITUS_level) void {
+fn player_block_x(level: *lvl.TITUS_level) void {
     const player = &level.player;
     // Horizontal hit (wall), stop the player
     player.sprite.x -= player.sprite.speed_x >> 4;
@@ -604,7 +609,7 @@ fn player_block_x(level: *c.TITUS_level) void {
     }
 }
 
-pub export fn player_drop_carried(level: [*c]c.TITUS_level) [*c]c.TITUS_object {
+pub export fn player_drop_carried(level: [*c]lvl.TITUS_level) [*c]lvl.TITUS_object {
     const sprite2 = &level.*.player.sprite2;
     if (!sprite2.enabled or !globals.CARRY_FLAG)
         return null;
@@ -612,10 +617,10 @@ pub export fn player_drop_carried(level: [*c]c.TITUS_level) [*c]c.TITUS_object {
     for (&level.*.object) |*object| {
         if (object.sprite.enabled)
             continue;
-        c.updateobjectsprite(level, object, sprite2.number, true);
+        objects.updateobjectsprite(level, object, sprite2.number, true);
         sprite2.enabled = false;
         object.sprite.killing = false;
-        if (object.sprite.number < c.FIRST_NMI) {
+        if (object.sprite.number < globals.FIRST_NMI) {
             object.sprite.droptobottom = false;
         } else {
             object.sprite.droptobottom = true;
@@ -636,26 +641,26 @@ pub export fn player_drop_carried(level: [*c]c.TITUS_level) [*c]c.TITUS_object {
     return null;
 }
 
-fn player_fall(level: *c.TITUS_level) void {
+fn player_fall(level: *lvl.TITUS_level) void {
     // No wall under the player; fall down!
     const player = &level.player;
     globals.SAUT_FLAG = 6;
     if (globals.KICK_FLAG != 0) {
         return;
     }
-    XACCELERATION(player, c.MAX_X * 16);
-    YACCELERATION(player, c.MAX_Y * 16);
+    XACCELERATION(player, globals.MAX_X * 16);
+    YACCELERATION(player, globals.MAX_Y * 16);
     if (globals.CHOC_FLAG != 0) {
-        c.updatesprite(level, &player.sprite, 15, true); // sprite when hit
+        sprites.updatesprite(level, &player.sprite, 15, true); // sprite when hit
     } else if (!globals.CARRY_FLAG) {
-        c.updatesprite(level, &player.sprite, 10, true); // position while falling  (jump sprite?)
+        sprites.updatesprite(level, &player.sprite, 10, true); // position while falling  (jump sprite?)
     } else {
-        c.updatesprite(level, &player.sprite, 21, true); // position falling and carry  (jump and carry sprite?)
+        sprites.updatesprite(level, &player.sprite, 21, true); // position falling and carry  (jump and carry sprite?)
     }
     player.*.sprite.flipped = globals.SENSX < 0;
 }
 
-fn XACCELERATION(player: *c.TITUS_player, maxspeed: i16) void {
+fn XACCELERATION(player: *lvl.TITUS_player, maxspeed: i16) void {
     // Sideway acceleration
     var changeX: i16 = undefined;
     if (globals.X_FLAG) {
@@ -673,7 +678,7 @@ fn XACCELERATION(player: *c.TITUS_player, maxspeed: i16) void {
     }
 }
 
-fn YACCELERATION(player: *c.TITUS_player, maxspeed: i16) void {
+fn YACCELERATION(player: *lvl.TITUS_player, maxspeed: i16) void {
     // Accelerate downwards
     if (player.sprite.speed_y + 16 < maxspeed) {
         player.sprite.speed_y = player.sprite.speed_y + 16;
@@ -682,36 +687,36 @@ fn YACCELERATION(player: *c.TITUS_player, maxspeed: i16) void {
     }
 }
 
-fn BLOCK_YYPRG(level: *c.TITUS_level, floor: c.enum_FFLAG, floor_above: c.enum_FFLAG, tileY: i16, tileX: i16) void {
+fn BLOCK_YYPRG(level: *lvl.TITUS_level, floor: lvl.FFlag, floor_above: lvl.FFlag, tileY: i16, tileX: i16) void {
     // Action on different floor flags
     const player = &level.player;
     var order: u8 = undefined;
     switch (floor) {
         // No floor
-        c.FFLAG_NOFLOOR => {
+        .FFLAG_NOFLOOR => {
             player_fall_F();
         },
         // Floor
-        c.FFLAG_FLOOR => {
+        .FFLAG_FLOOR => {
             player_block_yu(player);
         },
         // Slightly slippery floor
-        c.FFLAG_SSFLOOR => {
+        .FFLAG_SSFLOOR => {
             player_block_yu(player);
             player.GLISSE = 1;
         },
         // Slippery floor
-        c.FFLAG_SFLOOR => {
+        .FFLAG_SFLOOR => {
             player_block_yu(player);
             player.GLISSE = 2;
         },
         // Very slippery floor
-        c.FFLAG_VSFLOOR => {
+        .FFLAG_VSFLOOR => {
             player_block_yu(player);
             player.GLISSE = 3;
         },
         // Drop-through if kneestanding
-        c.FFLAG_DROP => {
+        .FFLAG_DROP => {
             player.GLISSE = 0;
             if (globals.CROSS_FLAG == 0) {
                 player_block_yu(player);
@@ -720,7 +725,7 @@ fn BLOCK_YYPRG(level: *c.TITUS_level, floor: c.enum_FFLAG, floor_above: c.enum_F
             }
         },
         // Ladder
-        c.FFLAG_LADDER => {
+        .FFLAG_LADDER => {
             // Fall if hit
             // Skip if walking/crawling
             if (globals.CHOC_FLAG != 0) {
@@ -734,7 +739,7 @@ fn BLOCK_YYPRG(level: *c.TITUS_level, floor: c.enum_FFLAG, floor_above: c.enum_F
             }
             if (order == 5) { // action baisse
                 player_fall_F(); // Free fall
-                c.updatesprite(level, &player.sprite, 14, true); // sprite: start climbing down
+                sprites.updatesprite(level, &player.sprite, 14, true); // sprite: start climbing down
                 player.sprite.y += 8;
             }
             if (floor_above != 6) { // ladder
@@ -748,29 +753,29 @@ fn BLOCK_YYPRG(level: *c.TITUS_level, floor: c.enum_FFLAG, floor_above: c.enum_F
                 }
             }
 
-            c.subto0(&globals.SAUT_FLAG);
+            common.subto0(&globals.SAUT_FLAG);
             globals.SAUT_COUNT = 0;
             globals.YFALL = 2;
 
             globals.LADDER_FLAG = true;
         },
-        c.FFLAG_BONUS => {
+        .FFLAG_BONUS => {
             _ = collect_bonus(level, tileY, tileX);
         },
-        c.FFLAG_WATER, c.FFLAG_FIRE, c.FFLAG_SPIKES => {
+        .FFLAG_WATER, .FFLAG_FIRE, .FFLAG_SPIKES => {
             if (!globals.GODMODE) {
                 CASE_DEAD_IM(level);
             } else {
                 player_block_yu(player); // If godmode; ordinary floor
             }
         },
-        c.FFLAG_CODE => {
+        .FFLAG_CODE => {
             collect_level_unlock(level, @truncate(level.levelnumber), tileY, tileX);
         },
-        c.FFLAG_PADLOCK => {
+        .FFLAG_PADLOCK => {
             collect_checkpoint(level, tileY, tileX);
         },
-        c.FFLAG_LEVEL14 => {
+        .FFLAG_LEVEL14 => {
             collect_level_unlock(level, 14 - 1, tileY, tileX);
         },
         else => {},
@@ -781,7 +786,7 @@ fn player_fall_F() void {
     globals.YFALL = globals.YFALL | 0x01;
 }
 
-fn player_block_yu(player: *c.TITUS_player) void {
+fn player_block_yu(player: *lvl.TITUS_player) void {
     // Floor; the player will not fall through
     globals.POCKET_FLAG = true;
     player.GLISSE = 0;
@@ -791,12 +796,12 @@ fn player_block_yu(player: *c.TITUS_player) void {
     }
     player.sprite.y = @bitCast(@as(u16, @bitCast(player.sprite.y)) & 0xFFF0);
     player.sprite.speed_y = 0;
-    c.subto0(&globals.SAUT_FLAG);
+    common.subto0(&globals.SAUT_FLAG);
     globals.SAUT_COUNT = 0;
     globals.YFALL = 2;
 }
 
-fn collect_bonus(level: *c.TITUS_level, tileY: i16, tileX: i16) bool {
+fn collect_bonus(level: *lvl.TITUS_level, tileY: i16, tileX: i16) bool {
     // Handle bonuses. Increase energy if HP, and change the bonus tile to normal tile
     for (&level.bonus) |*bonus| {
         if (!bonus.exists)
@@ -806,17 +811,17 @@ fn collect_bonus(level: *c.TITUS_level, tileY: i16, tileX: i16) bool {
 
         if (bonus.bonustile >= (255 - 2)) {
             level.bonuscollected += 1;
-            c.playEvent_c(c.Event_PlayerCollectBonus);
+            audio.playEvent(.Event_PlayerCollectBonus);
             INC_ENERGY(level);
         }
-        c.set_tile(level, tileY, tileX, bonus.replacetile);
+        lvl.set_tile(level, tileY, tileX, bonus.replacetile);
         globals.GRAVITY_FLAG = 4;
         return true;
     }
     return false;
 }
 
-fn collect_level_unlock(level: *c.TITUS_level, level_index: u8, tileY: i16, tileX: i16) void {
+fn collect_level_unlock(level: *lvl.TITUS_level, level_index: u8, tileY: i16, tileX: i16) void {
     // FIXME: nothing is done here really. It should unlock the level as a starting point
     _ = &level_index;
     // Codelamp
@@ -824,35 +829,35 @@ fn collect_level_unlock(level: *c.TITUS_level, level_index: u8, tileY: i16, tile
     if (!collect_bonus(level, tileY, tileX))
         return;
 
-    c.playEvent_c(c.Event_PlayerCollectLamp);
+    audio.playEvent(.Event_PlayerCollectLamp);
 }
 
-fn collect_checkpoint(level: *c.TITUS_level, tileY: i16, tileX: i16) void {
+fn collect_checkpoint(level: *lvl.TITUS_level, tileY: i16, tileX: i16) void {
     if (!collect_bonus(level, tileY, tileX))
         return;
 
     const player = &level.player;
-    c.playEvent_c(c.Event_PlayerCollectWaypoint);
+    audio.playEvent(.Event_PlayerCollectWaypoint);
     player.initX = player.sprite.x;
     player.initY = player.sprite.y;
     // carrying cage?
-    if (player.sprite2.number == c.FIRST_OBJET + 26 or player.sprite2.number == c.FIRST_OBJET + 27) {
+    if (player.sprite2.number == globals.FIRST_OBJET + 26 or player.sprite2.number == globals.FIRST_OBJET + 27) {
         player.cageX = player.sprite.x;
         player.cageY = player.sprite.y;
     }
 }
 
-fn INC_ENERGY(level: *c.TITUS_level) void {
+fn INC_ENERGY(level: *lvl.TITUS_level) void {
     const player = &level.player;
     globals.BAR_FLAG = 50;
-    if (player.hp == c.MAXIMUM_ENERGY) {
+    if (player.hp == globals.MAXIMUM_ENERGY) {
         level.extrabonus += 1;
     } else {
         player.hp += 1;
     }
 }
 
-pub export fn DEC_ENERGY(level: *c.TITUS_level) void {
+pub export fn DEC_ENERGY(level: *lvl.TITUS_level) void {
     const player = &level.player;
     globals.BAR_FLAG = 50;
     if (globals.RESETLEVEL_FLAG == 0) {
@@ -865,13 +870,13 @@ pub export fn DEC_ENERGY(level: *c.TITUS_level) void {
     }
 }
 
-fn ACTION_PRG(level: *c.TITUS_level, action: u8) void {
+fn ACTION_PRG(level: *lvl.TITUS_level, action: u8) void {
     // Action dependent code
     const player = &level.player;
     var tileX: i16 = undefined;
     var tileY: i16 = undefined;
     var fflag: u8 = undefined;
-    // var object: [*c]c.TITUS_object = undefined;
+    // var object: [*c]lvl.TITUS_object = undefined;
     //var i: i16 = undefined;
     var diffX: i16 = undefined;
     var speed_x: i16 = undefined;
@@ -887,12 +892,12 @@ fn ACTION_PRG(level: *c.TITUS_level, action: u8) void {
             } else {
                 player.sprite.animation = data.get_anim_player(action);
             }
-            c.updatesprite(level, &player.sprite, player.sprite.animation.*, true);
+            sprites.updatesprite(level, &player.sprite, player.sprite.animation.*, true);
             player.sprite.flipped = globals.SENSX < 0;
         },
         1, 17, 19 => {
             // Handle walking
-            XACCELERATION(player, c.MAX_X * 16);
+            XACCELERATION(player, globals.MAX_X * 16);
             NEW_FORM(player, action); // Update last order and action (animation)
             GET_IMAGE(level); // Update player sprite
         },
@@ -902,8 +907,8 @@ fn ACTION_PRG(level: *c.TITUS_level, action: u8) void {
                 globals.SAUT_FLAG = 6; // Stop jump animation and acceleration
             } else {
                 globals.SAUT_COUNT +%= 1;
-                YACCELERATION_NEG(player, c.MAX_Y * 16 / 4);
-                XACCELERATION(player, c.MAX_X * 16);
+                YACCELERATION_NEG(player, globals.MAX_Y * 16 / 4);
+                XACCELERATION(player, globals.MAX_X * 16);
                 NEW_FORM(player, action);
                 GET_IMAGE(level);
             }
@@ -912,9 +917,9 @@ fn ACTION_PRG(level: *c.TITUS_level, action: u8) void {
             // Handle crawling
             NEW_FORM(player, action);
             GET_IMAGE(level);
-            XACCELERATION(player, @divTrunc(c.MAX_X * 16, 2));
+            XACCELERATION(player, @divTrunc(globals.MAX_X * 16, 2));
             if (@abs(player.sprite.speed_x) < (2 * 16)) {
-                c.updatesprite(level, &player.sprite, 6, true); // Crawling but not moving
+                sprites.updatesprite(level, &player.sprite, 6, true); // Crawling but not moving
                 player.*.sprite.flipped = globals.SENSX < 0;
             }
         },
@@ -931,15 +936,15 @@ fn ACTION_PRG(level: *c.TITUS_level, action: u8) void {
         6, 22 => {
             // Climb a ladder
             if (globals.X_FLAG) {
-                XACCELERATION(player, c.MAX_X * 16);
+                XACCELERATION(player, globals.MAX_X * 16);
             } else {
                 player_friction(player);
             }
             if (globals.ACTION_TIMER <= 1) {
                 if (!globals.CARRY_FLAG) {
-                    c.updatesprite(level, &player.*.sprite, 12, true); // Last climb sprite
+                    sprites.updatesprite(level, &player.*.sprite, 12, true); // Last climb sprite
                 } else {
-                    c.updatesprite(level, &player.*.sprite, 23, true); // First climb sprite (c)
+                    sprites.updatesprite(level, &player.*.sprite, 23, true); // First climb sprite (c)
                 }
             }
             if (globals.Y_FLAG) {
@@ -948,10 +953,10 @@ fn ACTION_PRG(level: *c.TITUS_level, action: u8) void {
                 player.sprite.x = @as(i16, @bitCast(@as(u16, @bitCast(player.*.sprite.x)) & 0xFFF0)) + 8;
                 tileX = player.sprite.x >> 4;
                 tileY = player.sprite.y & 0xFFF0 >> 4;
-                if (c.get_floorflag(level, tileY, tileX) != c.FFLAG_LADDER) {
-                    if (c.get_floorflag(level, tileY, tileX - 1) == c.FFLAG_LADDER) {
+                if (lvl.get_floorflag(level, tileY, tileX) != .FFLAG_LADDER) {
+                    if (lvl.get_floorflag(level, tileY, tileX - 1) == .FFLAG_LADDER) {
                         player.sprite.x -= 16;
-                    } else if (c.get_floorflag(level, tileY, tileX + 1) == c.FFLAG_LADDER) {
+                    } else if (lvl.get_floorflag(level, tileY, tileX + 1) == .FFLAG_LADDER) {
                         player.sprite.x += 16;
                     }
                 }
@@ -976,11 +981,11 @@ fn ACTION_PRG(level: *c.TITUS_level, action: u8) void {
                     if (object != null) {
                         tileX = object.*.sprite.x >> 4;
                         tileY = object.*.sprite.y >> 4;
-                        fflag = c.get_floorflag(level, tileY, tileX);
-                        if (fflag != c.FFLAG_NOFLOOR and fflag != c.FFLAG_WATER) {
+                        fflag = lvl.get_floorflag(level, tileY, tileX);
+                        if (fflag != .FFLAG_NOFLOOR and fflag != .FFLAG_WATER) {
                             tileX +%= 1;
-                            fflag = c.get_floorflag(level, tileY, tileX);
-                            if (fflag != c.FFLAG_NOFLOOR and fflag != c.FFLAG_WATER) {
+                            fflag = lvl.get_floorflag(level, tileY, tileX);
+                            if (fflag != .FFLAG_NOFLOOR and fflag != .FFLAG_WATER) {
                                 object.*.sprite.speed_x = 16 * 3;
                             } else {
                                 object.*.sprite.speed_x = 0 - (16 * 3);
@@ -998,11 +1003,11 @@ fn ACTION_PRG(level: *c.TITUS_level, action: u8) void {
                             if (!player.sprite.flipped) {
                                 diffX = 0 - diffX;
                             }
-                            if (c.game == c.Moktar) {
+                            if (data.game == .Moktar) {
                                 if (diffX >= 25) {
                                     continue;
                                 }
-                            } else if (c.game == c.Titus) {
+                            } else if (data.game == .Titus) {
                                 if (diffX >= 20) {
                                     continue;
                                 }
@@ -1031,16 +1036,16 @@ fn ACTION_PRG(level: *c.TITUS_level, action: u8) void {
                             }
 
                             // Take the object
-                            c.playEvent_c(c.Event_PlayerPickup);
+                            audio.playEvent(.Event_PlayerPickup);
                             globals.FUME_FLAG = 0;
                             object.sprite.speed_y = 0;
                             object.sprite.speed_x = 0;
                             globals.GRAVITY_FLAG = 4;
-                            c.copysprite(level, &player.*.sprite2, &object.sprite);
+                            sprites.copysprite(level, &player.*.sprite2, &object.sprite);
                             object.sprite.enabled = false;
                             globals.CARRY_FLAG = true;
                             globals.SEECHOC_FLAG = 0;
-                            if (player.sprite2.number == c.FIRST_OBJET + 19) { // flying carpet
+                            if (player.sprite2.number == globals.FIRST_OBJET + 19) { // flying carpet
                                 globals.TAPISWAIT_FLAG = 0;
                             }
                             player.sprite2.y = player.sprite.y - 4;
@@ -1060,11 +1065,11 @@ fn ACTION_PRG(level: *c.TITUS_level, action: u8) void {
                                 if (!player.sprite.flipped) {
                                     diffX = 0 - diffX;
                                 }
-                                if (c.game == c.Moktar) {
+                                if (data.game == .Moktar) {
                                     if (diffX >= 25) {
                                         continue;
                                     }
-                                } else if (c.game == c.Titus) {
+                                } else if (data.game == .Titus) {
                                     if (diffX >= 20) {
                                         continue;
                                     }
@@ -1097,7 +1102,7 @@ fn ACTION_PRG(level: *c.TITUS_level, action: u8) void {
                                     }
                                 }
 
-                                if (enemy.sprite.number >= c.FIRST_NMI) {
+                                if (enemy.sprite.number >= globals.FIRST_NMI) {
                                     diffX = player.*.sprite.x - enemy.sprite.x;
                                     if (enemy.sprite.flipped) {
                                         diffX = -diffX;
@@ -1107,7 +1112,7 @@ fn ACTION_PRG(level: *c.TITUS_level, action: u8) void {
                                     }
                                 }
 
-                                c.playEvent_c(c.Event_PlayerPickupEnemy);
+                                audio.playEvent(.Event_PlayerPickupEnemy);
                                 globals.FUME_FLAG = 0;
                                 enemy.sprite.speed_y = 0;
                                 enemy.sprite.speed_x = 0;
@@ -1115,7 +1120,7 @@ fn ACTION_PRG(level: *c.TITUS_level, action: u8) void {
                                 player.*.sprite2.flipped = enemy.sprite.flipped;
                                 player.*.sprite2.flash = enemy.sprite.flash;
                                 player.*.sprite2.visible = enemy.sprite.visible;
-                                c.updatesprite(level, &player.sprite2, enemy.carry_sprite, false);
+                                sprites.updatesprite(level, &player.sprite2, enemy.carry_sprite, false);
                                 enemy.sprite.enabled = false;
                                 globals.CARRY_FLAG = true;
                                 globals.SEECHOC_FLAG = 0;
@@ -1161,34 +1166,34 @@ fn ACTION_PRG(level: *c.TITUS_level, action: u8) void {
                     object.*.sprite.speed_x = speed_x - speed_x >> 2;
                 }
             } else {
-                if (player.sprite2.number < c.FIRST_NMI) {
-                    if (level.objectdata[@intCast(player.sprite2.number - c.FIRST_OBJET)].gravity) {
+                if (player.sprite2.number < globals.FIRST_NMI) {
+                    if (level.objectdata[@intCast(player.sprite2.number - globals.FIRST_OBJET)].gravity) {
                         // Gravity throw
                         const object = player_drop_carried(level);
                         if (object != null) {
                             object.*.sprite.speed_y = speed_y;
                             object.*.sprite.speed_x = speed_x - (speed_x >> 2);
-                            c.playEvent_c(c.Event_PlayerThrow);
+                            audio.playEvent(.Event_PlayerThrow);
                         }
                     } else { // Ordinary throw
                         globals.DROP_FLAG = true;
                         player.sprite2.speed_x = speed_x;
                         player.sprite2.speed_y = speed_y;
-                        c.playEvent_c(c.Event_PlayerThrow);
+                        audio.playEvent(.Event_PlayerThrow);
                     }
                 } else { // Ordinary throw
                     globals.DROP_FLAG = true;
                     player.sprite2.speed_x = speed_x;
                     player.sprite2.speed_y = speed_y;
-                    c.playEvent_c(c.Event_PlayerThrow);
+                    audio.playEvent(.Event_PlayerThrow);
                 }
             }
-            c.updatesprite(level, &player.sprite, 10, true); // The same as in free fall
+            sprites.updatesprite(level, &player.sprite, 10, true); // The same as in free fall
             player.sprite.flipped = globals.SENSX < 0;
             globals.CARRY_FLAG = false;
         },
         10 => {
-            XACCELERATION(player, (c.MAX_X - 1) * 16);
+            XACCELERATION(player, (globals.MAX_X - 1) * 16);
             NEW_FORM(player, action);
             GET_IMAGE(level);
         },
@@ -1198,7 +1203,7 @@ fn ACTION_PRG(level: *c.TITUS_level, action: u8) void {
             GET_IMAGE(level);
         },
         12, 13, 28, 29 => {
-            YACCELERATION(player, c.MAX_Y * 16);
+            YACCELERATION(player, globals.MAX_Y * 16);
             NEW_FORM(player, action);
             GET_IMAGE(level);
         },
@@ -1217,7 +1222,7 @@ fn ACTION_PRG(level: *c.TITUS_level, action: u8) void {
     }
 }
 
-fn player_friction(player: *c.TITUS_player) void {
+fn player_friction(player: *lvl.TITUS_player) void {
     // Stop acceleration
     const friction: u8 = @as(u8, 12) >> @truncate(player.GLISSE);
     var speed: i16 = 0;
@@ -1235,7 +1240,7 @@ fn player_friction(player: *c.TITUS_player) void {
     player.sprite.speed_x = speed;
 }
 
-fn NEW_FORM(player: *c.TITUS_player, action: u8) void {
+fn NEW_FORM(player: *lvl.TITUS_player, action: u8) void {
     // if the order is changed, change player animation
     if (globals.LAST_ORDER != action or player.sprite.animation == null) {
         globals.LAST_ORDER = action;
@@ -1243,7 +1248,7 @@ fn NEW_FORM(player: *c.TITUS_player, action: u8) void {
     }
 }
 
-fn GET_IMAGE(level: *c.TITUS_level) void {
+fn GET_IMAGE(level: *lvl.TITUS_level) void {
     const player = &level.player;
     var frame: i16 = player.sprite.animation.*;
     if (@as(c_int, @bitCast(@as(c_int, frame))) < 0) {
@@ -1253,12 +1258,12 @@ fn GET_IMAGE(level: *c.TITUS_level) void {
         player.*.sprite.animation += @as(usize, @bitCast(@as(isize, @intCast(@divTrunc(@as(c_int, frame), 2)))));
         frame = player.*.sprite.animation.*;
     }
-    c.updatesprite(level, &player.*.sprite, frame, true);
+    sprites.updatesprite(level, &player.*.sprite, frame, true);
     player.*.sprite.flipped = @as(c_int, @bitCast(@as(c_int, globals.SENSX))) < 0;
     player.*.sprite.animation += 1;
 }
 
-fn YACCELERATION_NEG(player: *c.TITUS_player, maxspeed_in: i16) void {
+fn YACCELERATION_NEG(player: *lvl.TITUS_player, maxspeed_in: i16) void {
     // Accelerate upwards
     const maxspeed = 0 - maxspeed_in;
     var speed: i16 = player.sprite.speed_y - 32;
@@ -1268,7 +1273,7 @@ fn YACCELERATION_NEG(player: *c.TITUS_player, maxspeed_in: i16) void {
     player.sprite.speed_y = speed;
 }
 
-fn player_collide_with_elevators(level: *c.TITUS_level) void {
+fn player_collide_with_elevators(level: *lvl.TITUS_level) void {
     // Player versus elevators
     // Change player's location according to the elevator
     const player = &level.player;
@@ -1309,7 +1314,7 @@ fn player_collide_with_elevators(level: *c.TITUS_level) void {
         player.sprite.y = elevator.sprite.y;
 
         player.sprite.speed_y = 0;
-        c.subto0(&globals.SAUT_FLAG);
+        common.subto0(&globals.SAUT_FLAG);
         globals.SAUT_COUNT = 0;
         globals.YFALL = 2;
 
@@ -1325,26 +1330,26 @@ fn player_collide_with_elevators(level: *c.TITUS_level) void {
 // Player versus objects
 // Collision, spring state, speed up carpet/scooter/skateboard, bounce bouncy
 // objects
-fn player_collide_with_objects(level: *c.TITUS_level) void {
+fn player_collide_with_objects(level: *lvl.TITUS_level) void {
     const player = &level.player;
     if (player.sprite.speed_y < 0) {
         return;
     }
     // Collision with a sprite
-    var off_object_c: [*c]c.TITUS_object = undefined;
-    if (!c.SPRITES_VS_SPRITES(level, &player.sprite, &level.spritedata[@as(c_uint, @intCast(0))], &off_object_c)) {
+    var off_object_c: [*c]lvl.TITUS_object = undefined;
+    if (!objects.SPRITES_VS_SPRITES(level, &player.sprite, &level.spritedata[@as(c_uint, @intCast(0))], &off_object_c)) {
         return;
     }
-    const off_object: *c.TITUS_object = off_object_c;
+    const off_object: *lvl.TITUS_object = off_object_c;
 
     player.sprite.y = off_object.sprite.y - off_object.sprite.spritedata.*.collheight;
     // If the foot is placed on a spring, it must be soft!
-    if (off_object.sprite.number == c.FIRST_OBJET + 24 or off_object.sprite.number == c.FIRST_OBJET + 25) {
+    if (off_object.sprite.number == globals.FIRST_OBJET + 24 or off_object.sprite.number == globals.FIRST_OBJET + 25) {
         off_object.sprite.UNDER = off_object.sprite.UNDER | 0x02;
         off_object.sprite.ONTOP = &player.sprite;
     }
     // If we jump on the flying carpet, let it fly
-    if (off_object.sprite.number == c.FIRST_OBJET + 21 or off_object.sprite.number == c.FIRST_OBJET + 22) {
+    if (off_object.sprite.number == globals.FIRST_OBJET + 21 or off_object.sprite.number == globals.FIRST_OBJET + 22) {
         if (!player.sprite.flipped) {
             off_object.sprite.speed_x = 6 * 16;
         } else {
@@ -1394,7 +1399,7 @@ fn player_collide_with_objects(level: *c.TITUS_level) void {
 
         // If the ball lies on the ground
         if (off_object.sprite.speed_y == 0) {
-            c.playEvent_c(c.Event_BallBounce);
+            audio.playEvent(.Event_BallBounce);
             off_object.sprite.speed_y = 0 - player.sprite.speed_y;
             off_object.sprite.y -= off_object.sprite.speed_y >> 4;
             globals.GRAVITY_FLAG = 4;
@@ -1405,7 +1410,7 @@ fn player_collide_with_objects(level: *c.TITUS_level) void {
         } else {
             player.sprite.speed_y = 0;
         }
-        c.subto0(&globals.SAUT_FLAG);
+        common.subto0(&globals.SAUT_FLAG);
         globals.SAUT_COUNT = 0;
         globals.YFALL = 2;
     }

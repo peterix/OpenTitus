@@ -28,7 +28,6 @@ const std = @import("std");
 const window = @import("window.zig");
 const game = @import("game.zig");
 const data = @import("data.zig");
-const c = @import("c.zig");
 
 const json = @import("json.zig");
 const ManagedJSON = json.ManagedJSON;
@@ -39,7 +38,7 @@ const Allocator = std.mem.Allocator;
 // FIXME: this shares a large amount of code with settings.zig... factor it out?
 
 fn game_file_name() []const u8 {
-    if (data.game == c.Titus) {
+    if (data.game == .Titus) {
         return "titus.json";
     } else {
         return "moktar.json";

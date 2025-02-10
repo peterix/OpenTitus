@@ -25,7 +25,6 @@
 
 const std = @import("std");
 
-const c = @import("../c.zig");
 const SDL = @import("../SDL.zig");
 
 const sqz = @import("../sqz.zig");
@@ -69,7 +68,7 @@ pub fn view_menu(file: ImageFile, allocator: std.mem.Allocator) !?usize {
     var sel: [2]SDL.Rect = undefined;
     var sel_dest: [2]SDL.Rect = undefined;
 
-    if (data.game == c.Titus) {
+    if (data.game == .Titus) {
         sel[0].x = 120;
         sel[0].y = 160;
         sel[0].w = 8;
@@ -79,7 +78,7 @@ pub fn view_menu(file: ImageFile, allocator: std.mem.Allocator) !?usize {
         sel[1].y = 173;
         sel[1].w = 8;
         sel[1].h = 8;
-    } else if (data.game == c.Moktar) {
+    } else if (data.game == .Moktar) {
         sel[0].x = 130;
         sel[0].y = 167;
         sel[0].w = 8;

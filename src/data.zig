@@ -24,12 +24,16 @@
 //
 
 const std = @import("std");
-const c = @import("c.zig");
 const SDL = @import("SDL.zig");
 const audio = @import("audio/audio.zig");
 const AudioTrack = audio.AudioTrack;
 
-pub export var game: c.GameType = undefined;
+pub const GameType = enum  {
+    Titus,
+    Moktar
+};
+
+pub var game: GameType = undefined;
 
 const image = @import("ui/image.zig");
 const ImageFile = image.ImageFile;
@@ -602,9 +606,9 @@ pub export fn get_anim_player(action: u8) [*c]const i16 {
 }
 
 pub fn init_anim_player() void {
-    if (c.game == c.Titus) {
+    if (game == .Titus) {
         anim_player[1] = &.{ 2, 2, 2, 1, 1, 1, 1, 2, 2, 2, 3, 3, 3, 3, -14 * 2 };
-    } else if (c.game == c.Moktar) {
+    } else if (game == .Moktar) {
         anim_player[1] = &.{ 2, 2, 2, 1, 1, 1, 2, 2, 3, 3, 3, -11 * 2 };
     }
 }
@@ -622,10 +626,10 @@ fn isFileOpenable(path: []const u8) bool {
 
 fn initGameType() !*const Constants {
     if (isFileOpenable(titus_consts.sprites)) {
-        game = c.Titus;
+        game = .Titus;
         return &titus_consts;
     } else if (isFileOpenable(moktar_consts.sprites)) {
-        game = c.Moktar;
+        game = .Moktar;
         return &moktar_consts;
     } else {
         return error.CannotDetermineGameType;

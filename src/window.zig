@@ -25,7 +25,6 @@
 
 const std = @import("std");
 
-const c = @import("c.zig");
 const SDL = @import("SDL.zig");
 const globals = @import("globals.zig");
 const game = @import("game.zig");
@@ -33,14 +32,11 @@ const data = @import("data.zig");
 
 pub fn getGameTitle() [*c]const u8 {
     switch (data.game) {
-        c.Titus => {
+        .Titus => {
             return "OpenTitus";
         },
-        c.Moktar => {
+        .Moktar => {
             return "OpenMoktar";
-        },
-        else => {
-            return "Something else...";
         },
     }
 }

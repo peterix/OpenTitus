@@ -24,7 +24,6 @@
 
 const std = @import("std");
 
-const c = @import("../c.zig");
 const SDL = @import("../SDL.zig");
 
 const fonts = @import("fonts.zig");
@@ -211,7 +210,7 @@ pub fn optionsMenu(menu_context: *MenuContext) ?c_int {
         const action = menu.getMenuAction();
         switch (action) {
             .Quit => {
-                return c.TITUS_ERROR_QUIT;
+                return -1;// c.TITUS_ERROR_QUIT;
             },
             .ExitMenu => {
                 return null;

@@ -24,7 +24,7 @@
 //
 
 const std = @import("std");
-const c = @import("c.zig");
+const common = @import("common.zig");
 const globals = @import("globals.zig");
 const window = @import("window.zig");
 const fonts = @import("ui/fonts.zig");
@@ -35,11 +35,17 @@ const SDL = @import("SDL.zig");
 
 const tick_delay = 29;
 
-pub fn screencontext_reset(context: *c.ScreenContext) void {
-    context.* = std.mem.zeroInit(c.ScreenContext, .{});
+pub const ScreenContext = struct  {
+    started :bool = false,
+    LAST_CLOCK: u32 = 0,
+    TARGET_CLOCK: u32 = 0,
+};
+
+pub fn screencontext_reset(context: *ScreenContext) void {
+    context.* = ScreenContext{};
 }
 
-fn screencontext_initial(context: *c.ScreenContext, ticks: u32) void {
+fn screencontext_initial(context: *ScreenContext, ticks: u32) void {
     const initial_clock = SDL.getTicks();
     context.TARGET_CLOCK = initial_clock + ticks;
     context.started = true;
@@ -48,7 +54,7 @@ fn screencontext_initial(context: *c.ScreenContext, ticks: u32) void {
     context.TARGET_CLOCK += ticks;
 }
 
-fn screencontext_advance(context: *c.ScreenContext, ticks: u32) void {
+fn screencontext_advance(context: *ScreenContext, ticks: u32) void {
     if (!context.started) {
         screencontext_initial(context, ticks);
         return;
@@ -61,7 +67,7 @@ fn screencontext_advance(context: *c.ScreenContext, ticks: u32) void {
     context.TARGET_CLOCK = context.LAST_CLOCK + ticks;
 }
 
-pub fn flip_screen(context: *c.ScreenContext, slow: bool) void {
+pub fn flip_screen(context: *ScreenContext, slow: bool) void {
     window.window_render();
     if (slow) {
         screencontext_advance(context, tick_delay);
@@ -77,7 +83,7 @@ fn get_y_offset() u8 {
     return if (globals.BITMAP_Y == 0) 0 else 8;
 }
 
-pub fn render_tiles(level: *c.TITUS_level) void {
+pub fn render_tiles(level: *lvl.TITUS_level) void {
     const y_offset = get_y_offset();
     var x: i16 = -1;
     while (x < 21) : (x += 1) {
@@ -105,21 +111,21 @@ pub fn render_tiles(level: *c.TITUS_level) void {
     }
 }
 
-pub fn render_sprites(level: *c.TITUS_level) void {
-    for (0..c.ELEVATOR_CAPACITY) |i| {
-        render_sprite(&level.elevator[c.ELEVATOR_CAPACITY - 1 - i].sprite);
+pub fn render_sprites(level: *lvl.TITUS_level) void {
+    for (0..lvl.ELEVATOR_CAPACITY) |i| {
+        render_sprite(&level.elevator[lvl.ELEVATOR_CAPACITY - 1 - i].sprite);
     }
 
-    for (0..c.TRASH_CAPACITY) |i| {
-        render_sprite(&level.trash[c.TRASH_CAPACITY - 1 - i]);
+    for (0..lvl.TRASH_CAPACITY) |i| {
+        render_sprite(&level.trash[lvl.TRASH_CAPACITY - 1 - i]);
     }
 
-    for (0..c.ENEMY_CAPACITY) |i| {
-        render_sprite(&level.enemy[c.ENEMY_CAPACITY - 1 - i].sprite);
+    for (0..lvl.ENEMY_CAPACITY) |i| {
+        render_sprite(&level.enemy[lvl.ENEMY_CAPACITY - 1 - i].sprite);
     }
 
-    for (0..c.OBJECT_CAPACITY) |i| {
-        render_sprite(&level.object[c.OBJECT_CAPACITY - 1 - i].sprite);
+    for (0..lvl.OBJECT_CAPACITY) |i| {
+        render_sprite(&level.object[lvl.OBJECT_CAPACITY - 1 - i].sprite);
     }
 
     render_sprite(&level.player.sprite3);
@@ -134,7 +140,7 @@ pub fn render_sprites(level: *c.TITUS_level) void {
     }
 }
 
-fn render_sprite(spr: *allowzero c.TITUS_sprite) void {
+fn render_sprite(spr: *allowzero lvl.TITUS_sprite) void {
     if (!spr.enabled) {
         return;
     }
@@ -186,8 +192,8 @@ fn render_sprite(spr: *allowzero c.TITUS_sprite) void {
     spr.flash = false;
 }
 
-pub fn render_health_bars(level: *c.TITUS_level) void {
-    c.subto0(&globals.BAR_FLAG);
+pub fn render_health_bars(level: *lvl.TITUS_level) void {
+    common.subto0(&globals.BAR_FLAG);
     if (window.screen == null) {
         return;
     }
@@ -212,7 +218,7 @@ pub fn render_health_bars(level: *c.TITUS_level) void {
     }
 
     //render small bars (4px*4px, spacing 4px)
-    for (0..@as(usize, c.MAXIMUM_ENERGY) - level.player.hp) |_| {
+    for (0..@as(usize, globals.MAXIMUM_ENERGY) - level.player.hp) |_| {
         const dest = SDL.Rect{
             .x = offset,
             .y = 15,

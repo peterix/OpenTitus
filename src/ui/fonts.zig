@@ -25,7 +25,6 @@
 
 const std = @import("std");
 
-const c = @import("../c.zig");
 const SDL = @import("../SDL.zig");
 
 const window = @import("../window.zig");

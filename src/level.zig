@@ -1,7 +1,7 @@
 const std = @import("std");
-const c = @import("c.zig");
 const SDL = @import("SDL.zig");
 const data = @import("data.zig");
+const globals = @import("globals.zig");
 const sprites = @import("sprites.zig");
 const ObjectData = data.ObjectData;
 const audio = @import("audio/audio.zig");
@@ -38,6 +38,199 @@ test "test u16 loading" {
     try std.testing.expect(load_u16(0x7F, 0xFF) == 32767);
     try std.testing.expect(load_u16(0x80, 0x00) == 32768);
 }
+
+pub const TITUS_tile = struct {
+    animation: [3]i8, // Index to animation tiles
+    horizflag: HFlag,
+    floorflag: FFlag,
+    ceilflag: CFlag,
+};
+
+pub const TITUS_sprite = struct {
+    x: i16,
+    y: i16,
+    speed_x: i16,
+    speed_y: i16,
+    number: i16,
+    //On screen or not on screen (above/below/left/right)
+    visible: bool,
+    flash: bool,
+    flipped: bool,
+    enabled: bool,
+    spritedata: *const TITUS_spritedata,
+    //0: big spring, 1: small spring because of another object on top, 2: small spring because player on top
+    UNDER: u8,
+    //Object on top of the spring
+    ONTOP: *TITUS_sprite,
+    animation: *const i16,
+    droptobottom: bool,
+    killing: bool,
+    //Set by "hidden" enemies
+    invisible: bool,
+};
+
+pub const TITUS_spritedata = struct {
+    height: u8,
+    width: u8,
+    collheight: u8,
+    collwidth: u8,
+    refheight: u8,
+    refwidth: u8,
+};
+
+pub const TITUS_objectdata = struct {
+    maxspeedY: u8,
+    support: bool, //not support/support
+    bounce: bool, //not bounce/bounce against floor + player bounces (ball, all spring, yellow stone, squeezed ball, skateboard)
+    gravity: bool, //no gravity on throw/gravity (ball, all carpet, trolley, squeezed ball, garbage, grey stone, scooter, yellow bricks between the statues, skateboard, cage)
+    droptobottom: bool, //on drop, lands on ground/continue below ground(cave spikes, rolling rock, ambolt, safe, dead man with helicopter)
+    no_damage: bool, //weapon/not weapon(cage)
+};
+
+pub const TITUS_object = struct {
+    sprite: TITUS_sprite,
+    momentum: u8, // must be >= 10 to cause a falling object to hit an enemy or the player
+
+    init_enabled: bool,
+    init_sprite: u16,
+    init_flash: bool,
+    init_visible: bool,
+    init_flipped: bool,
+    init_x: c_int,
+    init_y: c_int,
+    objectdata: *TITUS_objectdata,
+};
+
+pub const TITUS_enemy = struct {
+    dying: u8, //00: alive, not 00: dying/dead
+    phase: u8, //the current phase of the enemy
+    sprite: TITUS_sprite,
+    type: u16, //What kind of enemy
+    power: i16,
+    center_x: c_int,
+    range_x: c_uint,
+    delay: c_uint,
+    direction: u8,
+    range_y: c_uint,
+
+    init_enabled: bool,
+    init_sprite: u16,
+    init_flipped: bool,
+    init_x: c_int,
+    init_y: c_int,
+    init_speed_x: c_int,
+    init_speed_y: c_int,
+
+    carry_sprite: i16,
+    dead_sprite: i16,
+
+    boss: bool,
+    trigger: bool,
+    visible: bool,
+    counter: u8,
+    walkspeed_x: u8,
+};
+
+pub const TITUS_bonus = struct {
+    exists: bool,
+    bonustile: u8,
+    replacetile: u8,
+    x: u8,
+    y: u8,
+};
+
+pub const TITUS_gate = struct {
+    exists: bool,
+    entranceX: c_uint,
+    entranceY: c_uint,
+    exitX: c_uint,
+    exitY: c_uint,
+    screenX: c_uint,
+    screenY: c_uint,
+    noscroll: bool,
+};
+
+pub const TITUS_elevator = struct {
+    enabled: bool,
+    sprite: TITUS_sprite,
+    counter: c_uint,
+
+    range: c_uint,
+
+    init_direction: u8,
+    init_enabled: bool,
+    init_speed_x: i16,
+    init_speed_y: i16,
+    init_sprite: u16,
+    init_flash: bool,
+    init_visible: bool,
+    init_flipped: bool,
+    init_x: c_int,
+    init_y: c_int,
+};
+
+pub const TITUS_player = struct {
+    sprite: TITUS_sprite,
+    sprite2: TITUS_sprite,
+    sprite3: TITUS_sprite,
+    animcycle: u8,
+    cageX: i16,
+    cageY: i16,
+    hp: u16,
+    initX: i16,
+    initY: i16,
+    inithp: u8,
+    GLISSE: u2, //Friction (0-3). 0: full friction, 3: max sliding
+
+    // Player input this frame
+    x_axis: i8,
+    y_axis: i8,
+    action_pressed: bool,
+};
+
+pub const BONUS_CAPACITY = 100;
+pub const GATE_CAPACITY = 20;
+pub const ELEVATOR_CAPACITY = 10;
+pub const TRASH_CAPACITY= 4;
+pub const ENEMY_CAPACITY = 50;
+pub const OBJECT_CAPACITY = 40;
+
+pub const TITUS_level = struct {
+    parent: *Level,
+    levelnumber: u16,
+    has_cage: bool,
+    is_finish: bool,
+    music: u8,
+    boss_power: u8,
+
+    height: i16,
+    width: i16, // always 256
+    tile: [256]TITUS_tile,
+    spritedata: *const TITUS_spritedata, // Pointer to a global spritedata variable
+    objectdata: *const TITUS_objectdata, // Pointer to a global objectdata variable
+    finishX: i16,
+    finishY: i16,
+
+    //TITUS_enemy *boss; //Pointer to the boss; NULL if there is no boss
+    //TITUS_object *finish_object; // Pointer to the required object to carry to finish; NULL if there is no such object
+
+    player: TITUS_player,
+
+    object: [OBJECT_CAPACITY]TITUS_object,
+    enemy: [ENEMY_CAPACITY]TITUS_enemy,
+    bonus: [BONUS_CAPACITY]TITUS_bonus,
+    gate: [GATE_CAPACITY]TITUS_gate,
+    elevator: [ELEVATOR_CAPACITY]TITUS_elevator,
+    trash: [TRASH_CAPACITY]TITUS_sprite,
+
+    // FIXME: move this outside level...
+    bonuscount: usize,
+    bonuscollected: usize,
+    lives: c_int,
+    extrabonus: c_int,
+    tickcount: usize,
+};
+
 
 pub const HFlag = enum(u8) {
     NoWall = 0,
@@ -76,7 +269,6 @@ pub const CFlag = enum(u8) {
 
 pub const Tile = struct {
     tiledata: *SDL.Surface,
-    animated: bool, // technically not even used
     animation: [3]u8,
     horizflag: HFlag,
     floorflag: FFlag,
@@ -84,7 +276,7 @@ pub const Tile = struct {
 };
 
 pub const Level = struct {
-    c_level: c.TITUS_level,
+    c_level: TITUS_level,
     tilemap: []u8,
     width: usize = 0,
     height: usize = 0,
@@ -246,7 +438,7 @@ comptime {
 
 pub fn loadlevel(
     level_wrap: *Level,
-    level: *c.TITUS_level,
+    level: *TITUS_level,
     allocator: std.mem.Allocator,
     leveldata: []const u8,
     objectdata: []const ObjectData,
@@ -306,7 +498,7 @@ pub fn loadlevel(
         }
     }
     {
-        for (0..c.OBJECT_CAPACITY) |i| {
+        for (0..globals.OBJECT_CAPACITY) |i| {
             const initSprite = other_data.objects[i].initSprite;
             // TODO: use dynamic arrays for the actual loaded data
             // TODO: if it's not 'enabled', don't even load it, just skip entirely
@@ -320,13 +512,13 @@ pub fn loadlevel(
         }
     }
 
-    c.ALTITUDE_ZERO = other_data.altitude_zero; // + 12;
+    globals.ALTITUDE_ZERO = other_data.altitude_zero; // + 12;
     // 33778
     level.player.initX = other_data.initX;
     level.player.initY = other_data.initY;
 
     // 33782
-    for (0..c.ENEMY_CAPACITY) |i| {
+    for (0..globals.ENEMY_CAPACITY) |i| {
         const init_sprite = other_data.enemies[i].init_sprite;
         level.enemy[i].init_enabled = init_sprite.value != 0xFFFF;
 
@@ -435,7 +627,7 @@ pub fn loadlevel(
     level.bonuscount = 0;
     level.bonuscollected = 0;
     level.tickcount = 0;
-    for (0..c.BONUS_CAPACITY) |i| {
+    for (0..globals.BONUS_CAPACITY) |i| {
         level.bonus[i].x = other_data.bonuses[i].x;
         level.bonus[i].y = other_data.bonuses[i].y;
         level.bonus[i].exists = ((level.bonus[i].x != 0xFF) and (level.bonus[i].y != 0xFF));
@@ -454,11 +646,11 @@ pub fn loadlevel(
     //                   in levels where this problem doesn't belong...
     //
     //    Ok ... it's not in the file. At least not obviously. The weirdness must be coming from somewhere else.
-    c.XLIMIT = other_data.xlimit; // + 20;
+    globals.XLIMIT = other_data.xlimit; // + 20;
     // fprintf(stderr, "XLIMIT is set at %d\n", XLIMIT);
-    c.XLIMIT_BREACHED = false;
+    globals.XLIMIT_BREACHED = false;
 
-    for (0..c.GATE_CAPACITY) |i| {
+    for (0..globals.GATE_CAPACITY) |i| {
         level.gate[i].entranceY = other_data.gates[i].entranceY;
         level.gate[i].exists = (level.gate[i].entranceY != 0xFF);
         if (level.gate[i].exists) {
@@ -471,7 +663,7 @@ pub fn loadlevel(
         }
     }
 
-    for (0..c.ELEVATOR_CAPACITY) |i| {
+    for (0..globals.ELEVATOR_CAPACITY) |i| {
         const initSprite = other_data.elevators[i].init_sprite;
         level.elevator[i].init_x = other_data.elevators[i].init_x;
         level.elevator[i].init_y = other_data.elevators[i].init_y;
@@ -527,15 +719,15 @@ pub fn freelevel(level: *Level, allocator: std.mem.Allocator) void {
     }
 }
 
-pub export fn get_horizflag(level: *c.TITUS_level, tileY: i16, tileX: i16) c.HFLAG {
+pub fn get_horizflag(level: *TITUS_level, tileY: i16, tileX: i16) HFlag {
     if ((tileX < 0) or
         (tileX >= level.width))
     {
-        return c.HFLAG_WALL;
+        return .HFLAG_WALL;
     } else if ((tileY < 0) or
         (tileY >= level.height))
     {
-        return c.HFLAG_NOWALL;
+        return .HFLAG_NOWALL;
     } else {
         var parent_level: *Level = @ptrCast(@alignCast(level.parent));
         const tile = parent_level.getTile(@intCast(tileX), @intCast(tileY));
@@ -543,15 +735,15 @@ pub export fn get_horizflag(level: *c.TITUS_level, tileY: i16, tileX: i16) c.HFL
     }
 }
 
-pub export fn get_floorflag(level: *c.TITUS_level, tileY: i16, tileX: i16) c.FFLAG {
+pub fn get_floorflag(level: *TITUS_level, tileY: i16, tileX: i16) FFlag {
     if ((tileX < 0) or
         (tileX >= level.width))
     {
-        return c.FFLAG_FLOOR;
+        return .FFLAG_FLOOR;
     } else if ((tileY < 0) or
         (tileY >= level.height))
     {
-        return c.FFLAG_NOFLOOR;
+        return .FFLAG_NOFLOOR;
     } else {
         var parent_level: *Level = @ptrCast(@alignCast(level.parent));
         const tile = parent_level.getTile(@intCast(tileX), @intCast(tileY));
@@ -559,13 +751,13 @@ pub export fn get_floorflag(level: *c.TITUS_level, tileY: i16, tileX: i16) c.FFL
     }
 }
 
-pub export fn get_ceilflag(level: *c.TITUS_level, tileY: i16, tileX: i16) c.CFLAG {
+pub fn get_ceilflag(level: *TITUS_level, tileY: i16, tileX: i16) CFlag {
     if ((tileY < 0) or
         (tileY >= level.height) or
         (tileX < 0) or
         (tileX >= level.width))
     {
-        return c.CFLAG_NOCEILING;
+        return .NoCeiling;
     } else {
         var parent_level: *Level = @ptrCast(@alignCast(level.parent));
         const tile = parent_level.getTile(@intCast(tileX), @intCast(tileY));
@@ -573,7 +765,7 @@ pub export fn get_ceilflag(level: *c.TITUS_level, tileY: i16, tileX: i16) c.CFLA
     }
 }
 
-pub export fn set_tile(level: *c.TITUS_level, tileY: i16, tileX: i16, tile: u8) void {
+pub fn set_tile(level: *TITUS_level, tileY: i16, tileX: i16, tile: u8) void {
     if ((tileY < 0) or
         (tileY >= level.height) or
         (tileX < 0) or

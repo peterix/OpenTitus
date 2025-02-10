@@ -24,22 +24,22 @@
 //
 
 const std = @import("std");
-const c = @import("c.zig");
 const SDL = @import("SDL.zig");
 const globals = @import("globals.zig");
 const window = @import("window.zig");
 const scroll = @import("scroll.zig");
 const render = @import("render.zig");
 const audio = @import("audio/audio.zig");
+const lvl = @import("level.zig");
 
-fn check_finish(context: *c.ScreenContext, level: *c.TITUS_level) void {
+fn check_finish(context: *render.ScreenContext, level: *lvl.TITUS_level) void {
     const player = &level.player;
     if (globals.boss_alive) { //There is still a boss that needs to be killed!
         return;
     }
     if (level.has_cage) {
-        if ((level.player.sprite2.number != c.FIRST_OBJET + 26) and
-            (level.player.sprite2.number != c.FIRST_OBJET + 27))
+        if ((level.player.sprite2.number != globals.FIRST_OBJET + 26) and
+            (level.player.sprite2.number != globals.FIRST_OBJET + 27))
         {
             return;
         }
@@ -60,14 +60,14 @@ fn check_finish(context: *c.ScreenContext, level: *c.TITUS_level) void {
     globals.NEWLEVEL_FLAG = true;
 }
 
-fn check_gates(context: *c.ScreenContext, level: *c.TITUS_level) void {
+fn check_gates(context: *render.ScreenContext, level: *lvl.TITUS_level) void {
     var player = &level.player;
     if ((globals.CROSS_FLAG == 0) or //not kneestanding
         (globals.NEWLEVEL_FLAG))
     { //the player has finished the level
         return;
     }
-    for (0..c.GATE_CAPACITY) |i| {
+    for (0..lvl.GATE_CAPACITY) |i| {
         if ((level.gate[i].exists) and
             (level.gate[i].entranceX == (player.sprite.x >> 4)) and
             (level.gate[i].entranceY == (player.sprite.y >> 4)))
@@ -102,7 +102,7 @@ fn check_gates(context: *c.ScreenContext, level: *c.TITUS_level) void {
 }
 
 //Check and handle level completion, and if the player does a kneestand on a secret entrance
-pub fn CROSSING_GATE(context: *c.ScreenContext, level: *c.TITUS_level) void {
+pub fn CROSSING_GATE(context: *render.ScreenContext, level: *lvl.TITUS_level) void {
     check_finish(context, level);
     check_gates(context, level);
 }
@@ -113,7 +113,7 @@ const rheight: usize = 200;
 const incX: usize = rwidth / (step_count * 2);
 const incY: usize = rheight / (step_count * 2);
 
-pub export fn CLOSE_SCREEN(context: *c.ScreenContext) void {
+pub export fn CLOSE_SCREEN(context: *render.ScreenContext) void {
     var dest: SDL.Rect = undefined;
     for (0..step_count) |i| {
         //Clear top
@@ -148,7 +148,7 @@ pub export fn CLOSE_SCREEN(context: *c.ScreenContext) void {
     }
 }
 
-pub export fn OPEN_SCREEN(context: *c.ScreenContext, level: *c.TITUS_level) void {
+pub export fn OPEN_SCREEN(context: *render.ScreenContext, level: *lvl.TITUS_level) void {
     var dest: SDL.Rect = undefined;
     var i: u32 = step_count - 1;
     while (i >= 2) : (i -= 2) {

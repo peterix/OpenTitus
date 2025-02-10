@@ -25,37 +25,36 @@
 
 const std = @import("std");
 
-const c = @import("../c.zig");
 const window = @import("../window.zig");
 const keyboard = @import("keyboard.zig");
 const fonts = @import("fonts.zig");
 
 // TODO: this is a nice throwback in the original game, but maybe we could do something better.
 // Like replace the (missing) manual with an intro sequence to give the player some context.
-pub fn viewintrotext(allocator: std.mem.Allocator) !c_int {
-    var rawtime = c.time(null);
-    const timeinfo = c.localtime(&rawtime);
-
-    const year = try std.fmt.allocPrint(
-        allocator,
-        "     You are still playing Moktar in {d} !!",
-        .{timeinfo.*.tm_year + 1900},
-    );
-    defer allocator.free(year);
-
-    fonts.Gold.render("     YEAAA . . .", 0, 4 * 12, .{});
-    fonts.Gold.render(year, 0, 6 * 12, .{});
-    fonts.Gold.render("     Programmed in 1991 on AT .286 12MHz.", 0, 11 * 12, .{});
-    fonts.Gold.render("              . . . Enjoy Moktar Adventure !!", 0, 13 * 12, .{});
-
-    window.window_render();
-
-    const retval = keyboard.waitforbutton();
-    if (retval < 0)
-        return retval;
-
-    if (retval < 0)
-        return retval;
+pub fn viewintrotext(_: std.mem.Allocator) !c_int {
+//     var rawtime = c.time(null);
+//     const timeinfo = c.localtime(&rawtime);
+//
+//     const year = try std.fmt.allocPrint(
+//         allocator,
+//         "     You are still playing Moktar in {d} !!",
+//         .{timeinfo.*.tm_year + 1900},
+//     );
+//     defer allocator.free(year);
+//
+//     fonts.Gold.render("     YEAAA . . .", 0, 4 * 12, .{});
+//     fonts.Gold.render(year, 0, 6 * 12, .{});
+//     fonts.Gold.render("     Programmed in 1991 on AT .286 12MHz.", 0, 11 * 12, .{});
+//     fonts.Gold.render("              . . . Enjoy Moktar Adventure !!", 0, 13 * 12, .{});
+//
+//     window.window_render();
+//
+//     const retval = keyboard.waitforbutton();
+//     if (retval < 0)
+//         return retval;
+//
+//     if (retval < 0)
+//         return retval;
 
     return (0);
 }

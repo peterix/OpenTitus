@@ -26,11 +26,12 @@
 // TODO: use a dynamic array for sprites so more sprites can be loaded on top of the base game ones.
 
 const std = @import("std");
-const c = @import("c.zig");
 const SDL = @import("SDL.zig");
 const image = @import("ui/image.zig");
 const window = @import("window.zig");
 const data = @import("data.zig");
+const lvl = @import("level.zig");
+const globals = @import("globals.zig");
 
 // TODO: the sprite cache and sprites doesn't have to be global anymore once we aren't going through C code.
 pub var sprite_cache: SpriteCache = undefined;
@@ -85,7 +86,7 @@ pub const SpriteData = struct {
     fn init(self: *SpriteData, allocator: std.mem.Allocator, spritedata: []const u8, pixelformat: *SDL.PixelFormat) !void {
         defer allocator.free(spritedata);
 
-        if (data.game == c.Titus) {
+        if (data.game == .Titus) {
             self.definitions = &titus_sprite_defs;
         } else {
             self.definitions = &moktar_sprite_defs;
@@ -257,7 +258,7 @@ pub const SpriteCache = struct {
     }
 };
 
-pub export fn updatesprite(level: *c.TITUS_level, spr: *c.TITUS_sprite, number: i16, clearflags: bool) void {
+pub export fn updatesprite(level: *lvl.TITUS_level, spr: *lvl.TITUS_sprite, number: i16, clearflags: bool) void {
     spr.number = number;
     spr.spritedata = &level.spritedata[@intCast(number)];
     spr.enabled = true;
@@ -271,7 +272,7 @@ pub export fn updatesprite(level: *c.TITUS_level, spr: *c.TITUS_sprite, number: 
     spr.invisible = false;
 }
 
-pub export fn copysprite(level: *c.TITUS_level, dest: *c.TITUS_sprite, src: *c.TITUS_sprite) void {
+pub export fn copysprite(level: *lvl.TITUS_level, dest: *lvl.TITUS_sprite, src: *lvl.TITUS_sprite) void {
     dest.number = src.number;
     dest.spritedata = &level.spritedata[@intCast(src.number)];
     dest.enabled = src.enabled;
@@ -281,62 +282,62 @@ pub export fn copysprite(level: *c.TITUS_level, dest: *c.TITUS_sprite, src: *c.T
     dest.invisible = false;
 }
 
-fn animate_sprite(level: *c.TITUS_level, spr: *c.TITUS_sprite) void {
+fn animate_sprite(level: *lvl.TITUS_level, spr: *lvl.TITUS_sprite) void {
     if (!spr.visible) return; //Not on screen?
     if (!spr.enabled) return;
-    if (spr.number == (c.FIRST_OBJET + 26)) { //Cage
-        if ((c.IMAGE_COUNTER & 0x0007) == 0) { //Every 8
-            updatesprite(level, spr, c.FIRST_OBJET + 27, false); //Cage, 2nd sprite
+    if (spr.number == (globals.FIRST_OBJET + 26)) { //Cage
+        if ((globals.IMAGE_COUNTER & 0x0007) == 0) { //Every 8
+            updatesprite(level, spr, globals.FIRST_OBJET + 27, false); //Cage, 2nd sprite
         }
-    } else if (spr.number == (c.FIRST_OBJET + 27)) { //Cage, 2nd sprite
-        if ((c.IMAGE_COUNTER & 0x003F) == 0) { //Every 64
-            updatesprite(level, spr, c.FIRST_OBJET + 26, false); //Cage, 1st sprite
+    } else if (spr.number == (globals.FIRST_OBJET + 27)) { //Cage, 2nd sprite
+        if ((globals.IMAGE_COUNTER & 0x003F) == 0) { //Every 64
+            updatesprite(level, spr, globals.FIRST_OBJET + 26, false); //Cage, 1st sprite
         }
-    } else if (spr.number == (c.FIRST_OBJET + 21)) { //Flying carpet
-        if ((c.IMAGE_COUNTER & 0x0007) == 0) { //Every 8
-            updatesprite(level, spr, c.FIRST_OBJET + 22, false); //Flying carpet, 2nd sprite
+    } else if (spr.number == (globals.FIRST_OBJET + 21)) { //Flying carpet
+        if ((globals.IMAGE_COUNTER & 0x0007) == 0) { //Every 8
+            updatesprite(level, spr, globals.FIRST_OBJET + 22, false); //Flying carpet, 2nd sprite
         }
-    } else if (spr.number == (c.FIRST_OBJET + 22)) { //Flying carpet, 2nd sprite
-        if ((c.IMAGE_COUNTER & 0x0007) == 0) { //Every 8
-            updatesprite(level, spr, c.FIRST_OBJET + 21, false); //Flying carpet, 1st sprite
+    } else if (spr.number == (globals.FIRST_OBJET + 22)) { //Flying carpet, 2nd sprite
+        if ((globals.IMAGE_COUNTER & 0x0007) == 0) { //Every 8
+            updatesprite(level, spr, globals.FIRST_OBJET + 21, false); //Flying carpet, 1st sprite
         }
-    } else if (spr.number == (c.FIRST_OBJET + 24)) { //Small spring
-        if ((c.IMAGE_COUNTER & 0x0001) == 0) { //Every 2
+    } else if (spr.number == (globals.FIRST_OBJET + 24)) { //Small spring
+        if ((globals.IMAGE_COUNTER & 0x0001) == 0) { //Every 2
             if (spr.UNDER == 0) { //Spring is not loaded
-                updatesprite(level, spr, c.FIRST_OBJET + 25, false); //Spring is not loaded; convert into big spring
-            } else if (c.GRAVITY_FLAG > 1) { //if not gravity, not clear
+                updatesprite(level, spr, globals.FIRST_OBJET + 25, false); //Spring is not loaded; convert into big spring
+            } else if (globals.GRAVITY_FLAG > 1) { //if not gravity, not clear
                 spr.UNDER = 0;
             } else {
                 spr.UNDER = spr.UNDER & 0x01; //Keep eventually object load, remove player load
             }
         }
-    } else if (spr.number == (c.FIRST_OBJET + 25)) { //Big spring
-        if ((c.IMAGE_COUNTER & 0x0001) == 0) { //Every 2
+    } else if (spr.number == (globals.FIRST_OBJET + 25)) { //Big spring
+        if ((globals.IMAGE_COUNTER & 0x0001) == 0) { //Every 2
             if (spr.UNDER == 0) {
                 return; //Spring is not loaded; remain big
-            } else if (c.GRAVITY_FLAG > 1) { //if not gravity, not clear
+            } else if (globals.GRAVITY_FLAG > 1) { //if not gravity, not clear
                 spr.UNDER = 0;
             } else {
                 spr.UNDER = spr.UNDER & 0x01; //Keep eventually object load, remove player load
             }
             // FIXME: maybe null sanity check in debug mode
             spr.ONTOP.*.y += 5;
-            c.GRAVITY_FLAG = 3;
-            updatesprite(level, spr, c.FIRST_OBJET + 24, false); //Small spring
+            globals.GRAVITY_FLAG = 3;
+            updatesprite(level, spr, globals.FIRST_OBJET + 24, false); //Small spring
         }
     }
 }
 
-pub fn animateSprites(level: *c.TITUS_level) void {
+pub fn animateSprites(level: *lvl.TITUS_level) void {
     //Animate player
-    if ((c.LAST_ORDER == 0) and
-        (c.POCKET_FLAG) and
-        (c.ACTION_TIMER >= 35 * 4))
+    if ((globals.LAST_ORDER == 0) and
+        (globals.POCKET_FLAG) and
+        (globals.ACTION_TIMER >= 35 * 4))
     {
         updatesprite(level, &(level.player.sprite), 29, false); //"Pause"-sprite
-        if (c.ACTION_TIMER >= 35 * 5) {
+        if (globals.ACTION_TIMER >= 35 * 5) {
             updatesprite(level, &(level.player.sprite), 0, false); //Normal player sprite
-            c.ACTION_TIMER = 0;
+            globals.ACTION_TIMER = 0;
         }
     }
     //Animate other objects
@@ -344,15 +345,15 @@ pub fn animateSprites(level: *c.TITUS_level) void {
     animate_sprite(level, &(level.player.sprite2));
     animate_sprite(level, &(level.player.sprite3));
 
-    for (0..c.OBJECT_CAPACITY) |i| {
+    for (0..lvl.OBJECT_CAPACITY) |i| {
         animate_sprite(level, &(level.object[i].sprite));
     }
 
-    for (0..c.ENEMY_CAPACITY) |i| {
+    for (0..lvl.ENEMY_CAPACITY) |i| {
         animate_sprite(level, &(level.enemy[i].sprite));
     }
 
-    for (0..c.ELEVATOR_CAPACITY) |i| {
+    for (0..lvl.ELEVATOR_CAPACITY) |i| {
         animate_sprite(level, &(level.elevator[i].sprite));
     }
 }

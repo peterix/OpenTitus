@@ -24,18 +24,20 @@
 //
 
 const globals = @import("globals.zig");
-const c = @import("c.zig");
+const lvl = @import("level.zig");
 const sprites = @import("sprites.zig");
+const objects = @import("objects.zig");
+const enemies = @import("enemies.zig");
 const data = @import("data.zig");
 
-fn SET_DATA_NMI(level: *c.TITUS_level) void {
+fn SET_DATA_NMI(level: *lvl.TITUS_level) void {
     globals.boss_alive = false;
-    for (0..c.ENEMY_CAPACITY) |i| {
+    for (0..lvl.ENEMY_CAPACITY) |i| {
         var anim: usize = 0;
         if (!level.enemy[i].init_enabled) {
             continue;
         }
-        while (data.anim_enemy[anim] + c.FIRST_NMI != level.enemy[i].sprite.number) {
+        while (data.anim_enemy[anim] + globals.FIRST_NMI != level.enemy[i].sprite.number) {
             anim += 1;
         }
         level.enemy[i].sprite.animation = &(data.anim_enemy[anim]);
@@ -46,7 +48,7 @@ fn SET_DATA_NMI(level: *c.TITUS_level) void {
     globals.boss_lives = level.boss_power;
 }
 
-pub fn CLEAR_DATA(level: *c.TITUS_level) void {
+pub fn CLEAR_DATA(level: *lvl.TITUS_level) void {
     globals.loop_cycle = 0;
     globals.tile_anim = 0;
     globals.IMAGE_COUNTER = 0;
@@ -95,7 +97,7 @@ pub fn CLEAR_DATA(level: *c.TITUS_level) void {
     SET_DATA_NMI(level);
 }
 
-fn clearsprite(spr: *c.TITUS_sprite) void {
+fn clearsprite(spr: *lvl.TITUS_sprite) void {
     spr.enabled = false;
     spr.x = 0;
     spr.y = 0;
@@ -114,14 +116,14 @@ fn clearsprite(spr: *c.TITUS_sprite) void {
     spr.invisible = false;
 }
 
-fn SET_ALL_SPRITES(level: *c.TITUS_level) void {
+fn SET_ALL_SPRITES(level: *lvl.TITUS_level) void {
     var player = &level.player;
 
-    for (0..c.TRASH_CAPACITY) |i| {
+    for (0..lvl.TRASH_CAPACITY) |i| {
         clearsprite(&(level.trash[i]));
     }
 
-    for (0..c.ENEMY_CAPACITY) |i| {
+    for (0..lvl.ENEMY_CAPACITY) |i| {
         clearsprite(&(level.enemy[i].sprite));
         level.enemy[i].dying = 0;
         level.enemy[i].carry_sprite = -1;
@@ -131,7 +133,7 @@ fn SET_ALL_SPRITES(level: *c.TITUS_level) void {
         level.enemy[i].trigger = false;
         level.enemy[i].visible = false;
         if (level.enemy[i].init_enabled) {
-            c.updateenemysprite(level, &(level.enemy[i]), @intCast(level.enemy[i].init_sprite), true);
+            enemies.updateenemysprite(level, &(level.enemy[i]), @intCast(level.enemy[i].init_sprite), true);
             level.enemy[i].sprite.flipped = level.enemy[i].init_flipped;
             level.enemy[i].sprite.x = @truncate(level.enemy[i].init_x);
             level.enemy[i].sprite.y = @truncate(level.enemy[i].init_y);
@@ -140,7 +142,7 @@ fn SET_ALL_SPRITES(level: *c.TITUS_level) void {
         }
     }
 
-    for (0..c.ELEVATOR_CAPACITY) |i| {
+    for (0..lvl.ELEVATOR_CAPACITY) |i| {
         clearsprite(&(level.elevator[i].sprite));
         if (level.elevator[i].init_enabled) {
             sprites.updatesprite(level, &(level.elevator[i].sprite), @intCast(level.elevator[i].init_sprite), true);
@@ -155,18 +157,18 @@ fn SET_ALL_SPRITES(level: *c.TITUS_level) void {
         }
     }
 
-    for (0..c.OBJECT_CAPACITY) |i| {
+    for (0..lvl.OBJECT_CAPACITY) |i| {
         clearsprite(&(level.object[i].sprite));
         level.object[i].momentum = 0;
         if (level.object[i].init_enabled) {
-            c.updateobjectsprite(level, &(level.object[i]), @intCast(level.object[i].init_sprite), true);
+            objects.updateobjectsprite(level, &(level.object[i]), @intCast(level.object[i].init_sprite), true);
             level.object[i].sprite.visible = level.object[i].init_visible;
             level.object[i].sprite.flash = level.object[i].init_flash;
             level.object[i].sprite.flipped = level.object[i].init_flipped;
             level.object[i].sprite.x = @truncate(level.object[i].init_x);
             level.object[i].sprite.y = @truncate(level.object[i].init_y);
             if ((player.cageY != 0) and
-                ((level.object[i].sprite.number == c.FIRST_OBJET + 26) or (level.object[i].sprite.number == c.FIRST_OBJET + 27)))
+                ((level.object[i].sprite.number == globals.FIRST_OBJET + 26) or (level.object[i].sprite.number == globals.FIRST_OBJET + 27)))
             {
                 level.object[i].sprite.x = player.cageX;
                 level.object[i].sprite.y = player.cageY;

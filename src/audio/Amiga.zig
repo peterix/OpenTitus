@@ -36,7 +36,6 @@ const AudioEngine = audio.AudioEngine;
 const AudioTrack = audio.AudioTrack;
 const AudioEvent = audio.AudioEvent;
 
-const c = @import("../c.zig");
 const data = @import("../data.zig");
 
 const pocketmod = @import("pocketmod/pocketmod.zig");
@@ -82,7 +81,7 @@ fn getTrackData(track_in: ?AudioTrack) []const u8 {
         return &track_null;
     }
     const track = track_in.?;
-    if (data.game == c.Titus) switch (track) {
+    if (data.game == .Titus) switch (track) {
         .Play1 => return track_jeu1,
         .Play2 => return track_jeu2_ttf,
         .Play3 => return track_jeu3_ttf,
