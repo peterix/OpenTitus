@@ -35,14 +35,12 @@ const sprites = @import("sprites.zig");
 
 pub const ORIG_OBJECT_COUNT = @as(c_int, 71);
 
-pub fn move_objects(arg_level: [*c]lvl.TITUS_level) void {
-    var level = arg_level;
-    _ = &level;
+pub fn move_objects(level: *lvl.TITUS_level) void {
     if (@as(c_int, @bitCast(@as(c_uint, globals.GRAVITY_FLAG))) == @as(c_int, 0)) return;
-    var off_object: [*c]lvl.TITUS_object = undefined;
+    var off_object: *lvl.TITUS_object = undefined;
     _ = &off_object;
     var hflag: lvl.HFlag = undefined;
-    var fflag: lvl.enum_FFlag = undefined;
+    var fflag: lvl.FFlag = undefined;
     var i: u8 = undefined;
     _ = &i;
     var max_speed: u8 = undefined;
@@ -51,8 +49,6 @@ pub fn move_objects(arg_level: [*c]lvl.TITUS_level) void {
     _ = &tileX;
     var tileY: i16 = undefined;
     _ = &tileY;
-    var speed: i16 = undefined;
-    _ = &speed;
     var j: i16 = undefined;
     _ = &j;
     var obj_vs_sprite: bool = undefined;
@@ -109,7 +105,7 @@ pub fn move_objects(arg_level: [*c]lvl.TITUS_level) void {
                     tileY -= 1;
                 }
                 hflag = lvl.get_horizflag(level, tileY, tileX);
-                if (((@as(c_int, @bitCast(@as(c_uint, hflag))) == @as(c_int, @bitCast(@as(c_uint, .HFLAG_WALL)))) or (@as(c_int, @bitCast(@as(c_uint, hflag))) == @as(c_int, @bitCast(@as(c_uint, .HFLAG_DEADLY))))) or (@as(c_int, @bitCast(@as(c_uint, hflag))) == @as(c_int, @bitCast(@as(c_uint, .HFLAG_PADLOCK))))) {
+                if (hflag == .Wall or hflag == .Deadly or hflag == .Padlock) {
                     level.*.object[i].sprite.speed_x = @as(i16, @bitCast(@as(c_short, @truncate(@as(c_int, 0) - @as(c_int, @bitCast(@as(c_int, level.*.object[i].sprite.speed_x)))))));
                     level.*.object[i].sprite.x += @as(i16, @bitCast(@as(c_short, @truncate(@as(c_int, @bitCast(@as(c_int, level.*.object[i].sprite.speed_x))) >> @intCast(4)))));
                 } else if ((((@as(c_int, @bitCast(@as(c_int, level.*.object[i].sprite.speed_x))) >> @intCast(4)) + @as(c_int, @bitCast(@as(c_int, level.*.object[i].sprite.x)))) >> @intCast(4)) != @as(c_int, @bitCast(@as(c_int, tileX)))) {
@@ -120,7 +116,7 @@ pub fn move_objects(arg_level: [*c]lvl.TITUS_level) void {
                     }
                     if ((@as(c_int, @bitCast(@as(c_int, tileX))) < @as(c_int, @bitCast(@as(c_int, level.*.width)))) and (@as(c_int, @bitCast(@as(c_int, tileX))) >= @as(c_int, 0))) {
                         hflag = lvl.get_horizflag(level, tileY, tileX);
-                        if (((@as(c_int, @bitCast(@as(c_uint, hflag))) == @as(c_int, @bitCast(@as(c_uint, .HFLAG_WALL)))) or (@as(c_int, @bitCast(@as(c_uint, hflag))) == @as(c_int, @bitCast(@as(c_uint, .HFLAG_DEADLY))))) or (@as(c_int, @bitCast(@as(c_uint, hflag))) == @as(c_int, @bitCast(@as(c_uint, .HFLAG_PADLOCK))))) {
+                        if (hflag == .Wall or hflag == .Deadly or hflag == .Padlock) {
                             level.*.object[i].sprite.speed_x = @as(i16, @bitCast(@as(c_short, @truncate(@as(c_int, 0) - @as(c_int, @bitCast(@as(c_int, level.*.object[i].sprite.speed_x)))))));
                             level.*.object[i].sprite.x += @as(i16, @bitCast(@as(c_short, @truncate(@as(c_int, @bitCast(@as(c_int, level.*.object[i].sprite.speed_x))) >> @intCast(4)))));
                         }
@@ -143,8 +139,8 @@ pub fn move_objects(arg_level: [*c]lvl.TITUS_level) void {
             }
             if (@as(c_int, @bitCast(@as(c_int, level.*.object[i].sprite.speed_y))) < @as(c_int, 0)) {
                 tileX = @as(i16, @bitCast(@as(c_short, @truncate(@as(c_int, @bitCast(@as(c_int, level.*.object[i].sprite.x))) >> @intCast(4)))));
-                tileY = @as(i16, @bitCast(@as(c_short, @truncate(((@as(c_int, @bitCast(@as(c_int, level.*.object[i].sprite.y))) >> @intCast(4)) - (@as(c_int, @bitCast(@as(c_uint, level.*.object[i].sprite.spritedata.*.collheight))) >> @intCast(4))) - @as(c_int, 1)))));
-                if (@as(c_int, @bitCast(@as(c_uint, lvl.get_ceilflag(level, tileY, tileX)))) != @as(c_int, @bitCast(@as(c_uint, .CFLAG_NOCEILING)))) {
+                tileY = @as(i16, @bitCast(@as(c_short, @truncate(((@as(c_int, @bitCast(@as(c_int, level.*.object[i].sprite.y))) >> @intCast(4)) - (@as(c_int, @bitCast(@as(c_uint, level.*.object[i].sprite.spritedata.?.collheight))) >> @intCast(4))) - @as(c_int, 1)))));
+                if (lvl.get_ceilflag(level, tileY, tileX) != .NoCeiling) {
                     level.*.object[i].sprite.speed_y = 0;
                     if (!level.*.object[i].objectdata.*.bounce) {
                         level.*.object[i].sprite.y = @as(i16, @bitCast(@as(c_short, @truncate(@as(c_int, @bitCast(@as(c_int, level.*.object[i].sprite.y))) & @as(c_int, 65520)))));
@@ -153,7 +149,7 @@ pub fn move_objects(arg_level: [*c]lvl.TITUS_level) void {
                 } else {
                     if (((@as(c_int, @bitCast(@as(c_int, level.*.object[i].sprite.speed_y))) >> @intCast(4)) + @as(c_int, @bitCast(@as(c_int, level.*.object[i].sprite.y)))) != (@as(c_int, @bitCast(@as(c_int, level.*.object[i].sprite.y))) >> @intCast(4))) {
                         tileY -= 1;
-                        if (@as(c_int, @bitCast(@as(c_uint, lvl.get_ceilflag(level, tileY, tileX)))) != @as(c_int, @bitCast(@as(c_uint, .CFLAG_NOCEILING)))) {
+                        if (lvl.get_ceilflag(level, tileY, tileX) != .NoCeiling) {
                             level.*.object[i].sprite.speed_y = 0;
                             if (!level.*.object[i].objectdata.*.bounce) {
                                 level.*.object[i].sprite.y = @as(i16, @bitCast(@as(c_short, @truncate(@as(c_int, @bitCast(@as(c_int, level.*.object[i].sprite.y))) & @as(c_int, 65520)))));
@@ -173,17 +169,17 @@ pub fn move_objects(arg_level: [*c]lvl.TITUS_level) void {
                 hflag = lvl.get_horizflag(level, tileY, tileX);
                 fflag = lvl.get_floorflag(level, tileY, tileX);
                 if ((@as(c_int, @bitCast(@as(c_int, level.*.object[i].sprite.y))) <= @as(c_int, 6)) or (@as(c_int, @bitCast(@as(c_int, level.*.object[i].sprite.y))) >= (@as(c_int, @bitCast(@as(c_int, level.*.height))) << @intCast(4)))) {
-                    fflag = .FFLAG_NOFLOOR;
+                    fflag = .NoFloor;
                     if (@as(c_int, @bitCast(@as(c_int, level.*.object[i].sprite.y))) >= ((@as(c_int, @bitCast(@as(c_int, level.*.height))) << @intCast(4)) + @as(c_int, 64))) {
                         level.*.object[i].sprite.enabled = @as(c_int, 0) != 0;
                         continue;
                     }
                 }
-                if (@as(c_int, @bitCast(@as(c_uint, fflag))) == @as(c_int, @bitCast(@as(c_uint, .FFLAG_FIRE)))) {
+                if (fflag == .Fire) {
                     level.*.object[i].sprite.enabled = @as(c_int, 0) != 0;
                     continue;
                 }
-                if (@as(c_int, @bitCast(@as(c_uint, fflag))) == @as(c_int, @bitCast(@as(c_uint, .FFLAG_WATER)))) {
+                if (fflag == .Water) {
                     if (@as(c_int, @bitCast(@as(c_int, level.*.object[i].sprite.number))) == (@as(c_int, 30) + @as(c_int, 9))) {
                         level.*.object[i].sprite.speed_y = 0;
                         continue;
@@ -192,16 +188,16 @@ pub fn move_objects(arg_level: [*c]lvl.TITUS_level) void {
                         continue;
                     }
                 }
-                if ((@as(c_int, @bitCast(@as(c_uint, fflag))) != @as(c_int, @bitCast(@as(c_uint, .FFLAG_LADDER)))) and ((((@as(c_int, @bitCast(@as(c_uint, fflag))) != @as(c_int, @bitCast(@as(c_uint, .FFLAG_NOFLOOR)))) or (@as(c_int, @bitCast(@as(c_uint, hflag))) == @as(c_int, @bitCast(@as(c_uint, .HFLAG_WALL))))) or (@as(c_int, @bitCast(@as(c_uint, hflag))) == @as(c_int, @bitCast(@as(c_uint, .HFLAG_DEADLY))))) or (@as(c_int, @bitCast(@as(c_uint, hflag))) == @as(c_int, @bitCast(@as(c_uint, .HFLAG_PADLOCK)))))) {
+                if ((fflag != .Ladder) and ((fflag != .NoFloor) or (hflag == .Wall) or (hflag == .Deadly) or (hflag == .Padlock))) {
                     level.*.object[i].sprite.speed_y = 0;
                     if (!level.*.object[i].objectdata.*.bounce) {
-                        level.*.object[i].sprite.y = @as(i16, @bitCast(@as(c_short, @truncate(@as(c_int, @bitCast(@as(c_int, level.*.object[i].sprite.y))) & @as(c_int, 65520)))));
+                        level.*.object[i].sprite.y = @as(i16, @bitCast(@as(c_short, @truncate(@as(c_int, @bitCast(@as(c_int, level.*.object[i].sprite.y))) & @as(c_int, 0xFFF0)))));
                     }
                     continue;
                 }
                 tile_count = @as(i8, @bitCast(@as(i8, @truncate(((@as(c_int, @bitCast(@as(c_int, level.*.object[i].sprite.y))) + (@as(c_int, @bitCast(@as(c_int, level.*.object[i].sprite.speed_y))) >> @intCast(4))) >> @intCast(4)) - (@as(c_int, @bitCast(@as(c_int, level.*.object[i].sprite.y))) >> @intCast(4))))));
                 if (@as(c_int, @bitCast(@as(c_int, tile_count))) != @as(c_int, 0)) {
-                    obj_vs_sprite = SPRITES_VS_SPRITES(level, &level.*.object[i].sprite, level.*.object[i].sprite.spritedata, &off_object);
+                    obj_vs_sprite = SPRITES_VS_SPRITES(level, &level.*.object[i].sprite, level.*.object[i].sprite.spritedata.?, &off_object);
                 }
                 {
                     j = 0;
@@ -212,11 +208,11 @@ pub fn move_objects(arg_level: [*c]lvl.TITUS_level) void {
                         tileY += @as(i16, @bitCast(@as(c_short, @truncate(@as(c_int, 1)))));
                         hflag = lvl.get_horizflag(level, tileY, tileX);
                         fflag = lvl.get_floorflag(level, tileY, tileX);
-                        if (@as(c_int, @bitCast(@as(c_uint, fflag))) == @as(c_int, @bitCast(@as(c_uint, .FFLAG_FIRE)))) {
+                        if (fflag == .Fire) {
                             level.*.object[i].sprite.enabled = @as(c_int, 0) != 0;
                             break;
                         }
-                        if ((@as(c_int, @bitCast(@as(c_uint, fflag))) != @as(c_int, @bitCast(@as(c_uint, .FFLAG_LADDER)))) and ((((@as(c_int, @bitCast(@as(c_uint, fflag))) != @as(c_int, @bitCast(@as(c_uint, .FFLAG_NOFLOOR)))) or (@as(c_int, @bitCast(@as(c_uint, hflag))) == @as(c_int, @bitCast(@as(c_uint, .HFLAG_WALL))))) or (@as(c_int, @bitCast(@as(c_uint, hflag))) == @as(c_int, @bitCast(@as(c_uint, .HFLAG_DEADLY))))) or (@as(c_int, @bitCast(@as(c_uint, hflag))) == @as(c_int, @bitCast(@as(c_uint, .HFLAG_PADLOCK)))))) {
+                        if ((fflag != .Ladder) and ((fflag != .NoFloor) or (hflag == .Wall) or (hflag == .Deadly) or (hflag == .Padlock))) {
                             if (!level.*.object[i].objectdata.*.bounce) {
                                 level.*.object[i].sprite.speed_y = 0;
                                 level.*.object[i].sprite.y = @as(i16, @bitCast(@as(c_short, @truncate((@as(c_int, @bitCast(@as(c_int, level.*.object[i].sprite.y))) & @as(c_int, 65520)) + @as(c_int, 16)))));
@@ -247,7 +243,7 @@ pub fn move_objects(arg_level: [*c]lvl.TITUS_level) void {
                     continue;
                 }
                 if (!obj_vs_sprite) {
-                    obj_vs_sprite = SPRITES_VS_SPRITES(level, &level.*.object[i].sprite, level.*.object[i].sprite.spritedata, &off_object);
+                    obj_vs_sprite = SPRITES_VS_SPRITES(level, &level.*.object[i].sprite, level.*.object[i].sprite.spritedata.?, &off_object);
                 }
                 if (obj_vs_sprite) {
                     level.*.object[i].momentum = 0;
@@ -260,11 +256,11 @@ pub fn move_objects(arg_level: [*c]lvl.TITUS_level) void {
                             off_object.*.sprite.speed_x = @as(i16, @bitCast(@as(c_short, @truncate(@as(c_int, @bitCast(@as(c_int, level.*.object[i].sprite.speed_x))) >> @intCast(1)))));
                         } else {
                             level.*.object[i].sprite.speed_y = 0;
-                            level.*.object[i].sprite.y = @as(i16, @bitCast(@as(c_short, @truncate(@as(c_int, @bitCast(@as(c_int, off_object.*.sprite.y))) - @as(c_int, @bitCast(@as(c_uint, off_object.*.sprite.spritedata.*.collheight)))))));
+                            level.*.object[i].sprite.y = @as(i16, @bitCast(@as(c_short, @truncate(@as(c_int, @bitCast(@as(c_int, off_object.*.sprite.y))) - @as(c_int, @bitCast(@as(c_uint, off_object.*.sprite.spritedata.?.collheight)))))));
                             continue;
                         }
                     } else if (level.*.object[i].objectdata.*.bounce) {
-                        level.*.object[i].sprite.y = @as(i16, @bitCast(@as(c_short, @truncate(@as(c_int, @bitCast(@as(c_int, off_object.*.sprite.y))) - @as(c_int, @bitCast(@as(c_uint, off_object.*.sprite.spritedata.*.collheight)))))));
+                        level.*.object[i].sprite.y = @as(i16, @bitCast(@as(c_short, @truncate(@as(c_int, @bitCast(@as(c_int, off_object.*.sprite.y))) - @as(c_int, @bitCast(@as(c_uint, off_object.*.sprite.spritedata.?.collheight)))))));
                         if ((@as(c_int, @bitCast(@as(c_int, level.*.object[i].sprite.speed_y))) >= @as(c_int, 16)) or (@as(c_int, @bitCast(@as(c_int, level.*.object[i].sprite.speed_y))) < @as(c_int, 0))) {
                             globals.GRAVITY_FLAG = 4;
                             level.*.object[i].sprite.speed_y = @as(i16, @bitCast(@as(c_short, @truncate((@as(c_int, 0) - @as(c_int, @bitCast(@as(c_int, level.*.object[i].sprite.speed_y)))) + (@as(c_int, 16) * @as(c_int, 3))))));
@@ -276,7 +272,7 @@ pub fn move_objects(arg_level: [*c]lvl.TITUS_level) void {
                         }
                         continue;
                     } else {
-                        level.*.object[i].sprite.y = @as(i16, @bitCast(@as(c_short, @truncate(@as(c_int, @bitCast(@as(c_int, off_object.*.sprite.y))) - @as(c_int, @bitCast(@as(c_uint, off_object.*.sprite.spritedata.*.collheight)))))));
+                        level.*.object[i].sprite.y = @as(i16, @bitCast(@as(c_short, @truncate(@as(c_int, @bitCast(@as(c_int, off_object.*.sprite.y))) - @as(c_int, @bitCast(@as(c_uint, off_object.*.sprite.spritedata.?.collheight)))))));
                         level.*.object[i].sprite.speed_y = 0;
                     }
                 }
@@ -285,7 +281,7 @@ pub fn move_objects(arg_level: [*c]lvl.TITUS_level) void {
             if (@as(c_int, @bitCast(@as(c_int, level.*.object[i].sprite.number))) < @as(c_int, 101)) {
                 max_speed = level.*.object[i].objectdata.*.maxspeedY;
             }
-            speed = @as(i16, @bitCast(@as(c_short, @truncate(@as(c_int, @bitCast(@as(c_int, level.*.object[i].sprite.speed_y))) >> @intCast(4)))));
+            const speed = @as(i16, @bitCast(@as(c_short, @truncate(@as(c_int, @bitCast(@as(c_int, level.*.object[i].sprite.speed_y))) >> @intCast(4)))));
             if (@as(c_int, @bitCast(@as(c_int, speed))) != @as(c_int, 0)) {
                 globals.GRAVITY_FLAG = 4;
             }
@@ -301,13 +297,12 @@ pub fn move_objects(arg_level: [*c]lvl.TITUS_level) void {
     }
 }
 
-fn shock(arg_level: [*c]lvl.TITUS_level, arg_object: [*c]lvl.TITUS_object) void {
+fn shock(arg_level: *lvl.TITUS_level, arg_object: *lvl.TITUS_object) void {
     var level = arg_level;
     _ = &level;
     var object = arg_object;
     _ = &object;
-    var player: [*c]lvl.TITUS_player = &level.*.player;
-    _ = &player;
+    const player = &level.player;
     if (@as(c_int, @bitCast(@as(c_uint, object.*.momentum))) < @as(c_int, 10)) return;
     if (@as(c_int, @bitCast(@as(c_int, player.*.sprite.speed_y))) >= (@as(c_int, 12) * @as(c_int, 16))) return;
     if (@abs(@as(c_int, @bitCast(@as(c_int, player.*.sprite.y))) - @as(c_int, @bitCast(@as(c_int, object.*.sprite.y)))) >= @as(c_int, 32)) {
@@ -319,12 +314,12 @@ fn shock(arg_level: [*c]lvl.TITUS_level, arg_object: [*c]lvl.TITUS_object) void 
     if (@as(c_int, @bitCast(@as(c_int, object.*.sprite.x))) > @as(c_int, @bitCast(@as(c_int, player.*.sprite.x)))) {
         if (@as(c_int, @bitCast(@as(c_int, object.*.sprite.x))) > (@as(c_int, @bitCast(@as(c_int, player.*.sprite.x))) + @as(c_int, 24))) return;
     } else {
-        if ((@as(c_int, @bitCast(@as(c_int, object.*.sprite.x))) + @as(c_int, @bitCast(@as(c_uint, object.*.sprite.spritedata.*.collwidth)))) < @as(c_int, @bitCast(@as(c_int, player.*.sprite.x)))) return;
+        if ((@as(c_int, @bitCast(@as(c_int, object.*.sprite.x))) + @as(c_int, @bitCast(@as(c_uint, object.*.sprite.spritedata.?.collwidth)))) < @as(c_int, @bitCast(@as(c_int, player.*.sprite.x)))) return;
     }
     if (@as(c_int, @bitCast(@as(c_int, object.*.sprite.y))) < @as(c_int, @bitCast(@as(c_int, player.*.sprite.y)))) {
         if (@as(c_int, @bitCast(@as(c_int, object.*.sprite.y))) <= (@as(c_int, @bitCast(@as(c_int, player.*.sprite.y))) - @as(c_int, 32))) return;
     } else {
-        if (((@as(c_int, @bitCast(@as(c_int, object.*.sprite.y))) - @as(c_int, @bitCast(@as(c_uint, object.*.sprite.spritedata.*.collheight)))) + @as(c_int, 1)) >= @as(c_int, @bitCast(@as(c_int, player.*.sprite.y)))) return;
+        if (((@as(c_int, @bitCast(@as(c_int, object.*.sprite.y))) - @as(c_int, @bitCast(@as(c_uint, object.*.sprite.spritedata.?.collheight)))) + @as(c_int, 1)) >= @as(c_int, @bitCast(@as(c_int, player.*.sprite.y)))) return;
     }
     audio.playEvent(.Event_PlayerHeadImpact);
     globals.CHOC_FLAG = 24;
@@ -336,7 +331,7 @@ fn shock(arg_level: [*c]lvl.TITUS_level, arg_object: [*c]lvl.TITUS_object) void 
     }
 }
 
-pub fn SPRITES_VS_SPRITES(arg_level: [*c]lvl.TITUS_level, arg_sprite1: [*c]lvl.TITUS_sprite, arg_sprite1data: [*c]const lvl.TITUS_spritedata, arg_object2: [*c][*c]lvl.TITUS_object) bool {
+pub fn SPRITES_VS_SPRITES(arg_level: *lvl.TITUS_level, arg_sprite1: *lvl.TITUS_sprite, arg_sprite1data: *const lvl.TITUS_spritedata, arg_object2: [*c]*lvl.TITUS_object) bool {
     var level = arg_level;
     _ = &level;
     var sprite1 = arg_sprite1;
@@ -358,14 +353,14 @@ pub fn SPRITES_VS_SPRITES(arg_level: [*c]lvl.TITUS_level, arg_sprite1: [*c]lvl.T
             if ((((&level.*.object[i].sprite) == sprite1) or !level.*.object[i].sprite.enabled) or !level.*.object[i].objectdata.*.support) continue;
             if (@abs(@as(c_int, @bitCast(@as(c_int, level.*.object[i].sprite.x))) - @as(c_int, @bitCast(@as(c_int, obj1left)))) > @as(c_int, 64)) continue;
             if (@abs(@as(c_int, @bitCast(@as(c_int, level.*.object[i].sprite.y))) - @as(c_int, @bitCast(@as(c_int, sprite1.*.y)))) > @as(c_int, 70)) continue;
-            obj2left = @as(i16, @bitCast(@as(c_short, @truncate(@as(c_int, @bitCast(@as(c_int, level.*.object[i].sprite.x))) - (@as(c_int, @bitCast(@as(c_uint, level.*.object[i].sprite.spritedata.*.collwidth))) >> @intCast(1))))));
+            obj2left = @as(i16, @bitCast(@as(c_short, @truncate(@as(c_int, @bitCast(@as(c_int, level.*.object[i].sprite.x))) - (@as(c_int, @bitCast(@as(c_uint, level.*.object[i].sprite.spritedata.?.collwidth))) >> @intCast(1))))));
             if (@as(c_int, @bitCast(@as(c_int, obj2left))) > @as(c_int, @bitCast(@as(c_int, obj1left)))) {
                 if ((@as(c_int, @bitCast(@as(c_int, obj1left))) + @as(c_int, @bitCast(@as(c_uint, sprite1data.*.collwidth)))) <= @as(c_int, @bitCast(@as(c_int, obj2left)))) continue;
             } else {
-                if ((@as(c_int, @bitCast(@as(c_int, obj2left))) + @as(c_int, @bitCast(@as(c_uint, level.*.object[i].sprite.spritedata.*.collwidth)))) <= @as(c_int, @bitCast(@as(c_int, obj1left)))) continue;
+                if ((@as(c_int, @bitCast(@as(c_int, obj2left))) + @as(c_int, @bitCast(@as(c_uint, level.*.object[i].sprite.spritedata.?.collwidth)))) <= @as(c_int, @bitCast(@as(c_int, obj1left)))) continue;
             }
-            if ((@as(c_int, @bitCast(@as(c_int, level.*.object[i].sprite.y))) - (@as(c_int, @bitCast(@as(c_uint, level.*.object[i].sprite.spritedata.*.collheight))) >> @intCast(3))) >= @as(c_int, @bitCast(@as(c_int, sprite1.*.y)))) {
-                if ((@as(c_int, @bitCast(@as(c_int, level.*.object[i].sprite.y))) - @as(c_int, @bitCast(@as(c_uint, level.*.object[i].sprite.spritedata.*.collheight)))) <= @as(c_int, @bitCast(@as(c_int, sprite1.*.y)))) {
+            if ((@as(c_int, @bitCast(@as(c_int, level.*.object[i].sprite.y))) - (@as(c_int, @bitCast(@as(c_uint, level.*.object[i].sprite.spritedata.?.collheight))) >> @intCast(3))) >= @as(c_int, @bitCast(@as(c_int, sprite1.*.y)))) {
+                if ((@as(c_int, @bitCast(@as(c_int, level.*.object[i].sprite.y))) - @as(c_int, @bitCast(@as(c_uint, level.*.object[i].sprite.spritedata.?.collheight)))) <= @as(c_int, @bitCast(@as(c_int, sprite1.*.y)))) {
                     object2.* = &level.*.object[i];
                     return @as(c_int, 1) != 0;
                 }

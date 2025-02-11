@@ -35,8 +35,8 @@ const SDL = @import("SDL.zig");
 
 const tick_delay = 29;
 
-pub const ScreenContext = struct  {
-    started :bool = false,
+pub const ScreenContext = struct {
+    started: bool = false,
     LAST_CLOCK: u32 = 0,
     TARGET_CLOCK: u32 = 0,
 };
@@ -105,7 +105,8 @@ pub fn render_tiles(level: *lvl.TITUS_level) void {
             dest.y = y * 16 + y_offset;
             var parent_level: *lvl.Level = @ptrCast(@alignCast(level.parent));
             const tile = parent_level.getTile(tileX, tileY);
-            const surface = parent_level.tiles[level.tile[tile].animation[globals.tile_anim]].tiledata;
+            const animated_tile = level.tile[tile].animation[globals.tile_anim];
+            const surface = parent_level.tiles[animated_tile].tiledata;
             _ = SDL.blitSurface(@ptrCast(@alignCast(surface)), null, window.screen, &dest);
         }
     }
@@ -152,17 +153,17 @@ fn render_sprite(spr: *allowzero lvl.TITUS_sprite) void {
     var dest: SDL.Rect = undefined;
     if (!spr.flipped) {
         // FIXME: crash in final level!
-        dest.x = spr.x - spr.spritedata.*.refwidth - (globals.BITMAP_X * 16) + globals.g_scroll_px_offset;
+        dest.x = spr.x - spr.spritedata.?.refwidth - (globals.BITMAP_X * 16) + globals.g_scroll_px_offset;
     } else {
-        dest.x = spr.x + spr.spritedata.*.refwidth - spr.spritedata.*.width - (globals.BITMAP_X * 16) + globals.g_scroll_px_offset;
+        dest.x = spr.x + spr.spritedata.?.refwidth - spr.spritedata.?.width - (globals.BITMAP_X * 16) + globals.g_scroll_px_offset;
     }
 
-    const sprite_offset: i16 = 0 - (@as(i16, spr.spritedata.*.refheight) - spr.spritedata.*.height);
-    dest.y = spr.y + sprite_offset - spr.spritedata.*.height + 1 - (globals.BITMAP_Y * 16) + get_y_offset();
+    const sprite_offset: i16 = 0 - (@as(i16, spr.spritedata.?.refheight) - spr.spritedata.?.height);
+    dest.y = spr.y + sprite_offset - spr.spritedata.?.height + 1 - (globals.BITMAP_Y * 16) + get_y_offset();
 
     if ((dest.x >= globals.screen_width * 16) or //Right for the screen
-        (dest.x + spr.spritedata.*.width < 0) or //Left for the screen
-        (dest.y + spr.spritedata.*.height < 0) or //Above the screen
+        (dest.x + spr.spritedata.?.width < 0) or //Left for the screen
+        (dest.y + spr.spritedata.?.height < 0) or //Above the screen
         (dest.y >= globals.screen_height * 16)) //Below the screen
     {
         return;

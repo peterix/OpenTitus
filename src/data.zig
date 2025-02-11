@@ -27,6 +27,7 @@ const std = @import("std");
 const SDL = @import("SDL.zig");
 const audio = @import("audio/audio.zig");
 const AudioTrack = audio.AudioTrack;
+const lvl = @import("level.zig");
 
 pub const GameType = enum  {
     Titus,
@@ -355,21 +356,8 @@ const object_maxspeedY_data: [NUM_ORIGINAL_OBJECTS]u8 = .{
     15, 15, 15, 15, 15, 15, 15,
 };
 
-// NOTE: in sync with `struct _TITUS_objectdata`
-pub const ObjectData = extern struct {
-    maxspeedY: u8 = 0,
-    support: bool = false,
-    //bounce against floor + player bounces (ball, all spring, yellow stone, squeezed ball, skateboard)
-    bounce: bool = false,
-    //gravity on throw (ball, all carpet, trolley, squeezed ball, garbage, grey stone, scooter, yellow bricks between the statues, skateboard, cage)
-    gravity: bool = false,
-    //on drop, lands on ground/continue below ground(cave spikes, rolling rock, ambolt, safe, dead man with helicopter)
-    droptobottom: bool = false,
-    //weapon/not weapon(cage)
-    no_damage: bool = false,
-};
 
-// TODO: just dump the processed data and put it in as a simple array with none of this bit hackery
+const ObjectData = lvl.TITUS_objectdata;
 pub const object_data: [NUM_ORIGINAL_OBJECTS]ObjectData = init_object_data: {
     var data: [NUM_ORIGINAL_OBJECTS]ObjectData = undefined;
     for (tmpobjectflag, object_maxspeedY_data, &data) |flag, maxspeedY, *object| {

@@ -55,8 +55,8 @@ enum HFLAG : uint8_t {
 };
 
 enum FFLAG : uint8_t {
-    FFLAG_NOFLOOR = 0,
-    FFLAG_FLOOR = 1,
+    NoFloor = 0,
+    Floor = 1,
     FFLAG_SSFLOOR = 2,
     FFLAG_SFLOOR = 3,
     FFLAG_VSFLOOR = 4,

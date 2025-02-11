@@ -119,8 +119,7 @@ void move_objects(TITUS_level *level) {
         tileY--;
       }
       hflag = get_horizflag(level, tileY, tileX);
-      if ((hflag == HFLAG_WALL) || (hflag == HFLAG_DEADLY) ||
-          (hflag == HFLAG_PADLOCK)) {
+      if ((hflag == HFLAG_WALL) || (hflag == HFLAG_DEADLY) || (hflag == HFLAG_PADLOCK)) {
         // Collision horizontal, change direction
         level->object[i].sprite.speed_x = 0 - level->object[i].sprite.speed_x;
         level->object[i].sprite.x += level->object[i].sprite.speed_x >> 4;
@@ -134,8 +133,7 @@ void move_objects(TITUS_level *level) {
           tileX++;
         if ((tileX < level->width) && (tileX >= 0)) {
           hflag = get_horizflag(level, tileY, tileX);
-          if ((hflag == HFLAG_WALL) || (hflag == HFLAG_DEADLY) ||
-              (hflag == HFLAG_PADLOCK)) {
+          if (hflag == HFLAG_WALL || hflag == HFLAG_DEADLY || hflag == HFLAG_PADLOCK) {
             // Collision horizontal, change direction
             level->object[i].sprite.speed_x =
                 0 - level->object[i].sprite.speed_x;
@@ -181,8 +179,7 @@ void move_objects(TITUS_level *level) {
           // The purpose is to test if the speed makes it necessary to check
           // above sprite, the above line is a bug
           tileY--;
-          if (get_ceilflag(level, tileY, tileX) !=
-              CFLAG_NOCEILING) { // Hit, stop elevating
+          if (get_ceilflag(level, tileY, tileX) != CFLAG_NOCEILING) { // Hit, stop elevating
             // Hit, stop elevating
             level->object[i].sprite.speed_y = 0;
             if (!(level->object[i].objectdata->bounce)) {

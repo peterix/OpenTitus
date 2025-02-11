@@ -48,7 +48,7 @@ pub inline fn myabs(a: anytype) @TypeOf(a) {
     return a;
 }
 
-fn UP_ANIMATION(arg_sprite: [*c]lvl.TITUS_sprite) void {
+fn UP_ANIMATION(arg_sprite: *lvl.TITUS_sprite) void {
     var sprite = arg_sprite;
     _ = &sprite;
     while (true) {
@@ -58,7 +58,7 @@ fn UP_ANIMATION(arg_sprite: [*c]lvl.TITUS_sprite) void {
     sprite.*.animation += 1;
 }
 
-fn DOWN_ANIMATION(arg_sprite: [*c]lvl.TITUS_sprite) void {
+fn DOWN_ANIMATION(arg_sprite: *lvl.TITUS_sprite) void {
     var sprite = arg_sprite;
     _ = &sprite;
     while (true) {
@@ -68,15 +68,13 @@ fn DOWN_ANIMATION(arg_sprite: [*c]lvl.TITUS_sprite) void {
     sprite.*.animation -= 1;
 }
 
-pub fn moveEnemies(arg_level: [*c]lvl.TITUS_level) void {
+pub fn moveEnemies(arg_level: *lvl.TITUS_level) void {
     var level = arg_level;
     _ = &level;
-    var bullet: [*c]lvl.TITUS_sprite = undefined;
-    _ = &bullet;
     var j: c_int = undefined;
     _ = &j;
     for (&level.*.enemy) |*enemy| {
-        var enemySprite: [*c]lvl.TITUS_sprite = &enemy.*.sprite;
+        var enemySprite: *lvl.TITUS_sprite = &enemy.*.sprite;
         _ = &enemySprite;
         if (!enemySprite.*.enabled) {
             continue;
@@ -149,11 +147,7 @@ pub fn moveEnemies(arg_level: [*c]lvl.TITUS_level) void {
                             continue;
                         }
                         enemySprite.*.animation += @as(usize, @bitCast(@as(isize, @intCast(@as(c_int, 2)))));
-                        if ((blk: {
-                            const tmp = FIND_TRASH(level);
-                            bullet = tmp;
-                            break :blk tmp;
-                        }) != null) {
+                        if (FIND_TRASH(level)) |bullet| {
                             PUT_BULLET(level, enemy, bullet);
                             enemy.*.counter = @as(u8, @bitCast(@as(u8, @truncate(enemy.*.delay))));
                         }
@@ -331,7 +325,7 @@ pub fn moveEnemies(arg_level: [*c]lvl.TITUS_level) void {
                         }
                     },
                     1 => {
-                        if (@as(c_int, @bitCast(@as(c_uint, lvl.get_floorflag(level, @as(i16, @bitCast(@as(c_short, @truncate(@as(c_int, @bitCast(@as(c_int, enemySprite.*.y))) >> @intCast(4))))), @as(i16, @bitCast(@as(c_short, @truncate(@as(c_int, @bitCast(@as(c_int, enemySprite.*.x))) >> @intCast(4))))))))) == @as(c_int, @bitCast(@as(c_uint, .FFLAG_NOFLOOR)))) {
+                        if (lvl.get_floorflag(level, (enemySprite.y >> 4), (enemySprite.x >> 4)) == .NoFloor) {
                             if (@as(c_int, @bitCast(@as(c_int, enemySprite.*.speed_y))) < @as(c_int, 16)) {
                                 enemySprite.*.speed_y += 1;
                             }
@@ -346,14 +340,14 @@ pub fn moveEnemies(arg_level: [*c]lvl.TITUS_level) void {
                             }
                         }
                         enemySprite.*.speed_y = 0;
-                        enemySprite.*.y = @as(i16, @bitCast(@as(c_short, @truncate(@as(c_int, @bitCast(@as(c_int, enemySprite.*.y))) & @as(c_int, 65520)))));
+                        enemySprite.*.y = @as(i16, @bitCast(@as(c_short, @truncate(@as(c_int, @bitCast(@as(c_int, enemySprite.*.y))) & @as(c_int, 0xFFF0)))));
                         if (@as(c_int, @bitCast(@as(c_int, enemySprite.*.speed_x))) > @as(c_int, 0)) {
-                            j = -@as(c_int, 1);
+                            j = -1; // moving left
                         } else {
-                            j = 1;
+                            j = 1; // moving right
                         }
                         const hflag = lvl.get_horizflag(level, @as(i16, @bitCast(@as(c_short, @truncate((@as(c_int, @bitCast(@as(c_int, enemySprite.*.y))) >> @intCast(4)) - @as(c_int, 1))))), @as(i16, @bitCast(@as(c_short, @truncate((@as(c_int, @bitCast(@as(c_int, enemySprite.*.x))) >> @intCast(4)) + j)))));
-                        if (((@as(c_int, @bitCast(@as(c_uint, hflag))) == @as(c_int, @bitCast(@as(c_uint, .HFLAG_WALL)))) or (@as(c_int, @bitCast(@as(c_uint, hflag))) == @as(c_int, @bitCast(@as(c_uint, .HFLAG_DEADLY))))) or (@as(c_int, @bitCast(@as(c_uint, hflag))) == @as(c_int, @bitCast(@as(c_uint, .HFLAG_PADLOCK))))) {
+                        if (hflag == .Wall or hflag == .Deadly or hflag == .Padlock) { // Next tile is wall, change direction
                             enemySprite.*.speed_x = @as(i16, @bitCast(@as(c_short, @truncate(@as(c_int, 0) - @as(c_int, @bitCast(@as(c_int, enemySprite.*.speed_x)))))));
                         }
                         enemySprite.*.x -= @as(i16, @bitCast(@as(c_short, @truncate(@as(c_int, @bitCast(@as(c_int, enemySprite.*.speed_x)))))));
@@ -369,7 +363,7 @@ pub fn moveEnemies(arg_level: [*c]lvl.TITUS_level) void {
                             enemy.*.phase = 2;
                             continue;
                         }
-                        if (myabs(@as(c_int, @bitCast(@as(c_int, level.*.player.sprite.x))) - @as(c_int, @bitCast(@as(c_int, enemySprite.*.x)))) > (@as(c_int, @bitCast(@as(c_uint, enemySprite.*.spritedata.*.width))) + @as(c_int, 6))) {
+                        if (myabs(@as(c_int, @bitCast(@as(c_int, level.*.player.sprite.x))) - @as(c_int, @bitCast(@as(c_int, enemySprite.*.x)))) > (@as(c_int, @bitCast(@as(c_uint, enemySprite.*.spritedata.?.width))) + @as(c_int, 6))) {
                             continue;
                         }
                         if (myabs(@as(c_int, @bitCast(@as(c_int, level.*.player.sprite.y))) - @as(c_int, @bitCast(@as(c_int, enemySprite.*.y)))) > @as(c_int, 8)) {
@@ -388,12 +382,14 @@ pub fn moveEnemies(arg_level: [*c]lvl.TITUS_level) void {
                         DOWN_ANIMATION(enemySprite);
                     },
                     3 => {
-                        if (enemy.*.trigger) {
+                        // Strike!
+                        if (enemy.*.trigger) { // End of strike animation (TODO: check if this will ever be executed)
                             enemy.*.phase = 1;
                             continue;
                         }
-                        if (@as(c_int, @bitCast(@as(c_uint, lvl.get_floorflag(level, @as(i16, @bitCast(@as(c_short, @truncate(@as(c_int, @bitCast(@as(c_int, enemySprite.*.y))) >> @intCast(4))))), @as(i16, @bitCast(@as(c_short, @truncate(@as(c_int, @bitCast(@as(c_int, enemySprite.*.x))) >> @intCast(4))))))))) == @as(c_int, @bitCast(@as(c_uint, .FFLAG_NOFLOOR)))) {
-                            if (@as(c_int, @bitCast(@as(c_int, enemySprite.*.speed_y))) < @as(c_int, 16)) {
+                        // Gravity walk (equal to the first part of "case 1:")
+                        if (lvl.get_floorflag(level, (enemySprite.y >> 4), (enemySprite.x >> 4)) == .NoFloor) {
+                            if (@as(c_int, @bitCast(@as(c_int, enemySprite.*.speed_y))) < @as(c_int, 16)) { // 16 = Max yspeed
                                 enemySprite.*.speed_y += 1;
                             }
                             enemySprite.*.y += @as(i16, @bitCast(@as(c_short, @truncate(@as(c_int, @bitCast(@as(c_int, enemySprite.*.speed_y)))))));
@@ -407,14 +403,14 @@ pub fn moveEnemies(arg_level: [*c]lvl.TITUS_level) void {
                             }
                         }
                         enemySprite.*.speed_y = 0;
-                        enemySprite.*.y = @as(i16, @bitCast(@as(c_short, @truncate(@as(c_int, @bitCast(@as(c_int, enemySprite.*.y))) & @as(c_int, 65520)))));
+                        enemySprite.*.y = @as(i16, @bitCast(@as(c_short, @truncate(@as(c_int, @bitCast(@as(c_int, enemySprite.*.y))) & @as(c_int, 0xFFF0)))));
                         if (@as(c_int, @bitCast(@as(c_int, enemySprite.*.speed_x))) > @as(c_int, 0)) {
-                            j = -@as(c_int, 1);
+                            j = -1; // moving left
                         } else {
-                            j = 1;
+                            j = 1; // moving right
                         }
                         const hflag = lvl.get_horizflag(level, @as(i16, @bitCast(@as(c_short, @truncate((@as(c_int, @bitCast(@as(c_int, enemySprite.*.y))) >> @intCast(4)) - @as(c_int, 1))))), @as(i16, @bitCast(@as(c_short, @truncate((@as(c_int, @bitCast(@as(c_int, enemySprite.*.x))) >> @intCast(4)) + j)))));
-                        if (((@as(c_int, @bitCast(@as(c_uint, hflag))) == @as(c_int, @bitCast(@as(c_uint, .HFLAG_WALL)))) or (@as(c_int, @bitCast(@as(c_uint, hflag))) == @as(c_int, @bitCast(@as(c_uint, .HFLAG_DEADLY))))) or (@as(c_int, @bitCast(@as(c_uint, hflag))) == @as(c_int, @bitCast(@as(c_uint, .HFLAG_PADLOCK))))) {
+                        if ((hflag == .Wall) or (hflag == .Deadly) or (hflag == .Padlock)) { // Next tile is wall, change direction
                             enemySprite.*.speed_x = @as(i16, @bitCast(@as(c_short, @truncate(@as(c_int, 0) - @as(c_int, @bitCast(@as(c_int, enemySprite.*.speed_x)))))));
                         }
                         enemySprite.*.x -= @as(i16, @bitCast(@as(c_short, @truncate(@as(c_int, @bitCast(@as(c_int, enemySprite.*.speed_x)))))));
@@ -454,7 +450,7 @@ pub fn moveEnemies(arg_level: [*c]lvl.TITUS_level) void {
                         }
                     },
                     1 => {
-                        if (@as(c_int, @bitCast(@as(c_uint, lvl.get_floorflag(level, @as(i16, @bitCast(@as(c_short, @truncate(@as(c_int, @bitCast(@as(c_int, enemySprite.*.y))) >> @intCast(4))))), @as(i16, @bitCast(@as(c_short, @truncate(@as(c_int, @bitCast(@as(c_int, enemySprite.*.x))) >> @intCast(4))))))))) == @as(c_int, @bitCast(@as(c_uint, .FFLAG_NOFLOOR)))) {
+                        if (lvl.get_floorflag(level, (enemySprite.*.y >> 4), (enemySprite.*.x >> 4)) == .NoFloor) {
                             if (@as(c_int, @bitCast(@as(c_int, enemySprite.*.speed_y))) < @as(c_int, 16)) {
                                 enemySprite.*.speed_y += 1;
                             }
@@ -469,14 +465,14 @@ pub fn moveEnemies(arg_level: [*c]lvl.TITUS_level) void {
                             }
                         }
                         enemySprite.*.speed_y = 0;
-                        enemySprite.*.y = @as(i16, @bitCast(@as(c_short, @truncate(@as(c_int, @bitCast(@as(c_int, enemySprite.*.y))) & @as(c_int, 65520)))));
+                        enemySprite.*.y = @as(i16, @bitCast(@as(c_short, @truncate(@as(c_int, @bitCast(@as(c_int, enemySprite.*.y))) & @as(c_int, 0xFFF0)))));
                         if (@as(c_int, @bitCast(@as(c_int, enemySprite.*.speed_x))) > @as(c_int, 0)) {
                             j = -@as(c_int, 1);
                         } else {
                             j = 1;
                         }
-                        const hflag = lvl.get_horizflag(level, @as(i16, @bitCast(@as(c_short, @truncate((@as(c_int, @bitCast(@as(c_int, enemySprite.*.y))) >> @intCast(4)) - @as(c_int, 1))))), @as(i16, @bitCast(@as(c_short, @truncate((@as(c_int, @bitCast(@as(c_int, enemySprite.*.x))) >> @intCast(4)) + j)))));
-                        if (((@as(c_int, @bitCast(@as(c_uint, hflag))) == @as(c_int, @bitCast(@as(c_uint, .HFLAG_WALL)))) or (@as(c_int, @bitCast(@as(c_uint, hflag))) == @as(c_int, @bitCast(@as(c_uint, .HFLAG_DEADLY))))) or (@as(c_int, @bitCast(@as(c_uint, hflag))) == @as(c_int, @bitCast(@as(c_uint, .HFLAG_PADLOCK))))) {
+                        const hflag = lvl.get_horizflag(level, (enemySprite.*.y >> 4) - 1, (enemySprite.*.x >> 4) + @as(i16, @truncate(j)));
+                        if (hflag == .Wall or hflag == .Deadly or hflag == .Padlock) { // Next tile is wall, change direction
                             enemySprite.*.speed_x = @as(i16, @bitCast(@as(c_short, @truncate(@as(c_int, 0) - @as(c_int, @bitCast(@as(c_int, enemySprite.*.speed_x)))))));
                         }
                         enemySprite.*.x -= @as(i16, @bitCast(@as(c_short, @truncate(@as(c_int, @bitCast(@as(c_int, enemySprite.*.speed_x)))))));
@@ -550,20 +546,20 @@ pub fn moveEnemies(arg_level: [*c]lvl.TITUS_level) void {
                             }
                             continue;
                         }
-                        if (@as(c_int, @bitCast(@as(c_uint, lvl.get_floorflag(level, @as(i16, @bitCast(@as(c_short, @truncate(@as(c_int, @bitCast(@as(c_int, enemySprite.*.y))) >> @intCast(4))))), @as(i16, @bitCast(@as(c_short, @truncate(@as(c_int, @bitCast(@as(c_int, enemySprite.*.x))) >> @intCast(4))))))))) == @as(c_int, @bitCast(@as(c_uint, .FFLAG_NOFLOOR)))) {
+                        if (lvl.get_floorflag(level, (enemySprite.y >> 4), (enemySprite.x >> 4)) == .NoFloor) {
                             enemySprite.*.speed_x = @as(i16, @bitCast(@as(c_short, @truncate(myabs(@as(c_int, @bitCast(@as(c_int, enemySprite.*.speed_x))))))));
                             if (enemy.*.init_x > @as(c_int, @bitCast(@as(c_int, enemySprite.*.x)))) {
                                 enemySprite.*.speed_x = @as(i16, @bitCast(@as(c_short, @truncate(@as(c_int, 0) - @as(c_int, @bitCast(@as(c_int, enemySprite.*.speed_x)))))));
                             }
                         }
-                        enemySprite.*.y = @as(i16, @bitCast(@as(c_short, @truncate(@as(c_int, @bitCast(@as(c_int, enemySprite.*.y))) & @as(c_int, 65520)))));
+                        enemySprite.*.y = @as(i16, @bitCast(@as(c_short, @truncate(@as(c_int, @bitCast(@as(c_int, enemySprite.*.y))) & @as(c_int, 0xFFF0)))));
                         if (@as(c_int, @bitCast(@as(c_int, enemySprite.*.speed_x))) > @as(c_int, 0)) {
-                            j = -@as(c_int, 1);
+                            j = -1; // moving left
                         } else {
-                            j = 1;
+                            j = 1; // moving right
                         }
-                        const hflag = lvl.get_horizflag(level, @as(i16, @bitCast(@as(c_short, @truncate((@as(c_int, @bitCast(@as(c_int, enemySprite.*.y))) >> @intCast(4)) - @as(c_int, 1))))), @as(i16, @bitCast(@as(c_short, @truncate((@as(c_int, @bitCast(@as(c_int, enemySprite.*.x))) >> @intCast(4)) + j)))));
-                        if (((@as(c_int, @bitCast(@as(c_uint, hflag))) == @as(c_int, @bitCast(@as(c_uint, .HFLAG_WALL)))) or (@as(c_int, @bitCast(@as(c_uint, hflag))) == @as(c_int, @bitCast(@as(c_uint, .HFLAG_DEADLY))))) or (@as(c_int, @bitCast(@as(c_uint, hflag))) == @as(c_int, @bitCast(@as(c_uint, .HFLAG_PADLOCK))))) {
+                        const hflag = lvl.get_horizflag(level, (enemySprite.y >> 4) - 1, (enemySprite.x >> 4) + @as(i16, @truncate(j)));
+                        if (hflag == .Wall or hflag == .Deadly or hflag == .Padlock) { // Next tile is wall, change direction
                             enemySprite.*.speed_x = @as(i16, @bitCast(@as(c_short, @truncate(@as(c_int, 0) - @as(c_int, @bitCast(@as(c_int, enemySprite.*.speed_x)))))));
                         }
                         enemySprite.*.x -= @as(i16, @bitCast(@as(c_short, @truncate(@as(c_int, @bitCast(@as(c_int, enemySprite.*.speed_x)))))));
@@ -645,6 +641,7 @@ pub fn moveEnemies(arg_level: [*c]lvl.TITUS_level) void {
                         }
                     },
                     1 => {
+                        // wait
                         if (@as(c_int, @bitCast(@as(c_uint, globals.FURTIF_FLAG))) != @as(c_int, 0)) {
                             continue;
                         }
@@ -659,21 +656,21 @@ pub fn moveEnemies(arg_level: [*c]lvl.TITUS_level) void {
                         }
                     },
                     2 => {
-                        if (@as(c_int, @bitCast(@as(c_uint, lvl.get_floorflag(level, @as(i16, @bitCast(@as(c_short, @truncate(@as(c_int, @bitCast(@as(c_int, enemySprite.*.y))) >> @intCast(4))))), @as(i16, @bitCast(@as(c_short, @truncate(@as(c_int, @bitCast(@as(c_int, enemySprite.*.x))) >> @intCast(4))))))))) == @as(c_int, @bitCast(@as(c_uint, .FFLAG_NOFLOOR)))) {
+                        // run
+                        if (lvl.get_floorflag(level, (enemySprite.*.y >> 4), (enemySprite.*.x >> 4)) == .NoFloor) {
                             enemySprite.*.speed_x = @as(i16, @bitCast(@as(c_short, @truncate(myabs(@as(c_int, @bitCast(@as(c_int, enemySprite.*.speed_x))))))));
                             if (enemy.*.init_x > @as(c_int, @bitCast(@as(c_int, enemySprite.*.x)))) {
                                 enemySprite.*.speed_x = @as(i16, @bitCast(@as(c_short, @truncate(@as(c_int, 0) - @as(c_int, @bitCast(@as(c_int, enemySprite.*.speed_x)))))));
                             }
                         }
-                        enemySprite.*.y = @as(i16, @bitCast(@as(c_short, @truncate(@as(c_int, @bitCast(@as(c_int, enemySprite.*.y))) & @as(c_int, 65520)))));
+                        enemySprite.*.y = @as(i16, @bitCast(@as(c_short, @truncate(@as(c_int, @bitCast(@as(c_int, enemySprite.*.y))) & @as(c_int, 0xFFF0)))));
                         if (@as(c_int, @bitCast(@as(c_int, enemySprite.*.speed_x))) > @as(c_int, 0)) {
-                            j = -@as(c_int, 1);
+                            j = -1; // moving left
                         } else {
-                            j = 1;
+                            j = 1; // moving right
                         }
-                        var hflag = lvl.get_horizflag(level, @as(i16, @bitCast(@as(c_short, @truncate((@as(c_int, @bitCast(@as(c_int, enemySprite.*.y))) >> @intCast(4)) - @as(c_int, 1))))), @as(i16, @bitCast(@as(c_short, @truncate((@as(c_int, @bitCast(@as(c_int, enemySprite.*.x))) >> @intCast(4)) + j)))));
-                        _ = &hflag;
-                        if (((@as(c_int, @bitCast(@as(c_uint, hflag))) == @as(c_int, @bitCast(@as(c_uint, .HFLAG_WALL)))) or (@as(c_int, @bitCast(@as(c_uint, hflag))) == @as(c_int, @bitCast(@as(c_uint, .HFLAG_DEADLY))))) or (@as(c_int, @bitCast(@as(c_uint, hflag))) == @as(c_int, @bitCast(@as(c_uint, .HFLAG_PADLOCK))))) {
+                        const hflag = lvl.get_horizflag(level, (enemySprite.*.y >> 4) - 1, (enemySprite.*.x >> 4) + @as(i16, @truncate(j)));
+                        if (hflag == .Wall or hflag == .Deadly or hflag == .Padlock) { // Next tile is wall, change direction
                             enemySprite.*.speed_x = @as(i16, @bitCast(@as(c_short, @truncate(myabs(@as(c_int, @bitCast(@as(c_int, enemySprite.*.speed_x))))))));
                             if (enemy.*.init_x > @as(c_int, @bitCast(@as(c_int, enemySprite.*.x)))) {
                                 enemySprite.*.speed_x = @as(i16, @bitCast(@as(c_short, @truncate(@as(c_int, 0) - @as(c_int, @bitCast(@as(c_int, enemySprite.*.speed_x)))))));
@@ -723,15 +720,15 @@ pub fn moveEnemies(arg_level: [*c]lvl.TITUS_level) void {
                         }
                     },
                     1 => {
-                        if (@as(c_int, @bitCast(@as(c_uint, lvl.get_floorflag(level, @as(i16, @bitCast(@as(c_short, @truncate(@as(c_int, @bitCast(@as(c_int, enemySprite.*.y))) >> @intCast(4))))), @as(i16, @bitCast(@as(c_short, @truncate(@as(c_int, @bitCast(@as(c_int, enemySprite.*.x))) >> @intCast(4))))))))) == @as(c_int, @bitCast(@as(c_uint, .FFLAG_NOFLOOR)))) {
+                        if (lvl.get_floorflag(level, (enemySprite.*.y >> 4), (enemySprite.*.x >> 4)) == .NoFloor) {
                             enemySprite.*.speed_x = @as(i16, @bitCast(@as(c_short, @truncate(myabs(@as(c_int, @bitCast(@as(c_int, enemySprite.*.speed_x))))))));
                             if (enemy.*.init_x > @as(c_int, @bitCast(@as(c_int, enemySprite.*.x)))) {
                                 enemySprite.*.speed_x = @as(i16, @bitCast(@as(c_short, @truncate(@as(c_int, 0) - @as(c_int, @bitCast(@as(c_int, enemySprite.*.speed_x)))))));
                             }
                         }
-                        enemySprite.*.y = @as(i16, @bitCast(@as(c_short, @truncate(@as(c_int, @bitCast(@as(c_int, enemySprite.*.y))) & @as(c_int, 65520)))));
-                        const hflag = lvl.get_horizflag(level, @as(i16, @bitCast(@as(c_short, @truncate((@as(c_int, @bitCast(@as(c_int, enemySprite.*.y))) >> @intCast(4)) - @as(c_int, 1))))), @as(i16, @bitCast(@as(c_short, @truncate(@as(c_int, @bitCast(@as(c_int, enemySprite.*.x))) >> @intCast(4))))));
-                        if (((@as(c_int, @bitCast(@as(c_uint, hflag))) == @as(c_int, @bitCast(@as(c_uint, .HFLAG_WALL)))) or (@as(c_int, @bitCast(@as(c_uint, hflag))) == @as(c_int, @bitCast(@as(c_uint, .HFLAG_DEADLY))))) or (@as(c_int, @bitCast(@as(c_uint, hflag))) == @as(c_int, @bitCast(@as(c_uint, .HFLAG_PADLOCK))))) {
+                        enemySprite.*.y = @as(i16, @bitCast(@as(c_short, @truncate(@as(c_int, @bitCast(@as(c_int, enemySprite.*.y))) & @as(c_int, 0xFFF0)))));
+                        const hflag = lvl.get_horizflag(level, (enemySprite.*.y >> 4) - 1, enemySprite.*.x >> 4);
+                        if (hflag == .Wall or hflag == .Deadly or hflag == .Padlock) { // Next tile is wall, change direction
                             enemySprite.*.speed_x = @as(i16, @bitCast(@as(c_short, @truncate(@as(c_int, 0) - @as(c_int, @bitCast(@as(c_int, enemySprite.*.speed_x)))))));
                         }
                         enemySprite.*.x -= @as(i16, @bitCast(@as(c_short, @truncate(@as(c_int, @bitCast(@as(c_int, enemySprite.*.speed_x)))))));
@@ -773,11 +770,7 @@ pub fn moveEnemies(arg_level: [*c]lvl.TITUS_level) void {
                         if (!enemy.*.trigger) {
                             continue;
                         }
-                        if ((blk: {
-                            const tmp = FIND_TRASH(level);
-                            bullet = tmp;
-                            break :blk tmp;
-                        }) != null) {
+                        if (FIND_TRASH(level)) |bullet| {
                             enemySprite.*.animation += @as(usize, @bitCast(@as(isize, @intCast(@as(c_int, 2)))));
                             PUT_BULLET(level, enemy, bullet);
                         }
@@ -956,7 +949,7 @@ pub fn moveEnemies(arg_level: [*c]lvl.TITUS_level) void {
     }
 }
 
-fn DEAD1(arg_level: [*c]lvl.TITUS_level, arg_enemy: [*c]lvl.TITUS_enemy) void {
+fn DEAD1(arg_level: *lvl.TITUS_level, arg_enemy: *lvl.TITUS_enemy) void {
     var level = arg_level;
     _ = &level;
     var enemy = arg_enemy;
@@ -986,7 +979,7 @@ fn DEAD1(arg_level: [*c]lvl.TITUS_level, arg_enemy: [*c]lvl.TITUS_enemy) void {
     }
 }
 
-pub fn updateenemysprite(arg_level: [*c]lvl.TITUS_level, arg_enemy: [*c]lvl.TITUS_enemy, arg_number: i16, arg_clearflags: bool) void {
+pub fn updateenemysprite(arg_level: *lvl.TITUS_level, arg_enemy: *lvl.TITUS_enemy, arg_number: i16, arg_clearflags: bool) void {
     var level = arg_level;
     _ = &level;
     var enemy = arg_enemy;
@@ -1035,7 +1028,7 @@ pub fn updateenemysprite(arg_level: [*c]lvl.TITUS_level, arg_enemy: [*c]lvl.TITU
     }
 }
 
-pub export fn SET_NMI(arg_level: [*c]lvl.TITUS_level) void {
+pub export fn SET_NMI(arg_level: *lvl.TITUS_level) void {
     var level = arg_level;
     _ = &level;
     var i: i16 = undefined;
@@ -1123,7 +1116,7 @@ pub export fn SET_NMI(arg_level: [*c]lvl.TITUS_level) void {
     }
 }
 
-fn GAL_FORM(arg_level: [*c]lvl.TITUS_level, arg_enemy: [*c]lvl.TITUS_enemy) void {
+fn GAL_FORM(arg_level: *lvl.TITUS_level, arg_enemy: *lvl.TITUS_enemy) void {
     var level = arg_level;
     _ = &level;
     var enemy = arg_enemy;
@@ -1155,7 +1148,7 @@ fn GAL_FORM(arg_level: [*c]lvl.TITUS_level, arg_enemy: [*c]lvl.TITUS_enemy) void
     enemy.*.visible = @as(c_int, 1) != 0;
 }
 
-fn ACTIONC_NMI(arg_level: [*c]lvl.TITUS_level, arg_enemy: [*c]lvl.TITUS_enemy) void {
+fn ACTIONC_NMI(arg_level: *lvl.TITUS_level, arg_enemy: *lvl.TITUS_enemy) void {
     var level = arg_level;
     _ = &level;
     var enemy = arg_enemy;
@@ -1180,7 +1173,7 @@ fn ACTIONC_NMI(arg_level: [*c]lvl.TITUS_level, arg_enemy: [*c]lvl.TITUS_enemy) v
     }
 }
 
-fn KICK_ASH(arg_level: [*c]lvl.TITUS_level, arg_enemysprite: [*c]lvl.TITUS_sprite, arg_power: i16) void {
+fn KICK_ASH(arg_level: *lvl.TITUS_level, arg_enemysprite: *lvl.TITUS_sprite, arg_power: i16) void {
     var level = arg_level;
     _ = &level;
     var enemysprite = arg_enemysprite;
@@ -1188,7 +1181,7 @@ fn KICK_ASH(arg_level: [*c]lvl.TITUS_level, arg_enemysprite: [*c]lvl.TITUS_sprit
     var power = arg_power;
     _ = &power;
     audio.playEvent(.Event_HitPlayer);
-    var p_sprite: [*c]lvl.TITUS_sprite = &level.*.player.sprite;
+    var p_sprite: *lvl.TITUS_sprite = &level.*.player.sprite;
     _ = &p_sprite;
     player.DEC_ENERGY(level);
     player.DEC_ENERGY(level);
@@ -1213,27 +1206,27 @@ fn NMI_VS_DROP(enemysprite: *lvl.TITUS_sprite, arg_sprite: *lvl.TITUS_sprite) bo
         return @as(c_int, 0) != 0;
     }
     if (@as(c_int, @bitCast(@as(c_int, sprite.*.y))) < @as(c_int, @bitCast(@as(c_int, enemysprite.*.y)))) {
-        if (@as(c_int, @bitCast(@as(c_int, sprite.*.y))) <= ((@as(c_int, @bitCast(@as(c_int, enemysprite.*.y))) - @as(c_int, @bitCast(@as(c_uint, enemysprite.*.spritedata.*.collheight)))) + @as(c_int, 3))) return @as(c_int, 0) != 0;
+        if (@as(c_int, @bitCast(@as(c_int, sprite.*.y))) <= ((@as(c_int, @bitCast(@as(c_int, enemysprite.*.y))) - @as(c_int, @bitCast(@as(c_uint, enemysprite.*.spritedata.?.collheight)))) + @as(c_int, 3))) return @as(c_int, 0) != 0;
     } else {
-        if (@as(c_int, @bitCast(@as(c_int, enemysprite.*.y))) <= ((@as(c_int, @bitCast(@as(c_int, sprite.*.y))) - @as(c_int, @bitCast(@as(c_uint, sprite.*.spritedata.*.collheight)))) + @as(c_int, 3))) return @as(c_int, 0) != 0;
+        if (@as(c_int, @bitCast(@as(c_int, enemysprite.*.y))) <= ((@as(c_int, @bitCast(@as(c_int, sprite.*.y))) - @as(c_int, @bitCast(@as(c_uint, sprite.*.spritedata.?.collheight)))) + @as(c_int, 3))) return @as(c_int, 0) != 0;
     }
-    var enemyleft: i16 = @as(i16, @bitCast(@as(c_short, @truncate(@as(c_int, @bitCast(@as(c_int, enemysprite.*.x))) - @as(c_int, @bitCast(@as(c_uint, enemysprite.*.spritedata.*.refwidth)))))));
+    var enemyleft: i16 = @as(i16, @bitCast(@as(c_short, @truncate(@as(c_int, @bitCast(@as(c_int, enemysprite.*.x))) - @as(c_int, @bitCast(@as(c_uint, enemysprite.*.spritedata.?.refwidth)))))));
     _ = &enemyleft;
-    var objectleft: i16 = @as(i16, @bitCast(@as(c_short, @truncate(@as(c_int, @bitCast(@as(c_int, sprite.*.x))) - @as(c_int, @bitCast(@as(c_uint, sprite.*.spritedata.*.refwidth)))))));
+    var objectleft: i16 = @as(i16, @bitCast(@as(c_short, @truncate(@as(c_int, @bitCast(@as(c_int, sprite.*.x))) - @as(c_int, @bitCast(@as(c_uint, sprite.*.spritedata.?.refwidth)))))));
     _ = &objectleft;
     if (@as(c_int, @bitCast(@as(c_int, enemyleft))) >= @as(c_int, @bitCast(@as(c_int, objectleft)))) {
-        if ((@as(c_int, @bitCast(@as(c_int, objectleft))) + (@as(c_int, @bitCast(@as(c_uint, sprite.*.spritedata.*.collwidth))) >> @intCast(1))) <= @as(c_int, @bitCast(@as(c_int, enemyleft)))) {
+        if ((@as(c_int, @bitCast(@as(c_int, objectleft))) + (@as(c_int, @bitCast(@as(c_uint, sprite.*.spritedata.?.collwidth))) >> @intCast(1))) <= @as(c_int, @bitCast(@as(c_int, enemyleft)))) {
             return @as(c_int, 0) != 0;
         }
     } else {
-        if ((@as(c_int, @bitCast(@as(c_int, enemyleft))) + (@as(c_int, @bitCast(@as(c_uint, enemysprite.*.spritedata.*.collwidth))) >> @intCast(1))) <= @as(c_int, @bitCast(@as(c_int, objectleft)))) {
+        if ((@as(c_int, @bitCast(@as(c_int, enemyleft))) + (@as(c_int, @bitCast(@as(c_uint, enemysprite.*.spritedata.?.collwidth))) >> @intCast(1))) <= @as(c_int, @bitCast(@as(c_int, objectleft)))) {
             return @as(c_int, 0) != 0;
         }
     }
     return @as(c_int, 1) != 0;
 }
 
-pub fn SEE_CHOC(arg_level: [*c]lvl.TITUS_level) void {
+pub fn SEE_CHOC(arg_level: *lvl.TITUS_level) void {
     var level = arg_level;
     _ = &level;
     sprites.updatesprite(level, &level.*.player.sprite2, @as(i16, @bitCast(@as(c_short, @truncate(@as(c_int, 30) + @as(c_int, 15))))), @as(c_int, 1) != 0);
@@ -1276,7 +1269,7 @@ pub fn moveTrash(arg_level: *lvl.TITUS_level) void {
     }
 }
 
-fn FIND_TRASH(arg_level: [*c]lvl.TITUS_level) [*c]lvl.TITUS_sprite {
+fn FIND_TRASH(arg_level: *lvl.TITUS_level) ?*lvl.TITUS_sprite {
     var level = arg_level;
     _ = &level;
     var i: c_int = undefined;
@@ -1292,7 +1285,7 @@ fn FIND_TRASH(arg_level: [*c]lvl.TITUS_level) [*c]lvl.TITUS_sprite {
     return null;
 }
 
-fn PUT_BULLET(arg_level: [*c]lvl.TITUS_level, arg_enemy: [*c]lvl.TITUS_enemy, arg_bullet: [*c]lvl.TITUS_sprite) void {
+fn PUT_BULLET(arg_level: *lvl.TITUS_level, arg_enemy: *lvl.TITUS_enemy, arg_bullet: *lvl.TITUS_sprite) void {
     var level = arg_level;
     _ = &level;
     var enemy = arg_enemy;

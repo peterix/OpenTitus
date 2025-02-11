@@ -39,14 +39,7 @@ pub var sprites: SpriteData = undefined;
 
 const SPRITECOUNT = 356;
 
-const SpriteDefinition = extern struct {
-    height: u8,
-    width: u8,
-    collheight: u8,
-    collwidth: u8,
-    refheight: u8,
-    refwidth: u8,
-};
+const SpriteDefinition = lvl.TITUS_spritedata;
 
 fn load_sprite_defs(input: []const u8) ![SPRITECOUNT]SpriteDefinition {
     @setEvalBranchQuota(100000);
@@ -321,7 +314,7 @@ fn animate_sprite(level: *lvl.TITUS_level, spr: *lvl.TITUS_sprite) void {
                 spr.UNDER = spr.UNDER & 0x01; //Keep eventually object load, remove player load
             }
             // FIXME: maybe null sanity check in debug mode
-            spr.ONTOP.*.y += 5;
+            spr.ONTOP.?.y += 5;
             globals.GRAVITY_FLAG = 3;
             updatesprite(level, spr, globals.FIRST_OBJET + 24, false); //Small spring
         }
