@@ -48,9 +48,7 @@ pub inline fn myabs(a: anytype) @TypeOf(a) {
     return a;
 }
 
-fn UP_ANIMATION(arg_sprite: *lvl.TITUS_sprite) void {
-    var sprite = arg_sprite;
-    _ = &sprite;
+fn UP_ANIMATION(sprite: *lvl.TITUS_sprite) void {
     while (true) {
         sprite.*.animation += 1;
         if (!(@as(c_int, @bitCast(@as(c_int, sprite.*.animation.*))) >= 0)) break;
@@ -58,9 +56,7 @@ fn UP_ANIMATION(arg_sprite: *lvl.TITUS_sprite) void {
     sprite.*.animation += 1;
 }
 
-fn DOWN_ANIMATION(arg_sprite: *lvl.TITUS_sprite) void {
-    var sprite = arg_sprite;
-    _ = &sprite;
+fn DOWN_ANIMATION(sprite: *lvl.TITUS_sprite) void {
     while (true) {
         sprite.*.animation -= 1;
         if (!(@as(c_int, @bitCast(@as(c_int, sprite.*.animation.*))) >= 0)) break;
@@ -68,9 +64,7 @@ fn DOWN_ANIMATION(arg_sprite: *lvl.TITUS_sprite) void {
     sprite.*.animation -= 1;
 }
 
-pub fn moveEnemies(arg_level: *lvl.TITUS_level) void {
-    var level = arg_level;
-    _ = &level;
+pub fn moveEnemies(level: *lvl.TITUS_level) void {
     var j: c_int = undefined;
     _ = &j;
     for (&level.*.enemy) |*enemy| {
@@ -80,8 +74,8 @@ pub fn moveEnemies(arg_level: *lvl.TITUS_level) void {
             continue;
         }
         switch (enemy.type) {
+            //Noclip walk
             0, 1 => {
-                //Noclip walk
                 if (enemy.dying != 0) { //If true, the enemy is dying or dead, and have special movement
                     DEAD1(level, enemy);
                     continue;
@@ -95,8 +89,8 @@ pub fn moveEnemies(arg_level: *lvl.TITUS_level) void {
                     }
                 }
             },
+            //Shoot
             2 => {
-                //Shoot
                 if (@as(c_int, @bitCast(@as(c_uint, enemy.*.dying))) != 0) {
                     DEAD1(level, enemy);
                     continue;
@@ -155,6 +149,7 @@ pub fn moveEnemies(arg_level: *lvl.TITUS_level) void {
                     },
                 }
             },
+            // Noclip walk, jump to player (fish)
             3, 4 => {
                 if (@as(c_int, @bitCast(@as(c_uint, enemy.*.dying))) != 0) {
                     DEAD1(level, enemy);
@@ -246,6 +241,7 @@ pub fn moveEnemies(arg_level: *lvl.TITUS_level) void {
                     else => {},
                 }
             },
+            // Noclip walk, move to player (fly)
             5, 6 => {
                 if (@as(c_int, @bitCast(@as(c_uint, enemy.*.dying))) != 0) {
                     DEAD1(level, enemy);
@@ -300,6 +296,7 @@ pub fn moveEnemies(arg_level: *lvl.TITUS_level) void {
                     else => {},
                 }
             },
+            // Gravity walk, hit when near
             7 => {
                 if (@as(c_int, @bitCast(@as(c_uint, enemy.*.dying))) != 0) {
                     DEAD1(level, enemy);
@@ -430,7 +427,9 @@ pub fn moveEnemies(arg_level: *lvl.TITUS_level) void {
                     else => {},
                 }
             },
-            8, 14 => {
+            8, // Gravity walk when off-screen
+            14 // Gravity walk when off-screen (immortal)
+            => {
                 if (@as(c_int, @bitCast(@as(c_uint, enemy.*.type))) == 14) {
                     enemy.*.dying = 0;
                 } else if (@as(c_int, @bitCast(@as(c_uint, enemy.*.dying))) != 0) {
@@ -497,6 +496,7 @@ pub fn moveEnemies(arg_level: *lvl.TITUS_level) void {
                     else => {},
                 }
             },
+            // Walk and periodically pop-up
             9 => {
                 if (@as(c_int, @bitCast(@as(c_uint, enemy.*.dying))) != 0) {
                     DEAD1(level, enemy);
@@ -604,6 +604,7 @@ pub fn moveEnemies(arg_level: *lvl.TITUS_level) void {
                     else => {},
                 }
             },
+            // Alert when near, walk when nearer
             10 => {
                 if (@as(c_int, @bitCast(@as(c_uint, enemy.*.dying))) != 0) {
                     DEAD1(level, enemy);
@@ -698,6 +699,7 @@ pub fn moveEnemies(arg_level: *lvl.TITUS_level) void {
                     else => {},
                 }
             },
+            // Walk and shoot
             11 => {
                 if (@as(c_int, @bitCast(@as(c_uint, enemy.*.dying))) != 0) {
                     DEAD1(level, enemy);
@@ -780,6 +782,7 @@ pub fn moveEnemies(arg_level: *lvl.TITUS_level) void {
                     else => {},
                 }
             },
+            // Jump (fireball) (immortal)
             12 => {
                 enemy.*.dying = 0;
                 switch (@as(c_int, @bitCast(@as(c_uint, enemy.*.phase)))) {
@@ -815,6 +818,7 @@ pub fn moveEnemies(arg_level: *lvl.TITUS_level) void {
                     else => {},
                 }
             },
+            // Bounce (big baby)
             13 => {
                 if (@as(c_int, @bitCast(@as(c_uint, enemy.*.dying))) != 0) {
                     DEAD1(level, enemy);
@@ -864,15 +868,18 @@ pub fn moveEnemies(arg_level: *lvl.TITUS_level) void {
                     else => {},
                 }
             },
+            // Nothing (immortal)
             15 => {
                 enemy.*.dying = 0;
             },
+            // Nothing
             16 => {
                 if (@as(c_int, @bitCast(@as(c_uint, enemy.*.dying))) != 0) {
                     DEAD1(level, enemy);
                     continue;
                 }
             },
+            // Drop (immortal)
             17 => {
                 enemy.*.dying = 0;
                 if (@as(c_uint, @bitCast(@as(c_int, @bitCast(@as(c_uint, enemy.*.counter))) + 1)) < enemy.*.delay) {
@@ -907,6 +914,7 @@ pub fn moveEnemies(arg_level: *lvl.TITUS_level) void {
                 DOWN_ANIMATION(enemySprite);
                 enemy.*.counter = 0;
             },
+            // Guard (helicopter guy)
             18 => {
                 if (@as(c_int, @bitCast(@as(c_uint, enemy.*.dying))) != 0) {
                     DEAD1(level, enemy);
@@ -949,11 +957,7 @@ pub fn moveEnemies(arg_level: *lvl.TITUS_level) void {
     }
 }
 
-fn DEAD1(arg_level: *lvl.TITUS_level, arg_enemy: *lvl.TITUS_enemy) void {
-    var level = arg_level;
-    _ = &level;
-    var enemy = arg_enemy;
-    _ = &enemy;
+fn DEAD1(level: *lvl.TITUS_level, enemy: *lvl.TITUS_enemy) void {
     if (((@as(c_int, @bitCast(@as(c_uint, enemy.*.dying))) & 1) != 0) or (@as(c_int, @bitCast(@as(c_int, enemy.*.dead_sprite))) == -1)) {
         if ((@as(c_int, @bitCast(@as(c_uint, enemy.*.dying))) & 1) == 0) {
             enemy.*.dying = @as(u8, @bitCast(@as(i8, @truncate(@as(c_int, @bitCast(@as(c_uint, enemy.*.dying))) | 1))));
@@ -979,15 +983,7 @@ fn DEAD1(arg_level: *lvl.TITUS_level, arg_enemy: *lvl.TITUS_enemy) void {
     }
 }
 
-pub fn updateenemysprite(arg_level: *lvl.TITUS_level, arg_enemy: *lvl.TITUS_enemy, arg_number: i16, arg_clearflags: bool) void {
-    var level = arg_level;
-    _ = &level;
-    var enemy = arg_enemy;
-    _ = &enemy;
-    var number = arg_number;
-    _ = &number;
-    var clearflags = arg_clearflags;
-    _ = &clearflags;
+pub fn updateenemysprite(level: *lvl.TITUS_level, enemy: *lvl.TITUS_enemy, number: i16, clearflags: bool) void {
     sprites.updatesprite(level, &enemy.*.sprite, number, clearflags);
     if ((@as(c_int, @bitCast(@as(c_int, number))) >= 101) and (@as(c_int, @bitCast(@as(c_int, number))) <= 105)) {
         enemy.*.carry_sprite = 105;
@@ -1028,9 +1024,7 @@ pub fn updateenemysprite(arg_level: *lvl.TITUS_level, arg_enemy: *lvl.TITUS_enem
     }
 }
 
-pub export fn SET_NMI(arg_level: *lvl.TITUS_level) void {
-    var level = arg_level;
-    _ = &level;
+pub fn SET_NMI(level: *lvl.TITUS_level) void {
     var i: i16 = undefined;
     _ = &i;
     var k: i16 = undefined;
@@ -1116,11 +1110,7 @@ pub export fn SET_NMI(arg_level: *lvl.TITUS_level) void {
     }
 }
 
-fn GAL_FORM(arg_level: *lvl.TITUS_level, arg_enemy: *lvl.TITUS_enemy) void {
-    var level = arg_level;
-    _ = &level;
-    var enemy = arg_enemy;
-    _ = &enemy;
+fn GAL_FORM(level: *lvl.TITUS_level, enemy: *lvl.TITUS_enemy) void {
     enemy.*.sprite.invisible = false;
     if ((@as(c_int, @bitCast(@as(c_uint, enemy.*.dying))) & 0x03) != 0) {
         enemy.*.sprite.visible = false;
@@ -1171,22 +1161,17 @@ fn ACTIONC_NMI(level: *lvl.TITUS_level, enemy: *lvl.TITUS_enemy) void {
     }
 }
 
-fn KICK_ASH(arg_level: *lvl.TITUS_level, arg_enemysprite: *lvl.TITUS_sprite, arg_power: i16) void {
-    var level = arg_level;
-    _ = &level;
-    var enemysprite = arg_enemysprite;
-    _ = &enemysprite;
-    var power = arg_power;
-    _ = &power;
+fn KICK_ASH(level: *lvl.TITUS_level, enemysprite: *lvl.TITUS_sprite, power: i16) void {
     audio.playEvent(.Event_HitPlayer);
-    var p_sprite: *lvl.TITUS_sprite = &level.*.player.sprite;
-    _ = &p_sprite;
+    const p_sprite = &level.player.sprite;
+
     player.DEC_ENERGY(level);
     player.DEC_ENERGY(level);
     globals.KICK_FLAG = 24;
     globals.CHOC_FLAG = 0;
     globals.LAST_ORDER = 0;
     p_sprite.*.speed_x = power;
+
     if (@as(c_int, @bitCast(@as(c_int, p_sprite.*.x))) <= @as(c_int, @bitCast(@as(c_int, enemysprite.*.x)))) {
         p_sprite.*.speed_x = @as(i16, @bitCast(@as(c_short, @truncate(0 - @as(c_int, @bitCast(@as(c_int, p_sprite.*.speed_x)))))));
     }
