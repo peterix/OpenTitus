@@ -385,7 +385,8 @@ void moveEnemies(TITUS_level *level) {
         break;
       case 1:
         // Gravity walk
-        if (get_floorflag(level, (enemySprite->y >> 4), (enemySprite->x >> 4)) == FFLAG_NOFLOOR) {
+        if (get_floorflag(level, (enemySprite->y >> 4),
+                          (enemySprite->x >> 4)) == FFLAG_NOFLOOR) {
           if (enemySprite->speed_y < 16) { // 16 = Max yspeed
             enemySprite->speed_y++;
           }
@@ -407,8 +408,10 @@ void moveEnemies(TITUS_level *level) {
         } else {
           j = 1; // moving right
         }
-        enum HFLAG hflag = get_horizflag(level, (enemySprite->y >> 4) - 1, (enemySprite->x >> 4) + j);
-        if ((hflag == HFLAG_WALL) || (hflag == HFLAG_DEADLY) || (hflag == HFLAG_PADLOCK)) { // Next tile is wall, change direction
+        enum HFLAG hflag = get_horizflag(level, (enemySprite->y >> 4) - 1,
+                                         (enemySprite->x >> 4) + j);
+        if ((hflag == HFLAG_WALL) || (hflag == HFLAG_DEADLY) ||
+            (hflag == HFLAG_PADLOCK)) { // Next tile is wall, change direction
           enemySprite->speed_x = 0 - enemySprite->speed_x;
         }
         enemySprite->x -= enemySprite->speed_x;
@@ -457,7 +460,8 @@ void moveEnemies(TITUS_level *level) {
           continue;
         }
         // Gravity walk (equal to the first part of "case 1:")
-        if (get_floorflag(level, (enemySprite->y >> 4), (enemySprite->x >> 4)) == FFLAG_NOFLOOR) {
+        if (get_floorflag(level, (enemySprite->y >> 4),
+                          (enemySprite->x >> 4)) == FFLAG_NOFLOOR) {
           if (enemySprite->speed_y < 16) { // 16 = Max yspeed
             enemySprite->speed_y++;
           }
@@ -479,8 +483,10 @@ void moveEnemies(TITUS_level *level) {
         } else {
           j = 1; // moving right
         }
-        hflag = get_horizflag(level, (enemySprite->y >> 4) - 1, (enemySprite->x >> 4) + j);
-        if ((hflag == HFLAG_WALL) || (hflag == HFLAG_DEADLY) || (hflag == HFLAG_PADLOCK)) { // Next tile is wall, change direction
+        hflag = get_horizflag(level, (enemySprite->y >> 4) - 1,
+                              (enemySprite->x >> 4) + j);
+        if ((hflag == HFLAG_WALL) || (hflag == HFLAG_DEADLY) ||
+            (hflag == HFLAG_PADLOCK)) { // Next tile is wall, change direction
           enemySprite->speed_x = 0 - enemySprite->speed_x;
         }
         enemySprite->x -= enemySprite->speed_x;
@@ -527,7 +533,8 @@ void moveEnemies(TITUS_level *level) {
         }
         break;
       case 1:
-        if (get_floorflag(level, (enemySprite->y >> 4), (enemySprite->x >> 4)) == FFLAG_NOFLOOR) {
+        if (get_floorflag(level, (enemySprite->y >> 4),
+                          (enemySprite->x >> 4)) == FFLAG_NOFLOOR) {
           if (enemySprite->speed_y < 16) { // 16 = Max yspeed
             enemySprite->speed_y++;
           }
@@ -549,8 +556,10 @@ void moveEnemies(TITUS_level *level) {
         } else {
           j = 1; // moving right
         }
-        enum HFLAG hflag = get_horizflag(level, (enemySprite->y >> 4) - 1, (enemySprite->x >> 4) + j);
-        if ((hflag == HFLAG_WALL) || (hflag == HFLAG_DEADLY) || (hflag == HFLAG_PADLOCK)) { // Next tile is wall, change direction
+        enum HFLAG hflag = get_horizflag(level, (enemySprite->y >> 4) - 1,
+                                         (enemySprite->x >> 4) + j);
+        if ((hflag == HFLAG_WALL) || (hflag == HFLAG_DEADLY) ||
+            (hflag == HFLAG_PADLOCK)) { // Next tile is wall, change direction
           enemySprite->speed_x = 0 - enemySprite->speed_x;
         }
         enemySprite->x -= enemySprite->speed_x;
@@ -642,7 +651,8 @@ void moveEnemies(TITUS_level *level) {
           }
           continue;
         }
-        if (get_floorflag(level, (enemySprite->y >> 4), (enemySprite->x >> 4)) == FFLAG_NOFLOOR) {
+        if (get_floorflag(level, (enemySprite->y >> 4),
+                          (enemySprite->x >> 4)) == FFLAG_NOFLOOR) {
           enemySprite->speed_x = abs(enemySprite->speed_x);
           if (enemy->init_x > enemySprite->x) {
             enemySprite->speed_x = 0 - enemySprite->speed_x;
@@ -654,8 +664,10 @@ void moveEnemies(TITUS_level *level) {
         } else {
           j = 1; // moving right
         }
-        enum HFLAG hflag = get_horizflag(level, (enemySprite->y >> 4) - 1, (enemySprite->x >> 4) + j);
-        if ((hflag == HFLAG_WALL) || (hflag == HFLAG_DEADLY) || (hflag == HFLAG_PADLOCK)) { // Next tile is wall, change direction
+        enum HFLAG hflag = get_horizflag(level, (enemySprite->y >> 4) - 1,
+                                         (enemySprite->x >> 4) + j);
+        if ((hflag == HFLAG_WALL) || (hflag == HFLAG_DEADLY) ||
+            (hflag == HFLAG_PADLOCK)) { // Next tile is wall, change direction
           enemySprite->speed_x = 0 - enemySprite->speed_x;
         }
         enemySprite->x -= enemySprite->speed_x;
@@ -753,7 +765,8 @@ void moveEnemies(TITUS_level *level) {
         break;
       case 2:
         // run
-        if (get_floorflag(level, (enemySprite->y >> 4), (enemySprite->x >> 4)) == FFLAG_NOFLOOR) {
+        if (get_floorflag(level, (enemySprite->y >> 4),
+                          (enemySprite->x >> 4)) == FFLAG_NOFLOOR) {
           enemySprite->speed_x = abs(enemySprite->speed_x);
           if (enemy->init_x > enemySprite->x) {
             enemySprite->speed_x = 0 - enemySprite->speed_x;
@@ -765,8 +778,10 @@ void moveEnemies(TITUS_level *level) {
         } else {
           j = 1; // moving right
         }
-        enum HFLAG hflag = get_horizflag(level, (enemySprite->y >> 4) - 1, (enemySprite->x >> 4) + j);
-        if ((hflag == HFLAG_WALL) || (hflag == HFLAG_DEADLY) || (hflag == HFLAG_PADLOCK)) { // Next tile is wall, change direction
+        enum HFLAG hflag = get_horizflag(level, (enemySprite->y >> 4) - 1,
+                                         (enemySprite->x >> 4) + j);
+        if ((hflag == HFLAG_WALL) || (hflag == HFLAG_DEADLY) ||
+            (hflag == HFLAG_PADLOCK)) { // Next tile is wall, change direction
           enemySprite->speed_x = abs(enemySprite->speed_x);
           if (enemy->init_x > enemySprite->x) {
             enemySprite->speed_x = 0 - enemySprite->speed_x;
@@ -824,15 +839,18 @@ void moveEnemies(TITUS_level *level) {
         }
         break;
       case 1:
-        if (get_floorflag(level, (enemySprite->y >> 4), (enemySprite->x >> 4)) == FFLAG_NOFLOOR) {
+        if (get_floorflag(level, (enemySprite->y >> 4),
+                          (enemySprite->x >> 4)) == FFLAG_NOFLOOR) {
           enemySprite->speed_x = abs(enemySprite->speed_x);
           if (enemy->init_x > enemySprite->x) {
             enemySprite->speed_x = 0 - enemySprite->speed_x;
           }
         }
         enemySprite->y = enemySprite->y & 0xFFF0;
-        enum HFLAG hflag = get_horizflag(level, (enemySprite->y >> 4) - 1, enemySprite->x >> 4);
-        if ((hflag == HFLAG_WALL) || (hflag == HFLAG_DEADLY) || (hflag == HFLAG_PADLOCK)) { // Next tile is wall, change direction
+        enum HFLAG hflag = get_horizflag(level, (enemySprite->y >> 4) - 1,
+                                         enemySprite->x >> 4);
+        if ((hflag == HFLAG_WALL) || (hflag == HFLAG_DEADLY) ||
+            (hflag == HFLAG_PADLOCK)) { // Next tile is wall, change direction
           enemySprite->speed_x = 0 - enemySprite->speed_x;
         }
         enemySprite->x -= enemySprite->speed_x;
@@ -1102,7 +1120,8 @@ void moveEnemies(TITUS_level *level) {
     } // switch (enemy->NMI_ACTION & 0x1FFF)
   } // for (i = 0; i < NMI_BY_LEVEL; i++)
 }
-void updateenemysprite(TITUS_level *level, TITUS_enemy *enemy, int16_t number, bool clearflags);
+void updateenemysprite(TITUS_level *level, TITUS_enemy *enemy, int16_t number,
+                       bool clearflags);
 void DEAD1(TITUS_level *level, TITUS_enemy *enemy) {
   if (((enemy->dying & 0x01) != 0) || // 00000001 or 00000011
       (enemy->dead_sprite == -1)) {
