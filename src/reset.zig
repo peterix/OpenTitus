@@ -30,7 +30,7 @@ const objects = @import("objects.zig");
 const enemies = @import("enemies.zig");
 const data = @import("data.zig");
 
-fn SET_DATA_NMI(level: *lvl.TITUS_level) void {
+fn SET_DATA_NMI(level: *lvl.Level) void {
     globals.boss_alive = false;
     for (0..lvl.ENEMY_CAPACITY) |i| {
         var anim: usize = 0;
@@ -48,7 +48,7 @@ fn SET_DATA_NMI(level: *lvl.TITUS_level) void {
     globals.boss_lives = level.boss_power;
 }
 
-pub fn CLEAR_DATA(level: *lvl.TITUS_level) void {
+pub fn CLEAR_DATA(level: *lvl.Level) void {
     globals.loop_cycle = 0;
     globals.tile_anim = 0;
     globals.IMAGE_COUNTER = 0;
@@ -97,7 +97,7 @@ pub fn CLEAR_DATA(level: *lvl.TITUS_level) void {
     SET_DATA_NMI(level);
 }
 
-fn clearsprite(spr: *lvl.TITUS_sprite) void {
+fn clearsprite(spr: *lvl.Sprite) void {
     spr.enabled = false;
     spr.x = 0;
     spr.y = 0;
@@ -116,7 +116,7 @@ fn clearsprite(spr: *lvl.TITUS_sprite) void {
     spr.invisible = false;
 }
 
-fn SET_ALL_SPRITES(level: *lvl.TITUS_level) void {
+fn SET_ALL_SPRITES(level: *lvl.Level) void {
     var player = &level.player;
 
     for (0..lvl.TRASH_CAPACITY) |i| {

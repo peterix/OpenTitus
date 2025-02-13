@@ -38,7 +38,7 @@ const anim_moktar: []const i16 = &.{ 343, 343, 343, 344, 344, 344, 345, 345, 345
 const anim_smoke: []const i16 = &.{ 347, 347, 348, 348, 349, 349, 350, 350, 351, 351, 352, 352, 353, 353, 354, 354, -16 };
 const heart_animation: []const i16 = &.{ 153, 142, 153, 142, 153, 142, 139, 148, 139, 148, 139, 148, 139, 162, 139, 162, 139, 162, 152, 171, 152, 171, 152, 171, 171, 165, 171, 165, 171, 165, 170, 147, 170, 147, 170, 147, -12 * 3 };
 
-fn advanceAnimation(level: *lvl.TITUS_level, spr: *lvl.TITUS_sprite) void {
+fn advanceAnimation(level: *lvl.Level, spr: *lvl.Sprite) void {
     var pointer = spr.animation + 1;
     while (pointer.* < 0) {
         // this is just ugly...
@@ -48,7 +48,7 @@ fn advanceAnimation(level: *lvl.TITUS_level, spr: *lvl.TITUS_sprite) void {
     spr.animation = pointer;
 }
 
-pub fn play(context: *ScreenContext, level: *lvl.TITUS_level) c_int {
+pub fn play(context: *ScreenContext, level: *lvl.Level) c_int {
     var player = &level.player;
     globals.BITMAP_X = 0;
     globals.NOSCROLL_FLAG = true;

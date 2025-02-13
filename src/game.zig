@@ -71,7 +71,7 @@ const TitusError = error{
 const s = @import("settings.zig");
 const Settings = s.Settings;
 pub var settings_mem: ManagedJSON(Settings) = undefined;
-pub export var settings: *Settings = undefined;
+pub var settings: *Settings = undefined;
 
 const gs = @import("game_state.zig");
 const GameState = gs.GameState;

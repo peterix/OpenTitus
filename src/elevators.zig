@@ -28,11 +28,9 @@ const std = @import("std");
 const globals = @import("globals.zig");
 const lvl = @import("level.zig");
 
-pub fn move(level: *lvl.TITUS_level) void {
-    var elevators = &level.elevator;
-    for (0..lvl.ELEVATOR_CAPACITY) |i| {
-        var elevator = &elevators[i];
-        if (elevator.enabled == false) {
+pub fn move(level: *lvl.Level) void {
+    for (&level.elevator) |*elevator| {
+        if (!elevator.enabled) {
             continue;
         }
 

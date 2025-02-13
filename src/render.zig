@@ -83,7 +83,7 @@ fn get_y_offset() u8 {
     return if (globals.BITMAP_Y == 0) 0 else 8;
 }
 
-pub fn render_tiles(level: *lvl.TITUS_level) void {
+pub fn render_tiles(level: *lvl.Level) void {
     const y_offset = get_y_offset();
     var x: i16 = -1;
     while (x < 21) : (x += 1) {
@@ -103,16 +103,15 @@ pub fn render_tiles(level: *lvl.TITUS_level) void {
             var dest: SDL.Rect = undefined;
             dest.x = x * 16 + globals.g_scroll_px_offset;
             dest.y = y * 16 + y_offset;
-            var parent_level: *lvl.Level = @ptrCast(@alignCast(level.parent));
-            const tile = parent_level.getTile(tileX, tileY);
+            const tile = level.getTile(tileX, tileY);
             const animated_tile = level.tile[tile].animation[globals.tile_anim];
-            const surface = parent_level.tiles[animated_tile].tiledata;
+            const surface = level.tile[animated_tile].tiledata;
             _ = SDL.blitSurface(@ptrCast(@alignCast(surface)), null, window.screen, &dest);
         }
     }
 }
 
-pub fn render_sprites(level: *lvl.TITUS_level) void {
+pub fn render_sprites(level: *lvl.Level) void {
     for (0..lvl.ELEVATOR_CAPACITY) |i| {
         render_sprite(&level.elevator[lvl.ELEVATOR_CAPACITY - 1 - i].sprite);
     }
@@ -141,7 +140,7 @@ pub fn render_sprites(level: *lvl.TITUS_level) void {
     }
 }
 
-fn render_sprite(spr: *allowzero lvl.TITUS_sprite) void {
+fn render_sprite(spr: *allowzero lvl.Sprite) void {
     if (!spr.enabled) {
         return;
     }
@@ -193,7 +192,7 @@ fn render_sprite(spr: *allowzero lvl.TITUS_sprite) void {
     spr.flash = false;
 }
 
-pub fn render_health_bars(level: *lvl.TITUS_level) void {
+pub fn render_health_bars(level: *lvl.Level) void {
     common.subto0(&globals.BAR_FLAG);
     if (window.screen == null) {
         return;

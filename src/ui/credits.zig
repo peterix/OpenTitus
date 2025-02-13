@@ -42,7 +42,7 @@ const credits: [8][2][:0]const u8 = .{
     .{ "Funny Friend", "Carole Delannoy" },
 };
 
-pub export fn credits_screen() c_int {
+pub fn credits_screen() c_int {
     const last_song = audio.music_get_last_song();
     audio.playTrack(.Credits);
 

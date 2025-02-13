@@ -43,7 +43,7 @@ const Rect = struct {
 
 // FIXME: deduplicate these two...
 // TODO: return the rect this has drawn over and blank it in the next iteration
-fn render_extrabonus(level: *lvl.TITUS_level, last_bounds: ?Rect) Rect {
+fn render_extrabonus(level: *lvl.Level, last_bounds: ?Rect) Rect {
     if (last_bounds != null) {
         var rect = SDL.Rect{
             // FIXME: move all UI screens to an overlay that's independent from the scroll buffer madness
@@ -70,7 +70,7 @@ fn render_extrabonus(level: *lvl.TITUS_level, last_bounds: ?Rect) Rect {
 }
 
 // TODO: return the rect this has drawn over and blank it in the next iteration
-fn render_lives(level: *lvl.TITUS_level, last_bounds: ?Rect) Rect {
+fn render_lives(level: *lvl.Level, last_bounds: ?Rect) Rect {
     if (last_bounds != null) {
         var rect = SDL.Rect{
             // FIXME: move all UI screens to an overlay that's independent from the scroll buffer madness
@@ -97,7 +97,7 @@ fn render_lives(level: *lvl.TITUS_level, last_bounds: ?Rect) Rect {
     return bounds;
 }
 
-pub export fn viewstatus(level: *lvl.TITUS_level, countbonus: bool) c_int {
+pub fn viewstatus(level: *lvl.Level, countbonus: bool) c_int {
     var retval: c_int = undefined;
     var tmpchars = [_]u8{0} ** 10;
     window.window_clear(null);

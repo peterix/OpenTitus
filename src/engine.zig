@@ -56,11 +56,10 @@ pub fn playtitus(firstlevel: u16, allocator: std.mem.Allocator) !c_int {
     var retval: c_int = 0;
 
     var level: lvl.Level = undefined;
-    level.c_level.parent = @ptrCast(&level);
 
     // FIXME: this is persistent between levels... do not store it in the level
-    level.c_level.lives = 2;
-    level.c_level.extrabonus = 0;
+    level.lives = 2;
+    level.extrabonus = 0;
 
     level.pixelformat = &data.titus_pixelformat;
 
@@ -86,30 +85,29 @@ pub fn playtitus(firstlevel: u16, allocator: std.mem.Allocator) !c_int {
     };
     defer sprites.sprite_cache.deinit();
 
-    level.c_level.levelnumber = firstlevel;
-    while (level.c_level.levelnumber < data.constants.*.levelfiles.len) : (level.c_level.levelnumber += 1) {
-        const current_constants = data.constants.levelfiles[level.c_level.levelnumber];
-        level.c_level.is_finish = current_constants.is_finish;
-        level.c_level.has_cage = current_constants.has_cage;
-        level.c_level.boss_power = current_constants.boss_power;
+    level.levelnumber = firstlevel;
+    while (level.levelnumber < data.constants.*.levelfiles.len) : (level.levelnumber += 1) {
+        const current_constants = data.constants.levelfiles[level.levelnumber];
+        level.is_finish = current_constants.is_finish;
+        level.has_cage = current_constants.has_cage;
+        level.boss_power = current_constants.boss_power;
         level.music = current_constants.music;
 
-        const level_index = @as(usize, @intCast(level.c_level.levelnumber));
+        const level_index = @as(usize, @intCast(level.levelnumber));
         const leveldata = sqz.unSQZ(
             data.constants.*.levelfiles[level_index].filename,
             allocator,
         ) catch {
-            std.debug.print("Failed to uncompress level file: {}\n", .{level.c_level.levelnumber});
+            std.debug.print("Failed to uncompress level file: {}\n", .{level.levelnumber});
             return 1;
         };
 
         retval = try lvl.loadlevel(
             &level,
-            &level.c_level,
             allocator,
             leveldata,
             &data.object_data,
-            @constCast(&data.constants.levelfiles[level.c_level.levelnumber].color),
+            @constCast(&data.constants.levelfiles[level.levelnumber].color),
         );
         allocator.free(leveldata);
         if (retval < 0) {
@@ -120,13 +118,13 @@ pub fn playtitus(firstlevel: u16, allocator: std.mem.Allocator) !c_int {
         var first = true;
         while (true) {
             audio.playTrack(.Bonus);
-            reset.CLEAR_DATA(&level.c_level);
+            reset.CLEAR_DATA(&level);
 
             globals.GODMODE = false;
             globals.NOCLIP = false;
             globals.DISPLAYLOOPTIME = false;
 
-            retval = status.viewstatus(&level.c_level, first);
+            retval = status.viewstatus(&level, first);
             first = false;
             if (retval < 0) {
                 return retval;
@@ -136,20 +134,20 @@ pub fn playtitus(firstlevel: u16, allocator: std.mem.Allocator) !c_int {
 
             // scroll to where the player is while 'closing' and 'opening' the screen to obscure the sudden change
             gates.CLOSE_SCREEN(&context);
-            scroll.scrollToPlayer(&level.c_level);
-            gates.OPEN_SCREEN(&context, &level.c_level);
+            scroll.scrollToPlayer(&level);
+            gates.OPEN_SCREEN(&context, &level);
 
-            render.render_tiles(&level.c_level);
+            render.render_tiles(&level);
             render.flip_screen(&context, true);
 
             game_state.visit_level(
                 allocator,
-                level.c_level.levelnumber,
+                level.levelnumber,
             ) catch |err| {
                 std.log.err("Could not record level entry: {}", .{err});
             };
 
-            retval = playlevel(&context, &level.c_level);
+            retval = playlevel(&context, &level);
             if (retval < 0) {
                 return retval;
             }
@@ -158,9 +156,9 @@ pub fn playtitus(firstlevel: u16, allocator: std.mem.Allocator) !c_int {
                 if (!globals.SKIPLEVEL_FLAG) {
                     game_state.record_completion(
                         allocator,
-                        level.c_level.levelnumber,
-                        level.c_level.bonuscollected,
-                        level.c_level.tickcount,
+                        level.levelnumber,
+                        level.bonuscollected,
+                        level.tickcount,
                     ) catch |err| {
                         std.log.err("Could not record level completion: {}", .{err});
                     };
@@ -168,18 +166,18 @@ pub fn playtitus(firstlevel: u16, allocator: std.mem.Allocator) !c_int {
                 break;
             }
             if (globals.LOSELIFE_FLAG) {
-                if (level.c_level.lives == 0) {
+                if (level.lives == 0) {
                     globals.GAMEOVER_FLAG = true;
                 } else {
-                    level.c_level.lives -= 1;
-                    death(&context, &level.c_level);
+                    level.lives -= 1;
+                    death(&context, &level);
                 }
             } else if (globals.RESETLEVEL_FLAG == 1) {
-                death(&context, &level.c_level);
+                death(&context, &level);
             }
 
             if (globals.GAMEOVER_FLAG) {
-                gameover(&context, &level.c_level);
+                gameover(&context, &level);
                 return 0;
             }
         }
@@ -208,7 +206,7 @@ pub fn playtitus(firstlevel: u16, allocator: std.mem.Allocator) !c_int {
 }
 
 // FIXME: most of the different return values are meaningless and unused
-fn resetLevel(context: *ScreenContext, level: *lvl.TITUS_level) c_int {
+fn resetLevel(context: *ScreenContext, level: *lvl.Level) c_int {
     if (globals.NEWLEVEL_FLAG) {
         return 1;
     }
@@ -230,7 +228,7 @@ fn resetLevel(context: *ScreenContext, level: *lvl.TITUS_level) c_int {
     return 0;
 }
 
-fn playlevel(context: *ScreenContext, level: *lvl.TITUS_level) c_int {
+fn playlevel(context: *ScreenContext, level: *lvl.Level) c_int {
     var retval: c_int = 0;
     var firstrun = true;
 
@@ -268,7 +266,7 @@ fn playlevel(context: *ScreenContext, level: *lvl.TITUS_level) c_int {
     return (0);
 }
 
-fn death(context: *ScreenContext, level: *lvl.TITUS_level) void {
+fn death(context: *ScreenContext, level: *lvl.Level) void {
     var plr = &(level.player);
 
     audio.playTrack(.Death);
@@ -292,7 +290,7 @@ fn death(context: *ScreenContext, level: *lvl.TITUS_level) void {
     gates.CLOSE_SCREEN(context);
 }
 
-fn gameover(context: *ScreenContext, level: *lvl.TITUS_level) void {
+fn gameover(context: *ScreenContext, level: *lvl.Level) void {
     var plr = &(level.player);
 
     audio.playTrack(.GameOver);

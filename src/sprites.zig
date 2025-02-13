@@ -39,7 +39,7 @@ pub var sprites: SpriteData = undefined;
 
 const SPRITECOUNT = 356;
 
-const SpriteDefinition = lvl.TITUS_spritedata;
+const SpriteDefinition = lvl.SpriteData;
 
 fn load_sprite_defs(input: []const u8) ![SPRITECOUNT]SpriteDefinition {
     @setEvalBranchQuota(100000);
@@ -251,7 +251,7 @@ pub const SpriteCache = struct {
     }
 };
 
-pub export fn updatesprite(level: *lvl.TITUS_level, spr: *lvl.TITUS_sprite, number: i16, clearflags: bool) void {
+pub fn updatesprite(level: *lvl.Level, spr: *lvl.Sprite, number: i16, clearflags: bool) void {
     spr.number = number;
     spr.spritedata = &level.spritedata[@intCast(number)];
     spr.enabled = true;
@@ -265,7 +265,7 @@ pub export fn updatesprite(level: *lvl.TITUS_level, spr: *lvl.TITUS_sprite, numb
     spr.invisible = false;
 }
 
-pub export fn copysprite(level: *lvl.TITUS_level, dest: *lvl.TITUS_sprite, src: *lvl.TITUS_sprite) void {
+pub fn copysprite(level: *lvl.Level, dest: *lvl.Sprite, src: *lvl.Sprite) void {
     dest.number = src.number;
     dest.spritedata = &level.spritedata[@intCast(src.number)];
     dest.enabled = src.enabled;
@@ -275,7 +275,7 @@ pub export fn copysprite(level: *lvl.TITUS_level, dest: *lvl.TITUS_sprite, src: 
     dest.invisible = false;
 }
 
-fn animate_sprite(level: *lvl.TITUS_level, spr: *lvl.TITUS_sprite) void {
+fn animate_sprite(level: *lvl.Level, spr: *lvl.Sprite) void {
     if (!spr.visible) return; //Not on screen?
     if (!spr.enabled) return;
     if (spr.number == (globals.FIRST_OBJET + 26)) { //Cage
@@ -321,7 +321,7 @@ fn animate_sprite(level: *lvl.TITUS_level, spr: *lvl.TITUS_sprite) void {
     }
 }
 
-pub fn animateSprites(level: *lvl.TITUS_level) void {
+pub fn animateSprites(level: *lvl.Level) void {
     //Animate player
     if ((globals.LAST_ORDER == 0) and
         (globals.POCKET_FLAG) and

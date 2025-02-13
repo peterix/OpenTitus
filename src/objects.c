@@ -59,15 +59,12 @@ void move_objects(TITUS_level *level) {
       level->object[i].sprite.speed_y = 0;
     }
 
-    if (level->object[i].sprite.x >=
-        level->width * 16 - 8) { // Right edge of level
+    if (level->object[i].sprite.x >= level->width * 16 - 8) { // Right edge of level
       level->object[i].sprite.speed_x = -2 * 16;
       level->object[i].sprite.speed_y = 0;
     }
     // Handle carpet
-    if ((level->object[i].sprite.number == FIRST_OBJET + 21) ||
-        (level->object[i].sprite.number ==
-         FIRST_OBJET + 22)) { // Flying carpet, flying
+    if ((level->object[i].sprite.number == FIRST_OBJET + 21) || (level->object[i].sprite.number == FIRST_OBJET + 22)) { // Flying carpet, flying
       GRAVITY_FLAG = 4;       // Keep doing gravity
 
       //(Adjust height after player)
@@ -88,11 +85,12 @@ void move_objects(TITUS_level *level) {
         level->object[i].sprite.speed_x = 0;
         TAPISWAIT_FLAG = 2; // Timed out
       }
-    } else if (((level->object[i].sprite.number == FIRST_OBJET + 19) ||
-                (level->object[i].sprite.number ==
-                 FIRST_OBJET + 20)) && // Flying carpet, not flying
-               ((IMAGE_COUNTER & 0x03) == 0) &&
-               (level->object[i].sprite.speed_y > 0) && (TAPISWAIT_FLAG != 2)) {
+    } else if (
+                ((level->object[i].sprite.number == FIRST_OBJET + 19) || (level->object[i].sprite.number == FIRST_OBJET + 20)) && // Flying carpet, not flying
+                ((IMAGE_COUNTER & 0x03) == 0) &&
+                (level->object[i].sprite.speed_y > 0) &&
+                (TAPISWAIT_FLAG != 2)
+              ) {
       // The carpet is being throwed
       if (level->object[i].sprite.number ==
           FIRST_OBJET + 19) { // Carpet is closed
@@ -209,8 +207,7 @@ void move_objects(TITUS_level *level) {
       tileY = level->object[i].sprite.y >> 4;
       hflag = get_horizflag(level, tileY, tileX);
       fflag = get_floorflag(level, tileY, tileX);
-      if ((level->object[i].sprite.y <= 6) ||
-          (level->object[i].sprite.y >= (level->height << 4))) {
+      if ((level->object[i].sprite.y <= 6) || (level->object[i].sprite.y >= (level->height << 4))) {
         fflag = FFLAG_NOFLOOR;
         if (level->object[i].sprite.y >= (level->height << 4) + 64) {
           // delete if object is below level + 64

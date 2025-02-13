@@ -32,7 +32,7 @@ const render = @import("render.zig");
 const audio = @import("audio/audio.zig");
 const lvl = @import("level.zig");
 
-fn check_finish(context: *render.ScreenContext, level: *lvl.TITUS_level) void {
+fn check_finish(context: *render.ScreenContext, level: *lvl.Level) void {
     const player = &level.player;
     if (globals.boss_alive) { //There is still a boss that needs to be killed!
         return;
@@ -60,7 +60,7 @@ fn check_finish(context: *render.ScreenContext, level: *lvl.TITUS_level) void {
     globals.NEWLEVEL_FLAG = true;
 }
 
-fn check_gates(context: *render.ScreenContext, level: *lvl.TITUS_level) void {
+fn check_gates(context: *render.ScreenContext, level: *lvl.Level) void {
     var player = &level.player;
     if ((globals.CROSS_FLAG == 0) or //not kneestanding
         (globals.NEWLEVEL_FLAG))
@@ -102,7 +102,7 @@ fn check_gates(context: *render.ScreenContext, level: *lvl.TITUS_level) void {
 }
 
 //Check and handle level completion, and if the player does a kneestand on a secret entrance
-pub fn CROSSING_GATE(context: *render.ScreenContext, level: *lvl.TITUS_level) void {
+pub fn CROSSING_GATE(context: *render.ScreenContext, level: *lvl.Level) void {
     check_finish(context, level);
     check_gates(context, level);
 }
@@ -113,7 +113,7 @@ const rheight: usize = 200;
 const incX: usize = rwidth / (step_count * 2);
 const incY: usize = rheight / (step_count * 2);
 
-pub export fn CLOSE_SCREEN(context: *render.ScreenContext) void {
+pub fn CLOSE_SCREEN(context: *render.ScreenContext) void {
     var dest: SDL.Rect = undefined;
     for (0..step_count) |i| {
         //Clear top
@@ -148,7 +148,7 @@ pub export fn CLOSE_SCREEN(context: *render.ScreenContext) void {
     }
 }
 
-pub export fn OPEN_SCREEN(context: *render.ScreenContext, level: *lvl.TITUS_level) void {
+pub fn OPEN_SCREEN(context: *render.ScreenContext, level: *lvl.Level) void {
     var dest: SDL.Rect = undefined;
     var i: u32 = step_count - 1;
     while (i >= 2) : (i -= 2) {

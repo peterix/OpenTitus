@@ -46,8 +46,8 @@ pub const game_height = 200;
 
 var black: u32 = 0;
 
-pub export var screen: ?*SDL.Surface = null;
-pub export var window: ?*SDL.Window = null;
+pub var screen: ?*SDL.Surface = null;
+pub var window: ?*SDL.Window = null;
 var renderer: ?*SDL.Renderer = null;
 
 const WindowError = error{
@@ -56,7 +56,7 @@ const WindowError = error{
     Other,
 };
 
-pub export fn toggle_fullscreen() void {
+pub fn toggle_fullscreen() void {
     if (!game.settings.fullscreen) {
         // FIXME: process error.
         _ = SDL.setWindowFullscreen(window, SDL.WINDOW_FULLSCREEN_DESKTOP);

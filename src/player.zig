@@ -49,13 +49,13 @@ fn add_carry() u8 {
     }
 }
 
-fn handle_player_input(player: *lvl.TITUS_player, keystate: []const u8) void {
+fn handle_player_input(player: *lvl.Player, keystate: []const u8) void {
     player.x_axis = @as(i8, @intCast(keystate[SDL.SCANCODE_RIGHT] | keystate[SDL.SCANCODE_D])) - @as(i8, @intCast(keystate[SDL.SCANCODE_LEFT] | keystate[SDL.SCANCODE_A]));
     player.y_axis = @as(i8, @intCast(keystate[SDL.SCANCODE_DOWN] | keystate[SDL.SCANCODE_S])) - @as(i8, @intCast(keystate[SDL.SCANCODE_UP] | keystate[SDL.SCANCODE_W]));
     player.action_pressed = keystate[SDL.SCANCODE_SPACE] != 0;
 }
 
-pub fn move_player(arg_context: *render.ScreenContext, arg_level: *lvl.TITUS_level) c_int {
+pub fn move_player(arg_context: *render.ScreenContext, arg_level: *lvl.Level) c_int {
     // Part 1: Check keyboard input
     // Part 2: Determine the player's action, and execute action dependent code
     // Part 3: Move the player + collision detection
@@ -344,7 +344,7 @@ pub fn move_player(arg_context: *render.ScreenContext, arg_level: *lvl.TITUS_lev
     return 0;
 }
 
-fn DEC_LIFE(level: *lvl.TITUS_level) void {
+fn DEC_LIFE(level: *lvl.Level) void {
     globals.RESETLEVEL_FLAG = 10;
     globals.BAR_FLAG = 0;
     if (level.lives == 0) {
@@ -354,7 +354,7 @@ fn DEC_LIFE(level: *lvl.TITUS_level) void {
     }
 }
 
-fn CASE_DEAD_IM(level: *lvl.TITUS_level) void {
+fn CASE_DEAD_IM(level: *lvl.Level) void {
     // Kill the player immediately (spikes/water/flames etc.
     // Sets RESET_FLAG to 2, in opposite to being killed as a result of 0 HP (then
     // RESET_FLAG is 10)
@@ -362,7 +362,7 @@ fn CASE_DEAD_IM(level: *lvl.TITUS_level) void {
     globals.RESETLEVEL_FLAG = 2;
 }
 
-fn player_collide(level: *lvl.TITUS_level) void {
+fn player_collide(level: *lvl.Level) void {
     // Collision detection between player
     // and tiles/objects/elevators
     // Point the foot on the block!
@@ -436,7 +436,7 @@ fn player_collide(level: *lvl.TITUS_level) void {
         tileY = initY;
         var first = true;
         while (true) {
-            const hflag = lvl.get_horizflag(level, tileY, tileX);
+            const hflag = level.getTileWall(tileX, tileY);
             if (first) {
                 BLOCK_XXPRG(level, hflag, tileY, tileX);
                 first = false;
@@ -453,7 +453,7 @@ fn player_collide(level: *lvl.TITUS_level) void {
     }
 }
 
-fn TAKE_BLK_AND_YTEST(level: *lvl.TITUS_level, tileY_in: i16, tileX_in: i16) void {
+fn TAKE_BLK_AND_YTEST(level: *lvl.Level, tileY_in: i16, tileX_in: i16) void {
     var tileY = tileY_in;
     var tileX = tileX_in;
     const player = &level.*.player;
@@ -477,8 +477,8 @@ fn TAKE_BLK_AND_YTEST(level: *lvl.TITUS_level, tileY_in: i16, tileX_in: i16) voi
     if (tileY == -1) {
         tileY = 0;
     }
-    const floor = lvl.get_floorflag(level, tileY + 1, tileX);
-    const floor_above = lvl.get_floorflag(level, tileY, tileX);
+    const floor = level.getTileFloor(tileX, tileY + 1);
+    const floor_above = level.getTileFloor(tileX, tileY);
 
     if (globals.LAST_ORDER & 0x0F != 2) { // 2=SAUTER
         // Player versus floor
@@ -488,10 +488,10 @@ fn TAKE_BLK_AND_YTEST(level: *lvl.TITUS_level, tileY_in: i16, tileX_in: i16) voi
     if (tileY < 1 or player.sprite.speed_y > 0) {
         return;
     }
-    const cflag = lvl.get_ceilflag(level, tileY - 1, tileX);
+    const cflag = level.getTileCeiling(tileX, tileY - 1);
     BLOCK_YYPRGD(level, cflag, tileY - 1, tileX);
 
-    var horiz = lvl.get_horizflag(level, tileY, tileX);
+    var horiz = level.getTileWall(tileX, tileY);
     if ((horiz == .Wall or horiz == .Deadly or horiz == .Padlock) and // Step on a hard tile?
         player.*.sprite.y > globals.MAP_LIMIT_Y + 1)
     {
@@ -501,13 +501,13 @@ fn TAKE_BLK_AND_YTEST(level: *lvl.TITUS_level, tileY_in: i16, tileX_in: i16) voi
             change = 1;
         }
         tileX +%= change;
-        horiz = lvl.get_horizflag(level, tileY, tileX);
+        horiz = level.getTileWall(tileX, tileY);
         if (horiz == .NoWall) { // No wall
             player.sprite.x += change << 1;
         } else {
             change = 0 - change;
             tileX +%= change + change;
-            horiz = lvl.get_horizflag(level, tileY, tileX);
+            horiz = level.getTileWall(tileX, tileY);
             if (horiz == .NoWall) {
                 player.sprite.x += change << 1;
             }
@@ -515,7 +515,7 @@ fn TAKE_BLK_AND_YTEST(level: *lvl.TITUS_level, tileY_in: i16, tileX_in: i16) voi
     }
 }
 
-fn BLOCK_YYPRGD(level: *lvl.TITUS_level, cflag: lvl.CFlag, tileY_in: i16, tileX_in: i16) void {
+fn BLOCK_YYPRGD(level: *lvl.Level, cflag: lvl.CeilingType, tileY_in: i16, tileX_in: i16) void {
     var tileX = tileX_in;
     var tileY = tileY_in;
     const player = &level.player;
@@ -541,10 +541,10 @@ fn BLOCK_YYPRGD(level: *lvl.TITUS_level, cflag: lvl.CFlag, tileY_in: i16, tileX_
                     if (maybe_object) |object| {
                         tileX = object.sprite.x >> 4;
                         tileY = object.sprite.y >> 4;
-                        var hflag = lvl.get_horizflag(level, tileY, tileX);
+                        var hflag = level.getTileWall(tileX, tileY);
                         if (hflag == .Wall or hflag == .Deadly or hflag == .Padlock) {
                             tileX -%= 1;
-                            hflag = lvl.get_horizflag(level, tileY, tileX);
+                            hflag = level.getTileWall(tileX, tileY);
                             if (hflag == .Wall or hflag == .Deadly or hflag == .Padlock) {
                                 object.sprite.x += 16;
                             } else {
@@ -567,7 +567,7 @@ fn BLOCK_YYPRGD(level: *lvl.TITUS_level, cflag: lvl.CFlag, tileY_in: i16, tileX_
     }
 }
 
-fn BLOCK_XXPRG(level: *lvl.TITUS_level, hflag: lvl.HFlag, tileY: i16, tileX: i16) void {
+fn BLOCK_XXPRG(level: *lvl.Level, hflag: lvl.WallType, tileY: i16, tileX: i16) void {
     switch (hflag) {
         .NoWall => {},
         .Wall => {
@@ -595,7 +595,7 @@ fn BLOCK_XXPRG(level: *lvl.TITUS_level, hflag: lvl.HFlag, tileY: i16, tileX: i16
     }
 }
 
-fn player_block_x(level: *lvl.TITUS_level) void {
+fn player_block_x(level: *lvl.Level) void {
     const player = &level.player;
     // Horizontal hit (wall), stop the player
     player.sprite.x -= player.sprite.speed_x >> 4;
@@ -606,7 +606,7 @@ fn player_block_x(level: *lvl.TITUS_level) void {
     }
 }
 
-pub export fn player_drop_carried(level: *lvl.TITUS_level) ?*lvl.TITUS_object {
+pub fn player_drop_carried(level: *lvl.Level) ?*lvl.Object {
     const sprite2 = &level.*.player.sprite2;
     if (!sprite2.enabled or !globals.CARRY_FLAG)
         return null;
@@ -638,7 +638,7 @@ pub export fn player_drop_carried(level: *lvl.TITUS_level) ?*lvl.TITUS_object {
     return null;
 }
 
-fn player_fall(level: *lvl.TITUS_level) void {
+fn player_fall(level: *lvl.Level) void {
     // No wall under the player; fall down!
     const player = &level.player;
     globals.SAUT_FLAG = 6;
@@ -657,7 +657,7 @@ fn player_fall(level: *lvl.TITUS_level) void {
     player.*.sprite.flipped = globals.SENSX < 0;
 }
 
-fn XACCELERATION(player: *lvl.TITUS_player, maxspeed: i16) void {
+fn XACCELERATION(player: *lvl.Player, maxspeed: i16) void {
     // Sideway acceleration
     var changeX: i16 = undefined;
     if (globals.X_FLAG) {
@@ -675,7 +675,7 @@ fn XACCELERATION(player: *lvl.TITUS_player, maxspeed: i16) void {
     }
 }
 
-fn YACCELERATION(player: *lvl.TITUS_player, maxspeed: i16) void {
+fn YACCELERATION(player: *lvl.Player, maxspeed: i16) void {
     // Accelerate downwards
     if (player.sprite.speed_y + 16 < maxspeed) {
         player.sprite.speed_y = player.sprite.speed_y + 16;
@@ -684,7 +684,7 @@ fn YACCELERATION(player: *lvl.TITUS_player, maxspeed: i16) void {
     }
 }
 
-fn BLOCK_YYPRG(level: *lvl.TITUS_level, floor: lvl.FFlag, floor_above: lvl.FFlag, tileY: i16, tileX: i16) void {
+fn BLOCK_YYPRG(level: *lvl.Level, floor: lvl.FloorType, floor_above: lvl.FloorType, tileY: i16, tileX: i16) void {
     // Action on different floor flags
     const player = &level.player;
     var order: u8 = undefined;
@@ -776,7 +776,7 @@ fn player_fall_F() void {
     globals.YFALL = globals.YFALL | 0x01;
 }
 
-fn player_block_yu(player: *lvl.TITUS_player) void {
+fn player_block_yu(player: *lvl.Player) void {
     // Floor; the player will not fall through
     globals.POCKET_FLAG = true;
     player.GLISSE = 0;
@@ -791,7 +791,7 @@ fn player_block_yu(player: *lvl.TITUS_player) void {
     globals.YFALL = 2;
 }
 
-fn collect_bonus(level: *lvl.TITUS_level, tileY: i16, tileX: i16) bool {
+fn collect_bonus(level: *lvl.Level, tileY: i16, tileX: i16) bool {
     // Handle bonuses. Increase energy if HP, and change the bonus tile to normal tile
     for (&level.bonus) |*bonus| {
         if (!bonus.exists)
@@ -804,14 +804,14 @@ fn collect_bonus(level: *lvl.TITUS_level, tileY: i16, tileX: i16) bool {
             audio.playEvent(.Event_PlayerCollectBonus);
             INC_ENERGY(level);
         }
-        lvl.set_tile(level, tileY, tileX, bonus.replacetile);
+        level.setTile(@intCast(tileX), @intCast(tileY), bonus.replacetile);
         globals.GRAVITY_FLAG = 4;
         return true;
     }
     return false;
 }
 
-fn collect_level_unlock(level: *lvl.TITUS_level, level_index: u8, tileY: i16, tileX: i16) void {
+fn collect_level_unlock(level: *lvl.Level, level_index: u8, tileY: i16, tileX: i16) void {
     // FIXME: nothing is done here really. It should unlock the level as a starting point
     _ = &level_index;
     // Codelamp
@@ -822,7 +822,7 @@ fn collect_level_unlock(level: *lvl.TITUS_level, level_index: u8, tileY: i16, ti
     audio.playEvent(.Event_PlayerCollectLamp);
 }
 
-fn collect_checkpoint(level: *lvl.TITUS_level, tileY: i16, tileX: i16) void {
+fn collect_checkpoint(level: *lvl.Level, tileY: i16, tileX: i16) void {
     if (!collect_bonus(level, tileY, tileX))
         return;
 
@@ -837,7 +837,7 @@ fn collect_checkpoint(level: *lvl.TITUS_level, tileY: i16, tileX: i16) void {
     }
 }
 
-fn INC_ENERGY(level: *lvl.TITUS_level) void {
+fn INC_ENERGY(level: *lvl.Level) void {
     const player = &level.player;
     globals.BAR_FLAG = 50;
     if (player.hp == globals.MAXIMUM_ENERGY) {
@@ -847,7 +847,7 @@ fn INC_ENERGY(level: *lvl.TITUS_level) void {
     }
 }
 
-pub export fn DEC_ENERGY(level: *lvl.TITUS_level) void {
+pub fn DEC_ENERGY(level: *lvl.Level) void {
     const player = &level.player;
     globals.BAR_FLAG = 50;
     if (globals.RESETLEVEL_FLAG == 0) {
@@ -861,7 +861,7 @@ pub export fn DEC_ENERGY(level: *lvl.TITUS_level) void {
 }
 
 // Action dependent code
-fn ACTION_PRG(level: *lvl.TITUS_level, action: u8) void {
+fn ACTION_PRG(level: *lvl.Level, action: u8) void {
     const player = &level.player;
     var tileX: i16 = undefined;
     var tileY: i16 = undefined;
@@ -940,10 +940,10 @@ fn ACTION_PRG(level: *lvl.TITUS_level, action: u8) void {
                 player.sprite.x = @as(i16, @bitCast(@as(u16, @bitCast(player.*.sprite.x)) & 0xFFF0)) + 8;
                 tileX = player.sprite.x >> 4;
                 tileY = player.sprite.y & 0xFFF0 >> 4;
-                if (lvl.get_floorflag(level, tileY, tileX) != .Ladder) {
-                    if (lvl.get_floorflag(level, tileY, tileX - 1) == .Ladder) {
+                if (level.getTileFloor(tileX, tileY) != .Ladder) {
+                    if (level.getTileFloor(tileX - 1, tileY) == .Ladder) {
                         player.sprite.x -= 16;
-                    } else if (lvl.get_floorflag(level, tileY, tileX + 1) == .Ladder) {
+                    } else if (level.getTileFloor(tileX + 1, tileY) == .Ladder) {
                         player.sprite.x += 16;
                     }
                 }
@@ -968,10 +968,10 @@ fn ACTION_PRG(level: *lvl.TITUS_level, action: u8) void {
                     if (maybe_object) |object| {
                         tileX = object.sprite.x >> 4;
                         tileY = object.sprite.y >> 4;
-                        var fflag = lvl.get_floorflag(level, tileY, tileX);
+                        var fflag = level.getTileFloor(tileX, tileY);
                         if (fflag != .NoFloor and fflag != .Water) {
                             tileX +%= 1;
-                            fflag = lvl.get_floorflag(level, tileY, tileX);
+                            fflag = level.getTileFloor(tileX, tileY);
                             if (fflag != .NoFloor and fflag != .Water) {
                                 object.*.sprite.speed_x = 16 * 3;
                             } else {
@@ -1207,7 +1207,7 @@ fn ACTION_PRG(level: *lvl.TITUS_level, action: u8) void {
     }
 }
 
-fn player_friction(player: *lvl.TITUS_player) void {
+fn player_friction(player: *lvl.Player) void {
     // Stop acceleration
     const friction: u8 = @as(u8, 12) >> @truncate(player.GLISSE);
     var speed: i16 = 0;
@@ -1225,7 +1225,7 @@ fn player_friction(player: *lvl.TITUS_player) void {
     player.sprite.speed_x = speed;
 }
 
-fn NEW_FORM(player: *lvl.TITUS_player, action: u8) void {
+fn NEW_FORM(player: *lvl.Player, action: u8) void {
     // if the order is changed, change player animation
     if (globals.LAST_ORDER != action or player.sprite.animation == null) {
         globals.LAST_ORDER = action;
@@ -1233,7 +1233,7 @@ fn NEW_FORM(player: *lvl.TITUS_player, action: u8) void {
     }
 }
 
-fn GET_IMAGE(level: *lvl.TITUS_level) void {
+fn GET_IMAGE(level: *lvl.Level) void {
     const player = &level.player;
     var frame: i16 = player.sprite.animation.*;
     if (@as(c_int, @bitCast(@as(c_int, frame))) < 0) {
@@ -1248,7 +1248,7 @@ fn GET_IMAGE(level: *lvl.TITUS_level) void {
     player.*.sprite.animation += 1;
 }
 
-fn YACCELERATION_NEG(player: *lvl.TITUS_player, maxspeed_in: i16) void {
+fn YACCELERATION_NEG(player: *lvl.Player, maxspeed_in: i16) void {
     // Accelerate upwards
     const maxspeed = 0 - maxspeed_in;
     var speed: i16 = player.sprite.speed_y - 32;
@@ -1258,7 +1258,7 @@ fn YACCELERATION_NEG(player: *lvl.TITUS_player, maxspeed_in: i16) void {
     player.sprite.speed_y = speed;
 }
 
-fn player_collide_with_elevators(level: *lvl.TITUS_level) void {
+fn player_collide_with_elevators(level: *lvl.Level) void {
     // Player versus elevators
     // Change player's location according to the elevator
     const player = &level.player;
@@ -1315,17 +1315,17 @@ fn player_collide_with_elevators(level: *lvl.TITUS_level) void {
 // Player versus objects
 // Collision, spring state, speed up carpet/scooter/skateboard, bounce bouncy
 // objects
-fn player_collide_with_objects(level: *lvl.TITUS_level) void {
+fn player_collide_with_objects(level: *lvl.Level) void {
     const player = &level.player;
     if (player.sprite.speed_y < 0) {
         return;
     }
     // Collision with a sprite
-    var off_object_c: *lvl.TITUS_object = undefined;
+    var off_object_c: *lvl.Object = undefined;
     if (!objects.SPRITES_VS_SPRITES(level, &player.sprite, &level.spritedata[@as(c_uint, @intCast(0))], &off_object_c)) {
         return;
     }
-    const off_object: *lvl.TITUS_object = off_object_c;
+    const off_object: *lvl.Object = off_object_c;
 
     player.sprite.y = off_object.sprite.y - off_object.sprite.spritedata.?.collheight;
     // If the foot is placed on a spring, it must be soft!

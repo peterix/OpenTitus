@@ -357,7 +357,7 @@ const object_maxspeedY_data: [NUM_ORIGINAL_OBJECTS]u8 = .{
 };
 
 
-const ObjectData = lvl.TITUS_objectdata;
+const ObjectData = lvl.ObjectData;
 pub const object_data: [NUM_ORIGINAL_OBJECTS]ObjectData = init_object_data: {
     var data: [NUM_ORIGINAL_OBJECTS]ObjectData = undefined;
     for (tmpobjectflag, object_maxspeedY_data, &data) |flag, maxspeedY, *object| {
@@ -589,7 +589,7 @@ pub var anim_player: [30][]const i16 = .{
     &.{ 28, 28, 28, 28, 28, 28, 28, 28, 10, -2 },
 };
 
-pub export fn get_anim_player(action: u8) [*c]const i16 {
+pub fn get_anim_player(action: u8) [*c]const i16 {
     return &anim_player[action][0];
 }
 
