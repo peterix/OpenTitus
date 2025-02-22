@@ -68,8 +68,7 @@ pub fn moveEnemies(level: *lvl.Level) void {
     var j: c_int = undefined;
     _ = &j;
     for (&level.enemy) |*enemy| {
-        var enemySprite: *lvl.Sprite = &enemy.sprite;
-        _ = &enemySprite;
+        const enemySprite = &enemy.sprite;
         if (!enemySprite.enabled) {
             continue;
         }
@@ -80,7 +79,7 @@ pub fn moveEnemies(level: *lvl.Level) void {
                     DEAD1(level, enemy);
                     continue;
                 }
-                enemySprite.x -= @as(i16, @bitCast(@as(c_short, @truncate(@as(c_int, @bitCast(@as(c_int, enemySprite.speed_x))))))); //Move the enemy
+                enemySprite.x -= enemySprite.speed_x; //Move the enemy
                 if (@as(c_uint, @bitCast(myabs(@as(c_int, @bitCast(@as(c_int, enemySprite.x))) - enemy.center_x))) > enemy.range_x) { //If the enemy is range_x from center, turn direction
                     if (@as(c_int, @bitCast(@as(c_int, enemySprite.x))) >= enemy.center_x) { //The enemy is at rightmost edge
                         enemySprite.speed_x = @as(i16, @bitCast(@as(c_short, @truncate(myabs(@as(c_int, @bitCast(@as(c_int, enemySprite.speed_x))))))));
@@ -108,11 +107,11 @@ pub fn moveEnemies(level: *lvl.Level) void {
                 } else {
                     enemySprite.speed_x = 0;
                 }
-                switch (@as(c_int, @bitCast(@as(c_uint, enemy.phase)))) {
+                switch (enemy.phase) {
                     0 => {
                         //Scans the horizon!
                         common.subto0(&enemy.counter);
-                        if (@as(c_int, @bitCast(@as(c_uint, enemy.counter))) != 0) { //Decrease delay timer
+                        if (enemy.counter != 0) { //Decrease delay timer
                             continue;
                         }
                         if (myabs(@as(c_int, @bitCast(@as(c_int, level.player.sprite.y))) - @as(c_int, @bitCast(@as(c_int, enemySprite.y)))) > 24) {
@@ -140,10 +139,10 @@ pub fn moveEnemies(level: *lvl.Level) void {
                         if (!enemy.trigger) {
                             continue;
                         }
-                        enemySprite.animation += @as(usize, @bitCast(@as(isize, @intCast(2))));
+                        enemySprite.animation += 2;
                         if (FIND_TRASH(level)) |bullet| {
                             PUT_BULLET(level, enemy, bullet);
-                            enemy.counter = @as(u8, @bitCast(@as(u8, @truncate(enemy.delay))));
+                            enemy.counter = @truncate(enemy.delay);
                         }
                         enemy.phase = 0;
                     },
@@ -151,13 +150,13 @@ pub fn moveEnemies(level: *lvl.Level) void {
             },
             // Noclip walk, jump to player (fish)
             3, 4 => {
-                if (@as(c_int, @bitCast(@as(c_uint, enemy.dying))) != 0) {
+                if (enemy.dying != 0) {
                     DEAD1(level, enemy);
                     continue;
                 }
-                switch (@as(c_int, @bitCast(@as(c_uint, enemy.phase)))) {
+                switch (enemy.phase) {
                     0 => {
-                        enemySprite.x -= @as(i16, @bitCast(@as(c_short, @truncate(@as(c_int, @bitCast(@as(c_int, enemySprite.speed_x)))))));
+                        enemySprite.x -= enemySprite.speed_x;
                         if (@as(c_uint, @bitCast(myabs(@as(c_int, @bitCast(@as(c_int, enemySprite.x))) - enemy.center_x))) > enemy.range_x) {
                             if (@as(c_int, @bitCast(@as(c_int, enemySprite.x))) >= enemy.center_x) {
                                 enemySprite.speed_x = @as(i16, @bitCast(@as(c_short, @truncate(myabs(@as(c_int, @bitCast(@as(c_int, enemySprite.speed_x))))))));
@@ -1144,7 +1143,7 @@ fn ACTIONC_NMI(level: *lvl.Level, enemy: *lvl.Enemy) void {
             if (NMI_VS_DROP(&enemy.sprite, &level.player.sprite)) {
                 if (enemy.type != 11) { // Walk and shoot
                     if (enemy.sprite.number != 178) { // Periscope
-                        enemy.sprite.speed_x = enemy.sprite.speed_x;
+                        enemy.sprite.speed_x = -enemy.sprite.speed_x;
                     }
                 }
 
