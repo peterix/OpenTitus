@@ -131,8 +131,7 @@ void moveEnemies(TITUS_level *level) {
         if (abs(level->player.sprite.y - enemySprite->y) > 24) {
           continue;
         }
-        if (enemy->range_x <
-            abs(level->player.sprite.x - enemySprite->x)) { // if too far apart
+        if (enemy->range_x < abs(level->player.sprite.x - enemySprite->x)) { // if too far apart
           continue;
         }
         if (enemy->direction != 0) {
@@ -1190,8 +1189,7 @@ void updateenemysprite(TITUS_level *level, TITUS_enemy *enemy, int16_t number,
   if (((number >= 248) && (number <= 251)) || // Man throwing rocks (3rd level)
       ((number >= 252) && (number <= 256)) || // Big baby (11th level)
       ((number >= 257) && (number <= 261)) || // Big woman (7th level)
-      ((number >= 263) &&
-       (number <= 267)) || // Big man (15th level on Moktar only)
+      ((number >= 263) && (number <= 267)) || // Big man (15th level on Moktar only)
       ((number >= 284) && (number <= 288)) || // Mummy (9th level)
       ((number >= 329) && (number <= 332))) { // Ax man (5th level)
     enemy->boss = true;

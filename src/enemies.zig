@@ -51,7 +51,8 @@ pub inline fn myabs(a: anytype) @TypeOf(a) {
 fn UP_ANIMATION(sprite: *lvl.Sprite) void {
     while (true) {
         sprite.animation += 1;
-        if (!(@as(c_int, @bitCast(@as(c_int, sprite.animation.*))) >= 0)) break;
+        if (sprite.animation.* < 0)
+            break;
     }
     sprite.animation += 1;
 }
@@ -59,9 +60,93 @@ fn UP_ANIMATION(sprite: *lvl.Sprite) void {
 fn DOWN_ANIMATION(sprite: *lvl.Sprite) void {
     while (true) {
         sprite.animation -= 1;
-        if (!(@as(c_int, @bitCast(@as(c_int, sprite.animation.*))) >= 0)) break;
+        if (sprite.animation.* < 0)
+            break;
     }
     sprite.animation -= 1;
+}
+
+fn ai_noclip_walk(level: *lvl.Level, enemy: *lvl.Enemy) void {
+    const enemySprite = &enemy.sprite;
+    if (enemy.dying != 0) { //If true, the enemy is dying or dead, and have special movement
+        DEAD1(level, enemy);
+        return;
+    }
+    enemySprite.x -= enemySprite.speed_x; //Move the enemy
+    if (myabs(enemySprite.x - enemy.center_x) > enemy.range_x) { //If the enemy is range_x from center, turn direction
+        if (enemySprite.x >= enemy.center_x) { //The enemy is at rightmost edge
+            enemySprite.speed_x = myabs(enemySprite.speed_x);
+        } else { //The enemy is at leftmost edge
+            enemySprite.speed_x = -myabs(enemySprite.speed_x);
+        }
+    }
+}
+
+fn ai_shoot(level: *lvl.Level, enemy: *lvl.Enemy) void {
+    const enemySprite = &enemy.sprite;
+    if (enemy.dying != 0) {
+        DEAD1(level, enemy);
+        return;
+    }
+    if (!enemy.visible) {
+        return;
+    }
+    if (enemy.direction == 0) {
+        enemySprite.speed_x = 0;
+        if (enemySprite.x < level.player.sprite.x) {
+            enemySprite.speed_x = -1;
+        }
+    } else if (enemy.direction == 2) {
+        enemySprite.speed_x = -1;
+    } else {
+        enemySprite.speed_x = 0;
+    }
+    switch (enemy.phase) {
+        0 => {
+            //Scans the horizon!
+            //Decrease delay timer
+            common.subto0(&enemy.counter);
+            if (enemy.counter != 0) {
+                return;
+            }
+            if (myabs(level.player.sprite.y - enemySprite.y) > 24) {
+                return;
+            }
+            // if too far apart
+            if (enemy.range_x < myabs(level.player.sprite.x - enemySprite.x)) {
+                return;
+            }
+            if (enemy.direction != 0) {
+                // Skip shooting if player is in the opposite direction
+                if (enemy.direction == 2) {
+                    // Right only
+                    if (enemySprite.x > level.player.sprite.x) {
+                        return;
+                    }
+                } else {
+                    // Left only
+                    if (level.player.sprite.x > enemySprite.x) {
+                        return;
+                    }
+                }
+            }
+            enemy.phase = 30; // change state
+            UP_ANIMATION(enemySprite);
+        },
+        else => {
+            enemy.phase -= 1;
+            if (!enemy.trigger) {
+                return;
+            }
+            enemySprite.animation += 2;
+            if (FIND_TRASH(level)) |bullet| {
+                PUT_BULLET(level, enemy, bullet);
+                // enemy->counter = NMI_FREQ; //set delay timer
+                enemy.counter = @truncate(enemy.delay); // set delay timer
+            }
+            enemy.phase = 0;
+        },
+    }
 }
 
 pub fn moveEnemies(level: *lvl.Level) void {
@@ -74,80 +159,9 @@ pub fn moveEnemies(level: *lvl.Level) void {
         }
         switch (enemy.type) {
             //Noclip walk
-            0, 1 => {
-                if (enemy.dying != 0) { //If true, the enemy is dying or dead, and have special movement
-                    DEAD1(level, enemy);
-                    continue;
-                }
-                enemySprite.x -= enemySprite.speed_x; //Move the enemy
-                if (@as(c_uint, @bitCast(myabs(@as(c_int, @bitCast(@as(c_int, enemySprite.x))) - enemy.center_x))) > enemy.range_x) { //If the enemy is range_x from center, turn direction
-                    if (@as(c_int, @bitCast(@as(c_int, enemySprite.x))) >= enemy.center_x) { //The enemy is at rightmost edge
-                        enemySprite.speed_x = @as(i16, @bitCast(@as(c_short, @truncate(myabs(@as(c_int, @bitCast(@as(c_int, enemySprite.speed_x))))))));
-                    } else { //The enemy is at leftmost edge
-                        enemySprite.speed_x = @as(i16, @bitCast(@as(c_short, @truncate(0 - myabs(@as(c_int, @bitCast(@as(c_int, enemySprite.speed_x))))))));
-                    }
-                }
-            },
+            0, 1 => ai_noclip_walk(level, enemy),
             //Shoot
-            2 => {
-                if (@as(c_int, @bitCast(@as(c_uint, enemy.dying))) != 0) {
-                    DEAD1(level, enemy);
-                    continue;
-                }
-                if (!enemy.visible) {
-                    continue;
-                }
-                if (@as(c_int, @bitCast(@as(c_uint, enemy.direction))) == 0) {
-                    enemySprite.speed_x = 0;
-                    if (@as(c_int, @bitCast(@as(c_int, enemySprite.x))) < @as(c_int, @bitCast(@as(c_int, level.player.sprite.x)))) {
-                        enemySprite.speed_x = @as(i16, @bitCast(@as(c_short, @truncate(-1))));
-                    }
-                } else if (@as(c_int, @bitCast(@as(c_uint, enemy.direction))) == 2) {
-                    enemySprite.speed_x = @as(i16, @bitCast(@as(c_short, @truncate(-1))));
-                } else {
-                    enemySprite.speed_x = 0;
-                }
-                switch (enemy.phase) {
-                    0 => {
-                        //Scans the horizon!
-                        common.subto0(&enemy.counter);
-                        if (enemy.counter != 0) { //Decrease delay timer
-                            continue;
-                        }
-                        if (myabs(@as(c_int, @bitCast(@as(c_int, level.player.sprite.y))) - @as(c_int, @bitCast(@as(c_int, enemySprite.y)))) > 24) {
-                            continue;
-                        }
-                        if (enemy.range_x < @as(c_uint, @bitCast(myabs(@as(c_int, @bitCast(@as(c_int, level.player.sprite.x))) - @as(c_int, @bitCast(@as(c_int, enemySprite.x))))))) {
-                            continue;
-                        }
-                        if (@as(c_int, @bitCast(@as(c_uint, enemy.direction))) != 0) {
-                            if (@as(c_int, @bitCast(@as(c_uint, enemy.direction))) == 2) {
-                                if (@as(c_int, @bitCast(@as(c_int, enemySprite.x))) > @as(c_int, @bitCast(@as(c_int, level.player.sprite.x)))) {
-                                    continue;
-                                }
-                            } else {
-                                if (@as(c_int, @bitCast(@as(c_int, level.player.sprite.x))) > @as(c_int, @bitCast(@as(c_int, enemySprite.x)))) {
-                                    continue;
-                                }
-                            }
-                        }
-                        enemy.phase = 30;
-                        UP_ANIMATION(enemySprite);
-                    },
-                    else => {
-                        enemy.phase -%= 1;
-                        if (!enemy.trigger) {
-                            continue;
-                        }
-                        enemySprite.animation += 2;
-                        if (FIND_TRASH(level)) |bullet| {
-                            PUT_BULLET(level, enemy, bullet);
-                            enemy.counter = @truncate(enemy.delay);
-                        }
-                        enemy.phase = 0;
-                    },
-                }
-            },
+            2 => ai_shoot(level, enemy),
             // Noclip walk, jump to player (fish)
             3, 4 => {
                 if (enemy.dying != 0) {
@@ -156,6 +170,7 @@ pub fn moveEnemies(level: *lvl.Level) void {
                 }
                 switch (enemy.phase) {
                     0 => {
+                        // Move the enemy
                         enemySprite.x -= enemySprite.speed_x;
                         if (@as(c_uint, @bitCast(myabs(@as(c_int, @bitCast(@as(c_int, enemySprite.x))) - enemy.center_x))) > enemy.range_x) {
                             if (@as(c_int, @bitCast(@as(c_int, enemySprite.x))) >= enemy.center_x) {
@@ -957,66 +972,71 @@ pub fn moveEnemies(level: *lvl.Level) void {
 }
 
 fn DEAD1(level: *lvl.Level, enemy: *lvl.Enemy) void {
-    if (((@as(c_int, @bitCast(@as(c_uint, enemy.dying))) & 1) != 0) or (@as(c_int, @bitCast(@as(c_int, enemy.dead_sprite))) == -1)) {
-        if ((@as(c_int, @bitCast(@as(c_uint, enemy.dying))) & 1) == 0) {
-            enemy.dying = @as(u8, @bitCast(@as(i8, @truncate(@as(c_int, @bitCast(@as(c_uint, enemy.dying))) | 1))));
-            enemy.sprite.speed_y = @as(i16, @bitCast(@as(c_short, @truncate(-10))));
+    if (enemy.dying & 0x01 != 0 or enemy.dead_sprite == -1) {
+        if (enemy.dying & 0x01 == 0) {
+            enemy.dying = enemy.dying | 0x01;
+            enemy.sprite.speed_y = -10;
             enemy.phase = 0;
         }
-        if (@as(c_int, @bitCast(@as(c_uint, enemy.phase))) != 255) {
-            enemy.sprite.y += @as(i16, @bitCast(@as(c_short, @truncate(@as(c_int, @bitCast(@as(c_int, enemy.sprite.speed_y)))))));
-            if (@as(c_int, @bitCast(@as(c_uint, globals.SEECHOC_FLAG))) != 0) {
-                level.player.sprite2.y += @as(i16, @bitCast(@as(c_short, @truncate(@as(c_int, @bitCast(@as(c_int, enemy.sprite.speed_y)))))));
+        if (enemy.phase != 0xFF) {
+            enemy.sprite.y += enemy.sprite.speed_y;
+            if (globals.SEECHOC_FLAG != 0) {
+                level.player.sprite2.y += enemy.sprite.speed_y;
             }
-            if (@as(c_int, @bitCast(@as(c_int, enemy.sprite.speed_y))) < 20) {
+            if (enemy.sprite.speed_y < globals.MAX_SPEED_DEAD) {
                 enemy.sprite.speed_y += 1;
             }
         }
     } else {
-        enemy.dying = @as(u8, @bitCast(@as(i8, @truncate(@as(c_int, @bitCast(@as(c_uint, enemy.dying))) | 1))));
+        enemy.dying = enemy.dying | 0x01;
         updateenemysprite(level, enemy, enemy.dead_sprite, false);
         enemy.sprite.flash = false;
         enemy.sprite.visible = false;
         enemy.sprite.speed_y = 0;
-        enemy.phase = @as(u8, @bitCast(@as(i8, @truncate(-1))));
+        enemy.phase = 0xFF;
     }
 }
 
 pub fn updateenemysprite(level: *lvl.Level, enemy: *lvl.Enemy, number: i16, clearflags: bool) void {
     sprites.updatesprite(level, &enemy.sprite, number, clearflags);
-    if ((@as(c_int, @bitCast(@as(c_int, number))) >= 101) and (@as(c_int, @bitCast(@as(c_int, number))) <= 105)) {
+    if ((number >= 101) and (number <= 105)) { // Walking man
         enemy.carry_sprite = 105;
-    } else if ((@as(c_int, @bitCast(@as(c_int, number))) >= 126) and (@as(c_int, @bitCast(@as(c_int, number))) <= 130)) {
-        enemy.carry_sprite = @as(i16, @bitCast(@as(c_short, @truncate(130))));
-    } else if ((@as(c_int, @bitCast(@as(c_int, number))) >= 149) and (@as(c_int, @bitCast(@as(c_int, number))) <= 153)) {
-        enemy.carry_sprite = @as(i16, @bitCast(@as(c_short, @truncate(149))));
-    } else if ((@as(c_int, @bitCast(@as(c_int, number))) >= 157) and (@as(c_int, @bitCast(@as(c_int, number))) <= 158)) {
-        enemy.carry_sprite = @as(i16, @bitCast(@as(c_short, @truncate(158))));
-    } else if ((@as(c_int, @bitCast(@as(c_int, number))) >= 159) and (@as(c_int, @bitCast(@as(c_int, number))) <= 167)) {
-        enemy.carry_sprite = @as(i16, @bitCast(@as(c_short, @truncate(167))));
-    } else if ((@as(c_int, @bitCast(@as(c_int, number))) >= 185) and (@as(c_int, @bitCast(@as(c_int, number))) <= 191)) {
-        enemy.carry_sprite = @as(i16, @bitCast(@as(c_short, @truncate(186))));
-    } else if ((@as(c_int, @bitCast(@as(c_int, number))) >= 197) and (@as(c_int, @bitCast(@as(c_int, number))) <= 203)) {
-        enemy.carry_sprite = @as(i16, @bitCast(@as(c_short, @truncate(203))));
+    } else if ((number >= 126) and (number <= 130)) { // Fly
+        enemy.carry_sprite = 130;
+    } else if ((number >= 149) and (number <= 153)) { // Skeleton
+        enemy.carry_sprite = 149;
+    } else if ((number >= 157) and (number <= 158)) { // Worm
+        enemy.carry_sprite = 158;
+    } else if ((number >= 159) and (number <= 167)) { // Guy with sword
+        enemy.carry_sprite = 167;
+    } else if ((number >= 185) and (number <= 191)) { // Zombie
+        enemy.carry_sprite = 186;
+    } else if ((number >= 197) and (number <= 203)) { // Woman with pot
+        enemy.carry_sprite = 203;
     } else {
-        enemy.carry_sprite = @as(i16, @bitCast(@as(c_short, @truncate(-1))));
+        enemy.carry_sprite = -1;
     }
-    if ((@as(c_int, @bitCast(@as(c_int, number))) >= 172) and (@as(c_int, @bitCast(@as(c_int, number))) <= 184)) {
-        enemy.dead_sprite = @as(i16, @bitCast(@as(c_short, @truncate(184))));
-    } else if ((@as(c_int, @bitCast(@as(c_int, number))) >= 192) and (@as(c_int, @bitCast(@as(c_int, number))) <= 196)) {
-        enemy.dead_sprite = @as(i16, @bitCast(@as(c_short, @truncate(196))));
-    } else if ((@as(c_int, @bitCast(@as(c_int, number))) >= 210) and (@as(c_int, @bitCast(@as(c_int, number))) <= 213)) {
-        enemy.dead_sprite = @as(i16, @bitCast(@as(c_short, @truncate(213))));
-    } else if ((@as(c_int, @bitCast(@as(c_int, number))) >= 214) and (@as(c_int, @bitCast(@as(c_int, number))) <= 220)) {
-        enemy.dead_sprite = @as(i16, @bitCast(@as(c_short, @truncate(220))));
-    } else if ((@as(c_int, @bitCast(@as(c_int, number))) >= 221) and (@as(c_int, @bitCast(@as(c_int, number))) <= 226)) {
-        enemy.dead_sprite = @as(i16, @bitCast(@as(c_short, @truncate(226))));
-    } else if ((@as(c_int, @bitCast(@as(c_int, number))) >= 242) and (@as(c_int, @bitCast(@as(c_int, number))) <= 247)) {
-        enemy.dead_sprite = @as(i16, @bitCast(@as(c_short, @truncate(247))));
+    if ((number >= 172) and (number <= 184)) { // Periscope
+        enemy.dead_sprite = 184;
+    } else if ((number >= 192) and (number <= 196)) { // Camel
+        enemy.dead_sprite = 196;
+    } else if ((number >= 210) and (number <= 213)) { // Old man with TV
+        enemy.dead_sprite = 213;
+    } else if ((number >= 214) and (number <= 220)) { // Snake in pot
+        enemy.dead_sprite = 220;
+    } else if ((number >= 221) and (number <= 226)) { // Man throwing knives
+        enemy.dead_sprite = 226;
+    } else if ((number >= 242) and (number <= 247)) { // Carnivorous plant in pot
+        enemy.dead_sprite = 247;
     } else {
-        enemy.dead_sprite = @as(i16, @bitCast(@as(c_short, @truncate(-1))));
+        enemy.dead_sprite = -1;
     }
-    if (((((((@as(c_int, @bitCast(@as(c_int, number))) >= 248) and (@as(c_int, @bitCast(@as(c_int, number))) <= 251)) or ((@as(c_int, @bitCast(@as(c_int, number))) >= 252) and (@as(c_int, @bitCast(@as(c_int, number))) <= 256))) or ((@as(c_int, @bitCast(@as(c_int, number))) >= 257) and (@as(c_int, @bitCast(@as(c_int, number))) <= 261))) or ((@as(c_int, @bitCast(@as(c_int, number))) >= 263) and (@as(c_int, @bitCast(@as(c_int, number))) <= 267))) or ((@as(c_int, @bitCast(@as(c_int, number))) >= 284) and (@as(c_int, @bitCast(@as(c_int, number))) <= 288))) or ((@as(c_int, @bitCast(@as(c_int, number))) >= 329) and (@as(c_int, @bitCast(@as(c_int, number))) <= 332))) {
+    if (((number >= 248) and (number <= 251)) or // Man throwing rocks (3rd level)
+        ((number >= 252) and (number <= 256)) or // Big baby (11th level)
+        ((number >= 257) and (number <= 261)) or // Big woman (7th level)
+        ((number >= 263) and (number <= 267)) or // Big man (15th level on Moktar only)
+        ((number >= 284) and (number <= 288)) or // Mummy (9th level)
+        ((number >= 329) and (number <= 332))) { // Ax man (5th level)
         enemy.boss = true;
     } else {
         enemy.boss = false;
@@ -1024,87 +1044,94 @@ pub fn updateenemysprite(level: *lvl.Level, enemy: *lvl.Enemy, number: i16, clea
 }
 
 pub fn SET_NMI(level: *lvl.Level) void {
-    var i: i16 = undefined;
-    _ = &i;
+    // Clear enemy sprites
+    // If an enemy is on the screen
+    //  - Set bit 13
+    //  - Animate
+    //  - Collision with player
+    //    - Lose life and fly
+    //  - Collision with object
+    //    - Decrease enemy's life
     var k: i16 = undefined;
     _ = &k;
     var hit: i16 = undefined;
     _ = &hit;
-    {
-        i = 0;
-        while (@as(c_int, @bitCast(@as(c_int, i))) < 50) : (i += 1) {
-            if (!level.enemy[@as(c_ushort, @intCast(i))].sprite.enabled) continue;
-            level.enemy[@as(c_ushort, @intCast(i))].visible = false;
-            if (((((@as(c_int, @bitCast(@as(c_int, level.enemy[@as(c_ushort, @intCast(i))].sprite.x))) + 32) < (@as(c_int, @bitCast(@as(c_int, globals.BITMAP_X))) << @intCast(4))) or ((@as(c_int, @bitCast(@as(c_int, level.enemy[@as(c_ushort, @intCast(i))].sprite.x))) - 32) > ((@as(c_int, @bitCast(@as(c_int, globals.BITMAP_X))) << @intCast(4)) + (20 * 16)))) or (@as(c_int, @bitCast(@as(c_int, level.enemy[@as(c_ushort, @intCast(i))].sprite.y))) < (@as(c_int, @bitCast(@as(c_int, globals.BITMAP_Y))) << @intCast(4)))) or ((@as(c_int, @bitCast(@as(c_int, level.enemy[@as(c_ushort, @intCast(i))].sprite.y))) - 32) > ((@as(c_int, @bitCast(@as(c_int, globals.BITMAP_Y))) << @intCast(4)) + (12 * 16)))) {
-                if ((@as(c_int, @bitCast(@as(c_uint, level.enemy[@as(c_ushort, @intCast(i))].dying))) & 3) != 0) {
-                    level.enemy[@as(c_ushort, @intCast(i))].sprite.enabled = false;
+    for (&level.enemy) |*enemy| {
+        // Skip unused enemies
+        if (!enemy.sprite.enabled)
+            continue;
+        enemy.visible = false;
+
+        // Is the enemy on the screen?
+        if (((((@as(c_int, @bitCast(@as(c_int, enemy.sprite.x))) + 32) < (@as(c_int, @bitCast(@as(c_int, globals.BITMAP_X))) << @intCast(4))) or ((@as(c_int, @bitCast(@as(c_int, enemy.sprite.x))) - 32) > ((@as(c_int, @bitCast(@as(c_int, globals.BITMAP_X))) << @intCast(4)) + (20 * 16)))) or (@as(c_int, @bitCast(@as(c_int, enemy.sprite.y))) < (@as(c_int, @bitCast(@as(c_int, globals.BITMAP_Y))) << @intCast(4)))) or ((@as(c_int, @bitCast(@as(c_int, enemy.sprite.y))) - 32) > ((@as(c_int, @bitCast(@as(c_int, globals.BITMAP_Y))) << @intCast(4)) + (12 * 16)))) {
+            if ((enemy.dying & 3) != 0) {
+                enemy.sprite.enabled = false;
+            }
+            continue;
+        }
+        enemy.visible = true;
+        // Animation
+        GAL_FORM(level, enemy);
+        if ((enemy.dying & 3) != 0) {
+            // If the enemy is dying or dead and not on the screen, remove from the list!
+            continue;
+        }
+        if (globals.KICK_FLAG == 0 and !globals.GODMODE) {
+            if (enemy.sprite.invisible) {
+                continue;
+            }
+            ACTIONC_NMI(level, enemy);
+        }
+        hit = 0;
+        if (globals.GRAVITY_FLAG != 0) {
+            k = 0;
+            while (@as(c_int, @bitCast(@as(c_int, k))) < lvl.OBJECT_CAPACITY) : (k += 1) {
+                if (@as(c_int, @bitCast(@as(c_int, level.object[@as(c_ushort, @intCast(k))].sprite.speed_x))) == 0) {
+                    if (@as(c_int, @bitCast(@as(c_int, level.object[@as(c_ushort, @intCast(k))].sprite.speed_y))) == 0) {
+                        continue;
+                    }
+                    if (@as(c_int, @bitCast(@as(c_uint, level.object[@as(c_ushort, @intCast(k))].momentum))) < 10) {
+                        continue;
+                    }
                 }
-                continue;
-            }
-            level.enemy[@as(c_ushort, @intCast(i))].visible = true;
-            GAL_FORM(level, &level.enemy[@as(c_ushort, @intCast(i))]);
-            if ((@as(c_int, @bitCast(@as(c_uint, level.enemy[@as(c_ushort, @intCast(i))].dying))) & 3) != 0) {
-                continue;
-            }
-            if ((@as(c_int, @bitCast(@as(c_uint, globals.KICK_FLAG))) == 0) and !globals.GODMODE) {
-                if (level.enemy[@as(c_ushort, @intCast(i))].sprite.invisible) {
+                if (level.object[@as(c_ushort, @intCast(k))].objectdata.no_damage) {
                     continue;
                 }
-                ACTIONC_NMI(level, &level.enemy[@as(c_ushort, @intCast(i))]);
-            }
-            hit = 0;
-            if (@as(c_int, @bitCast(@as(c_uint, globals.GRAVITY_FLAG))) != 0) {
-                {
-                    k = 0;
-                    while (@as(c_int, @bitCast(@as(c_int, k))) < 40) : (k += 1) {
-                        if (@as(c_int, @bitCast(@as(c_int, level.object[@as(c_ushort, @intCast(k))].sprite.speed_x))) == 0) {
-                            if (@as(c_int, @bitCast(@as(c_int, level.object[@as(c_ushort, @intCast(k))].sprite.speed_y))) == 0) {
-                                continue;
-                            }
-                            if (@as(c_int, @bitCast(@as(c_uint, level.object[@as(c_ushort, @intCast(k))].momentum))) < 10) {
-                                continue;
-                            }
-                        }
-                        if (level.object[@as(c_ushort, @intCast(k))].objectdata.no_damage) {
-                            continue;
-                        }
-                        if (NMI_VS_DROP(&level.enemy[@as(c_ushort, @intCast(i))].sprite, &level.object[@as(c_ushort, @intCast(k))].sprite)) {
-                            hit = 1;
-                            break;
-                        }
-                    }
+                if (NMI_VS_DROP(&enemy.sprite, &level.object[@as(c_ushort, @intCast(k))].sprite)) {
+                    hit = 1;
+                    break;
                 }
             }
-            if ((((@as(c_int, @bitCast(@as(c_int, hit))) == 0) and (@as(c_int, @intFromBool(globals.DROP_FLAG)) != 0)) and (@as(c_int, @intFromBool(globals.CARRY_FLAG)) == 0)) and (@as(c_int, @intFromBool(level.player.sprite2.enabled)) != 0)) {
-                if (NMI_VS_DROP(&level.enemy[@as(c_ushort, @intCast(i))].sprite, &level.player.sprite2)) {
-                    globals.INVULNERABLE_FLAG = 0;
-                    level.player.sprite2.enabled = false;
-                    SEE_CHOC(level);
-                    hit = 2;
+        }
+        if ((((@as(c_int, @bitCast(@as(c_int, hit))) == 0) and (@as(c_int, @intFromBool(globals.DROP_FLAG)) != 0)) and (@as(c_int, @intFromBool(globals.CARRY_FLAG)) == 0)) and (@as(c_int, @intFromBool(level.player.sprite2.enabled)) != 0)) {
+            if (NMI_VS_DROP(&enemy.sprite, &level.player.sprite2)) {
+                globals.INVULNERABLE_FLAG = 0;
+                level.player.sprite2.enabled = false;
+                SEE_CHOC(level);
+                hit = 2;
+            }
+        }
+        if (@as(c_int, @bitCast(@as(c_int, hit))) != 0) {
+            if (@as(c_int, @bitCast(@as(c_int, hit))) == 1) {
+                if (@as(c_int, @bitCast(@as(c_int, level.object[@as(c_ushort, @intCast(k))].sprite.number))) != 73) {
+                    level.object[@as(c_ushort, @intCast(k))].sprite.speed_x = @as(i16, @bitCast(@as(c_short, @truncate(0 - @as(c_int, @bitCast(@as(c_int, level.object[@as(c_ushort, @intCast(k))].sprite.speed_x)))))));
                 }
             }
-            if (@as(c_int, @bitCast(@as(c_int, hit))) != 0) {
-                if (@as(c_int, @bitCast(@as(c_int, hit))) == 1) {
-                    if (@as(c_int, @bitCast(@as(c_int, level.object[@as(c_ushort, @intCast(k))].sprite.number))) != 73) {
-                        level.object[@as(c_ushort, @intCast(k))].sprite.speed_x = @as(i16, @bitCast(@as(c_short, @truncate(0 - @as(c_int, @bitCast(@as(c_int, level.object[@as(c_ushort, @intCast(k))].sprite.speed_x)))))));
-                    }
+            audio.playEvent(.Event_HitEnemy);
+            globals.DROP_FLAG = false;
+            if (enemy.boss) {
+                if (@as(c_int, @bitCast(@as(c_uint, globals.INVULNERABLE_FLAG))) != 0) {
+                    continue;
                 }
-                audio.playEvent(.Event_HitEnemy);
-                globals.DROP_FLAG = false;
-                if (level.enemy[@as(c_ushort, @intCast(i))].boss) {
-                    if (@as(c_int, @bitCast(@as(c_uint, globals.INVULNERABLE_FLAG))) != 0) {
-                        continue;
-                    }
-                    globals.INVULNERABLE_FLAG = 10;
-                    level.enemy[@as(c_ushort, @intCast(i))].sprite.flash = true;
-                    globals.boss_lives -%= 1;
-                    if (@as(c_int, @bitCast(@as(c_uint, globals.boss_lives))) != 0) {
-                        continue;
-                    }
-                    globals.boss_alive = false;
+                globals.INVULNERABLE_FLAG = 10;
+                enemy.sprite.flash = true;
+                globals.boss_lives -%= 1;
+                if (@as(c_int, @bitCast(@as(c_uint, globals.boss_lives))) != 0) {
+                    continue;
                 }
-                level.enemy[@as(c_ushort, @intCast(i))].dying = @as(u8, @bitCast(@as(i8, @truncate(@as(c_int, @bitCast(@as(c_uint, level.enemy[@as(c_ushort, @intCast(i))].dying))) | 2))));
+                globals.boss_alive = false;
             }
+            enemy.dying = @as(u8, @bitCast(@as(i8, @truncate(@as(c_int, @bitCast(@as(c_uint, enemy.dying))) | 2))));
         }
     }
 }
@@ -1127,7 +1154,7 @@ fn GAL_FORM(level: *lvl.Level, enemy: *lvl.Enemy) void {
         return;
     }
     enemy.trigger = (@as(c_int, @bitCast(@as(c_int, animation.*))) & 0x2000) != 0;
-    updateenemysprite(level, enemy, @as(i16, @bitCast(@as(c_short, @truncate((@as(c_int, @bitCast(@as(c_int, animation.*))) & 0x00FF) + 101)))), true);
+    updateenemysprite(level, enemy, @as(i16, @bitCast(@as(c_short, @truncate((@as(c_int, @bitCast(@as(c_int, animation.*))) & 0x00FF) + globals.FIRST_NMI)))), true);
     enemy.sprite.flipped = enemy.sprite.speed_x < 0;
     animation += 1;
     if (@as(c_int, @bitCast(@as(c_int, animation.*))) < 0) {
@@ -1137,6 +1164,7 @@ fn GAL_FORM(level: *lvl.Level, enemy: *lvl.Enemy) void {
     enemy.visible = true;
 }
 
+// Player <-> Enemy collision
 fn ACTIONC_NMI(level: *lvl.Level, enemy: *lvl.Enemy) void {
     switch (enemy.type) {
         0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 18 => {
@@ -1179,10 +1207,10 @@ fn KICK_ASH(level: *lvl.Level, enemysprite: *lvl.Sprite, power: i16) void {
 }
 
 fn NMI_VS_DROP(enemysprite: *lvl.Sprite, sprite: *lvl.Sprite) bool {
-    if (myabs(sprite.x) - enemysprite.x >= 64) {
+    if (myabs(sprite.x - enemysprite.x) >= 64) {
         return false;
     }
-    if (myabs(sprite.y) - enemysprite.y >= 70) {
+    if (myabs(sprite.y - enemysprite.y) >= 70) {
         return false;
     }
     if (sprite.y < enemysprite.y) {
