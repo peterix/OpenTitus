@@ -122,7 +122,13 @@ pub fn build(b: *std.Build) void {
     // location when the user invokes the "install" step (the default step when
     // running `zig build`).
     const copy_step = b.addUpdateSourceFiles();
-    copy_step.addCopyFileToSource(game.getEmittedBin(), "bin/moktar/openmoktar");
-    copy_step.addCopyFileToSource(game.getEmittedBin(), "bin/titus/opentitus");
+    const extension = std.fs.path.extension(game.out_filename);
+
+    const titus_exe_name = b.fmt("bin/titus/opentitus{s}", .{extension});
+    copy_step.addCopyFileToSource(game.getEmittedBin(), titus_exe_name);
+
+    const moktar_exe_name = b.fmt("bin/moktar/openmoktar{s}", .{extension});
+    copy_step.addCopyFileToSource(game.getEmittedBin(), moktar_exe_name);
+
     b.getInstallStep().dependOn(&copy_step.step);
 }
