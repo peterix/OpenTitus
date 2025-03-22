@@ -95,23 +95,23 @@ pub fn view_menu(file: ImageFile, allocator: std.mem.Allocator) !?usize {
     //sel_dest[1].x += 16;
 
     // FIXME: move to render.zig
-    const fade_time: c_uint = 1000;
-    var image_alpha: c_uint = 0;
-    const tick_start: c_uint = SDL.getTicks();
+    const fade_time = 1000;
+    var image_alpha: u64 = 0;
+    const tick_start = SDL.getTicks();
 
     // Fade in
     while (image_alpha < 255) {
         var event: SDL.Event = undefined;
         while (SDL.pollEvent(&event)) {
-            if (event.type == SDL.QUIT) {
+            if (event.type == SDL.EVENT_QUIT) {
                 return null;
             }
 
-            if (event.type == SDL.KEYDOWN) {
-                if (event.key.keysym.scancode == SDL.SCANCODE_ESCAPE) {
+            if (event.type == SDL.EVENT_KEY_DOWN) {
+                if (event.key.scancode == SDL.SCANCODE_ESCAPE) {
                     return null;
                 }
-                if (event.key.keysym.scancode == SDL.SCANCODE_F11) {
+                if (event.key.scancode == SDL.SCANCODE_F11) {
                     window.toggle_fullscreen();
                 }
             }
@@ -138,21 +138,21 @@ pub fn view_menu(file: ImageFile, allocator: std.mem.Allocator) !?usize {
     MENULOOP: while (true) {
         var event: SDL.Event = undefined;
         while (SDL.pollEvent(&event)) {
-            if (event.type == SDL.QUIT) {
+            if (event.type == SDL.EVENT_QUIT) {
                 return null;
             }
 
-            if (event.type == SDL.KEYDOWN) {
-                if (event.key.keysym.scancode == SDL.SCANCODE_ESCAPE) {
+            if (event.type == SDL.EVENT_KEY_DOWN) {
+                if (event.key.scancode == SDL.SCANCODE_ESCAPE) {
                     return null;
                 }
-                if (event.key.keysym.scancode == SDL.SCANCODE_UP)
+                if (event.key.scancode == SDL.SCANCODE_UP)
                     selection = 0;
-                if (event.key.keysym.scancode == SDL.SCANCODE_DOWN)
+                if (event.key.scancode == SDL.SCANCODE_DOWN)
                     selection = 1;
-                if (event.key.keysym.scancode == SDL.SCANCODE_RETURN or
-                    event.key.keysym.scancode == SDL.SCANCODE_KP_ENTER or
-                    event.key.keysym.scancode == SDL.SCANCODE_SPACE)
+                if (event.key.scancode == SDL.SCANCODE_RETURN or
+                    event.key.scancode == SDL.SCANCODE_KP_ENTER or
+                    event.key.scancode == SDL.SCANCODE_SPACE)
                 {
                     switch (selection) {
                         0 => {
@@ -181,7 +181,7 @@ pub fn view_menu(file: ImageFile, allocator: std.mem.Allocator) !?usize {
                     }
                 }
 
-                if (event.key.keysym.scancode == SDL.SCANCODE_F11) {
+                if (event.key.scancode == SDL.SCANCODE_F11) {
                     window.toggle_fullscreen();
                 }
             }
@@ -255,31 +255,31 @@ fn select_level(allocator: std.mem.Allocator) !?usize {
     while (true) {
         var event: SDL.Event = undefined;
         while (SDL.pollEvent(&event)) {
-            if (event.type == SDL.QUIT) {
+            if (event.type == SDL.EVENT_QUIT) {
                 return null;
             }
 
-            if (event.type == SDL.KEYDOWN) {
-                if (event.key.keysym.scancode == SDL.SCANCODE_ESCAPE) {
+            if (event.type == SDL.EVENT_KEY_DOWN) {
+                if (event.key.scancode == SDL.SCANCODE_ESCAPE) {
                     return null;
                 }
-                if (event.key.keysym.scancode == SDL.SCANCODE_DOWN) {
+                if (event.key.scancode == SDL.SCANCODE_DOWN) {
                     if (selection < level_list.items.len - 1) {
                         selection += 1;
                     }
                 }
-                if (event.key.keysym.scancode == SDL.SCANCODE_UP) {
+                if (event.key.scancode == SDL.SCANCODE_UP) {
                     if (selection > 0) {
                         selection -= 1;
                     }
                 }
-                if (event.key.keysym.scancode == SDL.SCANCODE_RETURN) {
+                if (event.key.scancode == SDL.SCANCODE_RETURN) {
                     if (game.game_state.isUnlocked(selection)) {
                         return selection;
                     } else {}
                 }
 
-                if (event.key.keysym.scancode == SDL.SCANCODE_F11) {
+                if (event.key.scancode == SDL.SCANCODE_F11) {
                     window.toggle_fullscreen();
                 }
             }

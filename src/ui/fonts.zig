@@ -46,12 +46,12 @@ pub const Font = struct {
     fallback: Character,
 
     fn init(self: *Font, data: []const u8) !void {
-        const rwops = SDL.RWFromMem(@constCast(@ptrCast(&data[0])), @intCast(data.len));
+        const rwops = SDL.IOFromMem(@constCast(@ptrCast(&data[0])), @intCast(data.len));
         if (rwops == null) {
             print_sdl_error("Could not load font: {s}");
             return FontError.CannotLoad;
         }
-        const image = SDL.loadBMP_RW(rwops, SDL.TRUE);
+        const image = SDL.loadBMP_IO(rwops, true);
         if (image == null) {
             print_sdl_error("Could not load font: {s}");
             return FontError.CannotLoad;
@@ -59,7 +59,7 @@ pub const Font = struct {
         try loadfont(image, self);
     }
     fn deinit(self: *Font) void {
-        SDL.freeSurface(self.sheet);
+        SDL.destroySurface(self.sheet);
     }
 
     pub const RenderOptions = packed struct {
@@ -84,8 +84,8 @@ pub const Font = struct {
     pub fn render(self: *Font, text: []const u8, x: c_int, y: c_int, options: RenderOptions) void {
         var dest: SDL.Rect = .{ .x = x, .y = y, .w = 0, .h = 0 };
 
-        const black = SDL.mapRGB(self.sheet.*.format, 0, 0, 0);
-        _ = SDL.setColorKey(self.sheet, if (options.transpatent) SDL.TRUE else SDL.FALSE, black);
+        const black = SDL.mapSurfaceRGB(self.sheet, 0, 0, 0);
+        _ = SDL.setSurfaceColorKey(self.sheet, options.transpatent, black);
 
         // Let's assume ASCII for now... original code was trying to do something with UTF-8, but had the font files have no support for that
         for (text) |character| {
@@ -151,14 +151,11 @@ const FontError = error{
 };
 
 fn print_sdl_error(comptime format: []const u8) void {
-    var buffer: [1024:0]u8 = undefined;
-    const errstr = SDL.getErrorMsg(&buffer, 1024);
-    const span = std.mem.span(errstr);
-    std.log.err(format, .{span});
+    std.log.err(format, .{SDL.getError()});
 }
 
 fn loadfont(image: *SDL.Surface, font: *Font) !void {
-    defer SDL.freeSurface(image);
+    defer SDL.destroySurface(image);
 
     const surface_w = @as(u16, @intCast(image.*.w));
     if (@rem(surface_w, 16) != 0) {
@@ -172,7 +169,7 @@ fn loadfont(image: *SDL.Surface, font: *Font) !void {
         return FontError.NotDivisibleBy16;
     }
 
-    const sheet = SDL.convertSurfaceFormat(image, SDL.getWindowPixelFormat(window.window), 0) catch {
+    const sheet = SDL.convertSurface(image, SDL.getWindowPixelFormat(window.window)) catch {
         print_sdl_error("Cannot convert font surface: {s}");
         return FontError.CannotLoad;
     };

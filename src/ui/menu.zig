@@ -39,11 +39,11 @@ pub fn getMenuAction() MenuAction {
     var event: SDL.Event = undefined;
     while (SDL.pollEvent(&event)) {
         switch (event.type) {
-            SDL.QUIT => {
+            SDL.EVENT_QUIT => {
                 return .Quit;
             },
-            SDL.KEYDOWN => {
-                switch (event.key.keysym.scancode) {
+            SDL.EVENT_KEY_DOWN => {
+                switch (event.key.scancode) {
                     SDL.SCANCODE_ESCAPE,
                     SDL.SCANCODE_BACKSPACE,
                     => {

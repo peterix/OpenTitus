@@ -37,8 +37,8 @@ const tick_delay = 29;
 
 pub const ScreenContext = struct {
     started: bool = false,
-    LAST_CLOCK: u32 = 0,
-    TARGET_CLOCK: u32 = 0,
+    LAST_CLOCK: u64 = 0,
+    TARGET_CLOCK: u64 = 0,
 };
 
 pub fn screencontext_reset(context: *ScreenContext) void {
@@ -49,7 +49,7 @@ fn screencontext_initial(context: *ScreenContext, ticks: u32) void {
     const initial_clock = SDL.getTicks();
     context.TARGET_CLOCK = initial_clock + ticks;
     context.started = true;
-    SDL.delay(ticks);
+    SDL.delay(@truncate(ticks));
     context.LAST_CLOCK = SDL.getTicks();
     context.TARGET_CLOCK += ticks;
 }
@@ -61,7 +61,7 @@ fn screencontext_advance(context: *ScreenContext, ticks: u32) void {
     }
     const now = SDL.getTicks();
     if (context.TARGET_CLOCK > now) {
-        SDL.delay(context.TARGET_CLOCK - now);
+        SDL.delay(@truncate(context.TARGET_CLOCK - now));
     }
     context.LAST_CLOCK = SDL.getTicks();
     context.TARGET_CLOCK = context.LAST_CLOCK + ticks;
@@ -173,7 +173,7 @@ fn render_sprite(spr: *allowzero lvl.Sprite) void {
         .flip = spr.*.flipped,
         .flash = spr.*.flash,
     }) catch {
-        _ = SDL.fillRect(window.screen, &dest, SDL.mapRGB(window.screen.?.format, 255, 180, 128));
+        _ = SDL.fillSurfaceRect(window.screen, &dest, SDL.mapSurfaceRGB(window.screen, 255, 180, 128));
         spr.visible = true;
         spr.flash = false;
         return;
@@ -198,7 +198,7 @@ pub fn render_health_bars(level: *lvl.Level) void {
         return;
     }
 
-    const white = SDL.mapRGB(window.screen.?.format, 255, 255, 255);
+    const white = SDL.mapSurfaceRGB(window.screen, 255, 255, 255);
     if (globals.BAR_FLAG <= 0) {
         return;
     }
@@ -213,7 +213,7 @@ pub fn render_health_bars(level: *lvl.Level) void {
             .h = 16,
         };
 
-        _ = SDL.fillRect(window.screen, &dest, white);
+        _ = SDL.fillSurfaceRect(window.screen, &dest, white);
         offset += 8;
     }
 
@@ -225,7 +225,7 @@ pub fn render_health_bars(level: *lvl.Level) void {
             .w = 4,
             .h = 3,
         };
-        _ = SDL.fillRect(window.screen, &dest, white);
+        _ = SDL.fillSurfaceRect(window.screen, &dest, white);
         offset += 8;
     }
 }
@@ -240,30 +240,32 @@ pub fn fadeout() void {
         .h = window.game_height,
     };
 
-    const image = SDL.convertSurface(window.screen.?, window.screen.?.format, SDL.SWSURFACE) catch {
+    const image = SDL.convertSurface(window.screen.?, window.screen.?.format) catch {
         @panic("OOPS");
     };
-    defer SDL.freeSurface(image);
+    defer SDL.destroySurface(image);
 
     const tick_start = SDL.getTicks();
-    var image_alpha: c_uint = 0;
+    var image_alpha: u64 = 0;
     while (image_alpha < 255) //Fade to black
     {
         var event: SDL.Event = undefined;
         while (SDL.pollEvent(&event)) {
-            if (event.type == SDL.QUIT) {
-                // FIXME: handle this better
-                return;
-            }
-
-            if (event.type == SDL.KEYDOWN) {
-                if (event.key.keysym.scancode == SDL.SCANCODE_ESCAPE) {
+            switch(event.type) {
+                SDL.EVENT_QUIT => {
                     // FIXME: handle this better
                     return;
-                }
-                if (event.key.keysym.scancode == SDL.SCANCODE_F11) {
-                    window.toggle_fullscreen();
-                }
+                },
+                SDL.EVENT_KEY_DOWN => {
+                    if (event.key.scancode == SDL.SCANCODE_ESCAPE) {
+                        // FIXME: handle this better
+                        return;
+                    }
+                    if (event.key.scancode == SDL.SCANCODE_F11) {
+                        window.toggle_fullscreen();
+                    }
+                },
+                else => { },
             }
         }
 

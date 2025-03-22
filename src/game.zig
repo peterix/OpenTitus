@@ -100,8 +100,8 @@ pub fn run() !u8 {
     game_state = &game_state_mem.value;
     defer game_state_mem.deinit();
 
-    if (SDL.init(allocator) != 0) {
-        std.debug.print("Unable to initialize SDL: {s}\n", .{std.mem.span(SDL.getError())});
+    if (!SDL.init(allocator)) {
+        std.debug.print("Unable to initialize SDL: {s}\n", .{SDL.getError()});
         return TitusError.CannotInitSDL;
     }
     defer SDL.deinit();

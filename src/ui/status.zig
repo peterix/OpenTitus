@@ -79,7 +79,7 @@ fn render_lives(level: *lvl.Level, last_bounds: ?Rect) Rect {
             .w = last_bounds.?.w,
             .h = last_bounds.?.h,
         };
-        _ = SDL.fillRect(window.screen, &rect, 0);
+        _ = SDL.fillSurfaceRect(window.screen, &rect, 0);
     }
     var tmpchars = [_]u8{0} ** 10;
     const lives = std.fmt.bufPrint(&tmpchars, "{d}", .{level.lives}) catch {

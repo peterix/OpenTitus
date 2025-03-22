@@ -61,8 +61,6 @@ pub fn playtitus(firstlevel: u16, allocator: std.mem.Allocator) !c_int {
     level.lives = 2;
     level.extrabonus = 0;
 
-    level.pixelformat = &data.titus_pixelformat;
-
     const spritedata = sqz.unSQZ(data.constants.*.sprites, allocator) catch {
         std.debug.print("Failed to uncompress sprites file: {s}\n", .{data.constants.*.sprites});
         return -1;
@@ -71,7 +69,7 @@ pub fn playtitus(firstlevel: u16, allocator: std.mem.Allocator) !c_int {
     sprites.init(
         allocator,
         spritedata,
-        level.pixelformat,
+        &data.titus_palette,
     ) catch |err| {
         std.debug.print("Failed to load sprites: {}\n", .{err});
         return -1;

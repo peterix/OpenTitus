@@ -270,7 +270,6 @@ pub const Level = struct {
 
     tilemap: []u8,
     music: AudioTrack,
-    pixelformat: *SDL.PixelFormat,
 
     pub fn getTile(self: *const Level, x: usize, y: usize) u8 {
         if (x >= self.width or y >= self.height) {
@@ -486,9 +485,9 @@ pub fn loadlevel(
         @memcpy(level.tilemap, leveldata[0 .. tilemap_size]);
     }
 
-    level.pixelformat.*.palette.*.colors[14].r = levelcolor.r;
-    level.pixelformat.*.palette.*.colors[14].g = levelcolor.g;
-    level.pixelformat.*.palette.*.colors[14].b = levelcolor.b;
+    data.titus_palette.colors[14].r = levelcolor.r;
+    data.titus_palette.colors[14].g = levelcolor.g;
+    data.titus_palette.colors[14].b = levelcolor.b;
 
     level.spritedata = sprites.sprites.definitions;
     level.objectdata = objectdata;
@@ -497,7 +496,7 @@ pub fn loadlevel(
     {
         var j: usize = 256; //j is used for "last tile with animation flag"
         for (0..256) |i| {
-            level.tile[i].tiledata = @ptrCast(try sprites.load_tile(&other_data.tile_images[i].data, level.pixelformat));
+            level.tile[i].tiledata = @ptrCast(try sprites.load_tile(&other_data.tile_images[i].data, &data.titus_palette));
             level.tile[i].horizflag = @enumFromInt(other_data.horiz_flags[i]);
             level.tile[i].floorflag = @enumFromInt(other_data.floor_flags[i]);
             level.tile[i].ceilflag = @enumFromInt(other_data.ceil_flags[i].ceil);
@@ -725,7 +724,7 @@ pub fn loadlevel(
     level.finishX = other_data.finishX;
     level.finishY = other_data.finishY;
 
-    sprites.sprites.setPixelFormat(level.pixelformat);
+    _ = sprites.sprites.setPalette(&data.titus_palette);
     sprites.sprite_cache.evictAll();
 
     for (0..4) |i| {
@@ -738,6 +737,6 @@ pub fn freelevel(level: *Level, allocator: std.mem.Allocator) void {
     allocator.free(level.tilemap);
 
     for (0..256) |i| {
-        SDL.freeSurface(@ptrCast(@alignCast(level.tile[i].tiledata)));
+        SDL.destroySurface(@ptrCast(@alignCast(level.tile[i].tiledata)));
     }
 }

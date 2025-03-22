@@ -76,7 +76,7 @@ pub const SpriteData = struct {
     definitions: []const SpriteDefinition,
     bitmaps: [SPRITECOUNT]*SDL.Surface,
 
-    fn init(self: *SpriteData, allocator: std.mem.Allocator, spritedata: []const u8, pixelformat: *SDL.PixelFormat) !void {
+    fn init(self: *SpriteData, allocator: std.mem.Allocator, spritedata: []const u8, palette: *SDL.Palette) !void {
         defer allocator.free(spritedata);
 
         if (data.game == .Titus) {
@@ -86,36 +86,31 @@ pub const SpriteData = struct {
         }
         var remaining_data = spritedata;
         for (0..SPRITECOUNT) |i| {
-            const surface = try SDL.createRGBSurface(
-                SDL.SWSURFACE,
+            const surface = SDL.createSurface(
                 self.definitions[i].width,
                 self.definitions[i].height,
-                pixelformat.BitsPerPixel,
-                pixelformat.Rmask,
-                pixelformat.Gmask,
-                pixelformat.Bmask,
-                pixelformat.Amask,
+                SDL.PIXELFORMAT_INDEX8,
             );
-            _ = copypixelformat(surface.*.format, pixelformat);
+            _ = SDL.setSurfacePalette(surface, palette);
             remaining_data = try image.load_planar_16color(remaining_data, self.definitions[i].width, self.definitions[i].height, surface);
             self.bitmaps[i] = surface;
         }
     }
     fn deinit(self: *SpriteData) void {
         for (self.bitmaps) |ptr| {
-            SDL.freeSurface(ptr);
+            SDL.destroySurface(ptr);
         }
     }
 
-    pub fn setPixelFormat(self: *SpriteData, pixelformat: *SDL.PixelFormat) void {
+    pub fn setPalette(self: *SpriteData, palette: *SDL.Palette) void {
         for (0..SPRITECOUNT) |i| {
-            copypixelformat(self.bitmaps[i].format, pixelformat);
+            _ = SDL.setSurfacePalette(self.bitmaps[i], palette);
         }
     }
 };
 
-pub fn init(allocator: std.mem.Allocator, spritedata: []const u8, pixelformat: *SDL.PixelFormat) !void {
-    try sprites.init(allocator, spritedata, pixelformat);
+pub fn init(allocator: std.mem.Allocator, spritedata: []const u8, palette: *SDL.Palette) !void {
+    try sprites.init(allocator, spritedata, palette);
 }
 
 pub fn deinit() void {
@@ -123,44 +118,15 @@ pub fn deinit() void {
 }
 
 // FIXME: maybe we can have one big tile map surface just like we have one big font surface
-pub fn load_tile(data_slice: []const u8, pixelformat: *SDL.PixelFormat) !*SDL.Surface {
+pub fn load_tile(data_slice: []const u8, palette: *SDL.Palette) !*SDL.Surface {
     const width = 16;
     const height = 16;
-    const surface = try SDL.createRGBSurface(SDL.SWSURFACE, width, height, 8, 0, 0, 0, 0);
-    defer SDL.freeSurface(surface);
+    const surface = SDL.createSurface(width, height, SDL.PIXELFORMAT_INDEX8);
+    _ = SDL.setSurfacePalette(surface, palette);
+    defer SDL.destroySurface(surface);
 
-    copypixelformat(surface.*.format, pixelformat);
     _ = try image.load_planar_16color(data_slice, width, height, surface);
-    return try SDL.convertSurfaceFormat(surface, SDL.getWindowPixelFormat(window.window), 0);
-}
-
-fn copypixelformat(destformat: *SDL.PixelFormat, srcformat: *SDL.PixelFormat) void {
-    if (srcformat.palette != null) {
-        destformat.palette.*.ncolors = srcformat.palette.*.ncolors;
-        for (0..@intCast(destformat.palette.*.ncolors)) |i| {
-            destformat.palette.*.colors[i].r = srcformat.palette.*.colors[i].r;
-            destformat.palette.*.colors[i].g = srcformat.palette.*.colors[i].g;
-            destformat.palette.*.colors[i].b = srcformat.palette.*.colors[i].b;
-        }
-    }
-
-    destformat.BitsPerPixel = srcformat.BitsPerPixel;
-    destformat.BytesPerPixel = srcformat.BytesPerPixel;
-
-    destformat.Rloss = srcformat.Rloss;
-    destformat.Gloss = srcformat.Gloss;
-    destformat.Bloss = srcformat.Bloss;
-    destformat.Aloss = srcformat.Aloss;
-
-    destformat.Rshift = srcformat.Rshift;
-    destformat.Gshift = srcformat.Gshift;
-    destformat.Bshift = srcformat.Bshift;
-    destformat.Ashift = srcformat.Ashift;
-
-    destformat.Rmask = srcformat.Rmask;
-    destformat.Gmask = srcformat.Gmask;
-    destformat.Bmask = srcformat.Bmask;
-    destformat.Amask = srcformat.Amask;
+    return try SDL.convertSurface(surface, SDL.getWindowPixelFormat(window.window));
 }
 
 pub const SpriteCache = struct {
@@ -174,11 +140,11 @@ pub const SpriteCache = struct {
 
     allocator: std.mem.Allocator,
     hashmap: HashMap,
-    pixelformat: SDL.PixelFormatEnum,
+    pixelformat: SDL.PixelFormat,
 
     pub fn init(
         self: *SpriteCache,
-        pixelformat: SDL.PixelFormatEnum,
+        pixelformat: SDL.PixelFormat,
         allocator: std.mem.Allocator,
     ) !void {
         self.allocator = allocator;
@@ -194,10 +160,10 @@ pub const SpriteCache = struct {
     // Takes the original 16 color surface and gives you a render optimized surface
     // that is flipped the right way and has the flash effect applied.
     fn copysurface(self: *SpriteCache, original: *SDL.Surface, flip: bool, flash: bool) !*SDL.Surface {
-        const surface = try SDL.convertSurface(original, original.format, original.flags);
-        defer SDL.freeSurface(surface);
+        const surface = try SDL.duplicateSurface(original);
+        defer SDL.destroySurface(surface);
 
-        _ = SDL.setColorKey(surface, SDL.TRUE | SDL.RLEACCEL, 0); //Set transparent colour
+        _ = SDL.setSurfaceColorKey(surface, true, 0); //Set transparent colour
 
         const orig_pixels = @as([*]i8, @ptrCast(original.pixels));
         const pitch: usize = @intCast(original.pitch);
@@ -226,7 +192,7 @@ pub const SpriteCache = struct {
                 }
             }
         }
-        return try SDL.convertSurfaceFormat(surface, self.pixelformat, 0);
+        return try SDL.convertSurface(surface, self.pixelformat);
     }
 
     pub fn getSprite(self: *SpriteCache, key: Key) !*SDL.Surface {
@@ -244,7 +210,7 @@ pub const SpriteCache = struct {
         var index: u32 = 0;
         var iter = self.hashmap.iterator();
         while (iter.next()) |*entry| {
-            SDL.freeSurface(entry.value_ptr.*);
+            SDL.destroySurface(entry.value_ptr.*);
             index += 1;
         }
         self.hashmap.clearAndFree();

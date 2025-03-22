@@ -78,40 +78,45 @@ pub fn move_player(arg_context: *render.ScreenContext, arg_level: *lvl.Level) c_
 
     // TODO: move this to input.zig or some such place
     while (SDL.pollEvent(&event)) {
-        if (event.type == SDL.QUIT) {
-            return -1;
-        } else if (event.type == SDL.KEYDOWN) {
-            const key_press = event.key.keysym.scancode;
-            if (key_press == SDL.SCANCODE_G and game.settings.devmode) {
-                if (globals.GODMODE) {
-                    globals.GODMODE = false;
-                    globals.NOCLIP = false;
-                } else {
-                    globals.GODMODE = true;
-                }
-            } else if (key_press == SDL.SCANCODE_N and game.settings.devmode) {
-                if (globals.NOCLIP) {
-                    globals.NOCLIP = false;
-                } else {
-                    globals.NOCLIP = true;
-                    globals.GODMODE = true;
-                }
-            } else if (key_press == SDL.SCANCODE_D and game.settings.devmode) {
-                globals.DISPLAYLOOPTIME = !globals.DISPLAYLOOPTIME;
-            } else if (key_press == SDL.SCANCODE_Q) {
-                if ((mods & @as(c_uint, @bitCast(SDL.KMOD_ALT | SDL.KMOD_CTRL))) != 0) {
-                    _ = credits.credits_screen();
-                    if (level.*.extrabonus >= 10) {
-                        level.*.extrabonus -= 10;
-                        level.*.lives += 1;
+        switch(event.type) {
+            SDL.EVENT_QUIT => {
+                return -1;
+            },
+            SDL.EVENT_KEY_DOWN => {
+                const key_press = event.key.scancode;
+                if (key_press == SDL.SCANCODE_G and game.settings.devmode) {
+                    if (globals.GODMODE) {
+                        globals.GODMODE = false;
+                        globals.NOCLIP = false;
+                    } else {
+                        globals.GODMODE = true;
                     }
+                } else if (key_press == SDL.SCANCODE_N and game.settings.devmode) {
+                    if (globals.NOCLIP) {
+                        globals.NOCLIP = false;
+                    } else {
+                        globals.NOCLIP = true;
+                        globals.GODMODE = true;
+                    }
+                } else if (key_press == SDL.SCANCODE_D and game.settings.devmode) {
+                    globals.DISPLAYLOOPTIME = !globals.DISPLAYLOOPTIME;
+                } else if (key_press == SDL.SCANCODE_Q) {
+                    if ((mods & @as(c_uint, @bitCast(SDL.KMOD_ALT | SDL.KMOD_CTRL))) != 0) {
+                        _ = credits.credits_screen();
+                        if (level.*.extrabonus >= 10) {
+                            level.*.extrabonus -= 10;
+                            level.*.lives += 1;
+                        }
+                    }
+                } else if (key_press == SDL.SCANCODE_F11) {
+                    window.toggle_fullscreen();
+                } else if (key_press == SDL.SCANCODE_ESCAPE) {
+                    pause = true;
                 }
-            } else if (key_press == SDL.SCANCODE_F11) {
-                window.toggle_fullscreen();
-            } else if (key_press == SDL.SCANCODE_ESCAPE) {
-                pause = true;
-            }
+            },
+            else => {},
         }
+
     }
     if (pause) {
         retval = pause_menu.pauseMenu(context);

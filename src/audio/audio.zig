@@ -71,17 +71,22 @@ pub fn music_wait_to_finish() void {
         SDL.delay(1);
         var event: SDL.Event = undefined;
         while (SDL.pollEvent(&event)) {
-            if (event.type == SDL.QUIT) {
-                // FIXME: handle this better
-                //return TITUS_ERROR_QUIT;
-                return;
-            } else if (event.type == SDL.KEYDOWN) {
-                if (event.key.keysym.scancode == SDL.SCANCODE_ESCAPE) {
+            switch(event.type) {
+                SDL.EVENT_QUIT => {
                     // FIXME: handle this better
-                    // return TITUS_ERROR_QUIT;
+                    //return TITUS_ERROR_QUIT;
                     return;
-                }
+                },
+                SDL.EVENT_KEY_DOWN => {
+                    if (event.key.scancode == SDL.SCANCODE_ESCAPE) {
+                        // FIXME: handle this better
+                        // return TITUS_ERROR_QUIT;
+                        return;
+                    }
+                },
+                else => {}
             }
+
         }
         if (!engine.backend.?.isPlayingATrack()) {
             waiting = false;

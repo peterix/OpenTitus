@@ -1,37 +1,40 @@
 usingnamespace @cImport({
-    @cInclude("SDL2/SDL.h");
+    @cDefine("SDL_DISABLE_OLD_NAMES", {});
+    @cInclude("SDL3/SDL.h");
+    @cInclude("SDL3/SDL_revision.h");
+    // For programs that provide their own entry points instead of relying on SDL's main function
+    // macro magic, 'SDL_MAIN_HANDLED' should be defined before including 'SDL_main.h'.
+    @cDefine("SDL_MAIN_HANDLED", {});
+    @cInclude("SDL3/SDL_main.h");
 });
 
 pub const Surface = @This().SDL_Surface;
 pub const PixelFormat = @This().SDL_PixelFormat;
+pub const ScaleMode = @This().SDL_ScaleMode;
 
 pub const Palette = @This().SDL_Palette;
 pub const Color = @This().SDL_Color;
 pub const Window = @This().SDL_Window;
 pub const Renderer = @This().SDL_Renderer;
 pub const Rect = @This().SDL_Rect;
+pub const FRect = @This().SDL_FRect;
 pub const Keymod = @This().SDL_Keymod;
-
-pub const TRUE = @This().SDL_TRUE;
-pub const FALSE = @This().SDL_FALSE;
 
 // Event types
 pub const Event = @This().SDL_Event;
-pub const QUIT = @This().SDL_QUIT;
-pub const KEYDOWN = @This().SDL_KEYDOWN;
-pub const WINDOWEVENT = @This().SDL_WINDOWEVENT;
-pub const WINDOWEVENT_RESIZED = @This().SDL_WINDOWEVENT_RESIZED;
-pub const WINDOWEVENT_SIZE_CHANGED = @This().SDL_WINDOWEVENT_SIZE_CHANGED;
-pub const WINDOWEVENT_MAXIMIZED = @This().SDL_WINDOWEVENT_MAXIMIZED;
-pub const WINDOWEVENT_RESTORED = @This().SDL_WINDOWEVENT_RESTORED;
-pub const WINDOWEVENT_EXPOSED = @This().SDL_WINDOWEVENT_EXPOSED;
+pub const EVENT_QUIT = @This().SDL_EVENT_QUIT;
+pub const EVENT_KEY_DOWN = @This().SDL_EVENT_KEY_DOWN;
+pub const EVENT_WINDOW_RESIZED = @This().SDL_EVENT_WINDOW_RESIZED;
+pub const EVENT_WINDOW_PIXEL_SIZE_CHANGED = @This().SDL_EVENT_WINDOW_PIXEL_SIZE_CHANGED;
+pub const EVENT_WINDOW_MAXIMIZED = @This().SDL_EVENT_WINDOW_MAXIMIZED;
+pub const EVENT_WINDOW_RESTORED = @This().SDL_EVENT_WINDOW_RESTORED;
+pub const EVENT_WINDOW_EXPOSED = @This().SDL_EVENT_WINDOW_EXPOSED;
 
 // Blend modes
 pub const BlendMode = @This().SDL_BlendMode;
 pub const BLENDMODE_BLEND = @This().SDL_BLENDMODE_BLEND;
 
 // Pixel format enum
-pub const PixelFormatEnum = @This().SDL_PixelFormatEnum;
 pub const PIXELFORMAT_INDEX8 = @This().SDL_PIXELFORMAT_INDEX8;
 
 // Scancodes
@@ -58,18 +61,18 @@ pub const SCANCODE_N = @This().SDL_SCANCODE_N;
 pub const SCANCODE_Q = @This().SDL_SCANCODE_Q;
 pub const SCANCODE_E = @This().SDL_SCANCODE_E;
 
-pub const KMOD_ALT = @This().KMOD_ALT;
-pub const KMOD_CTRL = @This().KMOD_CTRL;
+pub const KMOD_ALT = @This().SDL_KMOD_ALT;
+pub const KMOD_CTRL = @This().SDL_KMOD_CTRL;
 
 // Window creation flags
-pub const WINDOW_FULLSCREEN_DESKTOP = @This().SDL_WINDOW_FULLSCREEN_DESKTOP;
+pub const WINDOW_OPENGL = @This().SDL_WINDOW_OPENGL;
+pub const WINDOW_FULLSCREEN = @This().SDL_WINDOW_FULLSCREEN;
 pub const WINDOW_RESIZABLE = @This().SDL_WINDOW_RESIZABLE;
 
 pub const WINDOWPOS_UNDEFINED = @This().SDL_WINDOWPOS_UNDEFINED;
 
 pub const RENDERER_ACCELERATED = @This().SDL_RENDERER_ACCELERATED;
 
-pub const SWSURFACE = @This().SDL_SWSURFACE;
 pub const RLEACCEL = @This().SDL_RLEACCEL;
 
 const std = @import("std");
@@ -154,7 +157,7 @@ fn sdl_free(maybe_ptr: ?*anyopaque) callconv(.C) void {
     }
 }
 
-pub fn init(allocator: Allocator) c_int {
+pub fn init(allocator: Allocator) bool {
     sdl_allocator = sdl_gpa.allocator();
     tracking_map = TrackingHashMap.init(allocator);
     sdl_allocations = std.AutoHashMap(usize, usize).init(allocator);
@@ -178,22 +181,34 @@ pub fn delay(ms: u32) void {
     @This().SDL_Delay(ms);
 }
 
-pub fn getTicks() u32 {
+pub fn getTicks() u64 {
     return @This().SDL_GetTicks();
 }
 
 // Surfaces
 
-pub fn freeSurface(surface: [*c]Surface) void {
+pub fn destroySurface(surface: [*c]Surface) void {
     if (tracking_map.remove(surface)) {
-        @This().SDL_FreeSurface(surface);
+        @This().SDL_DestroySurface(surface);
     } else {
-        std.log.err("freeSurface: DOUBLE FREE OF {*}", .{surface});
+        std.log.err("destroySurface: DOUBLE FREE OF {*}", .{surface});
     }
 }
 
-pub fn convertSurface(src: *Surface, fmt: *const PixelFormat, flags: u32) !*Surface {
-    const result = @This().SDL_ConvertSurface(src, fmt, flags);
+pub fn duplicateSurface(surface: [*c]Surface) !*Surface {
+    const result = @This().SDL_DuplicateSurface(surface);
+    if (result == null) {
+        return error.Failed;
+    }
+    if (tracking_map.remove(result)) {
+        std.log.err("duplicateSurface: surface was already tracked! {*}", .{result});
+    }
+    tracking_map.put(result, {}) catch {};
+    return result;
+}
+
+pub fn convertSurface(src: *Surface, pixel_format: PixelFormat) !*Surface {
+    const result = @This().SDL_ConvertSurface(src, pixel_format);
     if (result == null) {
         return error.Failed;
     }
@@ -204,90 +219,54 @@ pub fn convertSurface(src: *Surface, fmt: *const PixelFormat, flags: u32) !*Surf
     return result;
 }
 
-pub fn convertSurfaceFormat(src: *Surface, pixel_format: u32, flags: u32) !*Surface {
-    const result = @This().SDL_ConvertSurfaceFormat(src, pixel_format, flags);
-    if (result == null) {
-        return error.Failed;
-    }
+pub fn createSurface(width: c_int, height: c_int, format: u32) [*c]Surface {
+    const result = @This().SDL_CreateSurface(width, height, format);
     if (tracking_map.remove(result)) {
-        std.log.err("convertSurfaceFormat: surface was already tracked! {*}", .{result});
+        std.log.err("createSurface: surface was already tracked! {*}", .{result});
     }
     tracking_map.put(result, {}) catch {};
     return result;
 }
 
-pub fn createRGBSurface(flags: u32, width: c_int, height: c_int, depth: c_int, Rmask: u32, Gmask: u32, Bmask: u32, Amask: u32) !*Surface {
-    const result = @This().SDL_CreateRGBSurface(flags, width, height, depth, Rmask, Gmask, Bmask, Amask);
-    if (result == null) {
-        return error.Failed;
-    }
+pub const setSurfacePalette = @This().SDL_SetSurfacePalette;
+
+pub const createSurfacePalette = @This().SDL_CreateSurfacePalette;
+
+pub fn loadBMP_IO(src: ?*@This().SDL_IOStream, closeio: bool) [*c]@This().Surface {
+    const result = @This().SDL_LoadBMP_IO(src, closeio);
     if (tracking_map.remove(result)) {
-        std.log.err("SDL_CreateRGBSurface: surface was already tracked! {*}", .{result});
+        std.log.err("loadBMP_IO: surface was already tracked! {*}", .{result});
     }
     tracking_map.put(result, {}) catch {};
     return result;
 }
 
-pub fn createRGBSurfaceWithFormat(flags: u32, width: c_int, height: c_int, depth: c_int, format: u32) [*c]Surface {
-    const result = @This().SDL_CreateRGBSurfaceWithFormat(flags, width, height, depth, format);
-    if (tracking_map.remove(result)) {
-        std.log.err("createRGBSurfaceWithFormat: surface was already tracked! {*}", .{result});
-    }
-    tracking_map.put(result, {}) catch {};
-    return result;
-}
+pub const setSurfaceColorKey = @This().SDL_SetSurfaceColorKey;
 
-pub fn loadBMP_RW(src: [*c]@This().SDL_RWops, freesrc: c_int) [*c]@This().Surface {
-    const result = @This().SDL_LoadBMP_RW(src, freesrc);
-    if (tracking_map.remove(result)) {
-        std.log.err("loadBMP_RW: surface was already tracked! {*}", .{result});
-    }
-    tracking_map.put(result, {}) catch {};
-    return result;
-}
-
-pub fn setColorKey(surface: *Surface, flag: c_int, key: u32) c_int {
-    return @This().SDL_SetColorKey(surface, flag, key);
-}
-
-pub fn setSurfaceAlphaMod(surface: *Surface, alpha: u8) c_int {
+pub fn setSurfaceAlphaMod(surface: *Surface, alpha: u8) bool {
     return @This().SDL_SetSurfaceAlphaMod(surface, alpha);
 }
 
-pub fn setSurfaceBlendMode(surface: *Surface, blendMode: BlendMode) c_int {
+pub fn setSurfaceBlendMode(surface: *Surface, blendMode: BlendMode) bool {
     return @This().SDL_SetSurfaceBlendMode(surface, blendMode);
 }
 
 // Getting errors
 
-pub fn getError() [*c]const u8 {
-    return @This().SDL_GetError();
-}
-
-pub fn getErrorMsg(errstr: [*c]u8, maxlen: c_int) [*c]u8 {
-    return @This().SDL_GetErrorMsg(errstr, maxlen);
+pub fn getError() []const u8 {
+    return std.mem.span(@This().SDL_GetError());
 }
 
 // drawing
 
-pub fn mapRGB(format: [*c]const PixelFormat, r: u8, g: u8, b: u8) u32 {
-    return @This().SDL_MapRGB(format, r, g, b);
-}
+pub const mapSurfaceRGB = @This().SDL_MapSurfaceRGB;
 
-pub fn fillRect(dst: [*c]Surface, rect: [*c]const Rect, color: u32) c_int {
-    return @This().SDL_FillRect(dst, rect, color);
-}
-
-pub fn blitSurface(src: [*c]Surface, srcrect: [*c]const Rect, dst: [*c]Surface, dstrect: [*c]Rect) c_int {
-    return @This().SDL_BlitSurface(src, srcrect, dst, dstrect);
-}
+pub const fillSurfaceRect = @This().SDL_FillSurfaceRect;
+pub const blitSurface = @This().SDL_BlitSurface;
 
 // Event loop
 
-pub fn pollEvent(event: *Event) bool {
-    return @This().SDL_PollEvent(event) == 1;
-}
-
+pub const pollEvent = @This().SDL_PollEvent;
 pub const pumpEvents = @This().SDL_PumpEvents;
 
 pub fn getKeyboardState() []const u8 {
@@ -302,34 +281,31 @@ pub fn getModState() Keymod {
 
 // Window and final render
 
-pub fn createWindow(title: [*c]const u8, x: c_int, y: c_int, w: c_int, h: c_int, flags: u32) ?*Window {
-    return @This().SDL_CreateWindow(title, x, y, w, h, flags);
-}
-
+pub const createWindow = @This().SDL_CreateWindow;
 pub const destroyWindow = @This().SDL_DestroyWindow;
 
-pub fn setWindowMinimumSize(window: ?*Window, min_w: c_int, min_h: c_int) void {
-    @This().SDL_SetWindowMinimumSize(window, min_w, min_h);
+pub fn setWindowMinimumSize(window: ?*Window, min_w: c_int, min_h: c_int) bool {
+    return @This().SDL_SetWindowMinimumSize(window, min_w, min_h);
 }
 
-pub fn setWindowFullscreen(window: ?*Window, flags: u32) c_int {
-    return @This().SDL_SetWindowFullscreen(window, flags);
-}
+pub const setWindowFullscreen = @This().SDL_SetWindowFullscreen;
 
 pub const getWindowPixelFormat = @This().SDL_GetWindowPixelFormat;
 
 pub const createRenderer = @This().SDL_CreateRenderer;
 pub const destroyRenderer = @This().SDL_DestroyRenderer;
 
-pub const renderSetLogicalSize = @This().SDL_RenderSetLogicalSize;
+pub const LOGICAL_PRESENTATION_LETTERBOX = @This().SDL_LOGICAL_PRESENTATION_LETTERBOX;
+pub const setRenderLogicalPresentation = @This().SDL_SetRenderLogicalPresentation;
 pub const setRenderDrawColor = @This().SDL_SetRenderDrawColor;
 pub const createTextureFromSurface = @This().SDL_CreateTextureFromSurface;
+pub const setTextureScaleMode = @This().SDL_SetTextureScaleMode;
 pub const destroyTexture = @This().SDL_DestroyTexture;
 
 pub const renderClear = @This().SDL_RenderClear;
-pub const renderCopy = @This().SDL_RenderCopy;
+pub const renderTexture = @This().SDL_RenderTexture;
 pub const renderPresent = @This().SDL_RenderPresent;
 
 // IO
 
-pub const RWFromMem = @This().SDL_RWFromMem;
+pub const IOFromMem = @This().SDL_IOFromMem;

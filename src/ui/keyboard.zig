@@ -35,38 +35,36 @@ pub fn waitforbutton() c_int {
     var waiting: c_int = 1;
     while (waiting > 0) {
         if (SDL.pollEvent(&event)) {
-            if (event.type == SDL.QUIT)
-                waiting = -1;
-
-            if (event.type == SDL.KEYDOWN) {
-                switch (event.key.keysym.scancode) {
-                    SDL.SCANCODE_RETURN,
-                    SDL.SCANCODE_KP_ENTER,
-                    SDL.SCANCODE_SPACE,
-                    SDL.SCANCODE_ESCAPE,
-                    => {
-                        waiting = 0;
-                    },
-                    SDL.SCANCODE_F11 => {
-                        window.toggle_fullscreen();
-                    },
-                    else => {
-                        // NOOP
-                    },
-                }
-            }
-            if (event.type == SDL.WINDOWEVENT) {
-                switch (event.window.event) {
-                    SDL.WINDOWEVENT_RESIZED,
-                    SDL.WINDOWEVENT_SIZE_CHANGED,
-                    SDL.WINDOWEVENT_MAXIMIZED,
-                    SDL.WINDOWEVENT_RESTORED,
-                    SDL.WINDOWEVENT_EXPOSED,
-                    => {
-                        window.window_render();
-                    },
-                    else => {},
-                }
+            switch (event.type) {
+                SDL.EVENT_QUIT => {
+                    waiting = -1;
+                },
+                SDL.EVENT_KEY_DOWN => {
+                    switch (event.key.scancode) {
+                        SDL.SCANCODE_RETURN,
+                        SDL.SCANCODE_KP_ENTER,
+                        SDL.SCANCODE_SPACE,
+                        SDL.SCANCODE_ESCAPE,
+                        => {
+                            waiting = 0;
+                        },
+                        SDL.SCANCODE_F11 => {
+                            window.toggle_fullscreen();
+                        },
+                        else => {
+                            // NOOP
+                        },
+                    }
+                },
+                SDL.EVENT_WINDOW_RESIZED,
+                SDL.EVENT_WINDOW_PIXEL_SIZE_CHANGED,
+                SDL.EVENT_WINDOW_MAXIMIZED,
+                SDL.EVENT_WINDOW_RESTORED,
+                SDL.EVENT_WINDOW_EXPOSED,
+                => {
+                    window.window_render();
+                },
+                else => {},
             }
         }
         SDL.delay(1);

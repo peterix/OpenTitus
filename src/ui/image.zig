@@ -36,7 +36,7 @@ pub const ManagedSurface = struct {
     const Self = @This();
 
     pub fn deinit(self: *Self) void {
-        SDL.freeSurface(self.value);
+        SDL.destroySurface(self.value);
     }
 
     pub fn dump(self: *Self, filename: [:0]const u8) !void {
@@ -115,10 +115,9 @@ pub fn loadImage(data: []const u8, format: ImageFormat, allocator: std.mem.Alloc
     defer allocator.free(data);
 
     // FIXME: handle this returning null
-    const surface = try SDL.createRGBSurface(SDL.SWSURFACE, 320, 200, 8, 0, 0, 0, 0);
-    defer SDL.freeSurface(surface);
-    // FIXME: handle palette being null
-    const palette = surface.*.format.*.palette;
+    const surface = SDL.createSurface(320, 200, SDL.PIXELFORMAT_INDEX8);
+    defer SDL.destroySurface(surface);
+    const palette = SDL.createSurfacePalette(surface);
 
     switch (format) {
         .PlanarGreyscale16 => {
@@ -156,7 +155,7 @@ pub fn loadImage(data: []const u8, format: ImageFormat, allocator: std.mem.Alloc
             @memcpy(slice_out, slice_in);
         },
     }
-    return ManagedSurface{ .value = try SDL.convertSurfaceFormat(surface, SDL.getWindowPixelFormat(window.window), 0) };
+    return ManagedSurface{ .value = try SDL.convertSurface(surface, SDL.getWindowPixelFormat(window.window)) };
 }
 
 pub const DisplayMode = enum(c_int) {
@@ -165,7 +164,7 @@ pub const DisplayMode = enum(c_int) {
 };
 
 pub fn viewImageFile(file: ImageFile, display_mode: DisplayMode, delay: c_int, allocator: std.mem.Allocator) !c_int {
-    const fade_time: c_uint = 1000;
+    const fade_time = 1000;
 
     const image_data = try sqz.unSQZ(file.filename, allocator);
     var image_memory = try loadImage(image_data, file.format, allocator);
@@ -187,28 +186,28 @@ pub fn viewImageFile(file: ImageFile, display_mode: DisplayMode, delay: c_int, a
     switch (display_mode) {
         .FadeInFadeOut => {
             var tick_start = SDL.getTicks();
-            var image_alpha: c_uint = 0;
+            var image_alpha: u64 = 0;
             var activedelay = true;
-            var fadeoutskip: c_uint = 0;
+            var fadeoutskip: u64 = 0;
             while ((image_alpha < 255) and activedelay) //Fade to visible
             {
                 var event: SDL.Event = undefined;
                 while (SDL.pollEvent(&event)) {
-                    if (event.type == SDL.QUIT) {
+                    if (event.type == SDL.EVENT_QUIT) {
                         return (-1);
                     }
 
-                    if (event.type == SDL.KEYDOWN) {
-                        if (event.key.keysym.scancode == SDL.SCANCODE_RETURN or
-                            event.key.keysym.scancode == SDL.SCANCODE_KP_ENTER or
-                            event.key.keysym.scancode == SDL.SCANCODE_SPACE or
-                            event.key.keysym.scancode == SDL.SCANCODE_ESCAPE)
+                    if (event.type == SDL.EVENT_KEY_DOWN) {
+                        if (event.key.scancode == SDL.SCANCODE_RETURN or
+                            event.key.scancode == SDL.SCANCODE_KP_ENTER or
+                            event.key.scancode == SDL.SCANCODE_SPACE or
+                            event.key.scancode == SDL.SCANCODE_ESCAPE)
                         {
                             activedelay = false;
                             fadeoutskip = 255 - image_alpha;
                         }
 
-                        if (event.key.keysym.scancode == SDL.SCANCODE_F11) {
+                        if (event.key.scancode == SDL.SCANCODE_F11) {
                             window.toggle_fullscreen();
                         }
                     }
@@ -231,35 +230,34 @@ pub fn viewImageFile(file: ImageFile, display_mode: DisplayMode, delay: c_int, a
             {
                 var event: SDL.Event = undefined;
                 while (SDL.pollEvent(&event)) {
-                    if (event.type == SDL.QUIT) {
-                        return (-1);
-                    }
+                    switch(event.type)
+                    {
+                        SDL.EVENT_QUIT => {
+                            return (-1);
+                        },
 
-                    if (event.type == SDL.KEYDOWN) {
-                        if (event.key.keysym.scancode == SDL.SCANCODE_RETURN or
-                            event.key.keysym.scancode == SDL.SCANCODE_KP_ENTER or
-                            event.key.keysym.scancode == SDL.SCANCODE_SPACE or
-                            event.key.keysym.scancode == SDL.SCANCODE_ESCAPE)
-                            activedelay = false;
+                        SDL.EVENT_KEY_DOWN => {
+                            if (event.key.scancode == SDL.SCANCODE_RETURN or
+                                event.key.scancode == SDL.SCANCODE_KP_ENTER or
+                                event.key.scancode == SDL.SCANCODE_SPACE or
+                                event.key.scancode == SDL.SCANCODE_ESCAPE)
+                                activedelay = false;
 
-                        if (event.key.keysym.scancode == SDL.SCANCODE_F11) {
-                            window.toggle_fullscreen();
-                        }
-                    }
+                            if (event.key.scancode == SDL.SCANCODE_F11) {
+                                window.toggle_fullscreen();
+                            }
+                        },
 
-                    if (event.type == SDL.WINDOWEVENT) {
-                        switch (event.window.event) {
-                            SDL.WINDOWEVENT_RESIZED,
-                            SDL.WINDOWEVENT_SIZE_CHANGED,
-                            SDL.WINDOWEVENT_MAXIMIZED,
-                            SDL.WINDOWEVENT_RESTORED,
-                            SDL.WINDOWEVENT_EXPOSED,
-                            => {
-                                window.window_render();
-                            },
+                        SDL.EVENT_WINDOW_RESIZED,
+                        SDL.EVENT_WINDOW_PIXEL_SIZE_CHANGED,
+                        SDL.EVENT_WINDOW_MAXIMIZED,
+                        SDL.EVENT_WINDOW_RESTORED,
+                        SDL.EVENT_WINDOW_EXPOSED,
+                        => {
+                            window.window_render();
+                        },
 
-                            else => {},
-                        }
+                        else => {},
                     }
                 }
                 SDL.delay(1);
@@ -274,14 +272,17 @@ pub fn viewImageFile(file: ImageFile, display_mode: DisplayMode, delay: c_int, a
             while (image_alpha < 255) {
                 var event: SDL.Event = undefined;
                 while (SDL.pollEvent(&event)) {
-                    if (event.type == SDL.QUIT) {
-                        return (-1);
-                    }
+                    switch (event.type) {
+                        SDL.EVENT_QUIT => {
+                            return (-1);
+                        },
 
-                    if (event.type == SDL.KEYDOWN) {
-                        if (event.key.keysym.scancode == SDL.SCANCODE_F11) {
-                            window.toggle_fullscreen();
-                        }
+                        SDL.EVENT_KEY_DOWN => {
+                            if (event.key.scancode == SDL.SCANCODE_F11) {
+                                window.toggle_fullscreen();
+                            }
+                        },
+                        else => {}
                     }
                 }
 
@@ -299,7 +300,7 @@ pub fn viewImageFile(file: ImageFile, display_mode: DisplayMode, delay: c_int, a
             }
         },
         .FadeOut => {
-            var image_alpha: c_uint = 0;
+            var image_alpha: u64 = 0;
 
             window.window_clear(null);
             _ = SDL.blitSurface(image_surface, &src, window.screen, &dest);
@@ -315,12 +316,12 @@ pub fn viewImageFile(file: ImageFile, display_mode: DisplayMode, delay: c_int, a
             {
                 var event: SDL.Event = undefined;
                 while (SDL.pollEvent(&event)) {
-                    if (event.type == SDL.QUIT) {
+                    if (event.type == SDL.EVENT_QUIT) {
                         return (-1);
                     }
 
-                    if (event.type == SDL.KEYDOWN) {
-                        if (event.key.keysym.scancode == SDL.SCANCODE_F11) {
+                    if (event.type == SDL.EVENT_KEY_DOWN) {
+                        if (event.key.scancode == SDL.SCANCODE_F11) {
                             window.toggle_fullscreen();
                         }
                     }

@@ -59,11 +59,11 @@ const WindowError = error{
 pub fn toggle_fullscreen() void {
     if (!game.settings.fullscreen) {
         // FIXME: process error.
-        _ = SDL.setWindowFullscreen(window, SDL.WINDOW_FULLSCREEN_DESKTOP);
+        _ = SDL.setWindowFullscreen(window, true);
         game.settings.fullscreen = true;
     } else {
         // FIXME: process error.
-        _ = SDL.setWindowFullscreen(window, 0);
+        _ = SDL.setWindowFullscreen(window, false);
         game.settings.fullscreen = false;
     }
 }
@@ -73,12 +73,12 @@ pub fn window_init() !void {
     const w: c_int = game.settings.window_width;
     const h: c_int = game.settings.window_height;
     if (game.settings.fullscreen) {
-        windowflags = SDL.WINDOW_FULLSCREEN_DESKTOP;
+        windowflags = SDL.WINDOW_FULLSCREEN | SDL.WINDOW_OPENGL;
     } else {
-        windowflags = SDL.WINDOW_RESIZABLE;
+        windowflags = SDL.WINDOW_RESIZABLE | SDL.WINDOW_OPENGL;
     }
 
-    window = SDL.createWindow(getGameTitle(), SDL.WINDOWPOS_UNDEFINED, SDL.WINDOWPOS_UNDEFINED, w, h, windowflags);
+    window = SDL.createWindow(getGameTitle(), w, h, windowflags);
     if (window == null) {
         std.debug.print("Unable to create window: {s}\n", .{SDL.getError()});
         return WindowError.CannotCreateWindow;
@@ -87,9 +87,9 @@ pub fn window_init() !void {
         SDL.destroyWindow(window);
         window = null;
     }
-    SDL.setWindowMinimumSize(window, game_width, game_height);
+    _ = SDL.setWindowMinimumSize(window, game_width, game_height);
 
-    renderer = SDL.createRenderer(window, -1, SDL.RENDERER_ACCELERATED);
+    renderer = SDL.createRenderer(window, null);
     if (renderer == null) {
         std.debug.print("Unable to set video mode: {s}\n", .{SDL.getError()});
         return WindowError.CannotSetDisplayMode;
@@ -99,29 +99,30 @@ pub fn window_init() !void {
         renderer = null;
     }
 
-    screen = SDL.createRGBSurfaceWithFormat(0, game_width, game_height, 32, SDL.getWindowPixelFormat(window));
+    const pixelFormat = SDL.getWindowPixelFormat(window);
+    screen = SDL.createSurface(game_width, game_height, pixelFormat);
     if (screen == null) {
         std.debug.print("Unable to create screen surface: {s}\n", .{SDL.getError()});
         return WindowError.Other;
     }
     errdefer {
-        SDL.freeSurface(screen);
+        SDL.destroySurface(screen);
         screen = null;
     }
-    black = SDL.mapRGB(screen.?.*.format, 0, 0, 0);
+    black = SDL.mapSurfaceRGB(screen, 0, 0, 0);
 
-    if (SDL.renderSetLogicalSize(renderer, game_width, game_height) != 0) {
+    if (!SDL.setRenderLogicalPresentation(renderer, game_width, game_height, SDL.LOGICAL_PRESENTATION_LETTERBOX)) {
         return WindowError.Other;
     }
 
-    if (SDL.setRenderDrawColor(renderer, 0, 0, 0, 255) != 0) {
+    if (!SDL.setRenderDrawColor(renderer, 0, 0, 0, 255)) {
         return WindowError.Other;
     }
 }
 
 pub fn window_clear(rect: [*c]SDL.Rect) void {
     // FIXME: process error.
-    _ = SDL.fillRect(screen, rect, black);
+    _ = SDL.fillSurfaceRect(screen, rect, black);
 }
 
 pub fn window_render() void {
@@ -129,16 +130,17 @@ pub fn window_render() void {
         return;
     }
     const frame = SDL.createTextureFromSurface(renderer, screen);
+    _ = SDL.setTextureScaleMode(frame, 0);
     // FIXME: process error.
     _ = SDL.renderClear(renderer);
-    var rect = SDL.Rect{
+    var rect = SDL.FRect{
         .x = 0,
         .y = 0,
         .w = game_width,
         .h = game_height,
     };
     // FIXME: process error.
-    _ = SDL.renderCopy(renderer, frame, &rect, &rect);
-    SDL.renderPresent(renderer);
+    _ = SDL.renderTexture(renderer, frame, &rect, &rect);
+    _ = SDL.renderPresent(renderer);
     SDL.destroyTexture(frame);
 }

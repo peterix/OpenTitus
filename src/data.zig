@@ -299,38 +299,11 @@ var titus_colors: [16]SDL.Color = .{
     .{ .r = 8 * 4, .g = 8 * 4, .b = 24 * 4, .a = 255 },
 };
 
-var titus_palette = SDL.Palette{
+pub var titus_palette = SDL.Palette{
     .ncolors = 16,
     .version = 0,
     .refcount = 1,
     .colors = &titus_colors,
-};
-
-pub var titus_pixelformat = SDL.PixelFormat{
-    .format = SDL.PIXELFORMAT_INDEX8,
-    .palette = &titus_palette,
-    .padding = .{ 0, 0 },
-
-    .BitsPerPixel = 8,
-    .BytesPerPixel = 1,
-
-    .Rloss = 0,
-    .Gloss = 0,
-    .Bloss = 0,
-    .Aloss = 0,
-
-    .Rshift = 0,
-    .Gshift = 0,
-    .Bshift = 0,
-    .Ashift = 0,
-
-    .Rmask = 0,
-    .Gmask = 0,
-    .Bmask = 0,
-    .Amask = 0,
-
-    .refcount = 0,
-    .next = null,
 };
 
 //Object flags:

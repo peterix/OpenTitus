@@ -119,15 +119,15 @@ pub fn play(context: *ScreenContext, level: *lvl.Level) c_int {
         var event: SDL.Event = undefined;
         //Check all events
         while (SDL.pollEvent(&event)) {
-            if (event.type == SDL.QUIT) {
+            if (event.type == SDL.EVENT_QUIT) {
                 return -1; //c.TITUS_ERROR_QUIT;
-            } else if (event.type == SDL.KEYDOWN) {
-                if (event.key.keysym.scancode == SDL.SCANCODE_F11) {
+            } else if (event.type == SDL.EVENT_KEY_DOWN) {
+                if (event.key.scancode == SDL.SCANCODE_F11) {
                     window.toggle_fullscreen();
-                } else if (event.key.keysym.scancode == SDL.SCANCODE_RETURN or
-                    event.key.keysym.scancode == SDL.SCANCODE_KP_ENTER or
-                    event.key.keysym.scancode == SDL.SCANCODE_SPACE or
-                    event.key.keysym.scancode == SDL.SCANCODE_ESCAPE)
+                } else if (event.key.scancode == SDL.SCANCODE_RETURN or
+                    event.key.scancode == SDL.SCANCODE_KP_ENTER or
+                    event.key.scancode == SDL.SCANCODE_SPACE or
+                    event.key.scancode == SDL.SCANCODE_ESCAPE)
                 {
                     pass = true;
                     break;

@@ -32,6 +32,12 @@ const LazyPath = std.Build.LazyPath;
 const C_STANDARD = std.Build.CStd.C11;
 
 fn build_game(b: *std.Build, name: []const u8, target: ResolvedTarget, optimize: std.builtin.Mode) *Step.Compile {
+    const sdl_dep = b.dependency("sdl", .{
+        .target = target,
+        .optimize = optimize,
+    });
+    const sdl_lib = sdl_dep.artifact("SDL3");
+
     const exe = b.addExecutable(.{
         .name = name,
         .root_source_file = b.path("main.zig"),
@@ -57,9 +63,8 @@ fn build_game(b: *std.Build, name: []const u8, target: ResolvedTarget, optimize:
     exe.addIncludePath(b.path("src/audio/pocketmod/"));
 
     exe.linkLibC();
+    exe.linkLibrary(sdl_lib);
     exe.linkSystemLibrary("m");
-    exe.linkSystemLibrary("SDL2");
-    exe.linkSystemLibrary("SDL2main");
 
     const game_tests = b.addTest(.{
         .root_source_file = b.path("main.zig"),
@@ -79,9 +84,8 @@ fn build_game(b: *std.Build, name: []const u8, target: ResolvedTarget, optimize:
     game_tests.addIncludePath(b.path("src/audio/pocketmod/"));
 
     game_tests.linkLibC();
+    game_tests.linkLibrary(sdl_lib);
     game_tests.linkSystemLibrary("m");
-    game_tests.linkSystemLibrary("SDL2");
-    game_tests.linkSystemLibrary("SDL2main");
 
     const run_game_tests = b.addRunArtifact(game_tests);
 
