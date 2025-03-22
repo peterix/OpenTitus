@@ -120,6 +120,12 @@ pub fn window_init() !void {
     }
 }
 
+pub fn window_deinit() void {
+    if (screen != null) {
+        SDL.destroySurface(screen);
+    }
+}
+
 pub fn window_clear(rect: [*c]SDL.Rect) void {
     // FIXME: process error.
     _ = SDL.fillSurfaceRect(screen, rect, black);

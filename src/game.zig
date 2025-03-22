@@ -107,6 +107,7 @@ pub fn run() !u8 {
     defer SDL.deinit();
 
     try window.window_init();
+    defer window.window_deinit();
 
     try audio.engine.init(allocator);
     defer audio.engine.deinit();

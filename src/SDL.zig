@@ -82,7 +82,7 @@ const TrackingHashMap = std.AutoHashMap(*Surface, void);
 
 var tracking_map: TrackingHashMap = undefined;
 
-const sdl_gpa_type = std.heap.GeneralPurposeAllocator(.{ .retain_metadata = true, .never_unmap = true });
+const sdl_gpa_type = std.heap.GeneralPurposeAllocator(.{ .retain_metadata = true, .never_unmap = true, .stack_trace_frames = 10 });
 var sdl_gpa = sdl_gpa_type{};
 var sdl_allocator: std.mem.Allocator = undefined;
 var sdl_allocations: ?std.AutoHashMap(usize, usize) = null;
