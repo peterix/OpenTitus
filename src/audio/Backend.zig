@@ -35,7 +35,7 @@ pub const BackendType = enum(u8) {
     Amiga,
     PCSpeaker,
 
-    pub const NameTable = [@typeInfo(BackendType).Enum.fields.len][]const u8{
+    pub const NameTable = [@typeInfo(BackendType).@"enum".fields.len][]const u8{
         "Silence",
         "AdLib",
         "Amiga",

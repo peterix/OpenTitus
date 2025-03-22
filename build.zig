@@ -117,8 +117,8 @@ pub fn build(b: *std.Build) void {
     // This declares intent for the library to be installed into the standard
     // location when the user invokes the "install" step (the default step when
     // running `zig build`).
-    const wf = b.addWriteFiles();
-    wf.addCopyFileToSource(game.getEmittedBin(), "bin/moktar/openmoktar");
-    wf.addCopyFileToSource(game.getEmittedBin(), "bin/titus/opentitus");
-    b.getInstallStep().dependOn(&wf.step);
+    const copy_step = b.addUpdateSourceFiles();
+    copy_step.addCopyFileToSource(game.getEmittedBin(), "bin/moktar/openmoktar");
+    copy_step.addCopyFileToSource(game.getEmittedBin(), "bin/titus/opentitus");
+    b.getInstallStep().dependOn(&copy_step.step);
 }

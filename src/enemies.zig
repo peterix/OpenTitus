@@ -42,7 +42,7 @@ const lvl = @import("level.zig");
 const audio = @import("audio/audio.zig");
 
 // FIXME: zig changes the type of the result when you call @abs. That's probably correct, but it's annoying. This keeps the type the same.
-pub inline fn myabs(a: anytype) @TypeOf(a) {
+pub inline fn abs(a: anytype) @TypeOf(a) {
     if (a < 0)
         return -a;
     return a;
@@ -73,11 +73,11 @@ fn ai_noclip_walk(level: *lvl.Level, enemy: *lvl.Enemy) void {
         return;
     }
     enemySprite.x -= enemySprite.speed_x; //Move the enemy
-    if (myabs(enemySprite.x - enemy.center_x) > enemy.range_x) { //If the enemy is range_x from center, turn direction
+    if (abs(enemySprite.x - enemy.center_x) > enemy.range_x) { //If the enemy is range_x from center, turn direction
         if (enemySprite.x >= enemy.center_x) { //The enemy is at rightmost edge
-            enemySprite.speed_x = myabs(enemySprite.speed_x);
+            enemySprite.speed_x = abs(enemySprite.speed_x);
         } else { //The enemy is at leftmost edge
-            enemySprite.speed_x = -myabs(enemySprite.speed_x);
+            enemySprite.speed_x = -abs(enemySprite.speed_x);
         }
     }
 }
@@ -109,11 +109,11 @@ fn ai_shoot(level: *lvl.Level, enemy: *lvl.Enemy) void {
             if (enemy.counter != 0) {
                 return;
             }
-            if (myabs(level.player.sprite.y - enemySprite.y) > 24) {
+            if (abs(level.player.sprite.y - enemySprite.y) > 24) {
                 return;
             }
             // if too far apart
-            if (enemy.range_x < myabs(level.player.sprite.x - enemySprite.x)) {
+            if (enemy.range_x < abs(level.player.sprite.x - enemySprite.x)) {
                 return;
             }
             if (enemy.direction != 0) {
@@ -149,182 +149,208 @@ fn ai_shoot(level: *lvl.Level, enemy: *lvl.Enemy) void {
     }
 }
 
+fn ai_jumping_fish(level: *lvl.Level, enemy: *lvl.Enemy) void {
+    if (enemy.dying != 0) {
+        DEAD1(level, enemy);
+        return;
+    }
+
+    const enemySprite = &enemy.sprite;
+    switch (enemy.phase) {
+        0 => {
+            // Move the enemy
+            enemySprite.x -= enemySprite.speed_x;
+            // If the enemy is range_x from center, turn direction
+            if (abs(enemySprite.x - enemy.center_x) > enemy.range_x) {
+                if (enemySprite.x >= enemy.center_x) {
+                    enemySprite.speed_x = abs(enemySprite.speed_x);
+                } else {
+                    enemySprite.speed_x = -abs(enemySprite.speed_x);
+                }
+            }
+            if (!enemy.visible) {
+                return;
+            }
+            // Skip if player is below or >= 256 pixels above
+            if (enemySprite.y < level.player.sprite.y or enemySprite.y >= level.player.sprite.y + 256) {
+                return;
+            }
+            // Skip if player is above jump limit
+            if (enemy.range_y < enemySprite.y - level.player.sprite.y) {
+                return;
+            }
+            // see if the hero is in the direction of movement of fish
+            if (enemySprite.x > level.player.sprite.x) {
+                // The enemy is right for the player
+                if (enemySprite.flipped) {
+                    // The enemy looks right, skip
+                    return;
+                }
+            } else {
+                // The enemy is left for the player
+                if (!enemySprite.flipped) {
+                    // The enemy looks left, skip
+                    return;
+                }
+            }
+            // Fast calculation
+            if (abs(enemySprite.x - level.player.sprite.x) >= 48) {
+                return;
+            }
+            // See if the hero is outside the area of fish
+            if (abs(level.player.sprite.x - enemy.center_x) > enemy.range_x) {
+                return;
+            }
+            enemy.phase = 1; // Change state
+            enemySprite.speed_y = 0;
+            // Calculation speed to the desired height
+            // Make sure the enemy will jump high enough to hit the player
+            var j: c_int = 0;
+            while (true) {
+                enemySprite.speed_y += 1;
+                j += enemySprite.speed_y;
+                if ((enemySprite.y - level.player.sprite.y) <= j)
+                    break;
+            }
+            // Init speed must be negative
+            enemySprite.speed_y = -enemySprite.speed_y;
+            enemy.saved_y = enemySprite.y;
+            UP_ANIMATION(enemySprite);
+        },
+        1 => {
+            // Is the enemy on the screen?
+            if (!enemy.visible) {
+                return;
+            }
+            enemySprite.x -= enemySprite.speed_x << 2;
+            enemySprite.y += enemySprite.speed_y;
+            if (enemySprite.speed_y + 1 < 0) {
+                enemySprite.speed_y += 1;
+                if (enemySprite.y > (enemy.saved_y -% @as(i16, @intCast(enemy.range_y)))) {
+                    return;
+                }
+            }
+            UP_ANIMATION(enemySprite);
+            enemy.phase = 2;
+            enemySprite.speed_y = 0;
+            if (enemySprite.x <= enemy.center_x) {
+                enemySprite.speed_x = abs(enemySprite.speed_x);
+            } else {
+                enemySprite.speed_x = -abs(enemySprite.speed_x);
+            }
+        },
+        2 => {
+            // Is the enemy on the screen?
+            if (!enemy.visible) {
+                return;
+            }
+            enemySprite.x -= enemySprite.speed_x;
+            enemySprite.y += enemySprite.speed_y; // 2: fall!
+            enemySprite.speed_y += 1;
+            // 3: we hit bottom?
+            if (enemySprite.y < enemy.saved_y) {
+                return;
+            }
+            enemySprite.y = enemy.saved_y;
+            enemySprite.x -= enemySprite.speed_x;
+            enemy.phase = 0;
+            DOWN_ANIMATION(enemySprite);
+            DOWN_ANIMATION(enemySprite);
+        },
+        else => {},
+    }
+}
+
+fn ai_swooping_fly(level: *lvl.Level, enemy: *lvl.Enemy) void {
+    if (enemy.dying != 0) {
+        DEAD1(level, enemy);
+        return;
+    }
+    const enemySprite = &enemy.sprite;
+
+    // Move the enemy
+    enemySprite.x -= enemySprite.speed_x;
+
+    // If the enemy is range_x from center, turn direction
+    if (abs(enemySprite.x - enemy.center_x) > enemy.range_x) {
+        if (enemySprite.x >= enemy.center_x) {
+            enemySprite.speed_x = abs(enemySprite.speed_x);
+        } else {
+            enemySprite.speed_x = 0 - abs(enemySprite.speed_x);
+        }
+    }
+    if (!enemy.visible) {
+        return;
+    }
+    switch (enemy.phase) {
+        0 => {
+            // Forward
+            if (abs(enemySprite.y - level.player.sprite.y) > enemy.range_y) { // Too far away
+                return;
+            }
+            if (abs(enemySprite.x - level.player.sprite.x) > 40) { // Too far away
+                return;
+            }
+            enemy.saved_y = enemySprite.y;
+            if (enemySprite.y < level.player.sprite.y) { // Player is below the enemy
+                enemySprite.speed_y = 2;
+            } else { // Player is above the enemy
+                enemySprite.speed_y = @as(i16, @bitCast(@as(c_short, @truncate(-2))));
+            }
+            enemy.phase = 1; // Change state
+            UP_ANIMATION(enemySprite);
+        },
+        1 => {
+            // Attack
+            enemySprite.y += enemySprite.speed_y;
+            if (abs(enemySprite.y - enemy.saved_y) < enemy.range_y) {
+                return;
+            }
+            enemySprite.speed_y = 0 - enemySprite.speed_y;
+            UP_ANIMATION(enemySprite);
+            enemy.phase = 2;
+        },
+        2 => {
+            // Back up!
+            enemySprite.y += enemySprite.speed_y;
+            if (enemySprite.y != enemy.saved_y) {
+                return;
+            }
+            DOWN_ANIMATION(enemySprite);
+            DOWN_ANIMATION(enemySprite);
+            enemy.phase = 0;
+        },
+        else => {},
+    }
+}
+
 pub fn moveEnemies(level: *lvl.Level) void {
-    var j: c_int = undefined;
-    _ = &j;
     for (&level.enemy) |*enemy| {
         const enemySprite = &enemy.sprite;
         if (!enemySprite.enabled) {
             continue;
         }
         switch (enemy.type) {
-            //Noclip walk
             0, 1 => ai_noclip_walk(level, enemy),
-            //Shoot
             2 => ai_shoot(level, enemy),
-            // Noclip walk, jump to player (fish)
-            3, 4 => {
+            3, 4 => ai_jumping_fish(level, enemy),
+            5, 6 => ai_swooping_fly(level, enemy),
+            // Gravity walk, hit when near
+            7 => {
+                var j: c_int = undefined;
                 if (enemy.dying != 0) {
                     DEAD1(level, enemy);
                     continue;
                 }
                 switch (enemy.phase) {
                     0 => {
-                        // Move the enemy
-                        enemySprite.x -= enemySprite.speed_x;
-                        if (@as(c_uint, @bitCast(myabs(@as(c_int, @bitCast(@as(c_int, enemySprite.x))) - enemy.center_x))) > enemy.range_x) {
-                            if (@as(c_int, @bitCast(@as(c_int, enemySprite.x))) >= enemy.center_x) {
-                                enemySprite.speed_x = @as(i16, @bitCast(@as(c_short, @truncate(myabs(@as(c_int, @bitCast(@as(c_int, enemySprite.speed_x))))))));
-                            } else {
-                                enemySprite.speed_x = @as(i16, @bitCast(@as(c_short, @truncate(0 - myabs(@as(c_int, @bitCast(@as(c_int, enemySprite.speed_x))))))));
-                            }
-                        }
-                        if (!enemy.visible) {
-                            continue;
-                        }
-                        if ((@as(c_int, @bitCast(@as(c_int, enemySprite.y))) < @as(c_int, @bitCast(@as(c_int, level.player.sprite.y)))) or (@as(c_int, @bitCast(@as(c_int, enemySprite.y))) >= (@as(c_int, @bitCast(@as(c_int, level.player.sprite.y))) + 256))) {
-                            continue;
-                        }
-                        if (enemy.range_y < @as(c_uint, @bitCast(@as(c_int, @bitCast(@as(c_int, enemySprite.y))) - @as(c_int, @bitCast(@as(c_int, level.player.sprite.y)))))) {
-                            continue;
-                        }
-                        if (@as(c_int, @bitCast(@as(c_int, enemySprite.x))) > @as(c_int, @bitCast(@as(c_int, level.player.sprite.x)))) {
-                            if (@as(c_int, @intFromBool(enemySprite.flipped)) == 1) {
-                                continue;
-                            }
-                        } else {
-                            if (@as(c_int, @intFromBool(enemySprite.flipped)) == 0) {
-                                continue;
-                            }
-                        }
-                        if (myabs(@as(c_int, @bitCast(@as(c_int, enemySprite.x))) - @as(c_int, @bitCast(@as(c_int, level.player.sprite.x)))) >= 48) {
-                            continue;
-                        }
-                        if (@as(c_uint, @bitCast(myabs(@as(c_int, @bitCast(@as(c_int, level.player.sprite.x))) - enemy.center_x))) > enemy.range_x) {
-                            continue;
-                        }
-                        enemy.phase = 1;
-                        enemySprite.speed_y = 0;
-                        j = 0;
-                        while (true) {
-                            enemySprite.speed_y += 1;
-                            j += @as(c_int, @bitCast(@as(c_int, enemySprite.speed_y)));
-                            if (!((@as(c_int, @bitCast(@as(c_int, enemySprite.y))) - @as(c_int, @bitCast(@as(c_int, level.player.sprite.y)))) > j)) break;
-                        }
-                        enemySprite.speed_y = @as(i16, @bitCast(@as(c_short, @truncate(0 - @as(c_int, @bitCast(@as(c_int, enemySprite.speed_y)))))));
-                        enemy.delay = @as(c_uint, @bitCast(@as(c_int, enemySprite.y)));
-                        UP_ANIMATION(enemySprite);
-                    },
-                    1 => {
-                        if (!enemy.visible) {
-                            continue;
-                        }
-                        enemySprite.x -= @as(i16, @bitCast(@as(c_short, @truncate(@as(c_int, @bitCast(@as(c_int, enemySprite.speed_x))) << @intCast(2)))));
-                        enemySprite.y += @as(i16, @bitCast(@as(c_short, @truncate(@as(c_int, @bitCast(@as(c_int, enemySprite.speed_y)))))));
-                        if ((@as(c_int, @bitCast(@as(c_int, enemySprite.speed_y))) + 1) < 0) {
-                            enemySprite.speed_y += 1;
-                            if (@as(c_uint, @bitCast(@as(c_int, enemySprite.y))) > (enemy.delay -% enemy.range_y)) {
-                                continue;
-                            }
-                        }
-                        UP_ANIMATION(enemySprite);
-                        enemy.phase = 2;
-                        enemySprite.speed_y = 0;
-                        if (@as(c_int, @bitCast(@as(c_int, enemySprite.x))) <= enemy.center_x) {
-                            enemySprite.speed_x = @as(i16, @bitCast(@as(c_short, @truncate(myabs(@as(c_int, @bitCast(@as(c_int, enemySprite.speed_x))))))));
-                        } else {
-                            enemySprite.speed_x = @as(i16, @bitCast(@as(c_short, @truncate(0 - myabs(@as(c_int, @bitCast(@as(c_int, enemySprite.speed_x))))))));
-                        }
-                    },
-                    2 => {
-                        if (!enemy.visible) {
-                            continue;
-                        }
-                        enemySprite.x -= @as(i16, @bitCast(@as(c_short, @truncate(@as(c_int, @bitCast(@as(c_int, enemySprite.speed_x)))))));
-                        enemySprite.y += @as(i16, @bitCast(@as(c_short, @truncate(@as(c_int, @bitCast(@as(c_int, enemySprite.speed_y)))))));
-                        enemySprite.speed_y += 1;
-                        if (@as(c_uint, @bitCast(@as(c_int, enemySprite.y))) < enemy.delay) {
-                            continue;
-                        }
-                        enemySprite.y = @as(i16, @bitCast(@as(c_ushort, @truncate(enemy.delay))));
-                        enemySprite.x -= @as(i16, @bitCast(@as(c_short, @truncate(@as(c_int, @bitCast(@as(c_int, enemySprite.speed_x)))))));
-                        enemy.phase = 0;
-                        DOWN_ANIMATION(enemySprite);
-                        DOWN_ANIMATION(enemySprite);
-                    },
-                    else => {},
-                }
-            },
-            // Noclip walk, move to player (fly)
-            5, 6 => {
-                if (@as(c_int, @bitCast(@as(c_uint, enemy.dying))) != 0) {
-                    DEAD1(level, enemy);
-                    continue;
-                }
-                enemySprite.x -= @as(i16, @bitCast(@as(c_short, @truncate(@as(c_int, @bitCast(@as(c_int, enemySprite.speed_x)))))));
-                if (@as(c_uint, @bitCast(myabs(@as(c_int, @bitCast(@as(c_int, enemySprite.x))) - enemy.center_x))) > enemy.range_x) {
-                    if (@as(c_int, @bitCast(@as(c_int, enemySprite.x))) >= enemy.center_x) {
-                        enemySprite.speed_x = @as(i16, @bitCast(@as(c_short, @truncate(myabs(@as(c_int, @bitCast(@as(c_int, enemySprite.speed_x))))))));
-                    } else {
-                        enemySprite.speed_x = @as(i16, @bitCast(@as(c_short, @truncate(0 - myabs(@as(c_int, @bitCast(@as(c_int, enemySprite.speed_x))))))));
-                    }
-                }
-                if (!enemy.visible) {
-                    continue;
-                }
-                switch (@as(c_int, @bitCast(@as(c_uint, enemy.phase)))) {
-                    0 => {
-                        if (@as(c_uint, @bitCast(myabs(@as(c_int, @bitCast(@as(c_int, enemySprite.y))) - @as(c_int, @bitCast(@as(c_int, level.player.sprite.y)))))) > enemy.range_y) {
-                            continue;
-                        }
-                        if (myabs(@as(c_int, @bitCast(@as(c_int, enemySprite.x))) - @as(c_int, @bitCast(@as(c_int, level.player.sprite.x)))) > 40) {
-                            continue;
-                        }
-                        enemy.delay = @as(c_uint, @bitCast(@as(c_int, enemySprite.y)));
-                        if (@as(c_int, @bitCast(@as(c_int, enemySprite.y))) < @as(c_int, @bitCast(@as(c_int, level.player.sprite.y)))) {
-                            enemySprite.speed_y = 2;
-                        } else {
-                            enemySprite.speed_y = @as(i16, @bitCast(@as(c_short, @truncate(-2))));
-                        }
-                        enemy.phase = 1;
-                        UP_ANIMATION(enemySprite);
-                    },
-                    1 => {
-                        enemySprite.y += @as(i16, @bitCast(@as(c_short, @truncate(@as(c_int, @bitCast(@as(c_int, enemySprite.speed_y)))))));
-                        if (myabs(@as(c_long, @bitCast(@as(c_long, enemySprite.y))) - @as(c_long, @bitCast(@as(c_ulong, enemy.delay)))) < @as(c_long, @bitCast(@as(c_ulong, enemy.range_y)))) {
-                            continue;
-                        }
-                        enemySprite.speed_y = @as(i16, @bitCast(@as(c_short, @truncate(0 - @as(c_int, @bitCast(@as(c_int, enemySprite.speed_y)))))));
-                        UP_ANIMATION(enemySprite);
-                        enemy.phase = 2;
-                    },
-                    2 => {
-                        enemySprite.y += @as(i16, @bitCast(@as(c_short, @truncate(@as(c_int, @bitCast(@as(c_int, enemySprite.speed_y)))))));
-                        if (@as(c_uint, @bitCast(@as(c_int, enemySprite.y))) != enemy.delay) {
-                            continue;
-                        }
-                        DOWN_ANIMATION(enemySprite);
-                        DOWN_ANIMATION(enemySprite);
-                        enemy.phase = 0;
-                    },
-                    else => {},
-                }
-            },
-            // Gravity walk, hit when near
-            7 => {
-                if (@as(c_int, @bitCast(@as(c_uint, enemy.dying))) != 0) {
-                    DEAD1(level, enemy);
-                    continue;
-                }
-                switch (@as(c_int, @bitCast(@as(c_uint, enemy.phase)))) {
-                    0 => {
                         if (@as(c_int, @bitCast(@as(c_int, enemySprite.y))) > @as(c_int, @bitCast(@as(c_int, level.player.sprite.y)))) {
                             continue;
                         }
-                        if (enemy.range_x < @as(c_uint, @bitCast(myabs(@as(c_int, @bitCast(@as(c_int, enemySprite.x))) - @as(c_int, @bitCast(@as(c_int, level.player.sprite.x))))))) {
+                        if (enemy.range_x < @as(c_uint, @bitCast(abs(@as(c_int, @bitCast(@as(c_int, enemySprite.x))) - @as(c_int, @bitCast(@as(c_int, level.player.sprite.x))))))) {
                             continue;
                         }
-                        if (myabs(@as(c_int, @bitCast(@as(c_int, enemySprite.y))) - @as(c_int, @bitCast(@as(c_int, level.player.sprite.y)))) > 200) {
+                        if (abs(@as(c_int, @bitCast(@as(c_int, enemySprite.y))) - @as(c_int, @bitCast(@as(c_int, level.player.sprite.y)))) > 200) {
                             continue;
                         }
                         enemy.phase = 1;
@@ -366,18 +392,18 @@ pub fn moveEnemies(level: *lvl.Level) void {
                             enemySprite.speed_x = @as(i16, @bitCast(@as(c_short, @truncate(0 - @as(c_int, @bitCast(@as(c_int, enemySprite.speed_x)))))));
                             enemySprite.x -= @as(i16, @bitCast(@as(c_short, @truncate(@as(c_int, @bitCast(@as(c_int, enemySprite.speed_x)))))));
                         }
-                        if (myabs(@as(c_int, @bitCast(@as(c_int, level.player.sprite.x))) - @as(c_int, @bitCast(@as(c_int, enemySprite.x)))) > (320 * 2)) {
+                        if (abs(@as(c_int, @bitCast(@as(c_int, level.player.sprite.x))) - @as(c_int, @bitCast(@as(c_int, enemySprite.x)))) > (320 * 2)) {
                             enemy.phase = 2;
                             continue;
                         }
-                        if (myabs(@as(c_int, @bitCast(@as(c_int, level.player.sprite.y))) - @as(c_int, @bitCast(@as(c_int, enemySprite.y)))) >= (200 * 2)) {
+                        if (abs(@as(c_int, @bitCast(@as(c_int, level.player.sprite.y))) - @as(c_int, @bitCast(@as(c_int, enemySprite.y)))) >= (200 * 2)) {
                             enemy.phase = 2;
                             continue;
                         }
-                        if (myabs(@as(c_int, @bitCast(@as(c_int, level.player.sprite.x))) - @as(c_int, @bitCast(@as(c_int, enemySprite.x)))) > (@as(c_int, @bitCast(@as(c_uint, enemySprite.spritedata.?.width))) + 6)) {
+                        if (abs(@as(c_int, @bitCast(@as(c_int, level.player.sprite.x))) - @as(c_int, @bitCast(@as(c_int, enemySprite.x)))) > (@as(c_int, @bitCast(@as(c_uint, enemySprite.spritedata.?.width))) + 6)) {
                             continue;
                         }
-                        if (myabs(@as(c_int, @bitCast(@as(c_int, level.player.sprite.y))) - @as(c_int, @bitCast(@as(c_int, enemySprite.y)))) > 8) {
+                        if (abs(@as(c_int, @bitCast(@as(c_int, level.player.sprite.y))) - @as(c_int, @bitCast(@as(c_int, enemySprite.y)))) > 8) {
                             continue;
                         }
                         enemy.phase = 3;
@@ -429,11 +455,11 @@ pub fn moveEnemies(level: *lvl.Level) void {
                             enemySprite.speed_x = @as(i16, @bitCast(@as(c_short, @truncate(0 - @as(c_int, @bitCast(@as(c_int, enemySprite.speed_x)))))));
                             enemySprite.x -= @as(i16, @bitCast(@as(c_short, @truncate(@as(c_int, @bitCast(@as(c_int, enemySprite.speed_x)))))));
                         }
-                        if (myabs(@as(c_int, @bitCast(@as(c_int, level.player.sprite.x))) - @as(c_int, @bitCast(@as(c_int, enemySprite.x)))) > (320 * 2)) {
+                        if (abs(@as(c_int, @bitCast(@as(c_int, level.player.sprite.x))) - @as(c_int, @bitCast(@as(c_int, enemySprite.x)))) > (320 * 2)) {
                             enemy.phase = 2;
                             continue;
                         }
-                        if (myabs(@as(c_int, @bitCast(@as(c_int, level.player.sprite.y))) - @as(c_int, @bitCast(@as(c_int, enemySprite.y)))) >= (200 * 2)) {
+                        if (abs(@as(c_int, @bitCast(@as(c_int, level.player.sprite.y))) - @as(c_int, @bitCast(@as(c_int, enemySprite.y)))) >= (200 * 2)) {
                             enemy.phase = 2;
                             continue;
                         }
@@ -452,7 +478,7 @@ pub fn moveEnemies(level: *lvl.Level) void {
                 }
                 switch (@as(c_int, @bitCast(@as(c_uint, enemy.phase)))) {
                     0 => {
-                        if ((myabs(@as(c_int, @bitCast(@as(c_int, enemySprite.x))) - @as(c_int, @bitCast(@as(c_int, level.player.sprite.x)))) > 340) or (myabs(@as(c_int, @bitCast(@as(c_int, enemySprite.y))) - @as(c_int, @bitCast(@as(c_int, level.player.sprite.y)))) >= 230)) {
+                        if ((abs(@as(c_int, @bitCast(@as(c_int, enemySprite.x))) - @as(c_int, @bitCast(@as(c_int, level.player.sprite.x)))) > 340) or (abs(@as(c_int, @bitCast(@as(c_int, enemySprite.y))) - @as(c_int, @bitCast(@as(c_int, level.player.sprite.y)))) >= 230)) {
                             enemy.phase = 1;
                             UP_ANIMATION(enemySprite);
                             if (@as(c_int, @bitCast(@as(c_int, enemySprite.x))) > @as(c_int, @bitCast(@as(c_int, level.player.sprite.x)))) {
@@ -479,6 +505,7 @@ pub fn moveEnemies(level: *lvl.Level) void {
                         }
                         enemySprite.speed_y = 0;
                         enemySprite.y = @as(i16, @bitCast(@as(c_short, @truncate(@as(c_int, @bitCast(@as(c_int, enemySprite.y))) & @as(c_int, 0xFFF0)))));
+                        var j: c_int = 0;
                         if (@as(c_int, @bitCast(@as(c_int, enemySprite.speed_x))) > 0) {
                             j = -1;
                         } else {
@@ -493,7 +520,7 @@ pub fn moveEnemies(level: *lvl.Level) void {
                             enemySprite.speed_x = @as(i16, @bitCast(@as(c_short, @truncate(0 - @as(c_int, @bitCast(@as(c_int, enemySprite.speed_x)))))));
                             enemySprite.x -= @as(i16, @bitCast(@as(c_short, @truncate(@as(c_int, @bitCast(@as(c_int, enemySprite.speed_x)))))));
                         }
-                        if (myabs(@as(c_int, @bitCast(@as(c_int, level.player.sprite.x))) - @as(c_int, @bitCast(@as(c_int, enemySprite.x)))) < (320 * 2)) {
+                        if (abs(@as(c_int, @bitCast(@as(c_int, level.player.sprite.x))) - @as(c_int, @bitCast(@as(c_int, enemySprite.x)))) < (320 * 2)) {
                             continue;
                         }
                         enemy.phase = 2;
@@ -518,10 +545,10 @@ pub fn moveEnemies(level: *lvl.Level) void {
                 }
                 switch (@as(c_int, @bitCast(@as(c_uint, enemy.phase)))) {
                     0 => {
-                        if (enemy.range_x < @as(c_uint, @bitCast(myabs(@as(c_int, @bitCast(@as(c_int, level.player.sprite.x))) - @as(c_int, @bitCast(@as(c_int, enemySprite.x))))))) {
+                        if (enemy.range_x < @as(c_uint, @bitCast(abs(@as(c_int, @bitCast(@as(c_int, level.player.sprite.x))) - @as(c_int, @bitCast(@as(c_int, enemySprite.x))))))) {
                             continue;
                         }
-                        if (myabs(@as(c_int, @bitCast(@as(c_int, level.player.sprite.y))) - @as(c_int, @bitCast(@as(c_int, enemySprite.y)))) > 60) {
+                        if (abs(@as(c_int, @bitCast(@as(c_int, level.player.sprite.y))) - @as(c_int, @bitCast(@as(c_int, enemySprite.y)))) > 60) {
                             continue;
                         }
                         enemy.phase = 1;
@@ -561,12 +588,13 @@ pub fn moveEnemies(level: *lvl.Level) void {
                             continue;
                         }
                         if (level.getTileFloor((enemySprite.x >> 4), (enemySprite.y >> 4)) == .NoFloor) {
-                            enemySprite.speed_x = @as(i16, @bitCast(@as(c_short, @truncate(myabs(@as(c_int, @bitCast(@as(c_int, enemySprite.speed_x))))))));
+                            enemySprite.speed_x = @as(i16, @bitCast(@as(c_short, @truncate(abs(@as(c_int, @bitCast(@as(c_int, enemySprite.speed_x))))))));
                             if (enemy.init_x > @as(c_int, @bitCast(@as(c_int, enemySprite.x)))) {
                                 enemySprite.speed_x = @as(i16, @bitCast(@as(c_short, @truncate(0 - @as(c_int, @bitCast(@as(c_int, enemySprite.speed_x)))))));
                             }
                         }
                         enemySprite.y = @as(i16, @bitCast(@as(c_short, @truncate(@as(c_int, @bitCast(@as(c_int, enemySprite.y))) & @as(c_int, 0xFFF0)))));
+                        var j: c_int = 0;
                         if (@as(c_int, @bitCast(@as(c_int, enemySprite.speed_x))) > 0) {
                             j = -1; // moving left
                         } else {
@@ -581,7 +609,7 @@ pub fn moveEnemies(level: *lvl.Level) void {
                             enemySprite.speed_x = @as(i16, @bitCast(@as(c_short, @truncate(0 - @as(c_int, @bitCast(@as(c_int, enemySprite.speed_x)))))));
                             enemySprite.x -= @as(i16, @bitCast(@as(c_short, @truncate(@as(c_int, @bitCast(@as(c_int, enemySprite.speed_x)))))));
                         }
-                        if (myabs(@as(c_int, @bitCast(@as(c_int, level.player.sprite.x))) - @as(c_int, @bitCast(@as(c_int, enemySprite.x)))) < (320 * 4)) {
+                        if (abs(@as(c_int, @bitCast(@as(c_int, level.player.sprite.x))) - @as(c_int, @bitCast(@as(c_int, enemySprite.x)))) < (320 * 4)) {
                             continue;
                         }
                         enemy.phase = 2;
@@ -629,10 +657,10 @@ pub fn moveEnemies(level: *lvl.Level) void {
                         if (@as(c_int, @bitCast(@as(c_uint, globals.FURTIF_FLAG))) != 0) {
                             continue;
                         }
-                        if (enemy.range_x < @as(c_uint, @bitCast(myabs(@as(c_int, @bitCast(@as(c_int, level.player.sprite.x))) - @as(c_int, @bitCast(@as(c_int, enemySprite.x))))))) {
+                        if (enemy.range_x < @as(c_uint, @bitCast(abs(@as(c_int, @bitCast(@as(c_int, level.player.sprite.x))) - @as(c_int, @bitCast(@as(c_int, enemySprite.x))))))) {
                             continue;
                         }
-                        if (myabs(@as(c_int, @bitCast(@as(c_int, level.player.sprite.y))) - @as(c_int, @bitCast(@as(c_int, enemySprite.y)))) > 26) {
+                        if (abs(@as(c_int, @bitCast(@as(c_int, level.player.sprite.y))) - @as(c_int, @bitCast(@as(c_int, enemySprite.y)))) > 26) {
                             continue;
                         }
                         enemy.phase = 1;
@@ -645,12 +673,12 @@ pub fn moveEnemies(level: *lvl.Level) void {
                         if (@as(c_int, @bitCast(@as(c_uint, globals.FURTIF_FLAG))) != 0) {
                             continue;
                         }
-                        if (enemy.range_x < @as(c_uint, @bitCast(myabs(@as(c_int, @bitCast(@as(c_int, level.player.sprite.x))) - @as(c_int, @bitCast(@as(c_int, enemySprite.x))))))) {
+                        if (enemy.range_x < @as(c_uint, @bitCast(abs(@as(c_int, @bitCast(@as(c_int, level.player.sprite.x))) - @as(c_int, @bitCast(@as(c_int, enemySprite.x))))))) {
                             DOWN_ANIMATION(enemySprite);
                             enemy.phase = 0;
                             continue;
                         }
-                        if (((enemy.range_x -% @as(c_uint, 50)) >= @as(c_uint, @bitCast(myabs(@as(c_int, @bitCast(@as(c_int, level.player.sprite.x))) - @as(c_int, @bitCast(@as(c_int, enemySprite.x))))))) and (myabs(@as(c_int, @bitCast(@as(c_int, level.player.sprite.y))) - @as(c_int, @bitCast(@as(c_int, enemySprite.y)))) <= 60)) {
+                        if (((enemy.range_x -% @as(c_uint, 50)) >= @as(c_uint, @bitCast(abs(@as(c_int, @bitCast(@as(c_int, level.player.sprite.x))) - @as(c_int, @bitCast(@as(c_int, enemySprite.x))))))) and (abs(@as(c_int, @bitCast(@as(c_int, level.player.sprite.y))) - @as(c_int, @bitCast(@as(c_int, enemySprite.y)))) <= 60)) {
                             enemy.phase = 2;
                             UP_ANIMATION(enemySprite);
                         }
@@ -660,12 +688,12 @@ pub fn moveEnemies(level: *lvl.Level) void {
                         if (@as(c_int, @bitCast(@as(c_uint, globals.FURTIF_FLAG))) != 0) {
                             continue;
                         }
-                        if (enemy.range_x < @as(c_uint, @bitCast(myabs(@as(c_int, @bitCast(@as(c_int, level.player.sprite.x))) - @as(c_int, @bitCast(@as(c_int, enemySprite.x))))))) {
+                        if (enemy.range_x < @as(c_uint, @bitCast(abs(@as(c_int, @bitCast(@as(c_int, level.player.sprite.x))) - @as(c_int, @bitCast(@as(c_int, enemySprite.x))))))) {
                             DOWN_ANIMATION(enemySprite);
                             enemy.phase = 0;
                             continue;
                         }
-                        if (((enemy.range_x -% @as(c_uint, 50)) >= @as(c_uint, @bitCast(myabs(@as(c_int, @bitCast(@as(c_int, level.player.sprite.x))) - @as(c_int, @bitCast(@as(c_int, enemySprite.x))))))) and (myabs(@as(c_int, @bitCast(@as(c_int, level.player.sprite.y))) - @as(c_int, @bitCast(@as(c_int, enemySprite.y)))) <= 60)) {
+                        if (((enemy.range_x -% @as(c_uint, 50)) >= @as(c_uint, @bitCast(abs(@as(c_int, @bitCast(@as(c_int, level.player.sprite.x))) - @as(c_int, @bitCast(@as(c_int, enemySprite.x))))))) and (abs(@as(c_int, @bitCast(@as(c_int, level.player.sprite.y))) - @as(c_int, @bitCast(@as(c_int, enemySprite.y)))) <= 60)) {
                             enemy.phase = 2;
                             UP_ANIMATION(enemySprite);
                         }
@@ -673,12 +701,13 @@ pub fn moveEnemies(level: *lvl.Level) void {
                     2 => {
                         // run
                         if (level.getTileFloor((enemySprite.x >> 4), (enemySprite.y >> 4)) == .NoFloor) {
-                            enemySprite.speed_x = @as(i16, @bitCast(@as(c_short, @truncate(myabs(@as(c_int, @bitCast(@as(c_int, enemySprite.speed_x))))))));
+                            enemySprite.speed_x = @as(i16, @bitCast(@as(c_short, @truncate(abs(@as(c_int, @bitCast(@as(c_int, enemySprite.speed_x))))))));
                             if (enemy.init_x > @as(c_int, @bitCast(@as(c_int, enemySprite.x)))) {
                                 enemySprite.speed_x = @as(i16, @bitCast(@as(c_short, @truncate(0 - @as(c_int, @bitCast(@as(c_int, enemySprite.speed_x)))))));
                             }
                         }
                         enemySprite.y = @as(i16, @bitCast(@as(c_short, @truncate(@as(c_int, @bitCast(@as(c_int, enemySprite.y))) & @as(c_int, 0xFFF0)))));
+                        var j: c_int = 0;
                         if (@as(c_int, @bitCast(@as(c_int, enemySprite.speed_x))) > 0) {
                             j = -1; // moving left
                         } else {
@@ -686,7 +715,7 @@ pub fn moveEnemies(level: *lvl.Level) void {
                         }
                         const hflag = level.getTileWall((enemySprite.x >> 4) + @as(i16, @truncate(j)), (enemySprite.y >> 4) - 1);
                         if (hflag == .Wall or hflag == .Deadly or hflag == .Padlock) { // Next tile is wall, change direction
-                            enemySprite.speed_x = @as(i16, @bitCast(@as(c_short, @truncate(myabs(@as(c_int, @bitCast(@as(c_int, enemySprite.speed_x))))))));
+                            enemySprite.speed_x = @as(i16, @bitCast(@as(c_short, @truncate(abs(@as(c_int, @bitCast(@as(c_int, enemySprite.speed_x))))))));
                             if (enemy.init_x > @as(c_int, @bitCast(@as(c_int, enemySprite.x)))) {
                                 enemySprite.speed_x = @as(i16, @bitCast(@as(c_short, @truncate(0 - @as(c_int, @bitCast(@as(c_int, enemySprite.speed_x)))))));
                             }
@@ -696,7 +725,7 @@ pub fn moveEnemies(level: *lvl.Level) void {
                             enemySprite.speed_x = @as(i16, @bitCast(@as(c_short, @truncate(0 - @as(c_int, @bitCast(@as(c_int, enemySprite.speed_x)))))));
                             enemySprite.x -= @as(i16, @bitCast(@as(c_short, @truncate(@as(c_int, @bitCast(@as(c_int, enemySprite.speed_x)))))));
                         }
-                        if (myabs(@as(c_int, @bitCast(@as(c_int, level.player.sprite.x))) - @as(c_int, @bitCast(@as(c_int, enemySprite.x)))) >= (320 * 2)) {
+                        if (abs(@as(c_int, @bitCast(@as(c_int, level.player.sprite.x))) - @as(c_int, @bitCast(@as(c_int, enemySprite.x)))) >= (320 * 2)) {
                             enemy.phase = 3;
                         }
                     },
@@ -721,10 +750,10 @@ pub fn moveEnemies(level: *lvl.Level) void {
                 }
                 switch (@as(c_int, @bitCast(@as(c_uint, enemy.phase)))) {
                     0 => {
-                        if (enemy.range_x < @as(c_uint, @bitCast(myabs(@as(c_int, @bitCast(@as(c_int, level.player.sprite.x))) - @as(c_int, @bitCast(@as(c_int, enemySprite.x))))))) {
+                        if (enemy.range_x < @as(c_uint, @bitCast(abs(@as(c_int, @bitCast(@as(c_int, level.player.sprite.x))) - @as(c_int, @bitCast(@as(c_int, enemySprite.x))))))) {
                             continue;
                         }
-                        if (myabs(@as(c_int, @bitCast(@as(c_int, level.player.sprite.y))) - @as(c_int, @bitCast(@as(c_int, enemySprite.y)))) > 26) {
+                        if (abs(@as(c_int, @bitCast(@as(c_int, level.player.sprite.y))) - @as(c_int, @bitCast(@as(c_int, enemySprite.y)))) > 26) {
                             continue;
                         }
                         enemy.phase = 1;
@@ -737,7 +766,7 @@ pub fn moveEnemies(level: *lvl.Level) void {
                     },
                     1 => {
                         if (level.getTileFloor((enemySprite.x >> 4), (enemySprite.y >> 4)) == .NoFloor) {
-                            enemySprite.speed_x = @as(i16, @bitCast(@as(c_short, @truncate(myabs(@as(c_int, @bitCast(@as(c_int, enemySprite.speed_x))))))));
+                            enemySprite.speed_x = @as(i16, @bitCast(@as(c_short, @truncate(abs(@as(c_int, @bitCast(@as(c_int, enemySprite.speed_x))))))));
                             if (enemy.init_x > @as(c_int, @bitCast(@as(c_int, enemySprite.x)))) {
                                 enemySprite.speed_x = @as(i16, @bitCast(@as(c_short, @truncate(0 - @as(c_int, @bitCast(@as(c_int, enemySprite.speed_x)))))));
                             }
@@ -752,17 +781,17 @@ pub fn moveEnemies(level: *lvl.Level) void {
                             enemySprite.speed_x = @as(i16, @bitCast(@as(c_short, @truncate(0 - @as(c_int, @bitCast(@as(c_int, enemySprite.speed_x)))))));
                             enemySprite.x -= @as(i16, @bitCast(@as(c_short, @truncate(@as(c_int, @bitCast(@as(c_int, enemySprite.speed_x)))))));
                         }
-                        if (myabs(@as(c_int, @bitCast(@as(c_int, level.player.sprite.x))) - @as(c_int, @bitCast(@as(c_int, enemySprite.x)))) >= (320 * 2)) {
+                        if (abs(@as(c_int, @bitCast(@as(c_int, level.player.sprite.x))) - @as(c_int, @bitCast(@as(c_int, enemySprite.x)))) >= (320 * 2)) {
                             enemy.phase = 2;
                         }
                         common.subto0(&enemy.counter);
                         if (@as(c_int, @bitCast(@as(c_uint, enemy.counter))) != 0) {
                             continue;
                         }
-                        if (myabs(@as(c_int, @bitCast(@as(c_int, level.player.sprite.x))) - @as(c_int, @bitCast(@as(c_int, enemySprite.x)))) > 64) {
+                        if (abs(@as(c_int, @bitCast(@as(c_int, level.player.sprite.x))) - @as(c_int, @bitCast(@as(c_int, enemySprite.x)))) > 64) {
                             continue;
                         }
-                        if (myabs(@as(c_int, @bitCast(@as(c_int, level.player.sprite.y))) - @as(c_int, @bitCast(@as(c_int, enemySprite.y)))) > 20) {
+                        if (abs(@as(c_int, @bitCast(@as(c_int, level.player.sprite.y))) - @as(c_int, @bitCast(@as(c_int, enemySprite.y)))) > 20) {
                             continue;
                         }
                         if (@as(c_int, @bitCast(@as(c_int, enemySprite.x))) > @as(c_int, @bitCast(@as(c_int, level.player.sprite.x)))) {
@@ -841,11 +870,11 @@ pub fn moveEnemies(level: *lvl.Level) void {
                 switch (@as(c_int, @bitCast(@as(c_uint, enemy.phase)))) {
                     0 => {
                         if (@as(c_int, @bitCast(@as(c_int, level.player.sprite.x))) >= @as(c_int, @bitCast(@as(c_int, enemySprite.x)))) {
-                            enemySprite.speed_x = @as(i16, @bitCast(@as(c_short, @truncate(0 - myabs(@as(c_int, @bitCast(@as(c_int, enemySprite.speed_x))))))));
+                            enemySprite.speed_x = @as(i16, @bitCast(@as(c_short, @truncate(0 - abs(@as(c_int, @bitCast(@as(c_int, enemySprite.speed_x))))))));
                         } else {
-                            enemySprite.speed_x = @as(i16, @bitCast(@as(c_short, @truncate(myabs(@as(c_int, @bitCast(@as(c_int, enemySprite.speed_x))))))));
+                            enemySprite.speed_x = @as(i16, @bitCast(@as(c_short, @truncate(abs(@as(c_int, @bitCast(@as(c_int, enemySprite.speed_x))))))));
                         }
-                        if ((@as(c_uint, @bitCast(myabs(@as(c_int, @bitCast(@as(c_int, level.player.sprite.x))) - @as(c_int, @bitCast(@as(c_int, enemySprite.x)))))) <= enemy.range_x) and (myabs(@as(c_int, @bitCast(@as(c_int, level.player.sprite.y))) - @as(c_int, @bitCast(@as(c_int, enemySprite.y)))) <= 40)) {
+                        if ((@as(c_uint, @bitCast(abs(@as(c_int, @bitCast(@as(c_int, level.player.sprite.x))) - @as(c_int, @bitCast(@as(c_int, enemySprite.x)))))) <= enemy.range_x) and (abs(@as(c_int, @bitCast(@as(c_int, level.player.sprite.y))) - @as(c_int, @bitCast(@as(c_int, enemySprite.y)))) <= 40)) {
                             UP_ANIMATION(enemySprite);
                             enemy.phase = 1;
                             enemySprite.speed_y = 10;
@@ -896,18 +925,18 @@ pub fn moveEnemies(level: *lvl.Level) void {
             // Drop (immortal)
             17 => {
                 enemy.dying = 0;
-                if (@as(c_uint, @bitCast(@as(c_int, @bitCast(@as(c_uint, enemy.counter))) + 1)) < enemy.delay) {
+                if (enemy.counter + 1 < enemy.delay) {
                     enemy.counter +%= 1;
                     continue;
                 }
-                if (enemy.range_x < @as(c_uint, @bitCast(myabs(@as(c_int, @bitCast(@as(c_int, enemySprite.x))) - @as(c_int, @bitCast(@as(c_int, level.player.sprite.x))))))) {
+                if (enemy.range_x < @as(c_uint, @bitCast(abs(@as(c_int, @bitCast(@as(c_int, enemySprite.x))) - @as(c_int, @bitCast(@as(c_int, level.player.sprite.x))))))) {
                     enemy.counter = 0;
                     continue;
                 }
                 if (enemy.range_y < @as(c_uint, @bitCast(@as(c_int, @bitCast(@as(c_int, level.player.sprite.y))) - @as(c_int, @bitCast(@as(c_int, enemySprite.y)))))) {
                     continue;
                 }
-                j = 0;
+                var j: c_uint = 0;
                 while (true) {
                     j += 1;
                     if (j > 40) {
@@ -917,7 +946,7 @@ pub fn moveEnemies(level: *lvl.Level) void {
                     if (!(@as(c_int, @intFromBool(level.object[@as(c_uint, @intCast(j))].sprite.enabled)) == 1)) break;
                 }
                 UP_ANIMATION(enemySprite);
-                objects.updateobjectsprite(level, &level.object[@as(c_uint, @intCast(j))], @as(i16, @bitCast(@as(c_short, @truncate(@as(c_int, @bitCast(@as(c_int, enemySprite.animation.*))) & 8191)))), true);
+                objects.updateobjectsprite(level, &level.object[@as(c_uint, @intCast(j))], @as(i16, @bitCast(@as(c_short, @truncate(@as(c_int, @bitCast(@as(c_int, enemySprite.animation.*))) & 0x1FFF)))), true);
                 level.object[@as(c_uint, @intCast(j))].sprite.flipped = true;
                 level.object[@as(c_uint, @intCast(j))].sprite.x = enemySprite.x;
                 level.object[@as(c_uint, @intCast(j))].sprite.y = enemySprite.y;
@@ -934,34 +963,38 @@ pub fn moveEnemies(level: *lvl.Level) void {
                     DEAD1(level, enemy);
                     continue;
                 }
-                if ((((@as(c_int, @bitCast(@as(c_int, level.player.sprite.x))) < @as(c_int, @bitCast(@as(c_int, @as(i16, @bitCast(@as(c_ushort, @truncate(@as(c_uint, @bitCast(enemy.init_x)) -% enemy.range_x)))))))) or (@as(c_int, @bitCast(@as(c_int, level.player.sprite.x))) > @as(c_int, @bitCast(@as(c_int, @as(i16, @bitCast(@as(c_ushort, @truncate(@as(c_uint, @bitCast(enemy.init_x)) +% enemy.range_x))))))))) or (@as(c_int, @bitCast(@as(c_int, level.player.sprite.y))) < @as(c_int, @bitCast(@as(c_int, @as(i16, @bitCast(@as(c_ushort, @truncate(@as(c_uint, @bitCast(enemy.init_y)) -% enemy.range_y))))))))) or (@as(c_int, @bitCast(@as(c_int, level.player.sprite.y))) > @as(c_int, @bitCast(@as(c_int, @as(i16, @bitCast(@as(c_ushort, @truncate(@as(c_uint, @bitCast(enemy.init_y)) +% enemy.range_y))))))))) {
-                    if (enemy.init_x != @as(c_int, @bitCast(@as(c_int, enemySprite.x)))) {
-                        enemySprite.speed_x = @as(i16, @bitCast(@as(c_short, @truncate(myabs(@as(c_int, @bitCast(@as(c_int, enemySprite.speed_x))))))));
-                        if (enemy.init_x > @as(c_int, @bitCast(@as(c_int, enemySprite.x)))) {
-                            enemySprite.speed_x = @as(i16, @bitCast(@as(c_short, @truncate(0 - @as(c_int, @bitCast(@as(c_int, enemySprite.speed_x)))))));
+                if (abs(enemy.init_x - level.player.sprite.x) > enemy.range_x or
+                    abs(enemy.init_y - level.player.sprite.y) > enemy.range_y)
+                {
+                    // The player is too far away, move enemy to center
+                    if (enemy.init_x != enemySprite.x) {
+                        enemySprite.speed_x = abs(enemySprite.speed_x);
+                        if (enemy.init_x > enemySprite.x) {
+                            enemySprite.speed_x = 0 - enemySprite.speed_x;
                         }
-                        enemySprite.x -= @as(i16, @bitCast(@as(c_short, @truncate(@as(c_int, @bitCast(@as(c_int, enemySprite.speed_x)))))));
+                        enemySprite.x -= enemySprite.speed_x;
                     }
-                    if (enemy.init_y != @as(c_int, @bitCast(@as(c_int, enemySprite.y)))) {
-                        if (enemy.init_y > @as(c_int, @bitCast(@as(c_int, enemySprite.y)))) {
-                            enemySprite.y += @as(i16, @bitCast(@as(c_short, @truncate(@as(c_int, @bitCast(@as(c_int, enemySprite.speed_y)))))));
+                    if (enemy.init_y != enemySprite.y) {
+                        if (enemy.init_y > enemySprite.y) {
+                            enemySprite.y += enemySprite.speed_y;
                         } else {
-                            enemySprite.y -= @as(i16, @bitCast(@as(c_short, @truncate(@as(c_int, @bitCast(@as(c_int, enemySprite.speed_y)))))));
+                            enemySprite.y -= enemySprite.speed_y;
                         }
                     }
                 } else {
-                    if (@as(c_int, @bitCast(@as(c_int, level.player.sprite.x))) != @as(c_int, @bitCast(@as(c_int, enemySprite.x)))) {
-                        enemySprite.speed_x = @as(i16, @bitCast(@as(c_short, @truncate(myabs(@as(c_int, @bitCast(@as(c_int, enemySprite.speed_x))))))));
-                        if (@as(c_int, @bitCast(@as(c_int, level.player.sprite.x))) > @as(c_int, @bitCast(@as(c_int, enemySprite.x)))) {
-                            enemySprite.speed_x = @as(i16, @bitCast(@as(c_short, @truncate(0 - @as(c_int, @bitCast(@as(c_int, enemySprite.speed_x)))))));
+                    // The player is inside the guarded area, move enemy to player
+                    if (level.player.sprite.x != enemySprite.x) {
+                        enemySprite.speed_x = abs(enemySprite.speed_x);
+                        if (level.player.sprite.x > enemySprite.x) {
+                            enemySprite.speed_x = 0 - enemySprite.speed_x;
                         }
-                        enemySprite.x -= @as(i16, @bitCast(@as(c_short, @truncate(@as(c_int, @bitCast(@as(c_int, enemySprite.speed_x)))))));
+                        enemySprite.x -= enemySprite.speed_x;
                     }
-                    if (@as(c_int, @bitCast(@as(c_int, level.player.sprite.y))) != @as(c_int, @bitCast(@as(c_int, enemySprite.y)))) {
-                        if (@as(c_int, @bitCast(@as(c_int, level.player.sprite.y))) > @as(c_int, @bitCast(@as(c_int, enemySprite.y)))) {
-                            enemySprite.y += @as(i16, @bitCast(@as(c_short, @truncate(@as(c_int, @bitCast(@as(c_int, enemySprite.speed_y)))))));
+                    if (level.player.sprite.y != enemySprite.y) {
+                        if (level.player.sprite.y > enemySprite.y) {
+                            enemySprite.y += enemySprite.speed_y;
                         } else {
-                            enemySprite.y -= @as(i16, @bitCast(@as(c_short, @truncate(@as(c_int, @bitCast(@as(c_int, enemySprite.speed_y)))))));
+                            enemySprite.y -= enemySprite.speed_y;
                         }
                     }
                 }
@@ -1207,10 +1240,10 @@ fn KICK_ASH(level: *lvl.Level, enemysprite: *lvl.Sprite, power: i16) void {
 }
 
 fn NMI_VS_DROP(enemysprite: *lvl.Sprite, sprite: *lvl.Sprite) bool {
-    if (myabs(sprite.x - enemysprite.x) >= 64) {
+    if (abs(sprite.x - enemysprite.x) >= 64) {
         return false;
     }
-    if (myabs(sprite.y - enemysprite.y) >= 70) {
+    if (abs(sprite.y - enemysprite.y) >= 70) {
         return false;
     }
     if (sprite.y < enemysprite.y) {

@@ -192,20 +192,17 @@ void moveEnemies(TITUS_level *level) {
         if (!enemy->visible) { // Is the enemy on the screen?
           continue;
         }
-        if ((enemySprite->y < level->player.sprite.y) ||
-            (enemySprite->y >=
+        if ((enemySprite->y < level->player.sprite.y) || (enemySprite->y >=
              (level->player.sprite.y +
               256))) { // Skip if player is below or >= 256 pixels above
           continue;
         }
-        if (enemy->range_y <
-            (enemySprite->y -
-             level->player.sprite.y)) { // Skip if player is above jump limit
+        // Skip if player is above jump limit
+        if (enemy->range_y < (enemySprite->y - level->player.sprite.y)) {
           continue;
         }
         // see if the hero is in the direction of movement of fish
-        if (enemySprite->x >
-            level->player.sprite.x) { // The enemy is right for the player
+        if (enemySprite->x > level->player.sprite.x) { // The enemy is right for the player
           if (enemySprite->flipped == true) { // The enemy looks right, skip
             continue;
           }
@@ -229,14 +226,9 @@ void moveEnemies(TITUS_level *level) {
         do {
           enemySprite->speed_y++; // Set init jump speed
           j += enemySprite->speed_y;
-        } while (
-            (enemySprite->y - level->player.sprite.y) >
-            j); // Make sure the enemy will jump high enough to hit the player
-        enemySprite->speed_y =
-            0 - enemySprite->speed_y; // Init speed must be negative
-        enemy->delay =
-            enemySprite
-                ->y; // Delay: Last _y position, reuse of the delay variable
+        } while ((enemySprite->y - level->player.sprite.y) > j); // Make sure the enemy will jump high enough to hit the player
+        enemySprite->speed_y = 0 - enemySprite->speed_y; // Init speed must be negative
+        enemy->delay = enemySprite->y; // Delay: Last _y position, reuse of the delay variable
         UP_ANIMATION(enemySprite);
         break;
       case 1:
@@ -293,11 +285,8 @@ void moveEnemies(TITUS_level *level) {
         continue;
       }
       enemySprite->x -= enemySprite->speed_x; // Move the enemy
-      if (abs(enemySprite->x - enemy->center_x) >
-          enemy->range_x) { // If the enemy is range_x from center, turn
-                            // direction
-        if (enemySprite->x >=
-            enemy->center_x) { // The enemy is at rightmost edge
+      if (abs(enemySprite->x - enemy->center_x) > enemy->range_x) { // If the enemy is range_x from center, turn direction
+        if (enemySprite->x >= enemy->center_x) { // The enemy is at rightmost edge
           enemySprite->speed_x = abs(enemySprite->speed_x);
         } else { // The enemy is at leftmost edge
           enemySprite->speed_x = 0 - abs(enemySprite->speed_x);
@@ -309,18 +298,14 @@ void moveEnemies(TITUS_level *level) {
       switch (enemy->phase) { // State dependent actions
       case 0:
         // Forward
-        if (abs(enemySprite->y - level->player.sprite.y) >
-            enemy->range_y) { // Too far away
+        if (abs(enemySprite->y - level->player.sprite.y) > enemy->range_y) { // Too far away
           continue;
         }
         if (abs(enemySprite->x - level->player.sprite.x) > 40) { // Too far away
           continue;
         }
-        enemy->delay =
-            enemySprite
-                ->y; // Delay: Last Y position, reuse of the delay variable
-        if (enemySprite->y <
-            level->player.sprite.y) { // Player is below the enemy
+        enemy->delay = enemySprite->y; // Delay: Last Y position, reuse of the delay variable
+        if (enemySprite->y < level->player.sprite.y) { // Player is below the enemy
           enemySprite->speed_y = 2;
         } else { // Player is above the enemy
           enemySprite->speed_y = -2;
@@ -331,9 +316,7 @@ void moveEnemies(TITUS_level *level) {
       case 1:
         // Attack
         enemySprite->y += enemySprite->speed_y;
-        if (labs((long)(enemySprite->y) - (long)(enemy->delay)) <
-            enemy->range_y) { // Delay: Last Y position, reuse of the delay
-                              // variable
+        if (labs((long)(enemySprite->y) - (long)(enemy->delay)) < enemy->range_y) { // Delay: Last Y position, reuse of the delay variable
           continue;
         }
         enemySprite->speed_y = 0 - enemySprite->speed_y;
@@ -1031,8 +1014,7 @@ void moveEnemies(TITUS_level *level) {
         enemy->counter++;
         continue;
       }
-      if (enemy->range_x <
-          abs(enemySprite->x - level->player.sprite.x)) { // hero too far! at x
+      if (enemy->range_x < abs(enemySprite->x - level->player.sprite.x)) { // hero too far! at x
         enemy->counter = 0;
         continue;
       }
@@ -1071,18 +1053,10 @@ void moveEnemies(TITUS_level *level) {
         DEAD1(level, enemy);
         continue;
       }
-      if ((level->player.sprite.x <
-           (int16_t)(enemy->init_x -
-                     enemy->range_x)) || // Player is too far left
-          (level->player.sprite.x >
-           (int16_t)(enemy->init_x +
-                     enemy->range_x)) || // Player is too far right
-          (level->player.sprite.y <
-           (int16_t)(enemy->init_y -
-                     enemy->range_y)) || // Player is too high above
-          (level->player.sprite.y >
-           (int16_t)(enemy->init_y +
-                     enemy->range_y))) { // Player is too far below
+      if ((level->player.sprite.x < (int16_t)(enemy->init_x - enemy->range_x)) || // Player is too far left
+          (level->player.sprite.x > (int16_t)(enemy->init_x + enemy->range_x)) || // Player is too far right
+          (level->player.sprite.y < (int16_t)(enemy->init_y - enemy->range_y)) || // Player is too high above
+          (level->player.sprite.y > (int16_t)(enemy->init_y + enemy->range_y))) { // Player is too far below
         // The player is too far away, move enemy to center
         if (enemy->init_x != enemySprite->x) {
           enemySprite->speed_x = abs(enemySprite->speed_x);

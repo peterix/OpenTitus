@@ -52,7 +52,7 @@ fn enumOptions(
     action: MenuAction,
     setter: *const fn (T) void,
 ) void {
-    if (@typeInfo(T) != .Enum) {
+    if (@typeInfo(T) != .@"enum") {
         @compileError("enumOptions can only be used with an enum type");
     }
 
@@ -165,7 +165,7 @@ fn slider(
     setter: *const fn (T) void,
 ) void {
     const options = fonts.Font.RenderOptions{ .transpatent = true };
-    if (@typeInfo(T) != .Int) {
+    if (@typeInfo(T) != .int) {
         @compileError("slider can only be used with an enum type");
     }
     var set_value = value;

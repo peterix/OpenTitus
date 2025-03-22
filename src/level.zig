@@ -108,6 +108,7 @@ pub const Enemy = struct {
     delay: c_uint,
     direction: u8,
     range_y: c_uint,
+    saved_y: i16, // Used for jumping fish
 
     init_enabled: bool,
     init_sprite: u16,
@@ -691,7 +692,7 @@ pub fn loadlevel(
         level.elevator[i].init_y = other_data.elevators[i].init_y;
         var j: i16 = other_data.elevators[i].speed;
 
-        const enabled = ((initSprite.value != 0xFFFF) and (j < 8) and (level.elevator[i].init_x >= -16) and (level.elevator[i].init_y >= 0));
+        const enabled = ((initSprite.value != 0xFFFF) and (j < 8) and (j > -8) and (level.elevator[i].init_x >= -16) and (level.elevator[i].init_y >= 0));
         // This is so oddly specific...
         // Let's NOT have this in the new format
         level.elevator[i].init_enabled = enabled;

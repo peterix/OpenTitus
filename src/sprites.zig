@@ -42,7 +42,7 @@ const SPRITECOUNT = 356;
 const SpriteDefinition = lvl.SpriteData;
 
 fn load_sprite_defs(input: []const u8) ![SPRITECOUNT]SpriteDefinition {
-    @setEvalBranchQuota(100000);
+    @setEvalBranchQuota(1000000);
     var output: [SPRITECOUNT]SpriteDefinition = undefined;
     var lineIterator = std.mem.tokenizeScalar(u8, input, '\n');
     var index: usize = 0;
