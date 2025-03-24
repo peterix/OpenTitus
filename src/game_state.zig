@@ -90,13 +90,14 @@ pub const GameState = struct {
     pub fn make_new(allocator: Allocator) !ManagedJSON(GameState) {
         var seed: u32 = undefined;
         try std.posix.getrandom(std.mem.asBytes(&seed));
-        var arena = std.heap.ArenaAllocator.init(allocator);
+        const arena = try allocator.create(std.heap.ArenaAllocator);
+        arena.* = std.heap.ArenaAllocator.init(allocator);
         const game_state = GameState{
             .levels = JsonList(LevelEntry){},
             .seed = seed,
             .seen_intro = false,
         };
-        return ManagedJSON(GameState){ .value = game_state, .arena = &arena };
+        return ManagedJSON(GameState){ .value = game_state, .arena = arena };
     }
 
     pub fn read(allocator: Allocator) !ManagedJSON(GameState) {

@@ -37,8 +37,8 @@
     // internet connectivity.
     .dependencies = .{
         .sdl = .{
-            .url = "git+https://github.com/castholm/SDL.git#dbb1b96360658f5845ff6fac380c4f13d7276dc2",
-            .hash = "sdl-0.2.0+3.2.8-7uIn9FxHfQE325TK7b0qpgt10G3x1xl-3ZMOfTzxUg3C",
+            .url = "https://github.com/rohlem/SDL/archive/refs/heads/PR-fix-ub-windowsevents-leftshift-negative.tar.gz",
+            .hash = "sdl-0.2.0+3.2.8-7uIn9HdHfQE6UtjjCJ_6pROgPoqFbyz9nlcmKJuPGPub",
         },
     },
     .paths = .{
