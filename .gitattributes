@@ -1,0 +1,2 @@
+# Force the .csv to be LF line ending only in order to not break build on Windows systems
+*.csv text eol=lf
