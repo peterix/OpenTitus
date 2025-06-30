@@ -33,8 +33,10 @@ const globals = @import("../globals.zig");
 const audio = @import("../audio/audio.zig");
 const options_menu = @import("options_menu.zig");
 
+const input = @import("../input.zig");
+const InputAction = input.InputAction;
+
 const menu = @import("menu.zig");
-const MenuAction = menu.MenuAction;
 const MenuContext = menu.MenuContext;
 
 fn continueFn(menu_context: *MenuContext) ?c_int {
@@ -82,12 +84,12 @@ pub fn pauseMenu(context: *ScreenContext) c_int {
         const timeout = menu_context.updateBackground();
         SDL.delay(timeout);
 
-        const action = menu.getMenuAction();
-        switch (action) {
+        const input_state = input.processEvents();
+        switch (input_state.action) {
             .Quit => {
                 return -1; //c.TITUS_ERROR_QUIT;
             },
-            .ExitMenu => {
+            .Escape, .Cancel => {
                 return 0;
             },
             .Up => {

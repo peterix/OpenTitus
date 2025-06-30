@@ -28,7 +28,7 @@ const std = @import("std");
 const sqz = @import("../sqz.zig");
 const SDL = @import("../SDL.zig");
 const window = @import("../window.zig");
-const keyboard = @import("keyboard.zig");
+const input = @import("../input.zig");
 
 pub const ManagedSurface = struct {
     value: *SDL.Surface,
@@ -191,26 +191,16 @@ pub fn viewImageFile(file: ImageFile, display_mode: DisplayMode, delay: c_int, a
             var fadeoutskip: u64 = 0;
             while ((image_alpha < 255) and activedelay) //Fade to visible
             {
-                var event: SDL.Event = undefined;
-                while (SDL.pollEvent(&event)) {
-                    if (event.type == SDL.EVENT_QUIT) {
+                const input_state = input.processEvents();
+                switch (input_state.action) {
+                    .Quit => {
                         return (-1);
-                    }
-
-                    if (event.type == SDL.EVENT_KEY_DOWN) {
-                        if (event.key.scancode == SDL.SCANCODE_RETURN or
-                            event.key.scancode == SDL.SCANCODE_KP_ENTER or
-                            event.key.scancode == SDL.SCANCODE_SPACE or
-                            event.key.scancode == SDL.SCANCODE_ESCAPE)
-                        {
-                            activedelay = false;
-                            fadeoutskip = 255 - image_alpha;
-                        }
-
-                        if (event.key.scancode == SDL.SCANCODE_F11) {
-                            window.toggle_fullscreen();
-                        }
-                    }
+                    },
+                    .Escape, .Cancel, .Activate => {
+                        activedelay = false;
+                        fadeoutskip = 255 - image_alpha;
+                    },
+                    else => {},
                 }
 
                 image_alpha = (SDL.getTicks() - tick_start) * 256 / fade_time;
@@ -228,37 +218,19 @@ pub fn viewImageFile(file: ImageFile, display_mode: DisplayMode, delay: c_int, a
 
             while (activedelay) //Visible delay
             {
-                var event: SDL.Event = undefined;
-                while (SDL.pollEvent(&event)) {
-                    switch(event.type)
-                    {
-                        SDL.EVENT_QUIT => {
-                            return (-1);
-                        },
-
-                        SDL.EVENT_KEY_DOWN => {
-                            if (event.key.scancode == SDL.SCANCODE_RETURN or
-                                event.key.scancode == SDL.SCANCODE_KP_ENTER or
-                                event.key.scancode == SDL.SCANCODE_SPACE or
-                                event.key.scancode == SDL.SCANCODE_ESCAPE)
-                                activedelay = false;
-
-                            if (event.key.scancode == SDL.SCANCODE_F11) {
-                                window.toggle_fullscreen();
-                            }
-                        },
-
-                        SDL.EVENT_WINDOW_RESIZED,
-                        SDL.EVENT_WINDOW_PIXEL_SIZE_CHANGED,
-                        SDL.EVENT_WINDOW_MAXIMIZED,
-                        SDL.EVENT_WINDOW_RESTORED,
-                        SDL.EVENT_WINDOW_EXPOSED,
-                        => {
-                            window.window_render();
-                        },
-
-                        else => {},
-                    }
+                const input_state = input.processEvents();
+                switch (input_state.action) {
+                    .Quit => {
+                        return (-1);
+                    },
+                    .Escape, .Cancel, .Activate => {
+                        activedelay = false;
+                    },
+                    else => {},
+                }
+                if (input_state.should_redraw)
+                {
+                    window.window_render();
                 }
                 SDL.delay(1);
                 if ((SDL.getTicks() - tick_start + fade_time) >= delay) {
@@ -270,20 +242,12 @@ pub fn viewImageFile(file: ImageFile, display_mode: DisplayMode, delay: c_int, a
             tick_start = SDL.getTicks();
             // Fade to black
             while (image_alpha < 255) {
-                var event: SDL.Event = undefined;
-                while (SDL.pollEvent(&event)) {
-                    switch (event.type) {
-                        SDL.EVENT_QUIT => {
-                            return (-1);
-                        },
-
-                        SDL.EVENT_KEY_DOWN => {
-                            if (event.key.scancode == SDL.SCANCODE_F11) {
-                                window.toggle_fullscreen();
-                            }
-                        },
-                        else => {}
-                    }
+                const input_state = input.processEvents();
+                switch (input_state.action) {
+                    .Quit => {
+                        return (-1);
+                    },
+                    else => {},
                 }
 
                 image_alpha = (SDL.getTicks() - tick_start) * 256 / fade_time + fadeoutskip;
@@ -306,7 +270,7 @@ pub fn viewImageFile(file: ImageFile, display_mode: DisplayMode, delay: c_int, a
             _ = SDL.blitSurface(image_surface, &src, window.screen, &dest);
             window.window_render();
 
-            const retval = keyboard.waitforbutton();
+            const retval = input.waitforbutton();
             if (retval < 0) {
                 return retval;
             }
@@ -314,17 +278,12 @@ pub fn viewImageFile(file: ImageFile, display_mode: DisplayMode, delay: c_int, a
             const tick_start = SDL.getTicks();
             while (image_alpha < 255) //Fade to black
             {
-                var event: SDL.Event = undefined;
-                while (SDL.pollEvent(&event)) {
-                    if (event.type == SDL.EVENT_QUIT) {
+                const input_state = input.processEvents();
+                switch (input_state.action) {
+                    .Quit => {
                         return (-1);
-                    }
-
-                    if (event.type == SDL.EVENT_KEY_DOWN) {
-                        if (event.key.scancode == SDL.SCANCODE_F11) {
-                            window.toggle_fullscreen();
-                        }
-                    }
+                    },
+                    else => {},
                 }
 
                 image_alpha = (SDL.getTicks() - tick_start) * 256 / fade_time;

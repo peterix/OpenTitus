@@ -162,7 +162,7 @@ pub fn init(allocator: Allocator) bool {
     tracking_map = TrackingHashMap.init(allocator);
     sdl_allocations = std.AutoHashMap(usize, usize).init(allocator);
     _ = @This().SDL_SetMemoryFunctions(sdl_malloc, sdl_calloc, sdl_realloc, sdl_free);
-    return @This().SDL_Init(@This().SDL_INIT_VIDEO);
+    return @This().SDL_Init(@This().SDL_INIT_VIDEO | @This().SDL_INIT_EVENTS | @This().SDL_INIT_JOYSTICK | @This().SDL_INIT_GAMEPAD);
 }
 
 pub fn deinit() void {
@@ -268,6 +268,7 @@ pub const blitSurface = @This().SDL_BlitSurface;
 
 pub const pollEvent = @This().SDL_PollEvent;
 pub const pumpEvents = @This().SDL_PumpEvents;
+pub const updateGamepads = @This().SDL_UpdateGamepads;
 
 pub fn getKeyboardState() []const u8 {
     var num_keys: c_int = 0;
@@ -309,3 +310,79 @@ pub const renderPresent = @This().SDL_RenderPresent;
 // IO
 
 pub const IOFromMem = @This().SDL_IOFromMem;
+
+// Gamepad support
+
+pub const EVENT_GAMEPAD_AXIS_MOTION = @This().SDL_EVENT_GAMEPAD_AXIS_MOTION;
+pub const EVENT_GAMEPAD_BUTTON_DOWN = @This().SDL_EVENT_GAMEPAD_BUTTON_DOWN;
+pub const EVENT_GAMEPAD_BUTTON_UP = @This().SDL_EVENT_GAMEPAD_BUTTON_UP;
+pub const EVENT_GAMEPAD_ADDED = @This().SDL_EVENT_GAMEPAD_ADDED;
+pub const EVENT_GAMEPAD_REMOVED = @This().SDL_EVENT_GAMEPAD_REMOVED;
+pub const EVENT_GAMEPAD_REMAPPED = @This().SDL_EVENT_GAMEPAD_REMAPPED;
+pub const EVENT_GAMEPAD_TOUCHPAD_DOWN = @This().SDL_EVENT_GAMEPAD_TOUCHPAD_DOWN;
+pub const EVENT_GAMEPAD_TOUCHPAD_MOTION = @This().SDL_EVENT_GAMEPAD_TOUCHPAD_MOTION;
+pub const EVENT_GAMEPAD_TOUCHPAD_UP = @This().SDL_EVENT_GAMEPAD_TOUCHPAD_UP;
+pub const EVENT_GAMEPAD_SENSOR_UPDATE = @This().SDL_EVENT_GAMEPAD_SENSOR_UPDATE;
+pub const EVENT_GAMEPAD_UPDATE_COMPLETE = @This().SDL_EVENT_GAMEPAD_UPDATE_COMPLETE;
+pub const EVENT_GAMEPAD_STEAM_HANDLE_UPDATED = @This().SDL_EVENT_GAMEPAD_STEAM_HANDLE_UPDATED;
+
+pub const GAMEPAD_BUTTON_INVALID = @This().SDL_GAMEPAD_BUTTON_INVALID;
+pub const GAMEPAD_BUTTON_SOUTH = @This().SDL_GAMEPAD_BUTTON_SOUTH; // Bottom face button (e.g. Xbox A button)
+pub const GAMEPAD_BUTTON_EAST = @This().SDL_GAMEPAD_BUTTON_EAST; // Right face button (e.g. Xbox B button)
+pub const GAMEPAD_BUTTON_WEST = @This().SDL_GAMEPAD_BUTTON_WEST; // Left face button (e.g. Xbox X button)
+pub const GAMEPAD_BUTTON_NORTH = @This().SDL_GAMEPAD_BUTTON_NORTH; // Top face button (e.g. Xbox Y button)
+pub const GAMEPAD_BUTTON_BACK = @This().SDL_GAMEPAD_BUTTON_BACK; // Right center button on Xbox
+pub const GAMEPAD_BUTTON_GUIDE = @This().SDL_GAMEPAD_BUTTON_GUIDE; // Big center button (Xbox, Steam, etc. logo buttons)
+pub const GAMEPAD_BUTTON_START = @This().SDL_GAMEPAD_BUTTON_START; // Left center button on Xbox
+pub const GAMEPAD_BUTTON_LEFT_STICK = @This().SDL_GAMEPAD_BUTTON_LEFT_STICK;
+pub const GAMEPAD_BUTTON_RIGHT_STICK = @This().SDL_GAMEPAD_BUTTON_RIGHT_STICK;
+pub const GAMEPAD_BUTTON_LEFT_SHOULDER = @This().SDL_GAMEPAD_BUTTON_LEFT_SHOULDER;
+pub const GAMEPAD_BUTTON_RIGHT_SHOULDER = @This().SDL_GAMEPAD_BUTTON_RIGHT_SHOULDER;
+pub const GAMEPAD_BUTTON_DPAD_UP = @This().SDL_GAMEPAD_BUTTON_DPAD_UP;
+pub const GAMEPAD_BUTTON_DPAD_DOWN = @This().SDL_GAMEPAD_BUTTON_DPAD_DOWN;
+pub const GAMEPAD_BUTTON_DPAD_LEFT = @This().SDL_GAMEPAD_BUTTON_DPAD_LEFT;
+pub const GAMEPAD_BUTTON_DPAD_RIGHT = @This().SDL_GAMEPAD_BUTTON_DPAD_RIGHT;
+pub const GAMEPAD_BUTTON_MISC1 = @This().SDL_GAMEPAD_BUTTON_MISC1; // Additional button (e.g. Xbox Series X share button)
+pub const GAMEPAD_BUTTON_RIGHT_PADDLE1 = @This().SDL_GAMEPAD_BUTTON_RIGHT_PADDLE1; // Upper or primary paddle, under your right hand (e.g. Xbox Elite paddle P1)
+pub const GAMEPAD_BUTTON_LEFT_PADDLE1 = @This().SDL_GAMEPAD_BUTTON_LEFT_PADDLE1; // Upper or primary paddle, under your left hand (e.g. Xbox Elite paddle P3)
+pub const GAMEPAD_BUTTON_RIGHT_PADDLE2 = @This().SDL_GAMEPAD_BUTTON_RIGHT_PADDLE2; // Lower or secondary paddle, under your right hand (e.g. Xbox Elite paddle P2)
+pub const GAMEPAD_BUTTON_LEFT_PADDLE2 = @This().SDL_GAMEPAD_BUTTON_LEFT_PADDLE2; // Lower or secondary paddle, under your left hand (e.g. Xbox Elite paddle P4)
+pub const GAMEPAD_BUTTON_TOUCHPAD = @This().SDL_GAMEPAD_BUTTON_TOUCHPAD; // PS4/PS5 touchpad button
+pub const GAMEPAD_BUTTON_MISC2 = @This().SDL_GAMEPAD_BUTTON_MISC2;
+pub const GAMEPAD_BUTTON_MISC3 = @This().SDL_GAMEPAD_BUTTON_MISC3;
+pub const GAMEPAD_BUTTON_MISC4 = @This().SDL_GAMEPAD_BUTTON_MISC4;
+pub const GAMEPAD_BUTTON_MISC5 = @This().SDL_GAMEPAD_BUTTON_MISC5;
+pub const GAMEPAD_BUTTON_MISC6 = @This().SDL_GAMEPAD_BUTTON_MISC6;
+pub const GAMEPAD_BUTTON_COUNT = @This().SDL_GAMEPAD_BUTTON_COUNT;
+
+pub const GAMEPAD_AXIS_INVALID = @This().SDL_GAMEPAD_AXIS_INVALID;
+pub const GAMEPAD_AXIS_LEFTX = @This().SDL_GAMEPAD_AXIS_LEFTX;
+pub const GAMEPAD_AXIS_LEFTY = @This().SDL_GAMEPAD_AXIS_LEFTY;
+pub const GAMEPAD_AXIS_RIGHTX = @This().SDL_GAMEPAD_AXIS_RIGHTX;
+pub const GAMEPAD_AXIS_RIGHTY = @This().SDL_GAMEPAD_AXIS_RIGHTY;
+pub const GAMEPAD_AXIS_LEFT_TRIGGER = @This().SDL_GAMEPAD_AXIS_LEFT_TRIGGER;
+pub const GAMEPAD_AXIS_RIGHT_TRIGGER = @This().SDL_GAMEPAD_AXIS_RIGHT_TRIGGER;
+pub const GAMEPAD_AXIS_COUNT = @This().SDL_GAMEPAD_AXIS_COUNT;
+
+pub const PROP_GAMEPAD_CAP_MONO_LED_BOOLEAN = @This().SDL_PROP_GAMEPAD_CAP_MONO_LED_BOOLEAN;
+pub const PROP_GAMEPAD_CAP_RGB_LED_BOOLEAN = @This().SDL_PROP_GAMEPAD_CAP_RGB_LED_BOOLEAN;
+pub const PROP_GAMEPAD_CAP_PLAYER_LED_BOOLEAN = @This().SDL_PROP_GAMEPAD_CAP_PLAYER_LED_BOOLEAN;
+pub const PROP_GAMEPAD_CAP_RUMBLE_BOOLEAN = @This().SDL_PROP_GAMEPAD_CAP_RUMBLE_BOOLEAN;
+pub const PROP_GAMEPAD_CAP_TRIGGER_RUMBLE_BOOLEAN = @This().SDL_PROP_GAMEPAD_CAP_TRIGGER_RUMBLE_BOOLEAN;
+
+pub const JoystickID = @This().SDL_JoystickID;
+pub const PropertiesID = @This().SDL_PropertiesID;
+pub const Gamepad = @This().SDL_Gamepad;
+
+pub const openGamepad = @This().SDL_OpenGamepad;
+pub const isGamepad = @This().SDL_IsGamepad;
+pub const closeGamepad = @This().SDL_CloseGamepad;
+pub const getGamepadProperties = @This().SDL_GetGamepadProperties;
+
+// Thumbstick axis values range from SDL_JOYSTICK_AXIS_MIN to SDL_JOYSTICK_AXIS_MAX, and are centered within ~8000 of zero,
+// though advanced UI will allow users to set or autodetect the dead zone, which varies between gamepads.
+
+// Trigger axis values range from 0 (released) to SDL_JOYSTICK_AXIS_MAX (fully pressed) when reported by SDL_GetGamepadAxis().
+// Note that this is not the same range that will be reported by the lower-level SDL_GetJoystickAxis().
+pub const JOYSTICK_AXIS_MIN = @This().SDL_JOYSTICK_AXIS_MIN;
+pub const JOYSTICK_AXIS_MAX = @This().SDL_JOYSTICK_AXIS_MAX;

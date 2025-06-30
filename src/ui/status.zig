@@ -28,7 +28,7 @@ const std = @import("std");
 const SDL = @import("../SDL.zig");
 
 const window = @import("../window.zig");
-const keyboard = @import("keyboard.zig");
+const input = @import("../input.zig");
 const data = @import("../data.zig");
 const fonts = @import("fonts.zig");
 const globals = @import("../globals.zig");
@@ -134,7 +134,7 @@ pub fn viewstatus(level: *lvl.Level, countbonus: bool) c_int {
     window.window_render();
 
     if (countbonus and (level.extrabonus >= 10)) {
-        retval = keyboard.waitforbutton();
+        retval = input.waitforbutton();
         if (retval < 0) {
             return retval;
         }
@@ -154,7 +154,7 @@ pub fn viewstatus(level: *lvl.Level, countbonus: bool) c_int {
         }
     }
 
-    retval = keyboard.waitforbutton();
+    retval = input.waitforbutton();
     if (retval < 0)
         return retval;
 

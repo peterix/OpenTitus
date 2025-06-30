@@ -31,8 +31,10 @@ const window = @import("../window.zig");
 const audio = @import("../audio/audio.zig");
 const BackendType = audio.BackendType;
 
+const input = @import("../input.zig");
+const InputAction = input.InputAction;
+
 const menu = @import("menu.zig");
-const MenuAction = menu.MenuAction;
 const MenuContext = menu.MenuContext;
 
 const x_baseline = 90;
@@ -49,7 +51,7 @@ fn enumOptions(
     value: T,
     y: i16,
     selected: bool,
-    action: MenuAction,
+    action: InputAction,
     setter: *const fn (T) void,
 ) void {
     if (@typeInfo(T) != .@"enum") {
@@ -91,7 +93,7 @@ fn toggle(
     value: bool,
     y: i16,
     selected: bool,
-    action: MenuAction,
+    action: InputAction,
     setter: *const fn (bool) void,
 ) void {
     const options = fonts.Font.RenderOptions{ .transpatent = true };
@@ -161,7 +163,7 @@ fn slider(
     comptime max: T,
     y: i16,
     selected: bool,
-    action: MenuAction,
+    action: InputAction,
     setter: *const fn (T) void,
 ) void {
     const options = fonts.Font.RenderOptions{ .transpatent = true };
@@ -207,12 +209,12 @@ pub fn optionsMenu(menu_context: *MenuContext) ?c_int {
         const timeout = menu_context.updateBackground();
         SDL.delay(timeout);
 
-        const action = menu.getMenuAction();
-        switch (action) {
+        const input_state = input.processEvents();
+        switch (input_state.action) {
             .Quit => {
                 return -1;// c.TITUS_ERROR_QUIT;
             },
-            .ExitMenu => {
+            .Escape, .Cancel => {
                 return null;
             },
             .Up => {
@@ -243,7 +245,7 @@ pub fn optionsMenu(menu_context: *MenuContext) ?c_int {
             audio.getBackendType(),
             y,
             selected == 0,
-            action,
+            input_state.action,
             audio.setBackendType,
         );
         y += 13;
@@ -252,7 +254,7 @@ pub fn optionsMenu(menu_context: *MenuContext) ?c_int {
             audio.music_is_playing(),
             y,
             selected == 1,
-            action,
+            input_state.action,
             audio.music_set_playing,
         );
         y += 13;
@@ -264,7 +266,7 @@ pub fn optionsMenu(menu_context: *MenuContext) ?c_int {
             128,
             y,
             selected == 2,
-            action,
+            input_state.action,
             audio.set_volume,
         );
         y += 13;

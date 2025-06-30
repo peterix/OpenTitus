@@ -45,8 +45,9 @@ const gates = @import("gates.zig");
 const lvl = @import("level.zig");
 const player = @import("player.zig");
 
+const input = @import("input.zig");
+
 const image = @import("ui/image.zig");
-const keyboard = @import("ui/keyboard.zig");
 const status = @import("ui/status.zig");
 const final_cutscene = @import("final_cutscene.zig");
 
@@ -307,7 +308,7 @@ fn gameover(context: *ScreenContext, level: *lvl.Level) void {
         plr.sprite2.x += 8;
         plr.sprite3.x -= 8;
     }
-    if (keyboard.waitforbutton() < 0)
+    if (input.waitforbutton() < 0)
         return;
 
     render.fadeout();

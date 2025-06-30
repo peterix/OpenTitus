@@ -49,7 +49,7 @@ const fonts = @import("ui/fonts.zig");
 const image = @import("ui/image.zig");
 const ImageFile = image.ImageFile;
 const intro_text = @import("ui/intro_text.zig");
-const keyboard = @import("ui/keyboard.zig");
+const input = @import("input.zig");
 const main_menu = @import("ui/main_menu.zig");
 
 const audio = @import("audio/audio.zig");
@@ -64,6 +64,7 @@ const ManagedJSON = json.ManagedJSON;
 const TitusError = error{
     CannotReadConfig,
     CannotInitSDL,
+    CannotInitInput,
     CannotInitAudio,
     CannotInitFonts,
 };
@@ -100,11 +101,19 @@ pub fn run() !u8 {
     game_state = &game_state_mem.value;
     defer game_state_mem.deinit();
 
+    // NOTE: we want to allocate memory for gamepad state before we start up SDL
+    if(!input.init(allocator)) {
+        std.debug.print("Unable to initialize Input...\n", .{});
+        return TitusError.CannotInitInput;
+    }
+
     if (!SDL.init(allocator)) {
         std.debug.print("Unable to initialize SDL: {s}\n", .{SDL.getError()});
         return TitusError.CannotInitSDL;
     }
     defer SDL.deinit();
+    // NOTE: we want to close the gamepads before SDL exits
+    defer input.deinit();
 
     try window.window_init();
     defer window.window_deinit();

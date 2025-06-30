@@ -36,6 +36,7 @@ const render = @import("render.zig");
 const audio = @import("audio/audio.zig");
 const sprites = @import("sprites.zig");
 const common = @import("common.zig");
+const input = @import("input.zig");
 
 const credits = @import("ui/credits.zig");
 const pause_menu = @import("ui/pause_menu.zig");
@@ -49,14 +50,8 @@ fn add_carry() u8 {
     }
 }
 
-fn handle_player_input(player: *lvl.Player, keystate: []const u8) void {
-    player.x_axis = @as(i8, @intCast(keystate[SDL.SCANCODE_RIGHT] | keystate[SDL.SCANCODE_D])) - @as(i8, @intCast(keystate[SDL.SCANCODE_LEFT] | keystate[SDL.SCANCODE_A]));
-    player.y_axis = @as(i8, @intCast(keystate[SDL.SCANCODE_DOWN] | keystate[SDL.SCANCODE_S])) - @as(i8, @intCast(keystate[SDL.SCANCODE_UP] | keystate[SDL.SCANCODE_W]));
-    player.action_pressed = keystate[SDL.SCANCODE_SPACE] != 0;
-}
-
 pub fn move_player(arg_context: *render.ScreenContext, arg_level: *lvl.Level) c_int {
-    // Part 1: Check keyboard input
+    // Part 1: Gather input state
     // Part 2: Determine the player's action, and execute action dependent code
     // Part 3: Move the player + collision detection
     // Part 4: Move the throwed/carried object
@@ -64,96 +59,37 @@ pub fn move_player(arg_context: *render.ScreenContext, arg_level: *lvl.Level) c_
 
     const context = arg_context;
     const level = arg_level;
-    var retval: c_int = undefined;
-    var newsensX: i8 = undefined;
-    var event: SDL.Event = undefined;
-    var newX: i16 = undefined;
-    var newY: i16 = undefined;
-    var pause: bool = false;
+    const player = &level.*.player;
 
-    // Part 1: Check keyboard input
-    SDL.pumpEvents();
-    const keystate = SDL.getKeyboardState();
-    const mods: SDL.Keymod = SDL.getModState();
-
-    // TODO: move this to input.zig or some such place
-    while (SDL.pollEvent(&event)) {
-        switch(event.type) {
-            SDL.EVENT_QUIT => {
+    // Part 1: Gather input state
+    {
+        const input_state = input.processEvents();
+        switch (input_state.action) {
+            .Quit => {
                 return -1;
             },
-            SDL.EVENT_KEY_DOWN => {
-                const key_press = event.key.scancode;
-                if (key_press == SDL.SCANCODE_G and game.settings.devmode) {
-                    if (globals.GODMODE) {
-                        globals.GODMODE = false;
-                        globals.NOCLIP = false;
-                    } else {
-                        globals.GODMODE = true;
-                    }
-                } else if (key_press == SDL.SCANCODE_N and game.settings.devmode) {
-                    if (globals.NOCLIP) {
-                        globals.NOCLIP = false;
-                    } else {
-                        globals.NOCLIP = true;
-                        globals.GODMODE = true;
-                    }
-                } else if (key_press == SDL.SCANCODE_D and game.settings.devmode) {
-                    globals.DISPLAYLOOPTIME = !globals.DISPLAYLOOPTIME;
-                } else if (key_press == SDL.SCANCODE_Q) {
-                    if ((mods & @as(c_uint, @bitCast(SDL.KMOD_ALT | SDL.KMOD_CTRL))) != 0) {
-                        _ = credits.credits_screen();
-                        if (level.*.extrabonus >= 10) {
-                            level.*.extrabonus -= 10;
-                            level.*.lives += 1;
-                        }
-                    }
-                } else if (key_press == SDL.SCANCODE_F11) {
-                    window.toggle_fullscreen();
-                } else if (key_press == SDL.SCANCODE_ESCAPE) {
-                    pause = true;
+            .Escape, .ToggleMenu => {
+                const retval = pause_menu.pauseMenu(context);
+                if (retval < 0) {
+                    return retval;
                 }
+            },
+            .Status => {
+                _ = status.viewstatus(level, false);
             },
             else => {},
         }
 
+        player.x_axis = input_state.x_axis;
+        player.y_axis = input_state.y_axis;
+        player.action_pressed = input_state.action_pressed;
+        player.jump_pressed = input_state.jump_pressed;
     }
-    if (pause) {
-        retval = pause_menu.pauseMenu(context);
-        if (retval < 0) {
-            return retval;
-        }
-    }
-    if (keystate[SDL.SCANCODE_F1] != 0 and globals.RESETLEVEL_FLAG == 0) {
-        globals.RESETLEVEL_FLAG = 2;
-        return 0;
-    }
-    if (game.settings.devmode) {
-        if (keystate[SDL.SCANCODE_F2] != 0) {
-            globals.GAMEOVER_FLAG = true;
-            return 0;
-        }
-        if (keystate[SDL.SCANCODE_F3] != 0) {
-            globals.NEWLEVEL_FLAG = true;
-            globals.SKIPLEVEL_FLAG = true;
-        }
-    }
-    if (keystate[SDL.SCANCODE_E] != 0) {
-        globals.BAR_FLAG = 50;
-    }
-    if (keystate[SDL.SCANCODE_F4] != 0) {
-        _ = status.viewstatus(level, false);
-    }
-    const player = &level.*.player;
-    handle_player_input(player, keystate);
 
     // Part 2: Determine the player's action, and execute action dependent code
-
-    globals.X_FLAG = player.x_axis != 0;
-    globals.Y_FLAG = player.y_axis != 0;
     if (globals.NOCLIP) {
-        player.*.sprite.speed_x = player.*.x_axis * 100;
-        player.*.sprite.speed_y = player.*.y_axis * 100;
+        player.*.sprite.speed_x = player.x_axis * 100;
+        player.*.sprite.speed_y = player.y_axis * 100;
         player.*.sprite.x += player.*.sprite.speed_x >> 4;
         player.*.sprite.y += player.*.sprite.speed_y >> 4;
         return 0;
@@ -174,18 +110,18 @@ pub fn move_player(arg_context: *render.ScreenContext, arg_level: *lvl.Level) c_
         globals.GRANDBRULE_FLAG = false;
         if (globals.LADDER_FLAG) {
             action = 6; // Action: climb
-        } else if (!globals.PRIER_FLAG and player.y_axis < 0 and globals.SAUT_FLAG == 0) {
+        } else if (!globals.PRIER_FLAG and player.jump_pressed and player.y_axis <= 0 and globals.SAUT_FLAG == 0) {
             action = 2; // Action: jump
             if (globals.LAST_ORDER == 5) { // Test if last order was kneestanding
                 globals.FURTIF_FLAG = 100; // If jump after kneestanding, init silent walk timer
             }
         } else if (globals.PRIER_FLAG or (globals.SAUT_FLAG != 6 and player.y_axis > 0)) {
-            if (globals.X_FLAG) { // Move left or right
+            if (player.x_axis != 0) { // Move left or right
                 action = 3; // Action: crawling
             } else {
                 action = 5; // Action: kneestand
             }
-        } else if (globals.X_FLAG) {
+        } else if (player.x_axis != 0) {
             action = 1; // Action: walk
         } else {
             action = 0; // Action: rest (no action)
@@ -209,6 +145,7 @@ pub fn move_player(arg_context: *render.ScreenContext, arg_level: *lvl.Level) c_
         action += 16;
     }
 
+    var newsensX: i8 = undefined;
     if (globals.CHOC_FLAG != 0 or globals.KICK_FLAG != 0) {
         if (globals.SENSX < 0) {
             newsensX = -1;
@@ -258,7 +195,7 @@ pub fn move_player(arg_context: *render.ScreenContext, arg_level: *lvl.Level) c_
     // Move throwed/carried object
     if (globals.DROP_FLAG) {
         // sprite2: throwed or dropped object
-        newX = (player.sprite2.speed_x >> 4) + player.sprite2.x;
+        const newX: i16 = (player.sprite2.speed_x >> 4) + player.sprite2.x;
         if ((newX < (level.width << 4)) and // Left for right level edge
             (newX >= 0) and // Right for level left edge
             (newX >=
@@ -269,7 +206,7 @@ pub fn move_player(arg_context: *render.ScreenContext, arg_level: *lvl.Level) c_
             globals.GESTION_X))
         { // Max 40 pixels right for screen
             player.sprite2.x = newX;
-            newY = (player.sprite2.speed_y >> 4) + player.sprite2.y;
+            const newY: i16 = (player.sprite2.speed_y >> 4) + player.sprite2.y;
             if ((newY < (level.height << 4)) and // Above bottom edge of level
                 (newY >= 0) and // Below top edge of level
                 (newY >=
@@ -665,7 +602,7 @@ fn player_fall(level: *lvl.Level) void {
 fn XACCELERATION(player: *lvl.Player, maxspeed: i16) void {
     // Sideway acceleration
     var changeX: i16 = undefined;
-    if (globals.X_FLAG) {
+    if (player.x_axis != 0) {
         changeX = (globals.SENSX << 4) >> @truncate(player.GLISSE);
     } else {
         changeX = 0;
@@ -927,7 +864,7 @@ fn ACTION_PRG(level: *lvl.Level, action: u8) void {
         },
         6, 22 => {
             // Climb a ladder
-            if (globals.X_FLAG) {
+            if (player.x_axis != 0) {
                 XACCELERATION(player, globals.MAX_X * 16);
             } else {
                 player_friction(player);
@@ -939,7 +876,7 @@ fn ACTION_PRG(level: *lvl.Level, action: u8) void {
                     sprites.updatesprite(level, &player.*.sprite, 23, true); // First climb sprite (c)
                 }
             }
-            if (globals.Y_FLAG) {
+            if (player.y_axis != 0) {
                 NEW_FORM(player, 6 + add_carry());
                 GET_IMAGE(level);
                 player.sprite.x = @as(i16, @bitCast(@as(u16, @bitCast(player.*.sprite.x)) & 0xFFF0)) + 8;
@@ -1375,7 +1312,7 @@ fn player_collide_with_objects(level: *lvl.Level) void {
         if (player.y_axis > 0) {
             player.sprite.speed_y = 0;
         } else {
-            if (player.y_axis < 0) {
+            if (player.y_axis < 0 or player.jump_pressed) {
                 player.sprite.speed_y += 16 * 3; // increase speed
             } else {
                 player.sprite.speed_y -= 16; // reduce speed

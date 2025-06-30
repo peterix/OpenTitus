@@ -27,7 +27,7 @@ const std = @import("std");
 
 const window = @import("../window.zig");
 const audio = @import("../audio/audio.zig");
-const keyboard = @import("keyboard.zig");
+const input = @import("../input.zig");
 const fonts = @import("fonts.zig");
 
 // TODO: check for the actual names, some accented characters may have been lost because of technical limitations
@@ -61,7 +61,7 @@ pub fn credits_screen() c_int {
     fonts.Gold.render_center("Cristelle, Ana Luisa, Corinne and Manou.", y, options);
     window.window_render();
 
-    const retval = keyboard.waitforbutton();
+    const retval = input.waitforbutton();
     if (retval < 0)
         return retval;
 

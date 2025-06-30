@@ -179,10 +179,11 @@ pub const Player = struct {
     inithp: u8,
     GLISSE: u8, //Friction (0-3). 0: full friction, 3: max sliding
 
-    // Player input this frame
+    // Player input in the current frame
     x_axis: i8,
     y_axis: i8,
     action_pressed: bool,
+    jump_pressed: bool,
 };
 
 pub const BONUS_CAPACITY = 100;

@@ -26,7 +26,7 @@
 const std = @import("std");
 
 const window = @import("../window.zig");
-const keyboard = @import("keyboard.zig");
+const input = @import("../input.zig");
 const fonts = @import("fonts.zig");
 
 // TODO: this is a nice throwback in the original game, but maybe we could do something better.
@@ -49,7 +49,7 @@ pub fn viewintrotext(_: std.mem.Allocator) !c_int {
 //
 //     window.window_render();
 //
-//     const retval = keyboard.waitforbutton();
+//     const retval = input.waitforbutton();
 //     if (retval < 0)
 //         return retval;
 //

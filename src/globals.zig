@@ -52,12 +52,6 @@ pub var GAMEOVER_FLAG: bool = false;
 // timer for health bar
 pub var BAR_FLAG: u8 = 0;
 
-// true if left or right key is pressed
-pub var X_FLAG: bool = false;
-
-// true if up or down key is pressed
-pub var Y_FLAG: bool = false;
-
 // headache timer
 pub var CHOC_FLAG: u8 = 0;
 

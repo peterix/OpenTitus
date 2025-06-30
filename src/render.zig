@@ -30,6 +30,7 @@ const window = @import("window.zig");
 const fonts = @import("ui/fonts.zig");
 const sprites = @import("sprites.zig");
 const lvl = @import("level.zig");
+const input = @import("input.zig");
 
 const SDL = @import("SDL.zig");
 
@@ -249,24 +250,16 @@ pub fn fadeout() void {
     var image_alpha: u64 = 0;
     while (image_alpha < 255) //Fade to black
     {
-        var event: SDL.Event = undefined;
-        while (SDL.pollEvent(&event)) {
-            switch(event.type) {
-                SDL.EVENT_QUIT => {
-                    // FIXME: handle this better
-                    return;
-                },
-                SDL.EVENT_KEY_DOWN => {
-                    if (event.key.scancode == SDL.SCANCODE_ESCAPE) {
-                        // FIXME: handle this better
-                        return;
-                    }
-                    if (event.key.scancode == SDL.SCANCODE_F11) {
-                        window.toggle_fullscreen();
-                    }
-                },
-                else => { },
-            }
+        const input_state = input.processEvents();
+        switch (input_state.action) {
+            .Quit => {
+                // FIXME: handle this better
+                return;
+            },
+            .Escape, .Cancel => {
+                return;
+            },
+            else => {},
         }
 
         image_alpha = (SDL.getTicks() - tick_start) * 256 / fade_time;

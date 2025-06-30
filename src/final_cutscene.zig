@@ -30,7 +30,7 @@ const scroll = @import("scroll.zig");
 const render = @import("render.zig");
 const ScreenContext = render.ScreenContext;
 const window = @import("window.zig");
-const keyboard = @import("ui/keyboard.zig");
+const input = @import("input.zig");
 const lvl = @import("level.zig");
 
 const anim_zoubida: []const i16 = &.{ 337, 337, 337, 338, 338, 338, 339, 339, 339, 340, 340, 340, 341, 341, 341, 342, 342, 342, -18 };
@@ -114,25 +114,15 @@ pub fn play(context: *ScreenContext, level: *lvl.Level) c_int {
         render.render_sprites(level);
         render.flip_screen(context, true);
 
-        SDL.pumpEvents(); //Update keyboard state
-
-        var event: SDL.Event = undefined;
-        //Check all events
-        while (SDL.pollEvent(&event)) {
-            if (event.type == SDL.EVENT_QUIT) {
+        const input_state = input.processEvents();
+        switch (input_state.action) {
+            .Quit => {
                 return -1; //c.TITUS_ERROR_QUIT;
-            } else if (event.type == SDL.EVENT_KEY_DOWN) {
-                if (event.key.scancode == SDL.SCANCODE_F11) {
-                    window.toggle_fullscreen();
-                } else if (event.key.scancode == SDL.SCANCODE_RETURN or
-                    event.key.scancode == SDL.SCANCODE_KP_ENTER or
-                    event.key.scancode == SDL.SCANCODE_SPACE or
-                    event.key.scancode == SDL.SCANCODE_ESCAPE)
-                {
-                    pass = true;
-                    break;
-                }
-            }
+            },
+            .Escape, .Cancel, .Activate => {
+                pass = true;
+            },
+            else => {},
         }
     }
 
@@ -152,5 +142,5 @@ pub fn play(context: *ScreenContext, level: *lvl.Level) c_int {
         player.sprite.x += 8;
         player.sprite3.x -= 8;
     }
-    return keyboard.waitforbutton();
+    return input.waitforbutton();
 }

@@ -59,8 +59,6 @@ pub fn CLEAR_DATA(level: *lvl.Level) void {
     globals.TAPISFLY_FLAG = 0;
     globals.FUME_FLAG = 0;
     globals.BAR_FLAG = 0;
-    globals.X_FLAG = false;
-    globals.Y_FLAG = false;
     globals.CARRY_FLAG = false;
     globals.DROP_FLAG = false;
     globals.DROPREADY_FLAG = false;

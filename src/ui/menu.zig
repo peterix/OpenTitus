@@ -1,17 +1,6 @@
 const SDL = @import("../SDL.zig");
 const window = @import("../window.zig");
 
-pub const MenuAction = enum {
-    None,
-    Quit,
-    ExitMenu,
-    Left,
-    Right,
-    Up,
-    Down,
-    Activate,
-};
-
 pub const MenuContext = struct {
     background_fade: u8 = 0,
     background_image: *SDL.Surface,
@@ -33,52 +22,3 @@ pub const MenuContext = struct {
         return 10;
     }
 };
-
-pub fn getMenuAction() MenuAction {
-    var action: MenuAction = .None;
-    var event: SDL.Event = undefined;
-    while (SDL.pollEvent(&event)) {
-        switch (event.type) {
-            SDL.EVENT_QUIT => {
-                return .Quit;
-            },
-            SDL.EVENT_KEY_DOWN => {
-                switch (event.key.scancode) {
-                    SDL.SCANCODE_ESCAPE,
-                    SDL.SCANCODE_BACKSPACE,
-                    => {
-                        return .ExitMenu;
-                    },
-                    SDL.SCANCODE_KP_ENTER,
-                    SDL.SCANCODE_RETURN,
-                    SDL.SCANCODE_SPACE,
-                    => {
-                        action = .Activate;
-                    },
-                    SDL.SCANCODE_F11 => {
-                        window.toggle_fullscreen();
-                    },
-                    SDL.SCANCODE_DOWN => {
-                        action = .Down;
-                    },
-                    SDL.SCANCODE_UP => {
-                        action = .Up;
-                    },
-                    SDL.SCANCODE_LEFT => {
-                        action = .Left;
-                    },
-                    SDL.SCANCODE_RIGHT => {
-                        action = .Right;
-                    },
-                    else => {
-                        // NOOP
-                    },
-                }
-            },
-            else => {
-                // NOOP
-            },
-        }
-    }
-    return action;
-}

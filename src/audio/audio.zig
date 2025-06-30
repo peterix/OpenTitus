@@ -31,6 +31,8 @@ pub const BackendType = AudioEngine.BackendType;
 
 const game = @import("../game.zig");
 const SDL = @import("../SDL.zig");
+const input = @import("../input.zig");
+const window = @import("../window.zig");
 
 const miniaudio = @import("miniaudio/miniaudio.zig");
 
@@ -66,30 +68,24 @@ pub fn music_wait_to_finish() void {
         return;
     }
 
-    var waiting: bool = true;
-    while (waiting) {
+    while (true) {
         SDL.delay(1);
-        var event: SDL.Event = undefined;
-        while (SDL.pollEvent(&event)) {
-            switch(event.type) {
-                SDL.EVENT_QUIT => {
-                    // FIXME: handle this better
-                    //return TITUS_ERROR_QUIT;
-                    return;
-                },
-                SDL.EVENT_KEY_DOWN => {
-                    if (event.key.scancode == SDL.SCANCODE_ESCAPE) {
-                        // FIXME: handle this better
-                        // return TITUS_ERROR_QUIT;
-                        return;
-                    }
-                },
-                else => {}
-            }
-
+        const input_state = input.processEvents();
+        switch (input_state.action) {
+            .Quit => {
+                // FIXME: handle this better
+                return;
+            },
+            .Escape, .Cancel => {
+                return;
+            },
+            else => {},
+        }
+        if (input_state.should_redraw) {
+            window.window_render();
         }
         if (!engine.backend.?.isPlayingATrack()) {
-            waiting = false;
+            return;
         }
     }
 }

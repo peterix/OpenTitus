@@ -35,6 +35,7 @@ const game = @import("../game.zig");
 const fonts = @import("fonts.zig");
 const render = @import("../render.zig");
 const ImageFile = image.ImageFile;
+const input = @import("../input.zig");
 
 // TODO: redo all UI
 // - Add settings menu
@@ -101,20 +102,12 @@ pub fn view_menu(file: ImageFile, allocator: std.mem.Allocator) !?usize {
 
     // Fade in
     while (image_alpha < 255) {
-        var event: SDL.Event = undefined;
-        while (SDL.pollEvent(&event)) {
-            if (event.type == SDL.EVENT_QUIT) {
+        const input_state = input.processEvents();
+        switch (input_state.action) {
+            .Escape, .Cancel, .Quit => {
                 return null;
-            }
-
-            if (event.type == SDL.EVENT_KEY_DOWN) {
-                if (event.key.scancode == SDL.SCANCODE_ESCAPE) {
-                    return null;
-                }
-                if (event.key.scancode == SDL.SCANCODE_F11) {
-                    window.toggle_fullscreen();
-                }
-            }
+            },
+            else => {},
         }
 
         image_alpha = (SDL.getTicks() - tick_start) * 256 / fade_time;
@@ -136,55 +129,36 @@ pub fn view_menu(file: ImageFile, allocator: std.mem.Allocator) !?usize {
     var curlevel: ?usize = null;
     // View the menu
     MENULOOP: while (true) {
-        var event: SDL.Event = undefined;
-        while (SDL.pollEvent(&event)) {
-            if (event.type == SDL.EVENT_QUIT) {
+        const input_state = input.processEvents();
+        switch (input_state.action) {
+            .Escape, .Cancel, .Quit => {
                 return null;
-            }
-
-            if (event.type == SDL.EVENT_KEY_DOWN) {
-                if (event.key.scancode == SDL.SCANCODE_ESCAPE) {
-                    return null;
-                }
-                if (event.key.scancode == SDL.SCANCODE_UP)
-                    selection = 0;
-                if (event.key.scancode == SDL.SCANCODE_DOWN)
-                    selection = 1;
-                if (event.key.scancode == SDL.SCANCODE_RETURN or
-                    event.key.scancode == SDL.SCANCODE_KP_ENTER or
-                    event.key.scancode == SDL.SCANCODE_SPACE)
-                {
-                    switch (selection) {
-                        0 => {
-                            curlevel = 0;
+            },
+            .Up => {
+                selection = 0;
+            },
+            .Down => {
+                selection = 1;
+            },
+            .Activate => {
+                switch (selection) {
+                    0 => {
+                        curlevel = 0;
+                        break :MENULOOP;
+                    },
+                    1 => {
+                        curlevel = try select_level(allocator);
+                        if (curlevel != null) {
                             break :MENULOOP;
-                        },
-                        1 => {
-                            curlevel = try select_level(allocator);
-                            if (curlevel != null) {
-                                break :MENULOOP;
-                            }
-                            // retval = enterpassword(levelcount);
-
-                            // if (retval < 0)
-                            //     return retval;
-
-                            // if (retval > 0) {
-                            //     curlevel = retval;
-                            // }
-                            // selection = 0;
-                        },
-                        // TODO: implement options menu
-                        else => {
-                            unreachable;
-                        },
-                    }
+                        }
+                    },
+                    // TODO: implement options menu
+                    else => {
+                        unreachable;
+                    },
                 }
-
-                if (event.key.scancode == SDL.SCANCODE_F11) {
-                    window.toggle_fullscreen();
-                }
-            }
+            },
+            else => {},
         }
 
         window.window_clear(null);
@@ -253,36 +227,27 @@ fn select_level(allocator: std.mem.Allocator) !?usize {
     }
 
     while (true) {
-        var event: SDL.Event = undefined;
-        while (SDL.pollEvent(&event)) {
-            if (event.type == SDL.EVENT_QUIT) {
+        const input_state = input.processEvents();
+        switch (input_state.action) {
+            .Escape, .Cancel, .Quit => {
                 return null;
-            }
-
-            if (event.type == SDL.EVENT_KEY_DOWN) {
-                if (event.key.scancode == SDL.SCANCODE_ESCAPE) {
-                    return null;
+            },
+            .Up => {
+                if (selection > 0) {
+                    selection -= 1;
                 }
-                if (event.key.scancode == SDL.SCANCODE_DOWN) {
-                    if (selection < level_list.items.len - 1) {
-                        selection += 1;
-                    }
+            },
+            .Down => {
+                if (selection < level_list.items.len - 1) {
+                    selection += 1;
                 }
-                if (event.key.scancode == SDL.SCANCODE_UP) {
-                    if (selection > 0) {
-                        selection -= 1;
-                    }
-                }
-                if (event.key.scancode == SDL.SCANCODE_RETURN) {
-                    if (game.game_state.isUnlocked(selection)) {
-                        return selection;
-                    } else {}
-                }
-
-                if (event.key.scancode == SDL.SCANCODE_F11) {
-                    window.toggle_fullscreen();
-                }
-            }
+            },
+            .Activate => {
+                if (game.game_state.isUnlocked(selection)) {
+                    return selection;
+                } else {}
+            },
+            else => {},
         }
 
         // TODO: render this nicer...
