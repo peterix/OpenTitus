@@ -34,7 +34,9 @@ const Backend = @import("Backend.zig");
 const audio = @import("audio.zig");
 const AudioEngine = audio.AudioEngine;
 const AudioTrack = audio.AudioTrack;
-const AudioEvent = audio.AudioEvent;
+
+const events = @import("../events.zig");
+const GameEvent = events.GameEvent;
 
 sample_rate: u32 = undefined,
 
@@ -50,7 +52,7 @@ pub fn backend(self: *PCSpeaker) Backend {
             .deinit = deinit,
             .fillBuffer = fillBuffer,
             .playTrack = playTrack,
-            .playEvent = playEvent,
+            .triggerEvent = triggerEvent,
             .isPlayingATrack = isPlayingATrack,
             .lock = lock,
             .unlock = unlock,
@@ -90,7 +92,7 @@ fn playTrack(ctx: *anyopaque, track: ?AudioTrack) void {
     _ = track;
 }
 
-fn playEvent(ctx: *anyopaque, event: AudioEvent) void {
+fn triggerEvent(ctx: *anyopaque, event: GameEvent) void {
     _ = ctx;
     _ = event;
 }

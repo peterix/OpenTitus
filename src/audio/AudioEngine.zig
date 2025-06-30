@@ -33,8 +33,10 @@ const Backend = @import("Backend.zig");
 pub const BackendType = Backend.BackendType;
 
 const audio = @import("audio.zig");
-const AudioEvent = audio.AudioEvent;
 const AudioTrack = audio.AudioTrack;
+
+const events = @import("../events.zig");
+const GameEvent = events.GameEvent;
 
 const Adlib = @import("Adlib.zig");
 const Amiga = @import("Amiga.zig");

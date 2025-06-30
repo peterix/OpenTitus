@@ -34,7 +34,9 @@ const Backend = @import("Backend.zig");
 const audio = @import("audio.zig");
 const AudioEngine = audio.AudioEngine;
 const AudioTrack = audio.AudioTrack;
-const AudioEvent = audio.AudioEvent;
+
+const events = @import("../events.zig");
+const GameEvent = events.GameEvent;
 
 const data = @import("../data.zig");
 
@@ -131,7 +133,7 @@ pub fn backend(self: *Amiga) Backend {
             .deinit = deinit,
             .fillBuffer = fillBuffer,
             .playTrack = playTrack,
-            .playEvent = playEvent,
+            .triggerEvent = triggerEvent,
             .isPlayingATrack = isPlayingATrack,
             .lock = lock,
             .unlock = unlock,
@@ -232,7 +234,7 @@ fn playTrack(ctx: *anyopaque, track: ?AudioTrack) void {
 }
 
 // TODO: implement playing original sounds
-fn playEvent(ctx: *anyopaque, event: AudioEvent) void {
+fn triggerEvent(ctx: *anyopaque, event: GameEvent) void {
     _ = ctx;
     _ = event;
 }

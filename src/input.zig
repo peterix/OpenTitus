@@ -30,8 +30,8 @@ const SDL = @import("SDL.zig");
 
 const globals = @import("globals.zig");
 const window = @import("window.zig");
-
-
+const events = @import("events.zig");
+const GameEvent = events.GameEvent;
 
 pub const InputAction = enum {
     None,
@@ -55,6 +55,9 @@ pub const InputDevice = enum {
 
 const GamepadState = struct {
     handle: *SDL.Gamepad = undefined,
+    id: SDL.JoystickID = undefined,
+    has_rumble: bool = false,
+    has_trigger_rumble: bool = false,
 
     dpad_up_pressed: bool = false,
     dpad_down_pressed: bool = false,
@@ -83,6 +86,72 @@ const GamepadState = struct {
     left_y: f32 = 0,
     right_x: f32 = 0,
     right_y: f32 = 0,
+
+    fn rumbleGamepad(self: GamepadState, left: u16, right: u16, duration_ms: u32) void {
+        if(self.has_rumble) {
+            if(!SDL.rumbleGamepad(self.handle, left, right, duration_ms))
+            {
+                std.log.err("Gamepad {} failed to rumble: {s}", .{self.id, SDL.getError()});
+            }
+        }
+        else if(self.has_trigger_rumble) {
+            if(!SDL.rumbleGamepadTriggers(self.handle, left, right, duration_ms))
+            {
+                std.log.err("Gamepad {} failed to rumble triggers: {s}", .{self.id, SDL.getError()});
+            }
+        }
+    }
+
+    fn rumbleTriggers(self: GamepadState, left: u16, right: u16, duration_ms: u32) void {
+        if(self.has_trigger_rumble) {
+            if(!SDL.rumbleGamepadTriggers(self.handle, left, right, duration_ms))
+            {
+                std.log.err("Gamepad {} failed to rumble triggers: {s}", .{self.id, SDL.getError()});
+            }
+        }
+        else if(self.has_rumble) {
+            if(!SDL.rumbleGamepad(self.handle, left, right, duration_ms))
+            {
+                std.log.err("Gamepad {} failed to rumble: {s}", .{self.id, SDL.getError()});
+            }
+        }
+    }
+
+    pub fn triggerRumble(self: GamepadState, event: GameEvent) void {
+
+
+        switch (event) {
+            .Event_HitEnemy =>
+            {
+                self.rumbleGamepad(10000, 10000, 150);
+            },
+            .Event_HitPlayer =>
+            {
+                self.rumbleGamepad(30000, 30000, 200);
+            },
+            .Event_PlayerHeadImpact =>
+            {
+                self.rumbleGamepad(20000, 20000, 800);
+            },
+            .Event_PlayerPickup,
+            .Event_PlayerPickupEnemy,
+            .Event_PlayerThrow => {
+                self.rumbleTriggers(16000, 16000, 100);
+            },
+            .Event_PlayerCollectWaypoint,
+            .Event_PlayerCollectBonus,
+            .Event_PlayerCollectLamp =>
+            {
+                self.rumbleGamepad(6000, 6000, 100);
+            },
+            .Event_PlayerJump => {
+                //self.rumbleGamepad(6000, 6000, 100);
+            },
+            .Event_BallBounce => {
+                self.rumbleGamepad(10000, 10000, 150);
+            },
+        }
+    }
 };
 
 const GamepadMap = std.AutoHashMap(SDL.JoystickID, GamepadState);
@@ -468,11 +537,27 @@ pub fn processEvents() *InputState {
             },
             SDL.EVENT_GAMEPAD_ADDED => {
                 const gamepadId = event.gdevice.which;
-                const gamepad = SDL.openGamepad(gamepadId);
-                if(gamepad != null)
+                const maybe_gamepad = SDL.openGamepad(gamepadId);
+                if(maybe_gamepad) |gamepad|
                 {
-                    g_input_state.gamepad_map.put(gamepadId, .{.handle = gamepad.?}) catch @panic("SDL: out of memory");
-                    std.log.info("Gamepad {} added: {}!", .{gamepadId, gamepad.?});
+                    const props = SDL.getGamepadProperties(gamepad);
+                    const has_rumble = SDL.getBooleanProperty(props, SDL.PROP_GAMEPAD_CAP_RUMBLE_BOOLEAN, false);
+                    const has_trigger_rumble = SDL.getBooleanProperty(props, SDL.PROP_GAMEPAD_CAP_TRIGGER_RUMBLE_BOOLEAN, false);
+                    const gamepadName = SDL.getGamepadName(gamepad);
+                    g_input_state.gamepad_map.put(
+                        gamepadId,
+                        .{
+                            .handle = gamepad,
+                            .id = gamepadId,
+                            .has_rumble = has_rumble,
+                            .has_trigger_rumble = has_trigger_rumble,
+                        }
+                    ) catch @panic("SDL: out of memory");
+                    std.log.info("Gamepad {} added: {s}.", .{gamepadId, gamepadName});
+                    if(has_rumble)
+                        std.log.info("Gamepad {} has rumble.", .{gamepadId});
+                    if(has_trigger_rumble)
+                        std.log.info("Gamepad {} has trigger rumble.", .{gamepadId});
                 }
                 else
                 {
@@ -613,3 +698,11 @@ pub fn waitforbutton() c_int {
     return waiting;
 }
 
+// Respond to game events - apply controller effects like rumble, RGB lights, etc.
+pub fn triggerEvent(event: GameEvent) void {
+    if (g_input_state.device != .Gamepad)
+        return;
+    if(g_input_state.gamepad_map.getPtr(g_input_state.current_gamepad)) |pad_state| {
+        pad_state.triggerRumble(event);
+    }
+}

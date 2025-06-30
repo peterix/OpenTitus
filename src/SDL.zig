@@ -377,7 +377,13 @@ pub const Gamepad = @This().SDL_Gamepad;
 pub const openGamepad = @This().SDL_OpenGamepad;
 pub const isGamepad = @This().SDL_IsGamepad;
 pub const closeGamepad = @This().SDL_CloseGamepad;
+pub fn getGamepadName(gamepad: *Gamepad) []const u8 {
+    return std.mem.span(@This().SDL_GetGamepadName(gamepad));
+}
 pub const getGamepadProperties = @This().SDL_GetGamepadProperties;
+pub const getBooleanProperty = @This().SDL_GetBooleanProperty;
+pub const rumbleGamepad = @This().SDL_RumbleGamepad;
+pub const rumbleGamepadTriggers = @This().SDL_RumbleGamepadTriggers;
 
 // Thumbstick axis values range from SDL_JOYSTICK_AXIS_MIN to SDL_JOYSTICK_AXIS_MAX, and are centered within ~8000 of zero,
 // though advanced UI will allow users to set or autodetect the dead zone, which varies between gamepads.

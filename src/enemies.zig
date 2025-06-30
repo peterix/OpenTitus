@@ -40,6 +40,7 @@ const player = @import("player.zig");
 const globals = @import("globals.zig");
 const lvl = @import("level.zig");
 const audio = @import("audio/audio.zig");
+const events = @import("events.zig");
 
 // FIXME: zig changes the type of the result when you call @abs. That's probably correct, but it's annoying. This keeps the type the same.
 pub inline fn abs(a: anytype) @TypeOf(a) {
@@ -1150,7 +1151,7 @@ pub fn SET_NMI(level: *lvl.Level) void {
                     level.object[@as(c_ushort, @intCast(k))].sprite.speed_x = @as(i16, @bitCast(@as(c_short, @truncate(0 - @as(c_int, @bitCast(@as(c_int, level.object[@as(c_ushort, @intCast(k))].sprite.speed_x)))))));
                 }
             }
-            audio.playEvent(.Event_HitEnemy);
+            events.triggerEvent(.Event_HitEnemy);
             globals.DROP_FLAG = false;
             if (enemy.boss) {
                 if (@as(c_int, @bitCast(@as(c_uint, globals.INVULNERABLE_FLAG))) != 0) {
@@ -1222,7 +1223,7 @@ fn ACTIONC_NMI(level: *lvl.Level, enemy: *lvl.Enemy) void {
 }
 
 fn KICK_ASH(level: *lvl.Level, enemysprite: *lvl.Sprite, power: i16) void {
-    audio.playEvent(.Event_HitPlayer);
+    events.triggerEvent(.Event_HitPlayer);
     const p_sprite = &level.player.sprite;
 
     player.DEC_ENERGY(level);

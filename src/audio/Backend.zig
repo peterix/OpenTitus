@@ -27,7 +27,9 @@ const Backend = @This();
 const audio = @import("audio.zig");
 const AudioEngine = audio.AudioEngine;
 const AudioTrack = audio.AudioTrack;
-const AudioEvent = audio.AudioEvent;
+
+const events = @import("../events.zig");
+const GameEvent = events.GameEvent;
 
 pub const BackendType = enum(u8) {
     Silence = 0,
@@ -63,7 +65,7 @@ pub const VTable = struct {
     deinit: *const fn (ctx: *anyopaque) void,
     fillBuffer: *const fn (ctx: *anyopaque, buffer: []i16, nsamples: u32) void,
     playTrack: *const fn (ctx: *anyopaque, track: ?AudioTrack) void,
-    playEvent: *const fn (ctx: *anyopaque, event: AudioEvent) void,
+    triggerEvent: *const fn (ctx: *anyopaque, event: GameEvent) void,
     isPlayingATrack: *const fn (ctx: *anyopaque) bool,
     lock: *const fn (ctx: *anyopaque) void,
     unlock: *const fn (ctx: *anyopaque) void,
@@ -85,8 +87,8 @@ pub inline fn playTrack(self: Backend, song_number: ?AudioTrack) void {
     self.vtable.playTrack(self.ptr, song_number);
 }
 
-pub inline fn playEvent(self: Backend, event: AudioEvent) void {
-    self.vtable.playEvent(self.ptr, event);
+pub inline fn triggerEvent(self: Backend, event: GameEvent) void {
+    self.vtable.triggerEvent(self.ptr, event);
 }
 
 pub inline fn isPlayingATrack(self: Backend) bool {

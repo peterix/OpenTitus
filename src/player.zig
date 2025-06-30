@@ -33,7 +33,7 @@ const data = @import("data.zig");
 const objects = @import("objects.zig");
 const lvl = @import("level.zig");
 const render = @import("render.zig");
-const audio = @import("audio/audio.zig");
+const events = @import("events.zig");
 const sprites = @import("sprites.zig");
 const common = @import("common.zig");
 const input = @import("input.zig");
@@ -743,7 +743,7 @@ fn collect_bonus(level: *lvl.Level, tileY: i16, tileX: i16) bool {
 
         if (bonus.bonustile >= (255 - 2)) {
             level.bonuscollected += 1;
-            audio.playEvent(.Event_PlayerCollectBonus);
+            events.triggerEvent(.Event_PlayerCollectBonus);
             INC_ENERGY(level);
         }
         level.setTile(@intCast(tileX), @intCast(tileY), bonus.replacetile);
@@ -761,7 +761,7 @@ fn collect_level_unlock(level: *lvl.Level, level_index: u8, tileY: i16, tileX: i
     if (!collect_bonus(level, tileY, tileX))
         return;
 
-    audio.playEvent(.Event_PlayerCollectLamp);
+    events.triggerEvent(.Event_PlayerCollectLamp);
 }
 
 fn collect_checkpoint(level: *lvl.Level, tileY: i16, tileX: i16) void {
@@ -769,7 +769,7 @@ fn collect_checkpoint(level: *lvl.Level, tileY: i16, tileX: i16) void {
         return;
 
     const player = &level.player;
-    audio.playEvent(.Event_PlayerCollectWaypoint);
+    events.triggerEvent(.Event_PlayerCollectWaypoint);
     player.initX = player.sprite.x;
     player.initY = player.sprite.y;
     // carrying cage?
@@ -832,6 +832,9 @@ fn ACTION_PRG(level: *lvl.Level, action: u8) void {
         },
         2, 18 => {
             // Handle a jump
+            if (globals.SAUT_COUNT == 0) {
+                events.triggerEvent(.Event_PlayerJump);
+            }
             if (globals.SAUT_COUNT >= 3) {
                 globals.SAUT_FLAG = 6; // Stop jump animation and acceleration
             } else {
@@ -965,7 +968,7 @@ fn ACTION_PRG(level: *lvl.Level, action: u8) void {
                             }
 
                             // Take the object
-                            audio.playEvent(.Event_PlayerPickup);
+                            events.triggerEvent(.Event_PlayerPickup);
                             globals.FUME_FLAG = 0;
                             object.sprite.speed_y = 0;
                             object.sprite.speed_x = 0;
@@ -1041,7 +1044,7 @@ fn ACTION_PRG(level: *lvl.Level, action: u8) void {
                                     }
                                 }
 
-                                audio.playEvent(.Event_PlayerPickupEnemy);
+                                events.triggerEvent(.Event_PlayerPickupEnemy);
                                 globals.FUME_FLAG = 0;
                                 enemy.sprite.speed_y = 0;
                                 enemy.sprite.speed_x = 0;
@@ -1100,19 +1103,19 @@ fn ACTION_PRG(level: *lvl.Level, action: u8) void {
                         if (player_drop_carried(level)) |object| {
                             object.*.sprite.speed_y = speed_y;
                             object.*.sprite.speed_x = speed_x - (speed_x >> 2);
-                            audio.playEvent(.Event_PlayerThrow);
+                            events.triggerEvent(.Event_PlayerThrow);
                         }
                     } else { // Ordinary throw
                         globals.DROP_FLAG = true;
                         player.sprite2.speed_x = speed_x;
                         player.sprite2.speed_y = speed_y;
-                        audio.playEvent(.Event_PlayerThrow);
+                        events.triggerEvent(.Event_PlayerThrow);
                     }
                 } else { // Ordinary throw
                     globals.DROP_FLAG = true;
                     player.sprite2.speed_x = speed_x;
                     player.sprite2.speed_y = speed_y;
-                    audio.playEvent(.Event_PlayerThrow);
+                    events.triggerEvent(.Event_PlayerThrow);
                 }
             }
             sprites.updatesprite(level, &player.sprite, 10, true); // The same as in free fall
@@ -1326,7 +1329,7 @@ fn player_collide_with_objects(level: *lvl.Level) void {
 
         // If the ball lies on the ground
         if (off_object.sprite.speed_y == 0) {
-            audio.playEvent(.Event_BallBounce);
+            events.triggerEvent(.Event_BallBounce);
             off_object.sprite.speed_y = 0 - player.sprite.speed_y;
             off_object.sprite.y -= off_object.sprite.speed_y >> 4;
             globals.GRAVITY_FLAG = 4;

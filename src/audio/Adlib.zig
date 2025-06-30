@@ -35,7 +35,9 @@ const Backend = @import("Backend.zig");
 const audio = @import("audio.zig");
 const AudioEngine = audio.AudioEngine;
 const AudioTrack = audio.AudioTrack;
-const AudioEvent = audio.AudioEvent;
+
+const events = @import("../events.zig");
+const GameEvent = events.GameEvent;
 
 const _bytes = @import("../bytes.zig");
 
@@ -179,7 +181,7 @@ pub fn backend(self: *Adlib) Backend {
             .deinit = deinit,
             .fillBuffer = fillBuffer,
             .playTrack = playTrack,
-            .playEvent = playEvent,
+            .triggerEvent = triggerEvent,
             .isPlayingATrack = isPlayingATrack,
             .lock = lock,
             .unlock = unlock,
@@ -360,7 +362,7 @@ fn playTrack(ctx: *anyopaque, track: ?AudioTrack) void {
     self.playTrackNumber(song_number_.?);
 }
 
-fn playEvent(ctx: *anyopaque, event: AudioEvent) void {
+fn triggerEvent(ctx: *anyopaque, event: GameEvent) void {
     const self: *Adlib = @ptrCast(@alignCast(ctx));
     switch (event) {
         .Event_HitEnemy => {
@@ -377,6 +379,9 @@ fn playEvent(ctx: *anyopaque, event: AudioEvent) void {
         },
         .Event_PlayerThrow => {
             self.playSfx(3);
+        },
+        .Event_PlayerJump => {
+            // Nothing here, but we could
         },
         .Event_BallBounce => {
             self.playSfx(12);

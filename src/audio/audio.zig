@@ -1,16 +1,3 @@
-pub const AudioEvent = enum {
-    Event_HitEnemy,
-    Event_HitPlayer,
-    Event_PlayerHeadImpact,
-    Event_PlayerPickup,
-    Event_PlayerPickupEnemy,
-    Event_PlayerThrow,
-    Event_BallBounce,
-    Event_PlayerCollectWaypoint,
-    Event_PlayerCollectBonus,
-    Event_PlayerCollectLamp,
-};
-
 pub const AudioTrack = enum {
     Play1,
     Play2,
@@ -33,6 +20,9 @@ const game = @import("../game.zig");
 const SDL = @import("../SDL.zig");
 const input = @import("../input.zig");
 const window = @import("../window.zig");
+
+const events = @import("../events.zig");
+const GameEvent = events.GameEvent;
 
 const miniaudio = @import("miniaudio/miniaudio.zig");
 
@@ -119,13 +109,13 @@ pub fn playTrack(track: ?AudioTrack) void {
     engine.backend.?.unlock();
 }
 
-pub fn playEvent(event: AudioEvent) void {
+pub fn triggerEvent(event: GameEvent) void {
     if (engine.backend == null) {
         return;
     }
     var backend = &engine.backend.?;
     backend.lock();
-    backend.playEvent(event);
+    backend.triggerEvent(event);
     backend.unlock();
 }
 
