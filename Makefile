@@ -4,7 +4,8 @@ all:
 
 # Clean target
 clean:
-    rm -rdf ./bin
+    rm -f ./bin/titus/opentitus{,.exe}
+    rm -f ./bin/moktar/openmoktar{,.exe}
 
 # Phony targets
 .PHONY: all clean
