@@ -392,3 +392,12 @@ pub const rumbleGamepadTriggers = @This().SDL_RumbleGamepadTriggers;
 // Note that this is not the same range that will be reported by the lower-level SDL_GetJoystickAxis().
 pub const JOYSTICK_AXIS_MIN = @This().SDL_JOYSTICK_AXIS_MIN;
 pub const JOYSTICK_AXIS_MAX = @This().SDL_JOYSTICK_AXIS_MAX;
+
+
+
+// Time handling
+
+pub const Time = @This().SDL_Time;
+pub const DateTime = @This().SDL_DateTime;
+pub const timeToDateTime = @This().SDL_TimeToDateTime;
+pub const getCurrentTime = @This().SDL_GetCurrentTime;

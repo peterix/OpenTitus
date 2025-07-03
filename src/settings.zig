@@ -39,7 +39,7 @@ const settings_file_name = "settings.json";
 
 pub const Settings = extern struct {
     devmode: bool = false,
-    fullscreen: bool = false,
+    fullscreen: bool = true,
     music: bool = true,
     sound: bool = true,
     volume_music: u8 = 128,
@@ -48,6 +48,7 @@ pub const Settings = extern struct {
     window_width: u16 = window.game_width * 3,
     window_height: u16 = window.game_height * 3,
     audio_backend: BackendType = .Adlib,
+    seen_intro: bool = false,
 
     pub fn make_new(allocator: Allocator) !ManagedJSON(Settings) {
         var seed: u32 = undefined;

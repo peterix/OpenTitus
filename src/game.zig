@@ -132,7 +132,7 @@ pub fn run() !u8 {
     var state: c_int = 1;
     var retval: c_int = 0;
 
-    if (!game_state.seen_intro) {
+    if (!settings.seen_intro) {
         if (state != 0) {
             retval = intro_text.viewintrotext(allocator) catch |err| VALUE: {
                 std.debug.print("Unable to view intro screen: {}", .{err});
@@ -141,7 +141,8 @@ pub fn run() !u8 {
             if (retval < 0) {
                 state = 0;
             } else {
-                game_state.seen_intro = true;
+                settings.seen_intro = true;
+                try settings.write(allocator);
             }
         }
     }

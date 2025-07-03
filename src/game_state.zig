@@ -84,7 +84,6 @@ pub const LevelEntry = struct {
 
 pub const GameState = struct {
     levels: JsonList(LevelEntry),
-    seen_intro: bool = false,
     seed: u32 = 0,
 
     pub fn make_new(allocator: Allocator) !ManagedJSON(GameState) {
@@ -95,7 +94,6 @@ pub const GameState = struct {
         const game_state = GameState{
             .levels = JsonList(LevelEntry){},
             .seed = seed,
-            .seen_intro = false,
         };
         return ManagedJSON(GameState){ .value = game_state, .arena = arena };
     }
