@@ -1,5 +1,7 @@
 # OpenTitus
 
+[![Build & Test](https://github.com/peterix/OpenTitus/actions/workflows/test_on_push.yml/badge.svg?branch=master&event=push)](https://github.com/peterix/OpenTitus/actions/workflows/test_on_push.yml)
+
 ![Game title screen](/docs/title.jpg)
 
 A port of the game engine behind the DOS versions of Titus the Fox and Moktar.
