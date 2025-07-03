@@ -4,9 +4,7 @@
 
 ![Game title screen](/docs/title.jpg)
 
-<p style="text-align: justify">
 A modernized version of the game engine behind the DOS versions of Titus the Fox and Moktar.
-</p>
 
 The aim is to clean up the codebase, fix bugs, and make the game playable on modern systems. The difficulty or design decisions of the original are not sacred. If there's a way to make the game more playable or enjoyable, then let it be so.
 
