@@ -1,0 +1,11 @@
+on: [pull_request, push]
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    name: Build and Test
+    steps:
+      - uses: actions/checkout@v3
+      - uses: mlugg/setup-zig@v2
+        with:
+          version: 0.13.0
+      - run: zig build test
