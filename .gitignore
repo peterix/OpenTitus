@@ -1,6 +1,7 @@
 bin/
 /bin/*
 zig-cache/
+.zig-cache/
 zig-out/
 .vscode/
 build/

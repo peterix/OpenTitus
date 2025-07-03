@@ -87,30 +87,34 @@ const GamepadState = struct {
     right_x: f32 = 0,
     right_y: f32 = 0,
 
-    fn rumbleGamepad(self: GamepadState, left: u16, right: u16, duration_ms: u32) void {
+    fn rumbleGamepad(self: GamepadState, left: f32, right: f32, duration_ms: u32) void {
+        const left_i: u16 = @intFromFloat(std.math.lerp(0, 0xFFFF, left));
+        const right_i: u16 = @intFromFloat(std.math.lerp(0, 0xFFFF, right));
         if(self.has_rumble) {
-            if(!SDL.rumbleGamepad(self.handle, left, right, duration_ms))
+            if(!SDL.rumbleGamepad(self.handle, left_i, right_i, duration_ms))
             {
                 std.log.err("Gamepad {} failed to rumble: {s}", .{self.id, SDL.getError()});
             }
         }
         else if(self.has_trigger_rumble) {
-            if(!SDL.rumbleGamepadTriggers(self.handle, left, right, duration_ms))
+            if(!SDL.rumbleGamepadTriggers(self.handle, left_i, right_i, duration_ms))
             {
                 std.log.err("Gamepad {} failed to rumble triggers: {s}", .{self.id, SDL.getError()});
             }
         }
     }
 
-    fn rumbleTriggers(self: GamepadState, left: u16, right: u16, duration_ms: u32) void {
+    fn rumbleTriggers(self: GamepadState, left: f32, right: f32, duration_ms: u32) void {
+        const left_i: u16 = @intFromFloat(std.math.lerp(0, 0xFFFF, left));
+        const right_i: u16 = @intFromFloat(std.math.lerp(0, 0xFFFF, right));
         if(self.has_trigger_rumble) {
-            if(!SDL.rumbleGamepadTriggers(self.handle, left, right, duration_ms))
+            if(!SDL.rumbleGamepadTriggers(self.handle, left_i, right_i, duration_ms))
             {
                 std.log.err("Gamepad {} failed to rumble triggers: {s}", .{self.id, SDL.getError()});
             }
         }
         else if(self.has_rumble) {
-            if(!SDL.rumbleGamepad(self.handle, left, right, duration_ms))
+            if(!SDL.rumbleGamepad(self.handle, left_i, right_i, duration_ms))
             {
                 std.log.err("Gamepad {} failed to rumble: {s}", .{self.id, SDL.getError()});
             }
@@ -123,32 +127,32 @@ const GamepadState = struct {
         switch (event) {
             .Event_HitEnemy =>
             {
-                self.rumbleGamepad(10000, 10000, 150);
+                self.rumbleGamepad(0.25, 0.25, 150);
             },
             .Event_HitPlayer =>
             {
-                self.rumbleGamepad(30000, 30000, 200);
+                self.rumbleGamepad(1.0, 1.0, 75);
             },
             .Event_PlayerHeadImpact =>
             {
-                self.rumbleGamepad(20000, 20000, 800);
+                self.rumbleGamepad(0.33, 0.33, 800);
             },
             .Event_PlayerPickup,
             .Event_PlayerPickupEnemy,
             .Event_PlayerThrow => {
-                self.rumbleTriggers(16000, 16000, 100);
+                self.rumbleTriggers(0.25, 0.25, 100);
             },
             .Event_PlayerCollectWaypoint,
             .Event_PlayerCollectBonus,
             .Event_PlayerCollectLamp =>
             {
-                self.rumbleGamepad(6000, 6000, 100);
+                self.rumbleGamepad(0.1, 0.1, 100);
             },
             .Event_PlayerJump => {
                 //self.rumbleGamepad(6000, 6000, 100);
             },
             .Event_BallBounce => {
-                self.rumbleGamepad(10000, 10000, 150);
+                self.rumbleGamepad(0.25, 0.25, 150);
             },
         }
     }
