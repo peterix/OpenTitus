@@ -43,6 +43,11 @@ const _bytes = @import("../bytes.zig");
 
 const OPL3 = @import("opl3/opl3.zig");
 
+const data = @import("../data.zig");
+
+const data_titus = @embedFile("dos/titus.bin");
+const data_moktar = @embedFile("dos/moktar.bin");
+
 inline fn chomp_u8(bytes: *[]const u8) u8 {
     return _bytes.chompInt(u8, .little, bytes);
 }
@@ -146,7 +151,6 @@ const Instruction = packed struct {
     }
 };
 
-allocator: std.mem.Allocator = undefined,
 channels: [ChannelCount]Channel = [_]Channel{.{}} ** ChannelCount,
 active_channels: c_int = 0,
 perc_stat: u8 = 0,
@@ -161,7 +165,7 @@ sfx_time: u16 = 0,
 
 sfx: [SfxCount]Instrument = [_]Instrument{.{}} ** SfxCount,
 instrument_data: [InstrumentCount]Instrument = [_]Instrument{.{}} ** InstrumentCount,
-data: []const u8 = "",
+music_data: []const u8 = "",
 engine: *AudioEngine = undefined,
 
 // OPL software emulator structure.
@@ -189,7 +193,7 @@ pub fn backend(self: *Adlib) Backend {
     };
 }
 
-fn init(ctx: *anyopaque, engine: *AudioEngine, allocator: std.mem.Allocator, sample_rate: u32) Backend.Error!void {
+fn init(ctx: *anyopaque, engine: *AudioEngine, _: std.mem.Allocator, sample_rate: u32) Backend.Error!void {
     const self: *Adlib = @ptrCast(@alignCast(ctx));
     self.active_channels = 0;
     self.perc_stat = 0;
@@ -202,15 +206,13 @@ fn init(ctx: *anyopaque, engine: *AudioEngine, allocator: std.mem.Allocator, sam
     self.sfx_time = 0;
 
     self.engine = engine;
-    self.allocator = allocator;
     self.mutex = Mutex{};
-    const bytes = load_file(
-        "music.bin",
-        allocator,
-    ) catch {
-        return Backend.Error.InvalidData;
+
+    const bytes = switch (data.game)
+    {
+        .Moktar => data_moktar,
+        .Titus => data_titus,
     };
-    errdefer allocator.free(bytes);
 
     switch (bytes.len) {
         18749 => {
@@ -228,7 +230,7 @@ fn init(ctx: *anyopaque, engine: *AudioEngine, allocator: std.mem.Allocator, sam
     // Create the emulator structure:
     OPL3.OPL3_Reset(&self.opl_chip, sample_rate);
 
-    self.data = bytes;
+    self.music_data = bytes;
     self.sfx_init();
 
     self.engine.setCallback(0, TimerCallback, @constCast(@ptrCast(self)));
@@ -237,7 +239,6 @@ fn init(ctx: *anyopaque, engine: *AudioEngine, allocator: std.mem.Allocator, sam
 fn deinit(ctx: *anyopaque) void {
     const self: *Adlib = @ptrCast(@alignCast(ctx));
     self.engine.clearCallbacks();
-    self.allocator.free(self.data);
 }
 
 fn lock(ctx: *anyopaque) void {
@@ -267,7 +268,7 @@ fn isPlayingATrack(ctx: *anyopaque) bool {
 fn playTrackNumber(self: *Adlib, song_number: u8) void {
     self.current_track = song_number;
 
-    var raw_data = self.data;
+    var raw_data = self.music_data;
     self.perc_stat = 0x20;
 
     //Load instruments
@@ -407,21 +408,11 @@ fn playSfx(self: *Adlib, fx_number: u8) void {
     self.writeRegister(0xC6, self.sfx[index].fb_alg); //Channel 6 (Feedback/Algorithm)
 }
 
-fn load_file(inputfile: []const u8, allocator: std.mem.Allocator) ![]const u8 {
-    var file = try std.fs.cwd().openFile(inputfile, .{});
-    defer file.close();
-    const bytes = file.readToEndAlloc(allocator, std.math.maxInt(usize)) catch |err| {
-        std.log.err("Could not open {s}: {}", .{ inputfile, err });
-        return err;
-    };
-    return bytes;
-}
-
 fn sfx_init(self: *Adlib) void {
     self.sfx_on = false;
     self.sfx_time = 0;
 
-    var raw_data = self.data[SFX_OFFSET..];
+    var raw_data = self.music_data[SFX_OFFSET..];
 
     for (0..SfxCount) |i| {
         for (0..5) |k| {
@@ -534,21 +525,21 @@ fn processInstruction(self: *Adlib, channel: *Channel, instruction: Instruction)
             switch (instruction.subCommand()) {
                 .CallSub => {
                     channel.return_offset = channel.offset.? + 2;
-                    var temp = (@as(c_uint, self.data[channel.offset.? + 1]) << 8) & 0xFF00;
-                    temp += @as(c_uint, self.data[channel.offset.?]) & 0xFF;
+                    var temp = (@as(c_uint, self.music_data[channel.offset.? + 1]) << 8) & 0xFF00;
+                    temp += @as(c_uint, self.music_data[channel.offset.?]) & 0xFF;
                     channel.offset = temp - self.seg_reduction;
                 },
 
                 .UpdateLoopCounter => {
-                    channel.loop_counter = self.data[channel.offset.?];
+                    channel.loop_counter = self.music_data[channel.offset.?];
                     channel.offset.? += 1;
                 },
 
                 .Loop => {
                     if (channel.loop_counter > 1) {
                         channel.loop_counter -= 1;
-                        var temp = (@as(c_uint, self.data[channel.offset.? + 1]) << 8);
-                        temp += @as(c_uint, self.data[channel.offset.?]);
+                        var temp = (@as(c_uint, self.music_data[channel.offset.? + 1]) << 8);
+                        temp += @as(c_uint, self.music_data[channel.offset.?]);
                         channel.offset = temp - self.seg_reduction;
                     } else {
                         channel.offset.? += 2;
@@ -561,8 +552,8 @@ fn processInstruction(self: *Adlib, channel: *Channel, instruction: Instruction)
                 },
 
                 .Jump => {
-                    var temp = (@as(c_uint, self.data[channel.offset.? + 1]) << 8);
-                    temp += @as(c_uint, self.data[channel.offset.?]);
+                    var temp = (@as(c_uint, self.music_data[channel.offset.? + 1]) << 8);
+                    temp += @as(c_uint, self.music_data[channel.offset.?]);
                     channel.offset = temp - self.seg_reduction;
                 },
 
@@ -588,7 +579,7 @@ fn fillchip_channel(self: *Adlib, i: usize) void {
 
     // first, process any pending command instructions
     while (true) {
-        instruction = @bitCast(self.data[channel.offset.?]);
+        instruction = @bitCast(self.music_data[channel.offset.?]);
         channel.offset.? += 1;
 
         //Escape the loop and play some notes based on oct and freq
