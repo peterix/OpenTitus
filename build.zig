@@ -31,23 +31,12 @@ const LazyPath = std.Build.LazyPath;
 
 const C_STANDARD = std.Build.CStd.C11;
 
-fn build_game(b: *std.Build, name: []const u8, target: ResolvedTarget, optimize: std.builtin.Mode) *Step.Compile {
-    const sdl_dep = b.dependency("sdl", .{
-        .target = target,
-        .optimize = optimize,
-    });
-    const sdl_lib = sdl_dep.artifact("SDL3");
-
-    const exe = b.addExecutable(.{
-        .name = name,
-        .root_source_file = b.path("main.zig"),
-        .target = target,
-        .optimize = optimize,
-    });
-    if (target.query.os_tag == .windows) {
-        exe.subsystem = .Windows;
-    }
-
+fn setup_game_build(
+    b: *std.Build,
+    options: *std.Build.Step.Options,
+    sdl_lib: *std.Build.Step.Compile,
+    exe: *Step.Compile,
+) void {
     // NOTE: the use of bit shifts of negative numbers is quite extensive, so we disable ubsan shooting us in the foot with those...
     // FIXME: remove the UB-ness
     exe.addCSourceFiles(.{ .files = &.{
@@ -65,27 +54,45 @@ fn build_game(b: *std.Build, name: []const u8, target: ResolvedTarget, optimize:
     exe.linkLibC();
     exe.linkLibrary(sdl_lib);
     exe.linkSystemLibrary("m");
+    exe.root_module.addOptions("config", options);
+}
 
+
+fn build_game(
+    b: *std.Build,
+    name: []const u8,
+    target: ResolvedTarget,
+    optimize: std.builtin.Mode,
+    options: *std.Build.Step.Options,
+    sdl_lib: *std.Build.Step.Compile
+) *Step.Compile {
+    const exe = b.addExecutable(.{
+        .name = name,
+        .root_source_file = b.path("main.zig"),
+        .target = target,
+        .optimize = optimize,
+    });
+    if (target.query.os_tag == .windows) {
+        exe.subsystem = .Windows;
+    }
+
+    setup_game_build(b, options, sdl_lib, exe);
+    return exe;
+}
+
+fn run_tests (
+    b: *std.Build,
+    target: ResolvedTarget,
+    optimize: std.builtin.Mode,
+    options: *std.Build.Step.Options,
+    sdl_lib: *std.Build.Step.Compile
+) void {
     const game_tests = b.addTest(.{
         .root_source_file = b.path("main.zig"),
         .target = target,
         .optimize = optimize,
     });
-    game_tests.addCSourceFiles(.{ .files = &.{
-        "src/audio/opl3/opl3.c",
-        "src/audio/miniaudio/miniaudio.c",
-        "src/audio/pocketmod/pocketmod.c",
-    }, .flags = &.{
-        "-fno-sanitize=shift",
-    } });
-    game_tests.addIncludePath(b.path("src/"));
-    game_tests.addIncludePath(b.path("src/audio/opl3/"));
-    game_tests.addIncludePath(b.path("src/audio/miniaudio/"));
-    game_tests.addIncludePath(b.path("src/audio/pocketmod/"));
-
-    game_tests.linkLibC();
-    game_tests.linkLibrary(sdl_lib);
-    game_tests.linkSystemLibrary("m");
+    setup_game_build(b, options, sdl_lib, game_tests);
 
     const run_game_tests = b.addRunArtifact(game_tests);
 
@@ -95,15 +102,12 @@ fn build_game(b: *std.Build, name: []const u8, target: ResolvedTarget, optimize:
     const test_step = b.step("test", "Run tests");
     test_step.dependOn(&run_game_tests.step);
 
-    return exe;
 }
 
 // Although this function looks imperative, note that its job is to
 // declaratively construct a build graph that will be executed by an external
 // runner.
 pub fn build(b: *std.Build) void {
-    // TODO: we first need to set up SDL2 for cross-compilation
-    //const target = TARGETS[0];
 
     // Standard target options allows the person running `zig build` to choose
     // what target to build for. Here we do not override the defaults, which
@@ -116,19 +120,21 @@ pub fn build(b: *std.Build) void {
     // set a preferred release mode, allowing the user to decide how to optimize.
     const optimize = b.standardOptimizeOption(.{});
 
-    const game = build_game(b, "game", target, optimize);
+    const version = b.option([]const u8, "version", "application version string") orelse "0.0.0";
+    const options = b.addOptions();
+    options.addOption([]const u8, "version", version);
 
-    // This declares intent for the library to be installed into the standard
-    // location when the user invokes the "install" step (the default step when
-    // running `zig build`).
-    const copy_step = b.addUpdateSourceFiles();
-    const extension = std.fs.path.extension(game.out_filename);
+    const sdl_dep = b.dependency("sdl", .{
+        .target = target,
+        .optimize = optimize,
+    });
+    const sdl_lib = sdl_dep.artifact("SDL3");
 
-    const titus_exe_name = b.fmt("bin/titus/opentitus{s}", .{extension});
-    copy_step.addCopyFileToSource(game.getEmittedBin(), titus_exe_name);
+    run_tests(b, target, optimize, options, sdl_lib);
 
-    const moktar_exe_name = b.fmt("bin/moktar/openmoktar{s}", .{extension});
-    copy_step.addCopyFileToSource(game.getEmittedBin(), moktar_exe_name);
-
-    b.getInstallStep().dependOn(&copy_step.step);
+    const titus = build_game(b, "opentitus", target, optimize, options, sdl_lib);
+    const install_titus = b.addInstallArtifact(titus, .{.dest_dir = .{ .override = .{ .custom =  "./" } }});
+    b.default_step.dependOn(&install_titus.step);
+    b.installFile("./install/README.txt.titus", "./TITUS/README.txt");
+    b.installFile("./install/README.txt.moktar", "./MOKTAR/README.txt");
 }

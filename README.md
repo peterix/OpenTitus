@@ -32,9 +32,9 @@ zig build
 ## Running:
 You need the original game files to make use of OpenTitus. OpenTitus parses the original files. It works with both Titus the Fox and Moktar.
 
-* Build and install into the `bin` folder according to the build instructions.
-* Place original game files in `bin/moktar` and/or `bin/titus` folders.
-* Run `opentitus` inside `bin/titus` folder or `openmoktar` in `bin/moktar` folder.
+* Build and install using `make release`. The files go into `zig-out`.
+* Place the original game files in `zig-out/MOKTAR` and/or `zig-out/TITUS` folders.
+* Run `opentitus` inside the `zig-out` folder.
 
 You can get the game files from:
 

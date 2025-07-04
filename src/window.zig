@@ -32,7 +32,7 @@ const data = @import("data.zig");
 
 pub fn getGameTitle() [*c]const u8 {
     switch (data.game) {
-        .Titus => {
+        .Titus, .None => {
             return "OpenTitus";
         },
         .Moktar => {

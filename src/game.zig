@@ -45,6 +45,11 @@ comptime {
     refAllDecls(pauseMenu);
 }
 
+const gameMenu = @import("ui/game_menu.zig");
+comptime {
+    refAllDecls(gameMenu);
+}
+
 const fonts = @import("ui/fonts.zig");
 const image = @import("ui/image.zig");
 const ImageFile = image.ImageFile;
@@ -82,8 +87,6 @@ pub var game_state: *GameState = undefined;
 pub var allocator: std.mem.Allocator = undefined;
 
 pub fn run() !u8 {
-    try data.init();
-
     var gpa = std.heap.GeneralPurposeAllocator(.{}){};
     defer {
         const deinit_status = gpa.deinit();
@@ -96,10 +99,6 @@ pub fn run() !u8 {
     settings_mem = try Settings.read(allocator);
     settings = &settings_mem.value;
     defer settings_mem.deinit();
-
-    game_state_mem = try GameState.read(allocator);
-    game_state = &game_state_mem.value;
-    defer game_state_mem.deinit();
 
     // NOTE: we want to allocate memory for gamepad state before we start up SDL
     if(!input.init(allocator)) {
@@ -118,62 +117,86 @@ pub fn run() !u8 {
     try window.window_init();
     defer window.window_deinit();
 
-    try audio.engine.init(allocator);
-    defer audio.engine.deinit();
-
-    data.init_anim_player();
-
     try fonts.fonts_load();
     defer fonts.fonts_free();
-
-    try amigaTest();
 
     // View the menu when the main loop starts
     var state: c_int = 1;
     var retval: c_int = 0;
 
     if (!settings.seen_intro) {
-        if (state != 0) {
-            retval = intro_text.viewintrotext(allocator) catch |err| VALUE: {
-                std.debug.print("Unable to view intro screen: {}", .{err});
-                break :VALUE -1;
-            };
-            if (retval < 0) {
-                state = 0;
-            } else {
-                settings.seen_intro = true;
-                try settings.write(allocator);
-            }
+        retval = intro_text.viewintrotext(allocator) catch |err| VALUE: {
+            std.debug.print("Unable to view intro screen: {}", .{err});
+            break :VALUE -1;
+        };
+        if (retval < 0) {
+            state = 0;
+        } else {
+            settings.seen_intro = true;
+            try settings.write(allocator);
         }
     }
 
-    if (state != 0) {
+    const available_games = data.probeGameFiles();
+    if(available_games.moktar and available_games.titus)
+    {
+        switch(gameMenu.gameMenu()) {
+            .Titus => {
+                data.init(.Titus);
+            },
+            .Moktar => {
+                data.init(.Moktar);
+            },
+            .None => {
+                return 0;
+            }
+        }
+    }
+    else if(available_games.titus) {
+        data.init(.Titus);
+    }
+    else if(available_games.moktar) {
+        data.init(.Moktar);
+    }
+    else {
+        // TODO: add some screen that shows the error to the user
+        return error.GameDataNotAvailable;
+    }
+
+    game_state_mem = try GameState.read(allocator);
+    game_state = &game_state_mem.value;
+    defer game_state_mem.deinit();
+
+    try audio.engine.init(allocator);
+    defer audio.engine.deinit();
+
+    if (data.constants.*.logo) |logo| {
         retval = try image.viewImageFile(
-            data.constants.*.logo,
+            logo,
             .FadeInFadeOut,
             4000,
             allocator,
         );
         if (retval < 0)
-            state = 0;
+            return 0;
     }
 
     audio.playTrack(.MainTitle);
 
-    if (state != 0) {
+    if (data.constants.*.intro) |intro| {
         retval = try image.viewImageFile(
-            data.constants.*.intro,
+            intro,
             .FadeInFadeOut,
             6500,
             allocator,
         );
         if (retval < 0)
-            state = 0;
+            return 0;
     }
 
     while (state != 0) {
         const curlevel = try main_menu.view_menu(
-            data.constants.*.menu,
+            data.constants.*.menu.?,
             allocator,
         );
 

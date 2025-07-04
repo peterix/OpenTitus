@@ -212,6 +212,9 @@ fn init(ctx: *anyopaque, engine: *AudioEngine, _: std.mem.Allocator, sample_rate
     {
         .Moktar => data_moktar,
         .Titus => data_titus,
+        .None => {
+            return Backend.Error.InvalidData;
+        }
     };
 
     switch (bytes.len) {

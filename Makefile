@@ -1,21 +1,26 @@
 .DEFAULT_GOAL := debug_local_platform
 
+VERSION ?= "0.0.0"
+
 debug_local_platform:
 	zig build
 
 release:
-	zig build --release=safe -Dtarget=x86_64-linux-gnu.2.27
-	zig build --release=safe -Dtarget=x86_64-windows
+	@echo "Building OpenTitus $(VERSION)"
+	zig build --release=small -Dtarget=x86_64-linux-gnu.2.27 -Dversion=$(VERSION)
+	zig build --release=small -Dtarget=x86_64-windows -Dversion=$(VERSION)
 
 test:
+	@echo "Running tests..."
 	zig build test --summary all
 
 # Clean target
 clean:
-	rm -f ./bin/titus/opentitus
-	rm -f ./bin/titus/opentitus.exe
-	rm -f ./bin/moktar/openmoktar
-	rm -f ./bin/moktar/openmoktar.exe
+	@echo "Removing artifacts..."
+	rm -f ./zig-out/opentitus
+	rm -f ./zig-out/opentitus.exe
+	rm -f ./zig-out/TITUS/README.txt
+	rm -f ./zig-out/MOKTAR/README.txt
 
 # Phony targets
-.PHONY: debug_local_platform clean test
+.PHONY: debug_local_platform clean test release

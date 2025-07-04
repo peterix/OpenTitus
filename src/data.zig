@@ -31,10 +31,16 @@ const lvl = @import("level.zig");
 
 pub const GameType = enum  {
     Titus,
-    Moktar
+    Moktar,
+    None,
 };
 
-pub var game: GameType = undefined;
+pub const GamesAvailable = struct  {
+    titus: bool = false,
+    moktar: bool = false,
+};
+
+pub var game: GameType = .None;
 
 const image = @import("ui/image.zig");
 const ImageFile = image.ImageFile;
@@ -52,115 +58,125 @@ pub const LevelDescriptor = struct {
 // TODO: merge this with the 'original.{c,h}' stuff. It's basically the same kind of thing
 pub const Constants = struct {
     levelfiles: []const LevelDescriptor,
-    logo: ImageFile,
-    intro: ImageFile,
-    menu: ImageFile,
+    logo: ?ImageFile,
+    intro: ?ImageFile,
+    menu: ?ImageFile,
     finish: ?ImageFile,
     sprites: []const u8,
 };
 
 // FIXME: add a way to specify custom games? mods? levels?
+
+const null_consts: Constants = .{
+    .levelfiles = &[0]LevelDescriptor{},
+    .logo = null,
+    .intro = null,
+    .menu = null,
+    .finish = null,
+    .sprites = "",
+};
+
 const titus_consts: Constants = .{
     .levelfiles = &[15]LevelDescriptor{
         .{
-            .filename = "LEVEL0.SQZ",
+            .filename = "TITUS/LEVEL0.SQZ",
             .title = "On The Foxy Trail",
             .color = .{ .r = 0 * 4, .g = 16 * 4, .b = 0 * 4, .a = 255 },
             .music = .Play4,
         },
         .{
-            .filename = "LEVELJ.SQZ",
+            .filename = "TITUS/LEVELJ.SQZ",
             .title = "Looking For Clues",
             .color = .{ .r = 0 * 4, .g = 16 * 4, .b = 0 * 4, .a = 255 },
             .music = .Play3,
         },
         .{
-            .filename = "LEVEL1.SQZ",
+            .filename = "TITUS/LEVEL1.SQZ",
             .title = "Road Works Ahead",
             .color = .{ .r = 0 * 4, .g = 16 * 4, .b = 0 * 4, .a = 255 },
             .music = .Play4,
         },
         .{
-            .filename = "LEVEL2.SQZ",
+            .filename = "TITUS/LEVEL2.SQZ",
             .title = "Going Underground",
             .color = .{ .r = 20 * 4, .g = 12 * 4, .b = 12 * 4, .a = 255 },
             .music = .Play5,
         },
         .{
-            .filename = "LEVEL3.SQZ",
+            .filename = "TITUS/LEVEL3.SQZ",
             .title = "Flaming Catacombs",
             .color = .{ .r = 40 * 4, .g = 12 * 4, .b = 4 * 4, .a = 255 },
             .boss_power = 4,
             .music = .Play5,
         },
         .{
-            .filename = "LEVEL4.SQZ",
+            .filename = "TITUS/LEVEL4.SQZ",
             .title = "Coming To Town",
             .color = .{ .r = 20 * 4, .g = 12 * 4, .b = 12 * 4, .a = 255 },
             .music = .Play4,
         },
         .{
-            .filename = "LEVEL5.SQZ",
+            .filename = "TITUS/LEVEL5.SQZ",
             .title = "Foxy's Den",
             .color = .{ .r = 20 * 4, .g = 12 * 4, .b = 12 * 4, .a = 255 },
             .music = .Play3,
         },
         .{
-            .filename = "LEVEL6.SQZ",
+            .filename = "TITUS/LEVEL6.SQZ",
             .title = "On The Road To Marrakesh",
             .color = .{ .r = 0 * 4, .g = 16 * 4, .b = 0 * 4, .a = 255 },
             .music = .Play5,
         },
         .{
-            .filename = "LEVEL7.SQZ",
+            .filename = "TITUS/LEVEL7.SQZ",
             .title = "Home Of The Pharaohs",
             .color = .{ .r = 40 * 4, .g = 28 * 4, .b = 12 * 4, .a = 255 },
             .music = .Play2,
         },
         .{
-            .filename = "LEVEL8.SQZ",
+            .filename = "TITUS/LEVEL8.SQZ",
             .title = "Desert Experience",
             .color = .{ .r = 0 * 4, .g = 20 * 4, .b = 16 * 4, .a = 255 },
             .music = .Play1,
         },
         .{
-            .filename = "LEVEL9.SQZ",
+            .filename = "TITUS/LEVEL9.SQZ",
             .title = "Walls Of Sand",
             .color = .{ .r = 40 * 4, .g = 28 * 4, .b = 12 * 4, .a = 255 },
             .has_cage = true,
             .music = .Play2,
         },
         .{
-            .filename = "LEVELB.SQZ",
+            .filename = "TITUS/LEVELB.SQZ",
             .title = "A Beacon Of Hope",
             .color = .{ .r = 40 * 4, .g = 28 * 4, .b = 12 * 4, .a = 255 },
             .music = .Play3,
         },
         .{
-            .filename = "LEVELC.SQZ",
+            .filename = "TITUS/LEVELC.SQZ",
             .title = "A Pipe Dream",
             .color = .{ .r = 40 * 4, .g = 28 * 4, .b = 12 * 4, .a = 255 },
             .music = .Play5,
         },
         .{
-            .filename = "LEVELE.SQZ",
+            .filename = "TITUS/LEVELE.SQZ",
             .title = "Going Home",
             .color = .{ .r = 40 * 4, .g = 28 * 4, .b = 12 * 4, .a = 255 },
             .music = .Play3,
         },
         .{
-            .filename = "LEVELG.SQZ",
+            .filename = "TITUS/LEVELG.SQZ",
             .title = "Just Married",
             .color = .{ .r = 48 * 4, .g = 8 * 4, .b = 0 * 4, .a = 255 },
             .is_finish = true,
             .music = .Win,
         },
     },
-    .logo = .{ .filename = "TITUS.SQZ", .format = .LinearPalette256 },
-    .intro = .{ .filename = "TITRE.SQZ", .format = .LinearPalette256 },
-    .menu = .{ .filename = "MENU.SQZ", .format = .LinearPalette256 },
-    .finish = .{ .filename = "LEVELA.SQZ", .format = .PlanarGreyscale16 },
-    .sprites = "SPREXP.SQZ",
+    .logo = .{ .filename = "TITUS/TITUS.SQZ", .format = .LinearPalette256 },
+    .intro = .{ .filename = "TITUS/TITRE.SQZ", .format = .LinearPalette256 },
+    .menu = .{ .filename = "TITUS/MENU.SQZ", .format = .LinearPalette256 },
+    .finish = .{ .filename = "TITUS/LEVELA.SQZ", .format = .PlanarGreyscale16 },
+    .sprites = "TITUS/SPREXP.SQZ",
 };
 
 const moktar_consts: Constants = .{
@@ -169,113 +185,113 @@ const moktar_consts: Constants = .{
         // FIXME: separate 'game' from 'localization'. We can totally have Titus the Fox in French and Moktar in English.
         // FIXME: add actual support for accents and stuff...
         .{
-            .filename = "LEVEL0.SQZ",
+            .filename = "MOKTAR/LEVEL0.SQZ",
             .title = "A LA RECHERCHE DE LA ZOUBIDA",
             .color = .{ .r = 0 * 4, .g = 16 * 4, .b = 0 * 4, .a = 255 },
             .music = .Play4,
         },
         .{
-            .filename = "LEVELJ.SQZ",
+            .filename = "MOKTAR/LEVELJ.SQZ",
             .title = "LES QUARTIERS CHICS",
             .color = .{ .r = 0 * 4, .g = 16 * 4, .b = 0 * 4, .a = 255 },
             .music = .Play3,
         },
         .{
-            .filename = "LEVEL1.SQZ",
+            .filename = "MOKTAR/LEVEL1.SQZ",
             .title = "ATTENTION TRAVAUX",
             .color = .{ .r = 0 * 4, .g = 16 * 4, .b = 0 * 4, .a = 255 },
             .music = .Play4,
         },
         .{
-            .filename = "LEVEL2.SQZ",
+            .filename = "MOKTAR/LEVEL2.SQZ",
             .title = "LES COULOIRS DU METRO", // MÉTRO?
             .color = .{ .r = 20 * 4, .g = 12 * 4, .b = 12 * 4, .a = 255 },
             .music = .Play5,
         },
         .{
-            .filename = "LEVEL3.SQZ",
+            .filename = "MOKTAR/LEVEL3.SQZ",
             .title = "LES CATACOMBES INFERNALES",
             .color = .{ .r = 40 * 4, .g = 12 * 4, .b = 4 * 4, .a = 255 },
             .boss_power = 4,
             .music = .Play5,
         },
         .{
-            .filename = "LEVEL4.SQZ",
+            .filename = "MOKTAR/LEVEL4.SQZ",
             .title = "ARRIVEE DANS LA CITE", // ARRIVÉE?
             .color = .{ .r = 20 * 4, .g = 12 * 4, .b = 12 * 4, .a = 255 },
             .music = .Play4,
         },
         .{
-            .filename = "LEVEL5.SQZ",
+            .filename = "MOKTAR/LEVEL5.SQZ",
             .title = "L IMMEUBLE DE LA ZOUBIDA",
             .color = .{ .r = 20 * 4, .g = 12 * 4, .b = 12 * 4, .a = 255 },
             .music = .Play3,
         },
         .{
-            .filename = "LEVEL6.SQZ",
+            .filename = "MOKTAR/LEVEL6.SQZ",
             .title = "SOUS LE CHEMIN DE MARRAKECH",
             .color = .{ .r = 0 * 4, .g = 16 * 4, .b = 0 * 4, .a = 255 },
             .music = .Play5,
         },
         .{
-            .filename = "LEVEL7.SQZ",
+            .filename = "MOKTAR/LEVEL7.SQZ",
             .title = "LA CITE ENFOUIE",
             .color = .{ .r = 40 * 4, .g = 28 * 4, .b = 12 * 4, .a = 255 },
             .music = .Play2,
         },
         .{
-            .filename = "LEVEL8.SQZ",
+            .filename = "MOKTAR/LEVEL8.SQZ",
             .title = "DESERT PRIVE", // DÉSERT PRIVÉ?
             .color = .{ .r = 0 * 4, .g = 20 * 4, .b = 16 * 4, .a = 255 },
             .music = .Play1,
         },
         .{
-            .filename = "LEVEL9.SQZ",
+            .filename = "MOKTAR/LEVEL9.SQZ",
             .title = "LA VILLE DES SABLES",
             .color = .{ .r = 40 * 4, .g = 28 * 4, .b = 12 * 4, .a = 255 },
             .has_cage = true,
             .music = .Play2,
         },
         .{
-            .filename = "LEVELB.SQZ",
+            .filename = "MOKTAR/LEVELB.SQZ",
             .title = "LE PHARE OUEST", // LE PHARE DE L'OUEST?
             .color = .{ .r = 40 * 4, .g = 28 * 4, .b = 12 * 4, .a = 255 },
             .music = .Play3,
         },
         .{
-            .filename = "LEVELC.SQZ",
+            .filename = "MOKTAR/LEVELC.SQZ",
             .title = "UN BON TUYAU",
             .color = .{ .r = 40 * 4, .g = 28 * 4, .b = 12 * 4, .a = 255 },
             .music = .Play5,
         },
         .{
-            .filename = "LEVELE.SQZ",
+            .filename = "MOKTAR/LEVELE.SQZ",
             .title = "DE RETOUR AU PAYS",
             .color = .{ .r = 40 * 4, .g = 28 * 4, .b = 12 * 4, .a = 255 },
             .music = .Play3,
         },
         .{
-            .filename = "LEVELF.SQZ",
+            .filename = "MOKTAR/LEVELF.SQZ",
             .title = "DIRECTION BARBES",
             .color = .{ .r = 40 * 4, .g = 28 * 4, .b = 12 * 4, .a = 255 },
             .music = .Play4,
         },
         .{
-            .filename = "LEVELG.SQZ",
+            .filename = "MOKTAR/LEVELG.SQZ",
             .title = "BIG BISOUS",
             .color = .{ .r = 48 * 4, .g = 8 * 4, .b = 0 * 4, .a = 255 },
             .is_finish = true,
             .music = .Win,
         },
     },
-    .logo = .{ .filename = "TITUS.SQZ", .format = .LinearPalette256 },
-    .intro = .{ .filename = "TITRE.SQZ", .format = .LinearPalette256 },
-    .menu = .{ .filename = "MENU.SQZ", .format = .LinearPalette256 },
+    .logo = .{ .filename = "MOKTAR/TITUS.SQZ", .format = .LinearPalette256 },
+    .intro = .{ .filename = "MOKTAR/TITRE.SQZ", .format = .LinearPalette256 },
+    .menu = .{ .filename = "MOKTAR/MENU.SQZ", .format = .LinearPalette256 },
     .finish = null,
-    .sprites = "SPRITES.SQZ",
+    .sprites = "MOKTAR/SPRITES.SQZ",
 };
 
-pub var constants: *const Constants = undefined;
+pub var constants: *const Constants = &null_consts;
 
 var titus_colors: [16]SDL.Color = .{
     // Transparent color, needs to be different from the others
@@ -566,14 +582,6 @@ pub fn get_anim_player(action: u8) [*c]const i16 {
     return &anim_player[action][0];
 }
 
-pub fn init_anim_player() void {
-    if (game == .Titus) {
-        anim_player[1] = &.{ 2, 2, 2, 1, 1, 1, 1, 2, 2, 2, 3, 3, 3, 3, -14 * 2 };
-    } else if (game == .Moktar) {
-        anim_player[1] = &.{ 2, 2, 2, 1, 1, 1, 2, 2, 3, 3, 3, -11 * 2 };
-    }
-}
-
 fn isFileOpenable(path: []const u8) bool {
     if (std.fs.cwd().openFile(path, .{})) |file| {
         file.close();
@@ -585,18 +593,24 @@ fn isFileOpenable(path: []const u8) bool {
     }
 }
 
-fn initGameType() !*const Constants {
-    if (isFileOpenable(titus_consts.sprites)) {
-        game = .Titus;
-        return &titus_consts;
-    } else if (isFileOpenable(moktar_consts.sprites)) {
-        game = .Moktar;
-        return &moktar_consts;
-    } else {
-        return error.CannotDetermineGameType;
-    }
+pub fn probeGameFiles() GamesAvailable {
+    return .{
+        .titus = isFileOpenable(titus_consts.sprites),
+        .moktar = isFileOpenable(moktar_consts.sprites),
+    };
 }
 
-pub fn init() !void {
-    constants = try initGameType();
+pub fn init(game_to_init : GameType) void {
+    game = game_to_init;
+    constants = switch (game_to_init) {
+        .Moktar => &moktar_consts,
+        .Titus => &titus_consts,
+        .None => &null_consts,
+    };
+
+    if (game == .Titus) {
+        anim_player[1] = &.{ 2, 2, 2, 1, 1, 1, 1, 2, 2, 2, 3, 3, 3, 3, -14 * 2 };
+    } else if (game == .Moktar) {
+        anim_player[1] = &.{ 2, 2, 2, 1, 1, 1, 2, 2, 3, 3, 3, -11 * 2 };
+    }
 }
