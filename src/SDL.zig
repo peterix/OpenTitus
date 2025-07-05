@@ -240,6 +240,7 @@ pub fn loadBMP_IO(src: ?*@This().SDL_IOStream, closeio: bool) [*c]@This().Surfac
     tracking_map.put(result, {}) catch {};
     return result;
 }
+pub const saveBMP = @This().SDL_SaveBMP;
 
 pub const setSurfaceColorKey = @This().SDL_SetSurfaceColorKey;
 
@@ -290,8 +291,8 @@ pub fn setWindowMinimumSize(window: ?*Window, min_w: c_int, min_h: c_int) bool {
 }
 
 pub const setWindowFullscreen = @This().SDL_SetWindowFullscreen;
-
 pub const getWindowPixelFormat = @This().SDL_GetWindowPixelFormat;
+pub const setWindowIcon = @This().SDL_SetWindowIcon;
 
 pub const createRenderer = @This().SDL_CreateRenderer;
 pub const destroyRenderer = @This().SDL_DestroyRenderer;

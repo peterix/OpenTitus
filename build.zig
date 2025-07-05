@@ -57,15 +57,7 @@ fn setup_game_build(
     exe.root_module.addOptions("config", options);
 }
 
-
-fn build_game(
-    b: *std.Build,
-    name: []const u8,
-    target: ResolvedTarget,
-    optimize: std.builtin.Mode,
-    options: *std.Build.Step.Options,
-    sdl_lib: *std.Build.Step.Compile
-) *Step.Compile {
+fn build_game(b: *std.Build, name: []const u8, target: ResolvedTarget, optimize: std.builtin.Mode, options: *std.Build.Step.Options, sdl_lib: *std.Build.Step.Compile) *Step.Compile {
     const exe = b.addExecutable(.{
         .name = name,
         .root_source_file = b.path("main.zig"),
@@ -74,19 +66,13 @@ fn build_game(
     });
     if (target.query.os_tag == .windows) {
         exe.subsystem = .Windows;
+        exe.addWin32ResourceFile(.{ .file = b.path("res/titus.res") });
     }
-
     setup_game_build(b, options, sdl_lib, exe);
     return exe;
 }
 
-fn run_tests (
-    b: *std.Build,
-    target: ResolvedTarget,
-    optimize: std.builtin.Mode,
-    options: *std.Build.Step.Options,
-    sdl_lib: *std.Build.Step.Compile
-) void {
+fn run_tests(b: *std.Build, target: ResolvedTarget, optimize: std.builtin.Mode, options: *std.Build.Step.Options, sdl_lib: *std.Build.Step.Compile) void {
     const game_tests = b.addTest(.{
         .root_source_file = b.path("main.zig"),
         .target = target,
@@ -101,7 +87,6 @@ fn run_tests (
     // This will evaluate the `test` step rather than the default, which is "install".
     const test_step = b.step("test", "Run tests");
     test_step.dependOn(&run_game_tests.step);
-
 }
 
 // Although this function looks imperative, note that its job is to
@@ -133,7 +118,7 @@ pub fn build(b: *std.Build) void {
     run_tests(b, target, optimize, options, sdl_lib);
 
     const titus = build_game(b, "opentitus", target, optimize, options, sdl_lib);
-    const install_titus = b.addInstallArtifact(titus, .{.dest_dir = .{ .override = .{ .custom =  "./" } }});
+    const install_titus = b.addInstallArtifact(titus, .{ .dest_dir = .{ .override = .{ .custom = "./" } } });
     b.default_step.dependOn(&install_titus.step);
     b.installFile("./install/README.txt.titus", "./TITUS/README.txt");
     b.installFile("./install/README.txt.moktar", "./MOKTAR/README.txt");

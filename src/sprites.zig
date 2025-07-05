@@ -203,6 +203,12 @@ pub const SpriteCache = struct {
         }
         const new_surface = try copysurface(self, spritedata, key.flip, key.flash);
         try self.hashmap.put(key, new_surface);
+
+//         var buf: [64]u8 = undefined;
+//         const filename = try std.fmt.bufPrint(&buf,"sprite_{d}_{}_{}.bmp\x00", .{key.number, key.flash, key.flip});
+//         if (!SDL.saveBMP(new_surface, &filename[0])) {
+//             return error.DumpError;
+//         }
         return new_surface;
     }
 

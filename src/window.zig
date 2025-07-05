@@ -50,6 +50,8 @@ pub var screen: ?*SDL.Surface = null;
 pub var window: ?*SDL.Window = null;
 var renderer: ?*SDL.Renderer = null;
 
+const iconBMP = @embedFile("../res/titus.bmp");
+
 const WindowError = error{
     CannotSetDisplayMode,
     CannotCreateWindow,
@@ -88,6 +90,19 @@ pub fn window_init() !void {
         window = null;
     }
     _ = SDL.setWindowMinimumSize(window, game_width, game_height);
+
+    {
+        const rwops = SDL.IOFromMem(@constCast(@ptrCast(&iconBMP[0])), @intCast(iconBMP.len));
+        if (rwops == null) {
+            return error.CannotLoadIcon;
+        }
+
+        const icon = SDL.loadBMP_IO(rwops, true);
+        if (icon == null) {
+            return error.CannotLoadIcon;
+        }
+        _ = SDL.setWindowIcon(window, icon);
+    }
 
     renderer = SDL.createRenderer(window, null);
     if (renderer == null) {
