@@ -49,6 +49,7 @@ var black: u32 = 0;
 pub var screen: ?*SDL.Surface = null;
 pub var window: ?*SDL.Window = null;
 var renderer: ?*SDL.Renderer = null;
+pub var icon: ?*SDL.Surface = null;
 
 const iconBMP = @embedFile("../res/titus.bmp");
 
@@ -97,7 +98,7 @@ pub fn window_init() !void {
             return error.CannotLoadIcon;
         }
 
-        const icon = SDL.loadBMP_IO(rwops, true);
+        icon = SDL.loadBMP_IO(rwops, true);
         if (icon == null) {
             return error.CannotLoadIcon;
         }
@@ -138,6 +139,9 @@ pub fn window_init() !void {
 pub fn window_deinit() void {
     if (screen != null) {
         SDL.destroySurface(screen);
+    }
+    if(icon != null) {
+        SDL.destroySurface(icon);
     }
 }
 
