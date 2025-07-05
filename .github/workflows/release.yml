@@ -24,13 +24,13 @@ jobs:
           version: 0.14.0
       - name: Build
         run: make release VERSION=${VERSION}
-    - name: Create Release Archive
-      uses: thedoctor0/zip-release@0.7.5
-      with:
-        type: 'zip'
-        directory: ./zig-out/
-        filename: ../OpenTitus-${VERSION}.zip
-    - name: Release
-      uses: softprops/action-gh-release@v2
-      with:
-        files: OpenTitus-${VERSION}.zip
+      - name: Create Release Archive
+        uses: thedoctor0/zip-release@0.7.5
+        with:
+          type: 'zip'
+          directory: ./zig-out/
+          filename: ../OpenTitus-${VERSION}.zip
+      - name: Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: OpenTitus-${VERSION}.zip
