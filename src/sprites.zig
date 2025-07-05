@@ -296,7 +296,7 @@ fn animate_sprite(level: *lvl.Level, spr: *lvl.Sprite) void {
 
 pub fn animateSprites(level: *lvl.Level) void {
     //Animate player
-    if ((globals.LAST_ORDER == 0) and
+    if ((globals.LAST_ORDER == .Rest) and
         (globals.POCKET_FLAG) and
         (globals.ACTION_TIMER >= 35 * 4))
     {

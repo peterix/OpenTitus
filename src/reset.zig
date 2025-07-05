@@ -88,7 +88,7 @@ pub fn CLEAR_DATA(level: *lvl.Level) void {
 
     globals.GRAVITY_FLAG = 4;
     globals.SENSX = 0;
-    globals.LAST_ORDER = 0;
+    globals.LAST_ORDER = .Rest;
 
     SET_ALL_SPRITES(level);
 

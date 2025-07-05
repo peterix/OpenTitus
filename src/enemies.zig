@@ -1233,7 +1233,7 @@ fn KICK_ASH(level: *lvl.Level, enemysprite: *lvl.Sprite, power: i16) void {
     player.DEC_ENERGY(level);
     globals.KICK_FLAG = 24;
     globals.CHOC_FLAG = 0;
-    globals.LAST_ORDER = 0;
+    globals.LAST_ORDER = .Rest;
     p_sprite.speed_x = power;
 
     if (@as(c_int, @bitCast(@as(c_int, p_sprite.x))) <= @as(c_int, @bitCast(@as(c_int, enemysprite.x)))) {

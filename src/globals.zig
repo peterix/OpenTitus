@@ -24,6 +24,7 @@
 //
 
 const std = @import("std");
+const player = @import("player.zig");
 
 pub const screen_width = 20;
 pub const screen_height = 12;
@@ -71,7 +72,7 @@ pub var PRIER_FLAG: bool = false;
 pub var SAUT_FLAG: u8 = 0;
 
 //Last action (kneestand + jump = silent walk)
-pub var LAST_ORDER: u8 = 0;
+pub var LAST_ORDER: player.PlayerAction = .Rest;
 
 //Silent walk timer
 pub var FURTIF_FLAG: u8 = 0;

@@ -50,6 +50,82 @@ fn add_carry() u8 {
     }
 }
 
+// TODO: remove impossible action, assert on them
+pub const PlayerAction = enum(u8) {
+    Rest = 0,
+    Walk = 1,
+    Jump = 2,
+    Crawl = 3,
+    Slide = 4,
+    KneeStand = 5,
+    Climb = 6,
+    Grab = 7,
+    Drop = 8,
+    SilentRest = 9,
+    SilentWalk = 10,
+    Headache = 11,
+    Hit = 12,
+    HitBurn = 13,
+
+    Rest_Carry = 16,
+    Walk_Carry = 17,
+    Jump_Carry = 18,
+    Crawl_Carry = 19,
+    Slide_Carry = 20,
+    KneeStand_Carry = 21,
+    Climb_Carry = 22,
+    Grab_Carry = 23,
+    Drop_Carry = 24,
+    SilentRest_Carry = 25,
+    SilentWalk_Carry = 26,
+    Headache_Carry = 27,
+    Hit_Carry = 28,
+    HitBurn_Carry = 29,
+
+    fn addCarry(self: *PlayerAction) void {
+        self.* = switch(self.*) {
+            .Rest => .Rest_Carry,
+            .Walk => .Walk_Carry,
+            .Jump => .Jump_Carry,
+            .Crawl => .Crawl_Carry,
+            .Slide => .Slide_Carry,
+            .KneeStand => .KneeStand_Carry,
+            .Climb => .Climb_Carry,
+            .Grab => .Grab_Carry,
+            .Drop => .Drop_Carry,
+            .SilentRest => .SilentRest_Carry,
+            .SilentWalk => .SilentWalk_Carry,
+            .Headache => .Headache_Carry,
+            .Hit => .Hit_Carry,
+            .HitBurn => .HitBurn_Carry,
+            else => {
+                return;
+            },
+        };
+    }
+    fn withoutCarry(self: *PlayerAction) PlayerAction {
+        return switch(self.*) {
+            .Rest_Carry => .Rest,
+            .Walk_Carry => .Walk,
+            .Jump_Carry => .Jump,
+            .Crawl_Carry => .Crawl,
+            .Slide_Carry => .Slide,
+            .KneeStand_Carry => .KneeStand,
+            .Climb_Carry => .Climb,
+            .Grab_Carry => .Grab,
+            .Drop_Carry => .Drop,
+            .SilentRest_Carry => .SilentRest,
+            .SilentWalk_Carry => .SilentWalk,
+            .Headache_Carry => .Headache,
+            .Hit_Carry => .Hit,
+            .HitBurn_Carry => .HitBurn,
+            else => {
+                return self.*;
+            },
+        };
+    }
+};
+
 pub fn move_player(arg_context: *render.ScreenContext, arg_level: *lvl.Level) c_int {
     // Part 1: Gather input state
     // Part 2: Determine the player's action, and execute action dependent code
@@ -96,45 +172,44 @@ pub fn move_player(arg_context: *render.ScreenContext, arg_level: *lvl.Level) c_
         return 0;
     }
 
-    // TODO: Action should be an enum?
-    var action: u8 = undefined;
+    var action: PlayerAction = undefined;
 
     if (globals.CHOC_FLAG != 0) {
-        action = 11; // Headache
+        action = .Headache;
     } else if (globals.KICK_FLAG != 0) {
         if (globals.GRANDBRULE_FLAG) {
-            action = 13; // Hit (burn)
+            action = .HitBurn;
         } else {
-            action = 12; // Hit
+            action = .Hit;
         }
     } else {
         globals.GRANDBRULE_FLAG = false;
         if (globals.LADDER_FLAG) {
-            action = 6; // Action: climb
+            action = .Climb;
         } else if (!globals.PRIER_FLAG and player.jump_pressed and player.y_axis <= 0 and globals.SAUT_FLAG == 0) {
-            action = 2; // Action: jump
-            if (globals.LAST_ORDER == 5) { // Test if last order was kneestanding
+            action = .Jump;
+            if (globals.LAST_ORDER == .KneeStand) { // Test if last order was kneestanding
                 globals.FURTIF_FLAG = 100; // If jump after kneestanding, init silent walk timer
             }
         } else if (globals.PRIER_FLAG or (globals.SAUT_FLAG != 6 and player.y_axis > 0)) {
             if (player.x_axis != 0) { // Move left or right
-                action = 3; // Action: crawling
+                action = .Crawl; // Action: crawling
             } else {
-                action = 5; // Action: kneestand
+                action = .KneeStand; // Action: kneestand
             }
         } else if (player.x_axis != 0) {
-            action = 1; // Action: walk
+            action = .Walk; // Action: walk
         } else {
-            action = 0; // Action: rest (no action)
+            action = .Rest; // Action: rest (no action)
         }
         // Is space button pressed?
         if (player.action_pressed and !globals.PRIER_FLAG) {
             if (!globals.DROP_FLAG) {
-                if (action == 3 or action == 5) { // Kneestand
+                if (action == .Crawl or action == .KneeStand) { // Kneestand
                     globals.DROPREADY_FLAG = false;
-                    action = 7; // Grab an object
+                    action = .Grab; // Grab an object
                 } else if (globals.CARRY_FLAG and globals.DROPREADY_FLAG) { // Fall
-                    action = 8; // Drop the object
+                    action = .Drop; // Drop the object
                 }
             }
         } else {
@@ -143,7 +218,7 @@ pub fn move_player(arg_context: *render.ScreenContext, arg_level: *lvl.Level) c_
         }
     }
     if (globals.CARRY_FLAG) {
-        action += 16;
+        action.addCarry();
     }
 
     var newsensX: i8 = undefined;
@@ -157,7 +232,7 @@ pub fn move_player(arg_context: *render.ScreenContext, arg_level: *lvl.Level) c_
         newsensX = player.x_axis;
     } else if (globals.SENSX == -1) {
         newsensX = -1;
-    } else if (action == 0) {
+    } else if (action == .Rest) {
         newsensX = 0;
     } else {
         newsensX = 1;
@@ -167,9 +242,13 @@ pub fn move_player(arg_context: *render.ScreenContext, arg_level: *lvl.Level) c_
         globals.SENSX = newsensX;
         globals.ACTION_TIMER = 1;
     } else {
-        if ((action == 0 or action == 1) and globals.FURTIF_FLAG != 0) {
-            // Silent walk?
-            action += 9;
+        if (globals.FURTIF_FLAG != 0) {
+            if (action == .Rest) {
+                action = .SilentRest;
+            }
+            else if (action == .Walk) {
+                action = .SilentWalk;
+            }
         }
         if (action != globals.LAST_ORDER) {
             globals.ACTION_TIMER = 1;
@@ -227,8 +306,7 @@ pub fn move_player(arg_context: *render.ScreenContext, arg_level: *lvl.Level) c_
             globals.DROP_FLAG = false;
         }
     } else if (globals.CARRY_FLAG) { // Place the object on top of or beside the player
-        if (!globals.LADDER_FLAG and ((globals.LAST_ORDER == 16 + 5) or
-            (globals.LAST_ORDER == 16 + 7)))
+        if (!globals.LADDER_FLAG and ((globals.LAST_ORDER == .KneeStand_Carry) or (globals.LAST_ORDER == .Grab_Carry)))
         { // Kneestand or take
             player.sprite2.y = player.sprite.y - 4;
             if (player.sprite.flipped) {
@@ -238,8 +316,7 @@ pub fn move_player(arg_context: *render.ScreenContext, arg_level: *lvl.Level) c_
             }
         } else {
             if ((player.sprite.number == 14) or // Sliding down the ladder OR
-                (((globals.LAST_ORDER & 0x0F) != 7) and // Not taking
-                ((globals.LAST_ORDER & 0x0F) != 8)))
+                (globals.LAST_ORDER.withoutCarry() != .Grab and globals.LAST_ORDER.withoutCarry() != .Drop)) // Not taking or dropping
             { // Not throwing/dropping
                 player.sprite2.x = player.sprite.x + 2;
                 if ((player.sprite.number == 23) or // Climbing (c)
@@ -424,7 +501,7 @@ fn TAKE_BLK_AND_YTEST(level: *lvl.Level, tileY_in: i16, tileX_in: i16) void {
     const floor = level.getTileFloor(tileX, tileY + 1);
     const floor_above = level.getTileFloor(tileX, tileY);
 
-    if (globals.LAST_ORDER & 0x0F != 2) { // 2=SAUTER
+    if (globals.LAST_ORDER.withoutCarry() != .Jump) {
         // Player versus floor
         BLOCK_YYPRG(level, floor, floor_above, tileY + 1, tileX);
     }
@@ -631,7 +708,6 @@ fn YACCELERATION(player: *lvl.Player, maxspeed: i16) void {
 fn BLOCK_YYPRG(level: *lvl.Level, floor: lvl.FloorType, floor_above: lvl.FloorType, tileY: i16, tileX: i16) void {
     // Action on different floor flags
     const player = &level.player;
-    var order: u8 = undefined;
     switch (floor) {
         .NoFloor => {
             player_fall_F();
@@ -667,22 +743,22 @@ fn BLOCK_YYPRG(level: *lvl.Level, floor: lvl.FloorType, floor_above: lvl.FloorTy
                 player_fall_F(); // Free fall
                 return;
             }
-            order = globals.LAST_ORDER & 0x0F;
-            if (order == 1 or order == 3 or order == 7 or order == 8) {
+            const order = globals.LAST_ORDER.withoutCarry();
+            if (order == .Walk or order == .Crawl or order == .Grab or order == .Drop) {
                 player_block_yu(player); // Stop fall
                 return;
             }
-            if (order == 5) { // action baisse
+            if (order == .KneeStand) { // action baisse
                 player_fall_F(); // Free fall
                 sprites.updatesprite(level, &player.sprite, 14, true); // sprite: start climbing down
                 player.sprite.y += 8;
             }
             if (floor_above != .Ladder) { // ladder
-                if (order == 0) { // action repos
+                if (order == .Rest) { // action repos
                     player_block_yu(player); // Stop fall
                     return;
                 }
-                if (player.y_axis < 0 and order == 6) { // action UP + climb ladder
+                if (player.y_axis < 0 and order == .Climb) { // action UP + climb ladder
                     player_block_yu(player); // Stop fall
                     return;
                 }
@@ -806,7 +882,7 @@ pub fn DEC_ENERGY(level: *lvl.Level) void {
 }
 
 // Action dependent code
-fn ACTION_PRG(level: *lvl.Level, action: u8) void {
+fn ACTION_PRG(level: *lvl.Level, action: PlayerAction) void {
     const player = &level.player;
     var tileX: i16 = undefined;
     var tileY: i16 = undefined;
@@ -815,25 +891,27 @@ fn ACTION_PRG(level: *lvl.Level, action: u8) void {
     var speed_y: i16 = undefined;
 
     switch (action) {
-        0, 9, 16 => {
+        .Rest, .SilentRest, .Rest_Carry => {
             // Rest. Handle deacceleration and slide
             globals.LAST_ORDER = action;
             player_friction(player);
             if (@abs(player.*.sprite.speed_x) >= 1 * 16 and player.sprite.flipped == (player.*.sprite.speed_x < 0)) {
-                player.sprite.animation = data.get_anim_player(4 + add_carry());
+                var slide:PlayerAction = .Slide;
+                slide.addCarry();
+                player.sprite.animation = data.get_anim_player(slide);
             } else {
                 player.sprite.animation = data.get_anim_player(action);
             }
             sprites.updatesprite(level, &player.sprite, player.sprite.animation.*, true);
             player.sprite.flipped = globals.SENSX < 0;
         },
-        1, 17, 19 => {
+        .Walk, .Walk_Carry, .Crawl_Carry => {
             // Handle walking
             XACCELERATION(player, globals.MAX_X * 16);
             NEW_FORM(player, action); // Update last order and action (animation)
             GET_IMAGE(level); // Update player sprite
         },
-        2, 18 => {
+        .Jump, .Jump_Carry => {
             // Handle a jump
             if (globals.SAUT_COUNT == 0) {
                 events.triggerEvent(.Event_PlayerJump);
@@ -848,7 +926,7 @@ fn ACTION_PRG(level: *lvl.Level, action: u8) void {
                 GET_IMAGE(level);
             }
         },
-        3 => {
+        .Crawl => {
             // Handle crawling
             NEW_FORM(player, action);
             GET_IMAGE(level);
@@ -858,7 +936,7 @@ fn ACTION_PRG(level: *lvl.Level, action: u8) void {
                 player.*.sprite.flipped = globals.SENSX < 0;
             }
         },
-        5 => {
+        .KneeStand => {
             // Kneestand
             NEW_FORM(player, action);
             GET_IMAGE(level);
@@ -868,7 +946,7 @@ fn ACTION_PRG(level: *lvl.Level, action: u8) void {
                 player.sprite.speed_y = 0;
             }
         },
-        6, 22 => {
+        .Climb, .Climb_Carry => {
             // Climb a ladder
             if (player.x_axis != 0) {
                 XACCELERATION(player, globals.MAX_X * 16);
@@ -883,7 +961,9 @@ fn ACTION_PRG(level: *lvl.Level, action: u8) void {
                 }
             }
             if (player.y_axis != 0) {
-                NEW_FORM(player, 6 + add_carry());
+                var climb :PlayerAction = .Climb;
+                climb.addCarry();
+                NEW_FORM(player, climb);
                 GET_IMAGE(level);
                 player.sprite.x = @as(i16, @bitCast(@as(u16, @bitCast(player.*.sprite.x)) & 0xFFF0)) + 8;
                 tileX = player.sprite.x >> 4;
@@ -904,7 +984,7 @@ fn ACTION_PRG(level: *lvl.Level, action: u8) void {
                 player.sprite.speed_y = 0;
             }
         },
-        7, 23 => {
+        .Grab, .Grab_Carry => {
             // Take a box
             NEW_FORM(player, action);
             GET_IMAGE(level);
@@ -1074,7 +1154,7 @@ fn ACTION_PRG(level: *lvl.Level, action: u8) void {
             } // condition (POSEREADY_FLAG == 0)
             globals.POSEREADY_FLAG = true;
         },
-        8, 24 => {
+        .Drop, .Drop_Carry => {
             // Throw
             NEW_FORM(player, action);
             GET_IMAGE(level);
@@ -1126,27 +1206,27 @@ fn ACTION_PRG(level: *lvl.Level, action: u8) void {
             player.sprite.flipped = globals.SENSX < 0;
             globals.CARRY_FLAG = false;
         },
-        10 => {
+        .SilentWalk => {
             XACCELERATION(player, (globals.MAX_X - 1) * 16);
             NEW_FORM(player, action);
             GET_IMAGE(level);
         },
-        11 => {
+        .Headache => {
             player.*.sprite.speed_x = 0;
             NEW_FORM(player, action);
             GET_IMAGE(level);
         },
-        12, 13, 28, 29 => {
+        .Hit, .HitBurn, .Hit_Carry, .HitBurn_Carry => {
             YACCELERATION(player, globals.MAX_Y * 16);
             NEW_FORM(player, action);
             GET_IMAGE(level);
         },
-        21 => {
+        .KneeStand_Carry => {
             NEW_FORM(player, action);
             GET_IMAGE(level);
             player_friction(player);
         },
-        27 => {
+        .Headache_Carry => {
             _ = player_drop_carried(level);
             player.*.sprite.speed_x = 0;
             NEW_FORM(player, action);
@@ -1174,7 +1254,7 @@ fn player_friction(player: *lvl.Player) void {
     player.sprite.speed_x = speed;
 }
 
-fn NEW_FORM(player: *lvl.Player, action: u8) void {
+fn NEW_FORM(player: *lvl.Player, action: PlayerAction) void {
     // if the order is changed, change player animation
     if (globals.LAST_ORDER != action or player.sprite.animation == null) {
         globals.LAST_ORDER = action;
@@ -1293,7 +1373,7 @@ fn player_collide_with_objects(level: *lvl.Level) void {
         globals.GRAVITY_FLAG = 4;
         globals.TAPISWAIT_FLAG = 0;
     } else if (globals.ACTION_TIMER > 10 and
-        globals.LAST_ORDER & 15 == 0 and
+        globals.LAST_ORDER.withoutCarry() == .Rest and
         player.sprite.speed_y == 0 and
         (off_object.sprite.number == 83 or off_object.sprite.number == 94))
     {

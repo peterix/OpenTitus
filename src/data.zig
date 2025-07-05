@@ -28,6 +28,7 @@ const SDL = @import("SDL.zig");
 const audio = @import("audio/audio.zig");
 const AudioTrack = audio.AudioTrack;
 const lvl = @import("level.zig");
+const player = @import("player.zig");
 
 pub const GameType = enum  {
     Titus,
@@ -546,40 +547,40 @@ pub const anim_enemy: []const i16 = &.{
 };
 
 pub var anim_player: [30][]const i16 = .{
-    &.{ 0, -2 },
-    &.{-1},
-    &.{ 9, 8, -4 },
-    &.{ 5, 6, 6, 7, 7, -8 },
-    &.{ 4, -2 },
-    &.{ 5, -2 },
-    &.{ 11, 11, 12, 12, -8 },
-    &.{ 22, -2 },
-    &.{ 22, -2 },
-    &.{ 9, -2 },
-    &.{ 8, 8, 9, 9, -8 },
-    &.{ 25, 26, 27, -6 },
-    &.{ 15, 15, 15, 15, 15, 15, 15, 15, 10, -2 },
-    &.{ 28, 28, 28, 28, 28, 28, 28, 28, 10, -2 },
-    &.{-1},
-    &.{-1},
-    &.{ 16, -2 },
-    &.{ 17, 17, 17, 18, 18, 18, 18, 19, 19, 19, 18, 18, 18, 18, -28 },
-    &.{ 20, 21, -4 },
-    &.{ 17, 17, 17, 18, 18, 18, 18, 19, 19, 19, 18, 18, 18, 18, -28 },
-    &.{ 16, -2 },
-    &.{ 22, -2 },
-    &.{ 23, 23, 24, 24, -8 },
-    &.{ 22, -2 },
-    &.{ 22, -2 },
-    &.{-1},
-    &.{-1},
-    &.{ 25, 26, 27, -6 },
-    &.{ 15, 15, 15, 15, 15, 15, 15, 15, 10, -2 },
-    &.{ 28, 28, 28, 28, 28, 28, 28, 28, 10, -2 },
+    &.{ 0, -2 }, // Rest
+    &.{-1}, // Walk
+    &.{ 9, 8, -4 }, // Jump
+    &.{ 5, 6, 6, 7, 7, -8 }, // Crawl
+    &.{ 4, -2 }, // Slide
+    &.{ 5, -2 }, // KneeStand
+    &.{ 11, 11, 12, 12, -8 }, // Climb
+    &.{ 22, -2 }, // Grab
+    &.{ 22, -2 }, // Drop
+    &.{ 9, -2 }, // SilentRest
+    &.{ 8, 8, 9, 9, -8 }, // SilentWalk
+    &.{ 25, 26, 27, -6 }, // Headache
+    &.{ 15, 15, 15, 15, 15, 15, 15, 15, 10, -2 }, // Hit
+    &.{ 28, 28, 28, 28, 28, 28, 28, 28, 10, -2 }, // HitBurn
+    &.{-1}, // Unused
+    &.{-1}, // Unused
+    &.{ 16, -2 }, // Rest_Carry
+    &.{ 17, 17, 17, 18, 18, 18, 18, 19, 19, 19, 18, 18, 18, 18, -28 }, // Walk_Carry
+    &.{ 20, 21, -4 }, // Jump_Carry
+    &.{ 17, 17, 17, 18, 18, 18, 18, 19, 19, 19, 18, 18, 18, 18, -28 }, // Crawl_Carry
+    &.{ 16, -2 }, // Slide_Carry
+    &.{ 22, -2 }, // KneeStand_Carry
+    &.{ 23, 23, 24, 24, -8 }, // Climb_Carry
+    &.{ 22, -2 }, // Grab_Carry
+    &.{ 22, -2 }, // Drop_Carry
+    &.{-1}, // SilentRest_Carry => Unused!
+    &.{-1}, // SilentWalk_Carry => Unused!
+    &.{ 25, 26, 27, -6 }, // Headache_Carry
+    &.{ 15, 15, 15, 15, 15, 15, 15, 15, 10, -2 }, // Hit_Carry
+    &.{ 28, 28, 28, 28, 28, 28, 28, 28, 10, -2 }, // HitBurn_Carry
 };
 
-pub fn get_anim_player(action: u8) [*c]const i16 {
-    return &anim_player[action][0];
+pub fn get_anim_player(action: player.PlayerAction) [*c]const i16 {
+    return &anim_player[@intFromEnum(action)][0];
 }
 
 fn isFileOpenable(path: []const u8) bool {
