@@ -29,7 +29,7 @@ jobs:
             - name: Build
               env:
                 VERSION: ${{ steps.version.outputs.version }}
-                PREFIX: ./OpenTitus-${{ steps.version.outputs.version }}/
+                PREFIX: ./OpenTitus/
               run: make release
 
             - name: Create Release Archive
@@ -37,7 +37,7 @@ jobs:
               with:
                   type: "zip"
                   directory: .
-                  path: OpenTitus-${{ steps.version.outputs.version }}
+                  path: OpenTitus
                   filename: OpenTitus-${{ steps.version.outputs.version }}.zip
 
             - name: Release
