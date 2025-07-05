@@ -1,36 +1,37 @@
 name: Release
 
 on:
-  push:
-    tags:
-      - 'v[0-9]+.[0-9]+.[0-9]+'
+    push:
+        tags:
+            - "v[0-9]+.[0-9]+.[0-9]+"
 
 jobs:
-  job:
-    runs-on: ubuntu-latest
-    name: Release
-    steps:
-      # Store the version, stripping any v-prefix
-      - name: Write release version
-        run: |
-          VERSION=${GITHUB_REF_NAME#v}
-          echo Version: $VERSION
-          echo "VERSION=$VERSION" >> $GITHUB_ENV
-      - name: Checkout
-        uses: actions/checkout@v3
-      - name: Install zig
-        uses: mlugg/setup-zig@v2
-        with:
-          version: 0.14.0
-      - name: Build
-        run: make release VERSION=${VERSION}
-      - name: Create Release Archive
-        uses: thedoctor0/zip-release@0.7.5
-        with:
-          type: 'zip'
-          directory: ./zig-out/
-          filename: ../OpenTitus-${VERSION}.zip
-      - name: Release
-        uses: softprops/action-gh-release@v2
-        with:
-          files: OpenTitus-${VERSION}.zip
+    job:
+        runs-on: ubuntu-latest
+        name: Release
+        steps:
+            # Store the version, stripping any v-prefix
+            - id: version
+              name: Write release version
+              run: |
+                  VERSION=${GITHUB_REF_NAME#v}
+                  echo Version: $VERSION
+                  echo "version=$VERSION" >> $GITHUB_OUTPUT
+            - name: Checkout
+              uses: actions/checkout@v3
+            - name: Install zig
+              uses: mlugg/setup-zig@v2
+              with:
+                  version: 0.14.0
+            - name: Build
+              run: make release VERSION=${{ steps.version.outputs.version }}
+            - name: Create Release Archive
+              uses: thedoctor0/zip-release@0.7.5
+              with:
+                  type: "zip"
+                  directory: ./zig-out/
+                  filename: ../OpenTitus-${{ steps.version.outputs.version }}.zip
+            - name: Release
+              uses: softprops/action-gh-release@v2
+              with:
+                  files: OpenTitus-${{ steps.version.outputs.version }}.zip
