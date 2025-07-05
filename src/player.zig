@@ -262,6 +262,7 @@ pub fn move_player(arg_context: *render.ScreenContext, arg_level: *lvl.Level) c_
     }
 
     // Part 5: decrease the timers
+    common.subto0(&player.*.sprite.invincibility_frames);
     common.subto0(&globals.INVULNERABLE_FLAG);
     common.subto0(&globals.RESETLEVEL_FLAG);
     common.subto0(&globals.TAPISFLY_FLAG);
@@ -797,6 +798,7 @@ pub fn DEC_ENERGY(level: *lvl.Level) void {
             player.hp -= 1;
         }
         if (player.hp == 0) {
+            player.sprite.invincibility_frames = 0;
             DEC_LIFE(level);
         }
     }
@@ -1051,6 +1053,7 @@ fn ACTION_PRG(level: *lvl.Level, action: u8) void {
                                 globals.GRAVITY_FLAG = 4;
                                 player.*.sprite2.flipped = enemy.sprite.flipped;
                                 player.*.sprite2.flash = enemy.sprite.flash;
+                                player.*.sprite2.invincibility_frames = enemy.sprite.invincibility_frames;
                                 player.*.sprite2.visible = enemy.sprite.visible;
                                 sprites.updatesprite(level, &player.sprite2, enemy.carry_sprite, false);
                                 enemy.sprite.enabled = false;

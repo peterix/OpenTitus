@@ -1110,7 +1110,7 @@ pub fn SET_NMI(level: *lvl.Level) void {
             // If the enemy is dying or dead and not on the screen, remove from the list!
             continue;
         }
-        if (globals.KICK_FLAG == 0 and !globals.GODMODE) {
+        if (globals.KICK_FLAG == 0 and level.player.sprite.invincibility_frames == 0 and !globals.GODMODE) {
             if (enemy.sprite.invisible) {
                 continue;
             }
@@ -1226,6 +1226,9 @@ fn KICK_ASH(level: *lvl.Level, enemysprite: *lvl.Sprite, power: i16) void {
     events.triggerEvent(.Event_HitPlayer);
     const p_sprite = &level.player.sprite;
 
+    // about 2 seconds worth of invulnereability frames
+    p_sprite.invincibility_frames = 69;
+
     player.DEC_ENERGY(level);
     player.DEC_ENERGY(level);
     globals.KICK_FLAG = 24;
@@ -1303,7 +1306,7 @@ pub fn moveTrash(level: *lvl.Level) void {
         }
 
         // Trash vs player
-        if (!globals.GODMODE and NMI_VS_DROP(trash, &level.player.sprite)) {
+        if (!globals.GODMODE and level.player.sprite.invincibility_frames == 0 and NMI_VS_DROP(trash, &level.player.sprite)) {
             trash.x -= trash.speed_x;
             KICK_ASH(level, trash, 70);
             trash.enabled = false;

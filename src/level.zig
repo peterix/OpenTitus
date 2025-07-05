@@ -47,6 +47,7 @@ pub const Sprite = struct {
     //On screen or not on screen (above/below/left/right)
     visible: bool,
     flash: bool,
+    invincibility_frames: u8,
     flipped: bool,
     enabled: bool,
     spritedata: ?*const SpriteData,

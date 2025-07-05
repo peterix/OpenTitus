@@ -172,7 +172,7 @@ fn render_sprite(spr: *allowzero lvl.Sprite) void {
     const image = sprites.sprite_cache.getSprite(.{
         .number = spr.*.number,
         .flip = spr.*.flipped,
-        .flash = spr.*.flash,
+        .flash = (spr.*.flash or (spr.*.invincibility_frames / 4) % 2 == 1) ,
     }) catch {
         _ = SDL.fillSurfaceRect(window.screen, &dest, SDL.mapSurfaceRGB(window.screen, 255, 180, 128));
         spr.visible = true;

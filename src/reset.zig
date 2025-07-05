@@ -106,6 +106,7 @@ fn clearsprite(spr: *lvl.Sprite) void {
     spr.ONTOP = null;
     spr.spritedata = null;
     spr.flipped = false;
+    spr.invincibility_frames = 0;
     spr.flash = false;
     spr.visible = false;
     spr.animation = null;

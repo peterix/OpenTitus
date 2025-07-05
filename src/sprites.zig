@@ -243,6 +243,7 @@ pub fn copysprite(level: *lvl.Level, dest: *lvl.Sprite, src: *lvl.Sprite) void {
     dest.enabled = src.enabled;
     dest.flipped = src.flipped;
     dest.flash = src.flash;
+    dest.invincibility_frames = src.invincibility_frames;
     dest.visible = src.visible;
     dest.invisible = false;
 }
