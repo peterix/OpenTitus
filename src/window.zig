@@ -71,6 +71,16 @@ pub fn toggle_fullscreen() void {
     }
 }
 
+pub fn is_fullscreen() bool {
+    return game.settings.fullscreen;
+}
+
+pub fn set_fullscreen(fullscreen: bool) void {
+    if(game.settings.fullscreen != fullscreen) {
+        toggle_fullscreen();
+    }
+}
+
 pub fn window_init() !void {
     var windowflags: u32 = 0;
     const w: c_int = game.settings.window_width;

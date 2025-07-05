@@ -223,7 +223,7 @@ pub fn optionsMenu(menu_context: *MenuContext) ?c_int {
                 }
             },
             .Down => {
-                if (selected < 2) {
+                if (selected < 3) {
                     selected += 1;
                 }
             },
@@ -270,6 +270,14 @@ pub fn optionsMenu(menu_context: *MenuContext) ?c_int {
             audio.set_volume,
         );
         y += 13;
+        label("Fullscreen", y, selected == 3);
+        toggle(
+            window.is_fullscreen(),
+            y,
+            selected == 3,
+            input_state.action,
+            window.set_fullscreen,
+        );
         window.window_render();
         audio.music_restart_if_finished();
     }
