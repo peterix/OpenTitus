@@ -33,6 +33,7 @@ const BackendType = audio.BackendType;
 
 const input = @import("../input.zig");
 const InputAction = input.InputAction;
+const InputMode = input.InputMode;
 
 const menu = @import("menu.zig");
 const MenuContext = menu.MenuContext;
@@ -223,7 +224,7 @@ pub fn optionsMenu(menu_context: *MenuContext) ?c_int {
                 }
             },
             .Down => {
-                if (selected < 3) {
+                if (selected < 4) {
                     selected += 1;
                 }
             },
@@ -270,11 +271,21 @@ pub fn optionsMenu(menu_context: *MenuContext) ?c_int {
             audio.set_volume,
         );
         y += 13;
-        label("Fullscreen", y, selected == 3);
+        label("Input", y, selected == 3);
+        enumOptions(
+            InputMode,
+            input.getInputMode(),
+            y,
+            selected == 3,
+            input_state.action,
+            input.setInputMode,
+        );
+        y += 13;
+        label("Fullscreen", y, selected == 4);
         toggle(
             window.is_fullscreen(),
             y,
-            selected == 3,
+            selected == 4,
             input_state.action,
             window.set_fullscreen,
         );

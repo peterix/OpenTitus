@@ -31,7 +31,31 @@ const SDL = @import("SDL.zig");
 const globals = @import("globals.zig");
 const window = @import("window.zig");
 const events = @import("events.zig");
+const game = @import("game.zig");
 const GameEvent = events.GameEvent;
+
+pub const InputMode = enum(u8) {
+    Modern,
+    Classic,
+
+    pub const NameTable = [@typeInfo(InputMode).@"enum".fields.len][]const u8{
+        "Modern",
+        "Classic",
+    };
+
+    pub fn str(self: InputMode) []const u8 {
+        return NameTable[@intFromEnum(self)];
+    }
+};
+
+pub fn getInputMode() InputMode {
+    return game.settings.input_mode;
+}
+
+pub fn setInputMode(input_mode: InputMode) void {
+    game.settings.input_mode = input_mode;
+    // FIXME: save the file
+}
 
 pub const InputAction = enum {
     None,
@@ -172,6 +196,7 @@ pub const InputState = struct {
     y_axis: i8 = 0,
     action_pressed: bool = false,
     jump_pressed: bool = false,
+    crouch_pressed: bool = false,
 
     gamepad_map: GamepadMap = undefined,
     current_gamepad: SDL.JoystickID = 0,
@@ -590,73 +615,14 @@ pub fn processEvents() *InputState {
     switch(g_input_state.device) {
         .Gamepad => {
             if(g_input_state.gamepad_map.getPtr(g_input_state.current_gamepad)) |pad_state| {
-                // handle left <-> right - dpad has priority, then we use the left stick
-                if(pad_state.dpad_right_pressed)
-                {
-                    g_input_state.x_axis = 1;
-                }
-                else if (pad_state.dpad_left_pressed)
-                {
-                    g_input_state.x_axis = -1;
-                }
-                else
-                {
-                    // use the x axis of the left stick
-                    if(pad_state.left_x < 0)
-                    {
-                        g_input_state.x_axis = -1;
-                    }
-                    else if(pad_state.left_x > 0)
-                    {
-                        g_input_state.x_axis = 1;
-                    }
-                    else
-                    {
-                        g_input_state.x_axis = 0;
-                    }
-                }
-
-                if(pad_state.dpad_down_pressed or pad_state.left_shoulder_pressed or pad_state.left_trigger > 0.0)
-                {
-                    // crawl
-                    g_input_state.y_axis = 1;
-                }
-                else if(pad_state.dpad_up_pressed) // or pad_state.south_pressed
-                {
-                    // go up ladders
-                    g_input_state.y_axis = -1;
-                }
-                else
-                {
-                    // use the y axis of the left stick
-                    if(pad_state.left_y < -Y_ZONE)
-                    {
-                        g_input_state.y_axis = -1;
-                    }
-                    else if(pad_state.left_y > Y_ZONE)
-                    {
-                        g_input_state.y_axis = 1;
-                    }
-                    else
-                    {
-                        g_input_state.y_axis = 0;
-                    }
-                }
-                g_input_state.action_pressed = pad_state.right_trigger > 0.0 or pad_state.west_pressed or pad_state.right_shoulder_pressed;
-                g_input_state.jump_pressed = pad_state.dpad_up_pressed or pad_state.south_pressed;
-
-                // dpad only
-                // g_input_state.x_axis = @as(i8, @intCast(@intFromBool())) - @as(i8, @intCast(@intFromBool(pad_state.dpad_left_pressed)));
-                // g_input_state.y_axis = @as(i8, @intCast(@intFromBool(pad_state.dpad_down_pressed))) - @as(i8, @intCast(@intFromBool(pad_state.dpad_up_pressed)));
-                // g_input_state.action_pressed = pad_state.south_pressed;
-                // g_input_state.jump_pressed = g_input_state.y_axis;
+                handle_gamepad(pad_state);
             }
-            else
-            {
+            else {
                 g_input_state.x_axis = 0;
                 g_input_state.y_axis = 0;
                 g_input_state.action_pressed = false;
                 g_input_state.jump_pressed = false;
+                g_input_state.crouch_pressed = false;
             }
         },
         .Keyboard => {
@@ -669,6 +635,7 @@ pub fn processEvents() *InputState {
                 @as(i8, @intCast(keystate[SDL.SCANCODE_UP] | keystate[SDL.SCANCODE_W]));
             g_input_state.action_pressed = keystate[SDL.SCANCODE_SPACE] != 0;
             g_input_state.jump_pressed = g_input_state.y_axis < 0;
+            g_input_state.crouch_pressed = g_input_state.y_axis > 0;
         },
         .None => {
             // We got nothing
@@ -676,9 +643,80 @@ pub fn processEvents() *InputState {
             g_input_state.y_axis = 0;
             g_input_state.action_pressed = false;
             g_input_state.jump_pressed = false;
+            g_input_state.crouch_pressed = false;
         },
     }
     return &g_input_state;
+}
+
+fn handle_gamepad(pad_state: *GamepadState) void {
+    switch(game.settings.input_mode) {
+        .Classic => {
+            // Left stick behaves the same as dpad, no dedicated buttons for jump and crawl
+            g_input_state.x_axis = @as(i8, @intCast(@intFromBool(pad_state.dpad_right_pressed))) - @as(i8, @intCast(@intFromBool(pad_state.dpad_left_pressed)));
+            g_input_state.y_axis = @as(i8, @intCast(@intFromBool(pad_state.dpad_down_pressed))) - @as(i8, @intCast(@intFromBool(pad_state.dpad_up_pressed)));
+            g_input_state.action_pressed = pad_state.south_pressed;
+            g_input_state.jump_pressed = g_input_state.y_axis < 0;
+            g_input_state.crouch_pressed = g_input_state.y_axis > 0;
+        },
+        .Modern => {
+            // handle left <-> right - dpad has priority, then we use the left stick
+            if(pad_state.dpad_right_pressed)
+            {
+                g_input_state.x_axis = 1;
+            }
+            else if (pad_state.dpad_left_pressed)
+            {
+                g_input_state.x_axis = -1;
+            }
+            else
+            {
+                // use the x axis of the left stick
+                if(pad_state.left_x < 0)
+                {
+                    g_input_state.x_axis = -1;
+                }
+                else if(pad_state.left_x > 0)
+                {
+                    g_input_state.x_axis = 1;
+                }
+                else
+                {
+                    g_input_state.x_axis = 0;
+                }
+            }
+
+            if(pad_state.dpad_down_pressed or pad_state.left_shoulder_pressed or pad_state.left_trigger > 0.0)
+            {
+                // crawl
+                g_input_state.y_axis = 1;
+            }
+            else if(pad_state.dpad_up_pressed) // or pad_state.south_pressed
+            {
+                // go up ladders
+                g_input_state.y_axis = -1;
+            }
+            else
+            {
+                // use the y axis of the left stick
+                if(pad_state.left_y < -Y_ZONE)
+                {
+                    g_input_state.y_axis = -1;
+                }
+                else if(pad_state.left_y > Y_ZONE)
+                {
+                    g_input_state.y_axis = 1;
+                }
+                else
+                {
+                    g_input_state.y_axis = 0;
+                }
+            }
+            g_input_state.action_pressed = pad_state.right_trigger > 0.0 or pad_state.west_pressed or pad_state.right_shoulder_pressed;
+            g_input_state.jump_pressed = pad_state.dpad_up_pressed or pad_state.south_pressed;
+            g_input_state.crouch_pressed = pad_state.dpad_down_pressed or pad_state.left_shoulder_pressed or pad_state.left_trigger > 0.0;
+        },
+    }
 }
 
 pub fn waitforbutton() c_int {

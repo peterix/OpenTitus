@@ -84,6 +84,7 @@ pub fn move_player(arg_context: *render.ScreenContext, arg_level: *lvl.Level) c_
         player.y_axis = input_state.y_axis;
         player.action_pressed = input_state.action_pressed;
         player.jump_pressed = input_state.jump_pressed;
+        player.crouch_pressed = input_state.crouch_pressed;
     }
 
     // Part 2: Determine the player's action, and execute action dependent code

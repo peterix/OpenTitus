@@ -185,6 +185,7 @@ pub const Player = struct {
     y_axis: i8,
     action_pressed: bool,
     jump_pressed: bool,
+    crouch_pressed: bool,
 };
 
 pub const BONUS_CAPACITY = 100;
