@@ -22,7 +22,6 @@ OpenTitus is released under the Gnu GPL version 3 or (at your option) any later 
 ## Building:
 You need:
 * [zig 0.14.0](https://ziglang.org/download/#release-0.14.0)
-* SDL 2 and SDL_mixer libraries available and usable for development
 
 This should get things built and ready for testing/use:
 ```
