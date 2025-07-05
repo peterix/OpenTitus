@@ -10,27 +10,36 @@ jobs:
         runs-on: ubuntu-latest
         name: Release
         steps:
-            # Store the version, stripping any v-prefix
+            # Determine version based on the tag
             - id: version
               name: Write release version
               run: |
                   VERSION=${GITHUB_REF_NAME#v}
                   echo Version: $VERSION
                   echo "version=$VERSION" >> $GITHUB_OUTPUT
+
             - name: Checkout
               uses: actions/checkout@v3
+
             - name: Install zig
               uses: mlugg/setup-zig@v2
               with:
                   version: 0.14.0
+
             - name: Build
-              run: make release VERSION=${{ steps.version.outputs.version }}
+              env:
+                VERSION: ${{ steps.version.outputs.version }}
+                PREFIX: ./OpenTitus-${{ steps.version.outputs.version }}/
+              run: make release
+
             - name: Create Release Archive
               uses: thedoctor0/zip-release@0.7.5
               with:
                   type: "zip"
-                  directory: ./zig-out/
-                  filename: ../OpenTitus-${{ steps.version.outputs.version }}.zip
+                  directory: .
+                  path: OpenTitus-${{ steps.version.outputs.version }}
+                  filename: OpenTitus-${{ steps.version.outputs.version }}.zip
+
             - name: Release
               uses: softprops/action-gh-release@v2
               with:
