@@ -896,9 +896,7 @@ fn ACTION_PRG(level: *lvl.Level, action: PlayerAction) void {
             globals.LAST_ORDER = action;
             player_friction(player);
             if (@abs(player.*.sprite.speed_x) >= 1 * 16 and player.sprite.flipped == (player.*.sprite.speed_x < 0)) {
-                var slide:PlayerAction = .Slide;
-                slide.addCarry();
-                player.sprite.animation = data.get_anim_player(slide);
+                player.sprite.animation = data.get_anim_player(if (globals.CARRY_FLAG) .Slide_Carry else .Slide);
             } else {
                 player.sprite.animation = data.get_anim_player(action);
             }
@@ -961,9 +959,7 @@ fn ACTION_PRG(level: *lvl.Level, action: PlayerAction) void {
                 }
             }
             if (player.y_axis != 0) {
-                var climb :PlayerAction = .Climb;
-                climb.addCarry();
-                NEW_FORM(player, climb);
+                NEW_FORM(player, if (globals.CARRY_FLAG) .Climb_Carry else .Climb);
                 GET_IMAGE(level);
                 player.sprite.x = @as(i16, @bitCast(@as(u16, @bitCast(player.*.sprite.x)) & 0xFFF0)) + 8;
                 tileX = player.sprite.x >> 4;
