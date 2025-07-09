@@ -161,6 +161,7 @@ pub fn move_player(arg_context: *render.ScreenContext, arg_level: *lvl.Level) c_
         player.action_pressed = input_state.action_pressed;
         player.jump_pressed = input_state.jump_pressed;
         player.crouch_pressed = input_state.crouch_pressed;
+        player.aim_direction = input_state.aim_direction;
     }
 
     // Part 2: Determine the player's action, and execute action dependent code
@@ -577,7 +578,10 @@ fn BLOCK_YYPRGD(level: *lvl.Level, cflag: lvl.CeilingType, tileY_in: i16, tileX_
             }
         },
         .Ladder => {
-            if (player.sprite.speed_y < 0 and player.sprite.speed_x == 0) {
+            // Can we go up a ladder?
+            //if (player.sprite.speed_y < 0 and player.sprite.speed_x == 0) {
+            //if (player.sprite.speed_y <= 0 and player.y_axis < 0 and player.x_axis == 0) {
+            if (player.sprite.speed_y <= 0 and player.y_axis < 0) {
                 globals.SAUT_COUNT = 10;
                 globals.LADDER_FLAG = true;
             }
@@ -738,16 +742,17 @@ fn BLOCK_YYPRG(level: *lvl.Level, floor: lvl.FloorType, floor_above: lvl.FloorTy
         },
         .Ladder => {
             // Fall if hit
-            // Skip if walking/crawling
             if (globals.CHOC_FLAG != 0) {
                 player_fall_F(); // Free fall
                 return;
             }
             const order = globals.LAST_ORDER.withoutCarry();
+            // Skip if walking/crawling
             if (order == .Walk or order == .Crawl or order == .Grab or order == .Drop) {
                 player_block_yu(player); // Stop fall
                 return;
             }
+            // Crawl
             if (order == .KneeStand) { // action baisse
                 player_fall_F(); // Free fall
                 sprites.updatesprite(level, &player.sprite, 14, true); // sprite: start climbing down
@@ -948,30 +953,43 @@ fn ACTION_PRG(level: *lvl.Level, action: PlayerAction) void {
             // Climb a ladder
             if (player.x_axis != 0) {
                 XACCELERATION(player, globals.MAX_X * 16);
+                player.sprite.flipped = globals.SENSX < 0;
             } else {
                 player_friction(player);
             }
             if (globals.ACTION_TIMER <= 1) {
                 if (!globals.CARRY_FLAG) {
-                    sprites.updatesprite(level, &player.*.sprite, 12, true); // Last climb sprite
+                    sprites.updatesprite(level, &player.sprite, 12, true); // Last climb sprite
                 } else {
-                    sprites.updatesprite(level, &player.*.sprite, 23, true); // First climb sprite (c)
+                    sprites.updatesprite(level, &player.sprite, 23, true); // First climb sprite (c)
                 }
             }
             if (player.y_axis != 0) {
                 NEW_FORM(player, if (globals.CARRY_FLAG) .Climb_Carry else .Climb);
                 GET_IMAGE(level);
-                player.sprite.x = @as(i16, @bitCast(@as(u16, @bitCast(player.*.sprite.x)) & 0xFFF0)) + 8;
-                tileX = player.sprite.x >> 4;
-                tileY = player.sprite.y & 0xFFF0 >> 4;
+
+                // Snap to the ladder they are climbing
+                const startX = player.sprite.x;
+                var endX = startX;
+                tileX = endX >> 4;
+                // -1 is a fudge factor to hide the fact we are 1 pixel inside the floor all the time
+                tileY = player.sprite.y - 1 >> 4;
                 if (level.getTileFloor(tileX, tileY) != .Ladder) {
                     if (level.getTileFloor(tileX - 1, tileY) == .Ladder) {
-                        player.sprite.x -= 16;
+                        endX -= 16;
                     } else if (level.getTileFloor(tileX + 1, tileY) == .Ladder) {
-                        player.sprite.x += 16;
+                        endX += 16;
+                    }
+                    else
+                    {
+                        std.log.err("No ladder found for adjustment!!!!", .{});
                     }
                 }
-                if (player.y_axis >= 0) {
+                // put player in the middle of the new tile
+                endX = @as(i16, @bitCast(@as(u16, @bitCast(endX)) & 0xFFF0)) + 8;
+
+                player.sprite.x = endX;
+                if (player.y_axis > 0) {
                     player.sprite.speed_y = 4 * 16;
                 } else {
                     player.sprite.speed_y = 0 - (4 * 16);
@@ -1159,7 +1177,7 @@ fn ACTION_PRG(level: *lvl.Level, action: PlayerAction) void {
             if (!globals.CARRY_FLAG)
                 return;
 
-            if (player.y_axis >= 0) {
+            if (player.aim_direction == .Forward) {
                 speed_x = 0x0E * 16;
                 speed_y = 0;
                 if (player.*.sprite.flipped) {

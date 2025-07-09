@@ -4,6 +4,7 @@ const data = @import("data.zig");
 const globals = @import("globals.zig");
 const sprites = @import("sprites.zig");
 const audio = @import("audio/audio.zig");
+const input = @import("input.zig");
 const AudioTrack = audio.AudioTrack;
 
 // TODO: split the original level representation:
@@ -186,6 +187,7 @@ pub const Player = struct {
     action_pressed: bool,
     jump_pressed: bool,
     crouch_pressed: bool,
+    aim_direction: input.AimDirection,
 };
 
 pub const BONUS_CAPACITY = 100;

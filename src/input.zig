@@ -77,7 +77,7 @@ pub const InputDevice = enum {
     Gamepad,
 };
 
-const GamepadState = struct {
+pub const GamepadState = struct {
     handle: *SDL.Gamepad = undefined,
     id: SDL.JoystickID = undefined,
     has_rumble: bool = false,
@@ -184,6 +184,11 @@ const GamepadState = struct {
 
 const GamepadMap = std.AutoHashMap(SDL.JoystickID, GamepadState);
 
+pub const AimDirection = enum(u8) {
+    Forward,
+    Up,
+};
+
 pub const InputState = struct {
     should_redraw: bool = false,
     any_key_pressed: bool = false,
@@ -197,12 +202,22 @@ pub const InputState = struct {
     action_pressed: bool = false,
     jump_pressed: bool = false,
     crouch_pressed: bool = false,
+    aim_direction: AimDirection = .Forward,
 
     gamepad_map: GamepadMap = undefined,
     current_gamepad: SDL.JoystickID = 0,
 };
 
 var g_input_state = InputState{};
+
+pub fn getCurrentGamepad() ?* const GamepadState {
+    if(g_input_state.device == .Gamepad) {
+        if(g_input_state.gamepad_map.getPtr(g_input_state.current_gamepad)) |pad_state| {
+            return pad_state;
+        }
+    }
+    return null;
+}
 
 pub fn init(allocator: Allocator) bool {
     g_input_state.gamepad_map = GamepadMap.init(allocator);
@@ -215,6 +230,10 @@ pub fn deinit() void {
         SDL.closeGamepad(kv.value_ptr.*.handle);
     }
     g_input_state.gamepad_map.deinit();
+}
+
+pub fn getCurrentInputState() *const InputState {
+    return &g_input_state;
 }
 
 // TODO: implement again
@@ -265,15 +284,32 @@ pub fn deinit() void {
 //     }
 
 const DEAD_ZONE = 8000;
-const TRIGGER_ZONE = 0.5;
-const Y_ZONE = 0.5;
+const DEAD_ZONE_TRIGGER = 500;
+const Y_ZONE = 0.25;
+const X_ZONE = 0.25;
+
+fn getAxisValueWithDeadzone(value_in: i16, dead_zone: i16, gamepad_id: SDL.JoystickID) f32 {
+    var value: f32 = 0.0;
+    if(@abs(value_in) > dead_zone)
+    {
+        g_input_state.device = .Gamepad;
+        g_input_state.current_gamepad = gamepad_id;
+        if(value_in < 0)
+        {
+            value = -(@as(f32, @floatFromInt(value_in + dead_zone)) / @as(f32, @floatFromInt(SDL.JOYSTICK_AXIS_MIN + dead_zone)));
+        }
+        else
+        {
+            value = @as(f32, @floatFromInt(value_in - dead_zone)) / @as(f32, @floatFromInt(SDL.JOYSTICK_AXIS_MAX - dead_zone));
+        }
+    }
+    return value;
+}
 
 pub fn processEvents() *InputState {
-    // Part 1: Check keyboard input
     SDL.pumpEvents();
     SDL.updateGamepads();
     const keystate = SDL.getKeyboardState();
-    //const mods: SDL.Keymod = SDL.getModState();
 
     g_input_state.should_redraw = false;
     g_input_state.any_key_pressed = false;
@@ -335,23 +371,9 @@ pub fn processEvents() *InputState {
             SDL.EVENT_GAMEPAD_AXIS_MOTION => {
                 const gamepadId = event.gaxis.which;
                 if(g_input_state.gamepad_map.getPtr(gamepadId)) |pad_state| {
-                    var value: f32 = 0.0;
-                    const active = @abs(event.gaxis.value) > DEAD_ZONE;
-                    if(active)
-                    {
-                        g_input_state.device = .Gamepad;
-                        g_input_state.current_gamepad = gamepadId;
-                        if(event.gaxis.value < 0)
-                        {
-                            value = -(@as(f32, @floatFromInt(event.gaxis.value + DEAD_ZONE)) / @as(f32, @floatFromInt(SDL.JOYSTICK_AXIS_MIN + DEAD_ZONE)));
-                        }
-                        else
-                        {
-                            value = @as(f32, @floatFromInt(event.gaxis.value - DEAD_ZONE)) / @as(f32, @floatFromInt(SDL.JOYSTICK_AXIS_MAX - DEAD_ZONE));
-                        }
-                    }
                     switch (event.gaxis.axis) {
                         SDL.GAMEPAD_AXIS_LEFTX => {
+                            const value = getAxisValueWithDeadzone(event.gaxis.value, DEAD_ZONE, gamepadId);
                             pad_state.left_x = value;
                             if (value <= 0.0 and pad_state.left_stick_virtual_right_pressed)
                             {
@@ -364,13 +386,13 @@ pub fn processEvents() *InputState {
                                 pad_state.left_stick_virtual_left_pressed = false;
                             }
 
-                            if(value > TRIGGER_ZONE and !pad_state.left_stick_virtual_right_pressed)
+                            if(value > X_ZONE and !pad_state.left_stick_virtual_right_pressed)
                             {
                                 // Left stick 'on right button down'
                                 pad_state.left_stick_virtual_right_pressed = true;
                                 g_input_state.action = .Right;
                             }
-                            if(value < -TRIGGER_ZONE and !pad_state.left_stick_virtual_left_pressed)
+                            if(value < -X_ZONE and !pad_state.left_stick_virtual_left_pressed)
                             {
                                 // Left stick 'on left button down'
                                 pad_state.left_stick_virtual_left_pressed = true;
@@ -378,6 +400,7 @@ pub fn processEvents() *InputState {
                             }
                         },
                         SDL.GAMEPAD_AXIS_LEFTY => {
+                            const value = getAxisValueWithDeadzone(event.gaxis.value, DEAD_ZONE, gamepadId);
                             pad_state.left_y = value;
                             if (value <= 0.0 and pad_state.left_stick_virtual_down_pressed)
                             {
@@ -390,13 +413,13 @@ pub fn processEvents() *InputState {
                                 pad_state.left_stick_virtual_up_pressed = false;
                             }
 
-                            if(value > TRIGGER_ZONE and !pad_state.left_stick_virtual_down_pressed)
+                            if(value > Y_ZONE and !pad_state.left_stick_virtual_down_pressed)
                             {
                                 // Left stick 'on down button down'
                                 pad_state.left_stick_virtual_down_pressed = true;
                                 g_input_state.action = .Down;
                             }
-                            if(value < -TRIGGER_ZONE and !pad_state.left_stick_virtual_up_pressed)
+                            if(value < -Y_ZONE and !pad_state.left_stick_virtual_up_pressed)
                             {
                                 // Left stick 'on right button down'
                                 pad_state.left_stick_virtual_up_pressed = true;
@@ -404,12 +427,15 @@ pub fn processEvents() *InputState {
                             }
                         },
                         SDL.GAMEPAD_AXIS_RIGHTX => {
+                            const value = getAxisValueWithDeadzone(event.gaxis.value, DEAD_ZONE, gamepadId);
                             pad_state.right_x = value;
                         },
                         SDL.GAMEPAD_AXIS_RIGHTY => {
+                            const value = getAxisValueWithDeadzone(event.gaxis.value, DEAD_ZONE, gamepadId);
                             pad_state.right_y = value;
                         },
                         SDL.GAMEPAD_AXIS_LEFT_TRIGGER => {
+                            const value = getAxisValueWithDeadzone(event.gaxis.value, DEAD_ZONE_TRIGGER, gamepadId);
                             pad_state.left_trigger = value;
                             if(value > 0.0 and !pad_state.left_trigger_virtual_button_pressed)
                             {
@@ -423,6 +449,7 @@ pub fn processEvents() *InputState {
                             }
                         },
                         SDL.GAMEPAD_AXIS_RIGHT_TRIGGER => {
+                            const value = getAxisValueWithDeadzone(event.gaxis.value, DEAD_ZONE_TRIGGER, gamepadId);
                             pad_state.right_trigger = value;
                             if(value > 0.0 and !pad_state.right_trigger_virtual_button_pressed)
                             {
@@ -623,6 +650,7 @@ pub fn processEvents() *InputState {
                 g_input_state.action_pressed = false;
                 g_input_state.jump_pressed = false;
                 g_input_state.crouch_pressed = false;
+                g_input_state.aim_direction = .Forward;
             }
         },
         .Keyboard => {
@@ -636,6 +664,12 @@ pub fn processEvents() *InputState {
             g_input_state.action_pressed = keystate[SDL.SCANCODE_SPACE] != 0;
             g_input_state.jump_pressed = g_input_state.y_axis < 0;
             g_input_state.crouch_pressed = g_input_state.y_axis > 0;
+            if(g_input_state.y_axis < 0) {
+                g_input_state.aim_direction = .Up;
+            }
+            else {
+                g_input_state.aim_direction = .Forward;
+            }
         },
         .None => {
             // We got nothing
@@ -644,6 +678,7 @@ pub fn processEvents() *InputState {
             g_input_state.action_pressed = false;
             g_input_state.jump_pressed = false;
             g_input_state.crouch_pressed = false;
+            g_input_state.aim_direction = .Forward;
         },
     }
     return &g_input_state;
@@ -658,6 +693,12 @@ fn handle_gamepad(pad_state: *GamepadState) void {
             g_input_state.action_pressed = pad_state.south_pressed;
             g_input_state.jump_pressed = g_input_state.y_axis < 0;
             g_input_state.crouch_pressed = g_input_state.y_axis > 0;
+            if(g_input_state.y_axis < 0) {
+                g_input_state.aim_direction = .Up;
+            }
+            else {
+                g_input_state.aim_direction = .Forward;
+            }
         },
         .Modern => {
             // handle left <-> right - dpad has priority, then we use the left stick
@@ -672,11 +713,11 @@ fn handle_gamepad(pad_state: *GamepadState) void {
             else
             {
                 // use the x axis of the left stick
-                if(pad_state.left_x < 0)
+                if(pad_state.left_x < -X_ZONE)
                 {
                     g_input_state.x_axis = -1;
                 }
-                else if(pad_state.left_x > 0)
+                else if(pad_state.left_x > X_ZONE)
                 {
                     g_input_state.x_axis = 1;
                 }
@@ -715,6 +756,14 @@ fn handle_gamepad(pad_state: *GamepadState) void {
             g_input_state.action_pressed = pad_state.right_trigger > 0.0 or pad_state.west_pressed or pad_state.right_shoulder_pressed;
             g_input_state.jump_pressed = pad_state.dpad_up_pressed or pad_state.south_pressed;
             g_input_state.crouch_pressed = pad_state.dpad_down_pressed or pad_state.left_shoulder_pressed or pad_state.left_trigger > 0.0;
+            if(pad_state.left_y < -Y_ZONE and @abs(pad_state.left_y) > @abs(pad_state.left_x))
+            {
+                g_input_state.aim_direction = .Up;
+            }
+            else
+            {
+                g_input_state.aim_direction = .Forward;
+            }
         },
     }
 }

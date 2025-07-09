@@ -31,6 +31,7 @@ const fonts = @import("ui/fonts.zig");
 const sprites = @import("sprites.zig");
 const lvl = @import("level.zig");
 const input = @import("input.zig");
+const debug = @import("_debug.zig");
 
 const SDL = @import("SDL.zig");
 
@@ -132,6 +133,21 @@ pub fn render_sprites(level: *lvl.Level) void {
     render_sprite(&level.player.sprite3);
     render_sprite(&level.player.sprite2);
     render_sprite(&level.player.sprite);
+
+    if (debug.player_position) {
+        const x = level.player.sprite.x - (globals.BITMAP_X * 16) + globals.g_scroll_px_offset;
+        const y = level.player.sprite.y - (globals.BITMAP_Y * 16) + get_y_offset();
+        _ = SDL.writeSurfacePixel(window.screen, 20, 10, 255, 0, 0, 255);
+        if(!SDL.writeSurfacePixel(window.screen, x, y, 255, 0, 0, 255)) {
+            std.log.err("Can't write pixel: {s}!", .{SDL.getError()} );
+        }
+
+        var buf = [_]u8{0} ** 32;
+        const bytes = std.fmt.bufPrint(&buf, "{d},{d}", .{level.player.sprite.x >> 4, level.player.sprite.y >> 4}) catch {
+            unreachable;
+        };
+        fonts.Gold.render(bytes, 30 * 8, 0 * 12, .{ .monospace = true });
+    }
 
     if (globals.GODMODE) {
         fonts.Gold.render("GODMODE", 30 * 8, 0 * 12, .{ .monospace = true });

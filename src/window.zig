@@ -29,6 +29,8 @@ const SDL = @import("SDL.zig");
 const globals = @import("globals.zig");
 const game = @import("game.zig");
 const data = @import("data.zig");
+const input = @import("input.zig");
+const debug = @import("_debug.zig");
 
 pub fn getGameTitle() [*c]const u8 {
     switch (data.game) {
@@ -167,6 +169,7 @@ pub fn window_render() void {
     const frame = SDL.createTextureFromSurface(renderer, screen);
     _ = SDL.setTextureScaleMode(frame, 0);
     // FIXME: process error.
+    _ = SDL.setRenderDrawColor(renderer, 0, 0, 0, 255);
     _ = SDL.renderClear(renderer);
     var rect = SDL.FRect{
         .x = 0,
@@ -174,8 +177,38 @@ pub fn window_render() void {
         .w = game_width,
         .h = game_height,
     };
-    // FIXME: process error.
+
+    // draw game
     _ = SDL.renderTexture(renderer, frame, &rect, &rect);
+
+    // draw debug overlay
+    if(debug.controller_osd) {
+        if (input.getCurrentGamepad()) |gamepad| {
+            _ = SDL.setRenderDrawColor(renderer, 255, 255, 255, 255);
+            _ = SDL.renderLine(
+                renderer,
+                rect.w / 2,
+                rect.h / 2,
+                rect.w / 2 + gamepad.left_x * 50.0,
+                rect.h / 2 + gamepad.left_y * 50.0
+            );
+            _ = SDL.renderLine(
+                renderer,
+                rect.w / 4,
+                rect.h / 2 + 25,
+                rect.w / 4,
+                rect.h / 2 + 25 - gamepad.left_trigger * 50.0
+            );
+            _ = SDL.renderLine(
+                renderer,
+                rect.w * 0.75,
+                rect.h / 2 + 25,
+                rect.w * 0.75,
+                rect.h / 2 + 25 - gamepad.right_trigger * 50.0
+            );
+        }
+    }
+
     _ = SDL.renderPresent(renderer);
     SDL.destroyTexture(frame);
 }

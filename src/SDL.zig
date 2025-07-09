@@ -303,6 +303,8 @@ pub const setRenderDrawColor = @This().SDL_SetRenderDrawColor;
 pub const createTextureFromSurface = @This().SDL_CreateTextureFromSurface;
 pub const setTextureScaleMode = @This().SDL_SetTextureScaleMode;
 pub const destroyTexture = @This().SDL_DestroyTexture;
+pub const renderLine = @This().SDL_RenderLine;
+pub const writeSurfacePixel = @This().SDL_WriteSurfacePixel;
 
 pub const renderClear = @This().SDL_RenderClear;
 pub const renderTexture = @This().SDL_RenderTexture;

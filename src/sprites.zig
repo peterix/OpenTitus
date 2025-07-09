@@ -32,6 +32,7 @@ const window = @import("window.zig");
 const data = @import("data.zig");
 const lvl = @import("level.zig");
 const globals = @import("globals.zig");
+const debug = @import("_debug.zig");
 
 // TODO: the sprite cache and sprites doesn't have to be global anymore once we aren't going through C code.
 pub var sprite_cache: SpriteCache = undefined;
@@ -204,11 +205,14 @@ pub const SpriteCache = struct {
         const new_surface = try copysurface(self, spritedata, key.flip, key.flash);
         try self.hashmap.put(key, new_surface);
 
-//         var buf: [64]u8 = undefined;
-//         const filename = try std.fmt.bufPrint(&buf,"sprite_{d}_{}_{}.bmp\x00", .{key.number, key.flash, key.flip});
-//         if (!SDL.saveBMP(new_surface, &filename[0])) {
-//             return error.DumpError;
-//         }
+        if(debug.dump_sprites) {
+            var buf: [64]u8 = undefined;
+            const filename = try std.fmt.bufPrint(&buf,"sprite_{d}_{}_{}.bmp\x00", .{key.number, key.flash, key.flip});
+            if (!SDL.saveBMP(new_surface, &filename[0])) {
+                return error.DumpError;
+            }
+        }
+
         return new_surface;
     }
 
