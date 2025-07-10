@@ -103,8 +103,8 @@ pub const PlayerAction = enum(u8) {
             },
         };
     }
-    fn withoutCarry(self: *PlayerAction) PlayerAction {
-        return switch(self.*) {
+    fn withoutCarry(self: PlayerAction) PlayerAction {
+        return switch(self) {
             .Rest_Carry => .Rest,
             .Walk_Carry => .Walk,
             .Jump_Carry => .Jump,
@@ -120,8 +120,29 @@ pub const PlayerAction = enum(u8) {
             .Hit_Carry => .Hit,
             .HitBurn_Carry => .HitBurn,
             else => {
-                return self.*;
+                return self;
             },
+        };
+    }
+
+    pub fn str(self: PlayerAction) []const u8 {
+        const no_carry = self.withoutCarry();
+        return switch(no_carry) {
+            .Rest => "Rest",
+            .Walk => "Walk",
+            .Jump => "Jump",
+            .Crawl => "Crawl",
+            .Slide => "Slide",
+            .KneeStand => "KneeStand",
+            .Climb => "Climb",
+            .Grab => "Grab",
+            .Drop => "Drop",
+            .SilentRest => "SRest",
+            .SilentWalk => "SWalk",
+            .Headache => "Headache",
+            .Hit => "Hit",
+            .HitBurn => "HitBurn",
+            else => "Unknown"
         };
     }
 };
@@ -187,12 +208,12 @@ pub fn move_player(arg_context: *render.ScreenContext, arg_level: *lvl.Level) c_
         globals.GRANDBRULE_FLAG = false;
         if (globals.LADDER_FLAG) {
             action = .Climb;
-        } else if (!globals.PRIER_FLAG and player.jump_pressed and player.y_axis <= 0 and globals.SAUT_FLAG == 0) {
+        } else if (!globals.low_ceiling and player.jump_pressed and player.y_axis <= 0 and globals.jump_timer == 0) {
             action = .Jump;
             if (globals.LAST_ORDER == .KneeStand) { // Test if last order was kneestanding
                 globals.FURTIF_FLAG = 100; // If jump after kneestanding, init silent walk timer
             }
-        } else if (globals.PRIER_FLAG or (globals.SAUT_FLAG != 6 and player.y_axis > 0)) {
+        } else if (globals.low_ceiling or (globals.jump_timer != 6 and player.crouch_pressed)) {
             if (player.x_axis != 0) { // Move left or right
                 action = .Crawl; // Action: crawling
             } else {
@@ -204,7 +225,7 @@ pub fn move_player(arg_context: *render.ScreenContext, arg_level: *lvl.Level) c_
             action = .Rest; // Action: rest (no action)
         }
         // Is space button pressed?
-        if (player.action_pressed and !globals.PRIER_FLAG) {
+        if (player.action_pressed and !globals.low_ceiling) {
             if (!globals.DROP_FLAG) {
                 if (action == .Crawl or action == .KneeStand) { // Kneestand
                     globals.DROPREADY_FLAG = false;
@@ -480,7 +501,7 @@ fn TAKE_BLK_AND_YTEST(level: *lvl.Level, tileY_in: i16, tileX_in: i16) void {
     var tileX = tileX_in;
     const player = &level.*.player;
     globals.POCKET_FLAG = false;
-    globals.PRIER_FLAG = false;
+    globals.low_ceiling = false;
     globals.LADDER_FLAG = false;
     var change: i8 = undefined;
     // if player is too high (<= -1), skip test
@@ -552,12 +573,12 @@ fn BLOCK_YYPRGD(level: *lvl.Level, cflag: lvl.CeilingType, tileY_in: i16, tileX_
                 // Stop movement
                 player.sprite.speed_y = 0;
                 player.sprite.y = @as(i16, @bitCast(@as(u16, @bitCast(player.sprite.y)) & 0xFFF0)) + 16;
-                globals.SAUT_COUNT = 0xFF;
+                globals.jump_acceleration_counter = 0xFF;
             } else if (player.sprite.number != 10 and // 10 = Free fall
                 player.sprite.number != 21 and // 21 = Free fall (c)
-                globals.SAUT_FLAG != 6)
+                globals.jump_timer != 6)
             {
-                globals.PRIER_FLAG = true;
+                globals.low_ceiling = true;
                 if (globals.CARRY_FLAG) {
                     const maybe_object = player_drop_carried(level);
                     if (maybe_object) |object| {
@@ -582,7 +603,7 @@ fn BLOCK_YYPRGD(level: *lvl.Level, cflag: lvl.CeilingType, tileY_in: i16, tileX_
             //if (player.sprite.speed_y < 0 and player.sprite.speed_x == 0) {
             //if (player.sprite.speed_y <= 0 and player.y_axis < 0 and player.x_axis == 0) {
             if (player.sprite.speed_y <= 0 and player.y_axis < 0) {
-                globals.SAUT_COUNT = 10;
+                globals.jump_acceleration_counter = 10;
                 globals.LADDER_FLAG = true;
             }
         },
@@ -625,7 +646,7 @@ fn player_block_x(level: *lvl.Level) void {
     // Horizontal hit (wall), stop the player
     player.sprite.x -= player.sprite.speed_x >> 4;
     player.sprite.speed_x = 0;
-    if (globals.KICK_FLAG != 0 and globals.SAUT_FLAG != 6) {
+    if (globals.KICK_FLAG != 0 and globals.jump_timer != 6) {
         globals.CHOC_FLAG = 20;
         globals.KICK_FLAG = 0;
     }
@@ -666,7 +687,7 @@ pub fn player_drop_carried(level: *lvl.Level) ?*lvl.Object {
 fn player_fall(level: *lvl.Level) void {
     // No wall under the player; fall down!
     const player = &level.player;
-    globals.SAUT_FLAG = 6;
+    globals.jump_timer = 6;
     if (globals.KICK_FLAG != 0) {
         return;
     }
@@ -747,30 +768,36 @@ fn BLOCK_YYPRG(level: *lvl.Level, floor: lvl.FloorType, floor_above: lvl.FloorTy
                 return;
             }
             const order = globals.LAST_ORDER.withoutCarry();
+            const is_in_air = globals.YFALL != 0 or globals.jump_acceleration_counter != 0;
             // Skip if walking/crawling
-            if (order == .Walk or order == .Crawl or order == .Grab or order == .Drop) {
-                player_block_yu(player); // Stop fall
-                return;
-            }
-            // Crawl
-            if (order == .KneeStand) { // action baisse
-                player_fall_F(); // Free fall
-                sprites.updatesprite(level, &player.sprite, 14, true); // sprite: start climbing down
-                player.sprite.y += 8;
-            }
-            if (floor_above != .Ladder) { // ladder
-                if (order == .Rest) { // action repos
+            if (order == .Walk or order == .Crawl or order == .Grab or order == .Drop or order == .KneeStand or order == .Rest) {
+                if(player.y_axis <= 0 and !is_in_air) {
                     player_block_yu(player); // Stop fall
                     return;
                 }
+                else
+                {
+                    player_fall_F(); // Free fall
+                    const flip = player.sprite.flipped;
+                    sprites.updatesprite(level, &player.sprite, 14, true); // sprite: start climbing down
+                    player.sprite.flipped = flip;
+                    player.sprite.y += 8;
+                }
+            }
+            // we stand on top of a ladder
+            if (floor_above != .Ladder) { // ladder
+//                 if (order == .Rest) { // action repos
+//                     player_block_yu(player); // Stop fall
+//                     return;
+//                 }
                 if (player.y_axis < 0 and order == .Climb) { // action UP + climb ladder
                     player_block_yu(player); // Stop fall
                     return;
                 }
             }
 
-            common.subto0(&globals.SAUT_FLAG);
-            globals.SAUT_COUNT = 0;
+            common.subto0(&globals.jump_timer);
+            globals.jump_acceleration_counter = 0;
             globals.YFALL = 2;
 
             globals.LADDER_FLAG = true;
@@ -811,8 +838,8 @@ fn player_block_yu(player: *lvl.Player) void {
     }
     player.sprite.y = @bitCast(@as(u16, @bitCast(player.sprite.y)) & 0xFFF0);
     player.sprite.speed_y = 0;
-    common.subto0(&globals.SAUT_FLAG);
-    globals.SAUT_COUNT = 0;
+    common.subto0(&globals.jump_timer);
+    globals.jump_acceleration_counter = 0;
     globals.YFALL = 2;
 }
 
@@ -916,13 +943,13 @@ fn ACTION_PRG(level: *lvl.Level, action: PlayerAction) void {
         },
         .Jump, .Jump_Carry => {
             // Handle a jump
-            if (globals.SAUT_COUNT == 0) {
+            if (globals.jump_acceleration_counter == 0) {
                 events.triggerEvent(.Event_PlayerJump);
             }
-            if (globals.SAUT_COUNT >= 3) {
-                globals.SAUT_FLAG = 6; // Stop jump animation and acceleration
+            if (globals.jump_acceleration_counter >= 3) {
+                globals.jump_timer = 6; // Stop jump animation and acceleration
             } else {
-                globals.SAUT_COUNT +%= 1;
+                globals.jump_acceleration_counter +%= 1;
                 YACCELERATION_NEG(player, globals.MAX_Y * 16 / 4);
                 XACCELERATION(player, globals.MAX_X * 16);
                 NEW_FORM(player, action);
@@ -963,6 +990,13 @@ fn ACTION_PRG(level: *lvl.Level, action: PlayerAction) void {
                 } else {
                     sprites.updatesprite(level, &player.sprite, 23, true); // First climb sprite (c)
                 }
+            }
+            const is_in_air = globals.YFALL != 0 or globals.jump_acceleration_counter != 0;
+            // attach to ladder in air
+            if(is_in_air and globals.LAST_ORDER != .Climb) {
+                NEW_FORM(player, if (globals.CARRY_FLAG) .Climb_Carry else .Climb);
+                GET_IMAGE(level);
+                player.sprite.speed_y = 0;
             }
             if (player.y_axis != 0) {
                 NEW_FORM(player, if (globals.CARRY_FLAG) .Climb_Carry else .Climb);
@@ -1342,8 +1376,8 @@ fn player_collide_with_elevators(level: *lvl.Level) void {
         player.sprite.y = elevator.sprite.y;
 
         player.sprite.speed_y = 0;
-        common.subto0(&globals.SAUT_FLAG);
-        globals.SAUT_COUNT = 0;
+        common.subto0(&globals.jump_timer);
+        globals.jump_acceleration_counter = 0;
         globals.YFALL = 2;
 
         player.sprite.x += elevator.sprite.speed_x;
@@ -1438,8 +1472,8 @@ fn player_collide_with_objects(level: *lvl.Level) void {
         } else {
             player.sprite.speed_y = 0;
         }
-        common.subto0(&globals.SAUT_FLAG);
-        globals.SAUT_COUNT = 0;
+        common.subto0(&globals.jump_timer);
+        globals.jump_acceleration_counter = 0;
         globals.YFALL = 2;
     }
 }

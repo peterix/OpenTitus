@@ -727,7 +727,7 @@ fn handle_gamepad(pad_state: *GamepadState) void {
                 }
             }
 
-            if(pad_state.dpad_down_pressed or pad_state.left_shoulder_pressed or pad_state.left_trigger > 0.0)
+            if(pad_state.dpad_down_pressed)
             {
                 // crawl
                 g_input_state.y_axis = 1;

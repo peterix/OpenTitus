@@ -66,10 +66,16 @@ pub var GRANDBRULE_FLAG: bool = false;
 pub var LADDER_FLAG: bool = false;
 
 //True if player is forced into kneestanding because of low ceiling
-pub var PRIER_FLAG: bool = false;
+pub var low_ceiling: bool = false;
 
-//6 if free fall or in the middle of a jump, decremented if on solid surface. Must be 0 to initiate a jump.
-pub var SAUT_FLAG: u8 = 0;
+// 6 if free fall or in the middle of a jump, decremented if on solid surface. Must be 0 to initiate a jump.
+pub var jump_timer: u8 = 0;
+
+// Incremented from 0 to 3 when accelerating while jumping, stop acceleration upwards if >= 3
+pub var jump_acceleration_counter: u8 = 0;
+
+// Player is falling? (0 = no, 1 = yes, 2 = )
+pub var YFALL: u8 = 0;
 
 //Last action (kneestand + jump = silent walk)
 pub var LAST_ORDER: player.PlayerAction = .Rest;
@@ -101,8 +107,6 @@ pub var GRAVITY_FLAG: u8 = 0;
 
 //Smoke when object hits the floor
 pub var FUME_FLAG: u8 = 0;
-
-pub var YFALL: u8 = 0;
 
 pub var POCKET_FLAG: bool = false;
 
@@ -141,9 +145,6 @@ pub var IMAGE_COUNTER: u16 = 0;
 
 //1: walk right, 0: stand still, -1: walk left, triggers the ACTION_TIMER if it changes
 pub var SENSX: i8 = 0;
-
-//Incremented from 0 to 3 when accelerating while jumping, stop acceleration upwards if >= 3
-pub var SAUT_COUNT: u8 = 0;
 
 pub var NOSCROLL_FLAG: bool = false;
 

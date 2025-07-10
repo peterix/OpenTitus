@@ -64,8 +64,8 @@ pub fn CLEAR_DATA(level: *lvl.Level) void {
     globals.DROPREADY_FLAG = false;
     globals.POSEREADY_FLAG = false;
     globals.LADDER_FLAG = false;
-    globals.PRIER_FLAG = false;
-    globals.SAUT_FLAG = 0;
+    globals.low_ceiling = false;
+    globals.jump_timer = 0;
     globals.CROSS_FLAG = 0;
     globals.FURTIF_FLAG = 0;
     globals.CHOC_FLAG = 0;
@@ -78,7 +78,7 @@ pub fn CLEAR_DATA(level: *lvl.Level) void {
     globals.SKIPLEVEL_FLAG = false;
     globals.INVULNERABLE_FLAG = 0;
     globals.POCKET_FLAG = false;
-    globals.SAUT_COUNT = 0;
+    globals.jump_acceleration_counter = 0;
     globals.ACTION_TIMER = 0;
     globals.g_scroll_x = false;
     globals.g_scroll_y = false;

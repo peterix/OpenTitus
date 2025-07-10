@@ -137,16 +137,23 @@ pub fn render_sprites(level: *lvl.Level) void {
     if (debug.player_position) {
         const x = level.player.sprite.x - (globals.BITMAP_X * 16) + globals.g_scroll_px_offset;
         const y = level.player.sprite.y - (globals.BITMAP_Y * 16) + get_y_offset();
-        _ = SDL.writeSurfacePixel(window.screen, 20, 10, 255, 0, 0, 255);
-        if(!SDL.writeSurfacePixel(window.screen, x, y, 255, 0, 0, 255)) {
-            std.log.err("Can't write pixel: {s}!", .{SDL.getError()} );
+        //_ = SDL.writeSurfacePixel(window.screen, 20, 10, 255, 0, 0, 255);
+        if(y >= 0 and x >= 0 and y < window.game_height and x < window.game_width) {
+            _ = SDL.writeSurfacePixel(window.screen, x, y, 255, 0, 0, 255);
         }
-
         var buf = [_]u8{0} ** 32;
         const bytes = std.fmt.bufPrint(&buf, "{d},{d}", .{level.player.sprite.x >> 4, level.player.sprite.y >> 4}) catch {
             unreachable;
         };
         fonts.Gold.render(bytes, 30 * 8, 0 * 12, .{ .monospace = true });
+    }
+    if (debug.ladder_flag) {
+        if(globals.LADDER_FLAG) {
+            fonts.Gold.render("LADDER", 30 * 8, 1 * 12, .{ .monospace = true });
+        }
+    }
+    if (debug.player_action) {
+        fonts.Gold.render(globals.LAST_ORDER.str(), 30 * 8, 2 * 12, .{ .monospace = true });
     }
 
     if (globals.GODMODE) {
