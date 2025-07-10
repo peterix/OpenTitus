@@ -685,11 +685,61 @@ pub fn processEvents() *InputState {
 }
 
 fn handle_gamepad(pad_state: *GamepadState) void {
+    // handle left <-> right - dpad has priority, then we use the left stick
+    if(pad_state.dpad_right_pressed)
+    {
+        g_input_state.x_axis = 1;
+    }
+    else if (pad_state.dpad_left_pressed)
+    {
+        g_input_state.x_axis = -1;
+    }
+    else
+    {
+        // use the x axis of the left stick
+        if(pad_state.left_x < -X_ZONE)
+        {
+            g_input_state.x_axis = -1;
+        }
+        else if(pad_state.left_x > X_ZONE)
+        {
+            g_input_state.x_axis = 1;
+        }
+        else
+        {
+            g_input_state.x_axis = 0;
+        }
+    }
+
+    if(pad_state.dpad_down_pressed)
+    {
+        // crawl
+        g_input_state.y_axis = 1;
+    }
+    else if(pad_state.dpad_up_pressed) // or pad_state.south_pressed
+    {
+        // go up ladders
+        g_input_state.y_axis = -1;
+    }
+    else
+    {
+        // use the y axis of the left stick
+        if(pad_state.left_y < -Y_ZONE)
+        {
+            g_input_state.y_axis = -1;
+        }
+        else if(pad_state.left_y > Y_ZONE)
+        {
+            g_input_state.y_axis = 1;
+        }
+        else
+        {
+            g_input_state.y_axis = 0;
+        }
+    }
     switch(game.settings.input_mode) {
         .Classic => {
             // Left stick behaves the same as dpad, no dedicated buttons for jump and crawl
-            g_input_state.x_axis = @as(i8, @intCast(@intFromBool(pad_state.dpad_right_pressed))) - @as(i8, @intCast(@intFromBool(pad_state.dpad_left_pressed)));
-            g_input_state.y_axis = @as(i8, @intCast(@intFromBool(pad_state.dpad_down_pressed))) - @as(i8, @intCast(@intFromBool(pad_state.dpad_up_pressed)));
             g_input_state.action_pressed = pad_state.south_pressed;
             g_input_state.jump_pressed = g_input_state.y_axis < 0;
             g_input_state.crouch_pressed = g_input_state.y_axis > 0;
@@ -701,58 +751,8 @@ fn handle_gamepad(pad_state: *GamepadState) void {
             }
         },
         .Modern => {
-            // handle left <-> right - dpad has priority, then we use the left stick
-            if(pad_state.dpad_right_pressed)
-            {
-                g_input_state.x_axis = 1;
-            }
-            else if (pad_state.dpad_left_pressed)
-            {
-                g_input_state.x_axis = -1;
-            }
-            else
-            {
-                // use the x axis of the left stick
-                if(pad_state.left_x < -X_ZONE)
-                {
-                    g_input_state.x_axis = -1;
-                }
-                else if(pad_state.left_x > X_ZONE)
-                {
-                    g_input_state.x_axis = 1;
-                }
-                else
-                {
-                    g_input_state.x_axis = 0;
-                }
-            }
-
-            if(pad_state.dpad_down_pressed)
-            {
-                // crawl
-                g_input_state.y_axis = 1;
-            }
-            else if(pad_state.dpad_up_pressed) // or pad_state.south_pressed
-            {
-                // go up ladders
-                g_input_state.y_axis = -1;
-            }
-            else
-            {
-                // use the y axis of the left stick
-                if(pad_state.left_y < -Y_ZONE)
-                {
-                    g_input_state.y_axis = -1;
-                }
-                else if(pad_state.left_y > Y_ZONE)
-                {
-                    g_input_state.y_axis = 1;
-                }
-                else
-                {
-                    g_input_state.y_axis = 0;
-                }
-            }
+            // Left stick controls direction to go in (including up and down ladders), action, jump and crouch have dedicated buttons
+            // dpad behaves just like in classic
             g_input_state.action_pressed = pad_state.right_trigger > 0.0 or pad_state.west_pressed or pad_state.right_shoulder_pressed;
             g_input_state.jump_pressed = pad_state.dpad_up_pressed or pad_state.south_pressed;
             g_input_state.crouch_pressed = pad_state.dpad_down_pressed or pad_state.left_shoulder_pressed or pad_state.left_trigger > 0.0;
