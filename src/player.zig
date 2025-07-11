@@ -37,6 +37,7 @@ const events = @import("events.zig");
 const sprites = @import("sprites.zig");
 const common = @import("common.zig");
 const input = @import("input.zig");
+const game_state = @import("game_state.zig");
 
 const credits = @import("ui/credits.zig");
 const pause_menu = @import("ui/pause_menu.zig");
@@ -864,13 +865,14 @@ fn collect_bonus(level: *lvl.Level, tileY: i16, tileX: i16) bool {
 }
 
 fn collect_level_unlock(level: *lvl.Level, level_index: u8, tileY: i16, tileX: i16) void {
-    // FIXME: nothing is done here really. It should unlock the level as a starting point
-    _ = &level_index;
     // Codelamp
     // if the bonus is found in the bonus list
     if (!collect_bonus(level, tileY, tileX))
         return;
-
+    const allocator = std.heap.page_allocator;
+    game_state.unlock_level(allocator, level_index, level.lives) catch |err| {
+        std.log.err("Failed to save progression: {s}", .{ @errorName(err) });
+    };
     events.triggerEvent(.Event_PlayerCollectLamp);
 }
 
