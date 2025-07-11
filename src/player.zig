@@ -175,6 +175,48 @@ pub fn move_player(arg_context: *render.ScreenContext, arg_level: *lvl.Level) c_
             .Status => {
                 _ = status.viewstatus(level, false);
             },
+            .SecretCreditsScreen => {
+                // This is always available in the original.
+                // Lets you convert extra bonus into lives without completing a level
+                // It's a weird key combination
+                // And it wasn't in the manual.
+                // So I'm calling it a cheat and disabling it in normal builds.
+                _ = credits.credits_screen();
+                if (level.*.extrabonus >= 10) {
+                    level.*.extrabonus -= 10;
+                    level.*.lives += 1;
+                }
+            },
+            .GodMode => {
+                if (globals.GODMODE) {
+                    globals.GODMODE = false;
+                    globals.NOCLIP = false;
+                } else {
+                    globals.GODMODE = true;
+                }
+            },
+            .NoClip => {
+                if (globals.NOCLIP) {
+                    globals.NOCLIP = false;
+                } else {
+                    globals.NOCLIP = true;
+                    globals.GODMODE = true;
+                }
+            },
+            .LoseLife => {
+                // In the original game, this is always available, but you also lose a life. Maybe as a way to get 'unstuck'?
+                DEC_LIFE(level);
+            },
+            .GameOver => {
+                // Always available in original game. But why would you ever want this?
+                globals.GAMEOVER_FLAG = true;
+            },
+            .SkipLevel => {
+                // Added this to skip levels during testing
+                globals.NEWLEVEL_FLAG = true;
+                globals.SKIPLEVEL_FLAG = true;
+            },
+
             else => {},
         }
 

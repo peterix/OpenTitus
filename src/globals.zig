@@ -177,6 +177,3 @@ pub var GODMODE: bool = false;
 
 //If true, the player will move noclip
 pub var NOCLIP: bool = false;
-
-//If true, display loop time in milliseconds
-pub var DISPLAYLOOPTIME: bool = false;

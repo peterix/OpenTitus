@@ -40,7 +40,6 @@ const Allocator = std.mem.Allocator;
 const settings_file_name = "settings.json";
 
 pub const Settings = extern struct {
-    devmode: bool = false,
     fullscreen: bool = true,
     music: bool = true,
     sound: bool = true,

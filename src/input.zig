@@ -32,6 +32,7 @@ const globals = @import("globals.zig");
 const window = @import("window.zig");
 const events = @import("events.zig");
 const game = @import("game.zig");
+const debug = @import("_debug.zig");
 const GameEvent = events.GameEvent;
 
 pub const InputMode = enum(u8) {
@@ -69,6 +70,14 @@ pub const InputAction = enum {
     Escape,
     Cancel,
     Status,
+
+    // Cheats.
+    SecretCreditsScreen,
+    GodMode,
+    NoClip,
+    LoseLife,
+    GameOver,
+    SkipLevel
 };
 
 pub const InputDevice = enum {
@@ -236,53 +245,6 @@ pub fn getCurrentInputState() *const InputState {
     return &g_input_state;
 }
 
-// TODO: implement again
-//     SDL.EVENT_KEY_DOWN => {
-//         const key_press = event.key.scancode;
-//         if (key_press == SDL.SCANCODE_G and game.settings.devmode) {
-//             if (globals.GODMODE) {
-//                 globals.GODMODE = false;
-//                 globals.NOCLIP = false;
-//             } else {
-//                 globals.GODMODE = true;
-//             }
-//         } else if (key_press == SDL.SCANCODE_N and game.settings.devmode) {
-//             if (globals.NOCLIP) {
-//                 globals.NOCLIP = false;
-//             } else {
-//                 globals.NOCLIP = true;
-//                 globals.GODMODE = true;
-//             }
-//         } else if (key_press == SDL.SCANCODE_D and game.settings.devmode) {
-//             globals.DISPLAYLOOPTIME = !globals.DISPLAYLOOPTIME;
-//         } else if (key_press == SDL.SCANCODE_Q) {
-//             if ((mods & @as(c_uint, @bitCast(SDL.KMOD_ALT | SDL.KMOD_CTRL))) != 0) {
-//                 _ = credits.credits_screen();
-//                 if (level.*.extrabonus >= 10) {
-//                     level.*.extrabonus -= 10;
-//                     level.*.lives += 1;
-//                 }
-//             }
-//         }
-//     },
-//     if (keystate[SDL.SCANCODE_F1] != 0 and globals.RESETLEVEL_FLAG == 0) {
-//         globals.RESETLEVEL_FLAG = 2;
-//         return 0;
-//     }
-//     if (game.settings.devmode) {
-//         if (keystate[SDL.SCANCODE_F2] != 0) {
-//             globals.GAMEOVER_FLAG = true;
-//             return 0;
-//         }
-//         if (keystate[SDL.SCANCODE_F3] != 0) {
-//             globals.NEWLEVEL_FLAG = true;
-//             globals.SKIPLEVEL_FLAG = true;
-//         }
-//     }
-//     if (keystate[SDL.SCANCODE_E] != 0) {
-//         globals.BAR_FLAG = 50;
-//     }
-
 const DEAD_ZONE = 8000;
 const DEAD_ZONE_TRIGGER = 500;
 const Y_ZONE = 0.25;
@@ -310,6 +272,7 @@ pub fn processEvents() *InputState {
     SDL.pumpEvents();
     SDL.updateGamepads();
     const keystate = SDL.getKeyboardState();
+    const mods = SDL.getModState();
 
     g_input_state.should_redraw = false;
     g_input_state.any_key_pressed = false;
@@ -325,6 +288,36 @@ pub fn processEvents() *InputState {
                 if (event.key.scancode == SDL.SCANCODE_F11) {
                     window.toggle_fullscreen();
                     continue;
+                }
+                if(debug.enable_cheats) {
+                    switch (event.key.scancode) {
+                        SDL.SCANCODE_G,
+                        => {
+                            g_input_state.action = .GodMode;
+                        },
+                        SDL.SCANCODE_N,
+                        => {
+                            g_input_state.action = .NoClip;
+                        },
+                        SDL.SCANCODE_Q,
+                        => {
+                            if ((mods & @as(c_uint, @bitCast(SDL.KMOD_ALT | SDL.KMOD_CTRL))) != 0) {
+                                g_input_state.action = .SecretCreditsScreen;
+                            }
+                        },
+                        SDL.SCANCODE_F1 => {
+                            g_input_state.action = .LoseLife;
+                        },
+                        SDL.SCANCODE_F2 => {
+                            g_input_state.action = .GameOver;
+                        },
+                        SDL.SCANCODE_F3 => {
+                            g_input_state.action = .SkipLevel;
+                        },
+                        else => {
+                            // NOOP
+                        },
+                    }
                 }
                 switch (event.key.scancode) {
                     SDL.SCANCODE_ESCAPE,

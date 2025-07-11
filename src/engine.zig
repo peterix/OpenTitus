@@ -121,7 +121,6 @@ pub fn playtitus(firstlevel: u16, allocator: std.mem.Allocator) !c_int {
 
             globals.GODMODE = false;
             globals.NOCLIP = false;
-            globals.DISPLAYLOOPTIME = false;
 
             retval = status.viewstatus(&level, first);
             first = false;
