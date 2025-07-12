@@ -1037,7 +1037,7 @@ fn ACTION_PRG(level: *lvl.Level, action: PlayerAction) void {
             }
             const is_in_air = globals.YFALL != 0 or globals.jump_acceleration_counter != 0;
             // attach to ladder in air
-            if(is_in_air and globals.LAST_ORDER != .Climb) {
+            if(is_in_air and (globals.LAST_ORDER != .Climb and globals.LAST_ORDER != .Climb_Carry)) {
                 NEW_FORM(player, if (globals.CARRY_FLAG) .Climb_Carry else .Climb);
                 GET_IMAGE(level);
                 player.sprite.speed_y = 0;
