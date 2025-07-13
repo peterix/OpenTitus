@@ -82,7 +82,9 @@ const TrackingHashMap = std.AutoHashMap(*Surface, void);
 
 var tracking_map: TrackingHashMap = undefined;
 
-const sdl_gpa_type = std.heap.GeneralPurposeAllocator(.{ .retain_metadata = true, .never_unmap = true, .stack_trace_frames = 10 });
+const debug = @import("_debug.zig");
+
+const sdl_gpa_type = std.heap.GeneralPurposeAllocator(.{ .retain_metadata = true, .never_unmap = false, .stack_trace_frames = 10 });
 var sdl_gpa = sdl_gpa_type{};
 var sdl_allocator: std.mem.Allocator = undefined;
 var sdl_allocations: ?std.AutoHashMap(usize, usize) = null;
@@ -158,20 +160,29 @@ fn sdl_free(maybe_ptr: ?*anyopaque) callconv(.C) void {
 }
 
 pub fn init(allocator: Allocator) bool {
-    sdl_allocator = sdl_gpa.allocator();
-    tracking_map = TrackingHashMap.init(allocator);
-    sdl_allocations = std.AutoHashMap(usize, usize).init(allocator);
-    _ = @This().SDL_SetMemoryFunctions(sdl_malloc, sdl_calloc, sdl_realloc, sdl_free);
+    if(debug.track_sdl_surfaces) {
+        tracking_map = TrackingHashMap.init(allocator);
+    }
+    if(debug.track_sdl_allocations) {
+        sdl_allocator = sdl_gpa.allocator();
+        sdl_allocations = std.AutoHashMap(usize, usize).init(allocator);
+        _ = @This().SDL_SetMemoryFunctions(sdl_malloc, sdl_calloc, sdl_realloc, sdl_free);
+    }
+
     return @This().SDL_Init(@This().SDL_INIT_VIDEO | @This().SDL_INIT_EVENTS | @This().SDL_INIT_JOYSTICK | @This().SDL_INIT_GAMEPAD);
 }
 
 pub fn deinit() void {
-    tracking_map.deinit();
     @This().SDL_Quit();
-    sdl_allocations.?.deinit();
-    sdl_allocations = null;
-    if (sdl_gpa.deinit() == .leak) {
-        std.log.err("SDL memory leaked!", .{});
+    if(debug.track_sdl_surfaces) {
+        tracking_map.deinit();
+    }
+    if(debug.track_sdl_allocations) {
+        sdl_allocations.?.deinit();
+        sdl_allocations = null;
+        if (sdl_gpa.deinit() == .leak) {
+            std.log.err("SDL memory leaked!", .{});
+        }
     }
 }
 
@@ -188,22 +199,31 @@ pub fn getTicks() u64 {
 // Surfaces
 
 pub fn destroySurface(surface: [*c]Surface) void {
-    if (tracking_map.remove(surface)) {
+    if(debug.track_sdl_surfaces) {
+        if (tracking_map.remove(surface)) {
+            @This().SDL_DestroySurface(surface);
+        } else {
+            std.log.err("destroySurface: DOUBLE FREE OF {*}", .{surface});
+        }
+    }
+    else {
         @This().SDL_DestroySurface(surface);
-    } else {
-        std.log.err("destroySurface: DOUBLE FREE OF {*}", .{surface});
     }
 }
 
 pub fn duplicateSurface(surface: [*c]Surface) !*Surface {
+
     const result = @This().SDL_DuplicateSurface(surface);
     if (result == null) {
         return error.Failed;
     }
-    if (tracking_map.remove(result)) {
-        std.log.err("duplicateSurface: surface was already tracked! {*}", .{result});
+    if(debug.track_sdl_surfaces) {
+        if (tracking_map.remove(result)) {
+            std.log.err("duplicateSurface: surface was already tracked! {*}", .{result});
+        }
+        tracking_map.put(result, {}) catch {};
     }
-    tracking_map.put(result, {}) catch {};
+
     return result;
 }
 
@@ -212,19 +232,24 @@ pub fn convertSurface(src: *Surface, pixel_format: PixelFormat) !*Surface {
     if (result == null) {
         return error.Failed;
     }
-    if (tracking_map.remove(result)) {
-        std.log.err("convertSurface: surface was already tracked! {*}", .{result});
+    if(debug.track_sdl_surfaces) {
+        if (tracking_map.remove(result)) {
+            std.log.err("convertSurface: surface was already tracked! {*}", .{result});
+        }
+        tracking_map.put(result, {}) catch {};
     }
-    tracking_map.put(result, {}) catch {};
+
     return result;
 }
 
 pub fn createSurface(width: c_int, height: c_int, format: u32) [*c]Surface {
     const result = @This().SDL_CreateSurface(width, height, format);
-    if (tracking_map.remove(result)) {
-        std.log.err("createSurface: surface was already tracked! {*}", .{result});
+    if(debug.track_sdl_surfaces) {
+        if (tracking_map.remove(result)) {
+            std.log.err("createSurface: surface was already tracked! {*}", .{result});
+        }
+        tracking_map.put(result, {}) catch {};
     }
-    tracking_map.put(result, {}) catch {};
     return result;
 }
 
@@ -234,10 +259,12 @@ pub const createSurfacePalette = @This().SDL_CreateSurfacePalette;
 
 pub fn loadBMP_IO(src: ?*@This().SDL_IOStream, closeio: bool) [*c]@This().Surface {
     const result = @This().SDL_LoadBMP_IO(src, closeio);
-    if (tracking_map.remove(result)) {
-        std.log.err("loadBMP_IO: surface was already tracked! {*}", .{result});
+    if(debug.track_sdl_surfaces) {
+        if (tracking_map.remove(result)) {
+            std.log.err("loadBMP_IO: surface was already tracked! {*}", .{result});
+        }
+        tracking_map.put(result, {}) catch {};
     }
-    tracking_map.put(result, {}) catch {};
     return result;
 }
 pub const saveBMP = @This().SDL_SaveBMP;

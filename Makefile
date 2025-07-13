@@ -4,12 +4,12 @@ VERSION ?= "0.0.0"
 PREFIX ?= "./zig-out"
 
 debug_local_platform:
-	zig build --prefix $(PREFIX)
+	zig build -Dcpu=baseline --prefix $(PREFIX)
 
 release:
 	@echo "Building OpenTitus $(VERSION)"
-	zig build --release=small -Dtarget=x86_64-linux-gnu.2.27 -Dversion=$(VERSION) --prefix $(PREFIX)
-	zig build --release=small -Dtarget=x86_64-windows -Dversion=$(VERSION) --prefix $(PREFIX)
+	zig build --release=small -Dtarget=x86_64-linux-gnu.2.27 -Dcpu=baseline -Dversion=$(VERSION) --prefix $(PREFIX)
+	zig build --release=small -Dtarget=x86_64-windows -Dcpu=baseline -Dversion=$(VERSION) --prefix $(PREFIX)
 
 test:
 	@echo "Running tests..."
