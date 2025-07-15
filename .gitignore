@@ -5,4 +5,5 @@ zig-cache/
 zig-out/
 .vscode/
 build/
+assets/
 *.kdev4
