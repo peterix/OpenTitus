@@ -82,6 +82,8 @@ const Self = @This();
 
 allocator: std.mem.Allocator = undefined,
 
+context_config: miniaudio.ma_context_config = undefined,
+context:miniaudio.ma_context = undefined,
 config: miniaudio.ma_device_config = undefined,
 device: miniaudio.ma_device = undefined,
 
@@ -111,6 +113,14 @@ pub fn init(self: *Self, allocator: std.mem.Allocator) !void {
     self.allocator = allocator;
     self.last_song = null;
     self.volume = game.settings.volume_master;
+    self.context_config = miniaudio.ma_context_config_init();
+    self.context_config.pulse.pApplicationName = "OpenTitusPulse";
+    self.context_config.jack.pClientName = "OpenTitusJack";
+    if(miniaudio.ma_context_init(null, 0, &self.context_config, &self.context) != miniaudio.MA_SUCCESS) {
+        std.log.err("Error initialising miniaudio context.", .{});
+        return error.OpenAudioContextFailed;
+    }
+    errdefer _ = miniaudio.ma_context_uninit(&self.context);
 
     self.config = miniaudio.ma_device_config_init(miniaudio.ma_device_type_playback);
     self.config.playback.format = miniaudio.ma_format_s16;
@@ -118,9 +128,10 @@ pub fn init(self: *Self, allocator: std.mem.Allocator) !void {
     self.config.sampleRate = MixingFreq;
     self.config.dataCallback = data_callback;
     self.config.pUserData = self;
+    //self.config.pulse.
 
-    if (miniaudio.ma_device_init(null, &self.config, &self.device) != miniaudio.MA_SUCCESS) {
-        std.log.err("Error initialising miniaudio.", .{});
+    if (miniaudio.ma_device_init(&self.context, &self.config, &self.device) != miniaudio.MA_SUCCESS) {
+        std.log.err("Error initialising miniaudio device.", .{});
         return error.OpenAudioDeviceFailed;
     }
     errdefer miniaudio.ma_device_uninit(&self.device);
@@ -154,6 +165,7 @@ pub fn deinit(self: *Self) void {
         backend.deinit();
     }
     miniaudio.ma_device_uninit(&self.device);
+    _ = miniaudio.ma_context_uninit(&self.context);
 
     self.callback_queue.deinit();
 }
