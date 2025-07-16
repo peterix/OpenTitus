@@ -961,7 +961,9 @@ Channel* Channel__BlockTemplate(Channel *self, Chip* chip,
 			return (self + 2);
 		}
 		break;
-
+	case sm2Percussion:
+	case sm3Percussion:
+		break;
         default:
                 abort();
 	}
