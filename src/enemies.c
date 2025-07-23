@@ -1255,7 +1255,7 @@ void SET_NMI(TITUS_level *level) {
         }
       }
       // If final enemy, remove energy
-      playEvent_c(Event_HitEnemy);
+      playc(HitEnemy);
       DROP_FLAG = 0;
       if (level->enemy[i].boss) {
         if (INVULNERABLE_FLAG != 0) {
@@ -1342,7 +1342,7 @@ void ACTIONC_NMI(TITUS_level *level, TITUS_enemy *enemy) {
 }
 
 void KICK_ASH(TITUS_level *level, TITUS_sprite *enemysprite, int16_t power) {
-  playEvent_c(Event_HitPlayer);
+  playc(HitPlayer);
   TITUS_sprite *p_sprite = &(level->player.sprite);
   DEC_ENERGY(level);
   DEC_ENERGY(level);

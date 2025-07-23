@@ -322,7 +322,7 @@ fn shock(level: *lvl.Level, object: *lvl.Object) void {
     } else {
         if (((@as(c_int, @bitCast(@as(c_int, object.sprite.y))) - @as(c_int, @bitCast(@as(c_uint, object.sprite.spritedata.?.collheight)))) + @as(c_int, 1)) >= @as(c_int, @bitCast(@as(c_int, player.sprite.y)))) return;
     }
-    events.triggerEvent(.Event_PlayerHeadImpact);
+    events.triggerEvent(.PlayerHeadImpact);
     globals.CHOC_FLAG = 24;
     if (object.*.sprite.killing) {
         if (!globals.GODMODE) {

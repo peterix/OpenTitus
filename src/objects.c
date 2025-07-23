@@ -424,7 +424,7 @@ void shock(TITUS_level *level,
   }
 
   // Hit!
-  playEvent_c(Event_PlayerHeadImpact);
+  playc(PlayerHeadImpact);
   CHOC_FLAG = 24;
   if (object->sprite.killing) {
     if (!GODMODE) {

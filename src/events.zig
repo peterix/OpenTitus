@@ -2,17 +2,19 @@ const audio = @import("audio/audio.zig");
 const input = @import("input.zig");
 
 pub const GameEvent = enum {
-    Event_HitEnemy,
-    Event_HitPlayer,
-    Event_PlayerHeadImpact,
-    Event_PlayerPickup,
-    Event_PlayerPickupEnemy,
-    Event_PlayerThrow,
-    Event_PlayerJump,
-    Event_BallBounce,
-    Event_PlayerCollectWaypoint,
-    Event_PlayerCollectBonus,
-    Event_PlayerCollectLamp,
+    None,
+    HitEnemy,
+    HitPlayer,
+    PlayerHeadImpact,
+    PlayerPickup,
+    PlayerPickupEnemy,
+    PlayerThrow,
+    PlayerJump,
+    BallBounce,
+    PlayerCollectWaypoint,
+    PlayerCollectBonus,
+    PlayerCollectLamp,
+    Options_TestRumble,
 };
 
 pub fn triggerEvent(event: GameEvent) void {

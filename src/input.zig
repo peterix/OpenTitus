@@ -58,6 +58,16 @@ pub fn setInputMode(input_mode: InputMode) void {
     // FIXME: save the file
 }
 
+pub fn getRumble() u8 {
+    return game.settings.rumble;
+}
+
+pub fn setRumble(rumble: u8) void {
+    game.settings.rumble = rumble;
+    // FIXME: save the file
+}
+
+
 pub const InputAction = enum {
     None,
     Quit,
@@ -121,8 +131,11 @@ pub const GamepadState = struct {
     right_y: f32 = 0,
 
     fn rumbleGamepad(self: GamepadState, left: f32, right: f32, duration_ms: u32) void {
-        const left_i: u16 = @intFromFloat(std.math.lerp(0, 0xFFFF, left));
-        const right_i: u16 = @intFromFloat(std.math.lerp(0, 0xFFFF, right));
+        if (game.settings.rumble == 0)
+            return;
+        const multiplier: f32 = @as(f32, @floatFromInt(game.settings.rumble)) / 16.0;
+        const left_i: u16 = @intFromFloat(std.math.lerp(0, 0xFFFF, left * multiplier));
+        const right_i: u16 = @intFromFloat(std.math.lerp(0, 0xFFFF, right * multiplier));
         if(self.has_rumble) {
             if(!SDL.rumbleGamepad(self.handle, left_i, right_i, duration_ms))
             {
@@ -138,8 +151,11 @@ pub const GamepadState = struct {
     }
 
     fn rumbleTriggers(self: GamepadState, left: f32, right: f32, duration_ms: u32) void {
-        const left_i: u16 = @intFromFloat(std.math.lerp(0, 0xFFFF, left));
-        const right_i: u16 = @intFromFloat(std.math.lerp(0, 0xFFFF, right));
+        if (game.settings.rumble == 0)
+            return;
+        const multiplier: f32 = @as(f32, @floatFromInt(game.settings.rumble)) / 16.0;
+        const left_i: u16 = @intFromFloat(std.math.lerp(0, 0xFFFF, left * multiplier));
+        const right_i: u16 = @intFromFloat(std.math.lerp(0, 0xFFFF, right * multiplier));
         if(self.has_trigger_rumble) {
             if(!SDL.rumbleGamepadTriggers(self.handle, left_i, right_i, duration_ms))
             {
@@ -155,37 +171,39 @@ pub const GamepadState = struct {
     }
 
     pub fn triggerRumble(self: GamepadState, event: GameEvent) void {
-
-
         switch (event) {
-            .Event_HitEnemy =>
+            .None => {},
+            .HitEnemy =>
             {
                 self.rumbleGamepad(0.25, 0.25, 150);
             },
-            .Event_HitPlayer =>
+            .HitPlayer =>
             {
                 self.rumbleGamepad(1.0, 1.0, 75);
             },
-            .Event_PlayerHeadImpact =>
+            .PlayerHeadImpact =>
             {
                 self.rumbleGamepad(0.33, 0.33, 800);
             },
-            .Event_PlayerPickup,
-            .Event_PlayerPickupEnemy,
-            .Event_PlayerThrow => {
+            .PlayerPickup,
+            .PlayerPickupEnemy,
+            .PlayerThrow => {
                 self.rumbleTriggers(0.25, 0.25, 100);
             },
-            .Event_PlayerCollectWaypoint,
-            .Event_PlayerCollectBonus,
-            .Event_PlayerCollectLamp =>
+            .PlayerCollectWaypoint,
+            .PlayerCollectBonus,
+            .PlayerCollectLamp =>
             {
                 self.rumbleGamepad(0.1, 0.1, 100);
             },
-            .Event_PlayerJump => {
+            .PlayerJump => {
                 //self.rumbleGamepad(6000, 6000, 100);
             },
-            .Event_BallBounce => {
+            .BallBounce => {
                 self.rumbleGamepad(0.25, 0.25, 150);
+            },
+            .Options_TestRumble => {
+                self.rumbleGamepad(1.0, 1.0, 100);
             },
         }
     }

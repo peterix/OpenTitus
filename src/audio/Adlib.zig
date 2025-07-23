@@ -369,36 +369,38 @@ fn playTrack(ctx: *anyopaque, track: ?AudioTrack) void {
 fn triggerEvent(ctx: *anyopaque, event: GameEvent) void {
     const self: *Adlib = @ptrCast(@alignCast(ctx));
     switch (event) {
-        .Event_HitEnemy => {
+        .None => {},
+        .HitEnemy => {
             self.playSfx(1);
         },
-        .Event_HitPlayer => {
+        .HitPlayer => {
             self.playSfx(4);
         },
-        .Event_PlayerHeadImpact => {
+        .PlayerHeadImpact => {
             self.playSfx(5);
         },
-        .Event_PlayerPickup, .Event_PlayerPickupEnemy => {
+        .PlayerPickup, .PlayerPickupEnemy => {
             self.playSfx(9);
         },
-        .Event_PlayerThrow => {
+        .PlayerThrow => {
             self.playSfx(3);
         },
-        .Event_PlayerJump => {
+        .PlayerJump => {
             // Nothing here, but we could
         },
-        .Event_BallBounce => {
+        .BallBounce => {
             self.playSfx(12);
         },
-        .Event_PlayerCollectWaypoint => {
+        .PlayerCollectWaypoint => {
             self.playTrackNumber(5);
         },
-        .Event_PlayerCollectBonus => {
+        .PlayerCollectBonus => {
             self.playTrackNumber(6);
         },
-        .Event_PlayerCollectLamp => {
+        .PlayerCollectLamp => {
             self.playTrackNumber(7);
         },
+        .Options_TestRumble => {},
     }
 }
 

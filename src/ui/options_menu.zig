@@ -31,6 +31,8 @@ const window = @import("../window.zig");
 const audio = @import("../audio/audio.zig");
 const BackendType = audio.BackendType;
 
+const events = @import("../events.zig");
+
 const input = @import("../input.zig");
 const InputAction = input.InputAction;
 const InputMode = input.InputMode;
@@ -162,10 +164,13 @@ fn slider(
     value: T,
     comptime min: T,
     comptime max: T,
+    comptime step: T,
+    comptime scale: T,
     y: i16,
     selected: bool,
     action: InputAction,
     setter: *const fn (T) void,
+    event: events.GameEvent,
 ) void {
     const options = fonts.Font.RenderOptions{ .transpatent = true };
     if (@typeInfo(T) != .int) {
@@ -175,12 +180,23 @@ fn slider(
     if (selected) switch (action) {
         .Left => {
             if (value > min) {
-                set_value = value - 2;
+                if (value - min < step) {
+                    set_value = min;
+                }
+                else {
+                    set_value = value - step;
+                }
             }
         },
         .Right => {
             if (value < max) {
-                set_value = value + 2;
+                if (max - value < step) {
+                    set_value = max;
+                }
+                else
+                {
+                    set_value = value + step;
+                }
             }
         },
         else => {
@@ -189,6 +205,9 @@ fn slider(
     };
     if (set_value != value) {
         setter(set_value);
+        if(event != .None) {
+            events.triggerEvent(event);
+        }
     }
     var x: i16 = x_baseline + 4;
     const font = if (selected) &fonts.Gold else &fonts.Gray;
@@ -198,9 +217,9 @@ fn slider(
     x -= 2;
     const colors = if (selected) gold_colors else grey_colors;
     for (0..4) |i| {
-        line(x, y + 3 + @as(i16, @intCast(i)), set_value, colors, i);
+        line(x, y + 3 + @as(i16, @intCast(i)), set_value * scale, colors, i);
     }
-    x += max - 2;
+    x += max * scale - 2;
     font.render("]", x, y, options);
 }
 
@@ -224,7 +243,7 @@ pub fn optionsMenu(menu_context: *MenuContext) ?c_int {
                 }
             },
             .Down => {
-                if (selected < 4) {
+                if (selected < 5) {
                     selected += 1;
                 }
             },
@@ -265,10 +284,13 @@ pub fn optionsMenu(menu_context: *MenuContext) ?c_int {
             audio.get_volume(),
             0,
             128,
+            2,
+            1,
             y,
             selected == 2,
             input_state.action,
             audio.set_volume,
+            .None,
         );
         y += 13;
         label("Input", y, selected == 3);
@@ -281,11 +303,26 @@ pub fn optionsMenu(menu_context: *MenuContext) ?c_int {
             input.setInputMode,
         );
         y += 13;
-        label("Fullscreen", y, selected == 4);
+        label("Rumble", y, selected == 4);
+        slider(
+            u8,
+            input.getRumble(),
+            0,
+            16,
+            1,
+            8,
+            y,
+            selected == 4,
+            input_state.action,
+            input.setRumble,
+            .Options_TestRumble,
+        );
+        y += 13;
+        label("Fullscreen", y, selected == 5);
         toggle(
             window.is_fullscreen(),
             y,
-            selected == 4,
+            selected == 5,
             input_state.action,
             window.set_fullscreen,
         );

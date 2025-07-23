@@ -896,7 +896,7 @@ fn collect_bonus(level: *lvl.Level, tileY: i16, tileX: i16) bool {
 
         if (bonus.bonustile >= (255 - 2)) {
             level.bonuscollected += 1;
-            events.triggerEvent(.Event_PlayerCollectBonus);
+            events.triggerEvent(.PlayerCollectBonus);
             INC_ENERGY(level);
         }
         level.setTile(@intCast(tileX), @intCast(tileY), bonus.replacetile);
@@ -915,7 +915,7 @@ fn collect_level_unlock(level: *lvl.Level, level_index: u8, tileY: i16, tileX: i
     game_state.unlock_level(allocator, level_index, level.lives) catch |err| {
         std.log.err("Failed to save progression: {s}", .{ @errorName(err) });
     };
-    events.triggerEvent(.Event_PlayerCollectLamp);
+    events.triggerEvent(.PlayerCollectLamp);
 }
 
 fn collect_checkpoint(level: *lvl.Level, tileY: i16, tileX: i16) void {
@@ -923,7 +923,7 @@ fn collect_checkpoint(level: *lvl.Level, tileY: i16, tileX: i16) void {
         return;
 
     const player = &level.player;
-    events.triggerEvent(.Event_PlayerCollectWaypoint);
+    events.triggerEvent(.PlayerCollectWaypoint);
     player.initX = player.sprite.x;
     player.initY = player.sprite.y;
     // carrying cage?
@@ -988,7 +988,7 @@ fn ACTION_PRG(level: *lvl.Level, action: PlayerAction) void {
         .Jump, .Jump_Carry => {
             // Handle a jump
             if (globals.jump_acceleration_counter == 0) {
-                events.triggerEvent(.Event_PlayerJump);
+                events.triggerEvent(.PlayerJump);
             }
             if (globals.jump_acceleration_counter >= 3) {
                 globals.jump_timer = 6; // Stop jump animation and acceleration
@@ -1143,7 +1143,7 @@ fn ACTION_PRG(level: *lvl.Level, action: PlayerAction) void {
                             }
 
                             // Take the object
-                            events.triggerEvent(.Event_PlayerPickup);
+                            events.triggerEvent(.PlayerPickup);
                             globals.FUME_FLAG = 0;
                             object.sprite.speed_y = 0;
                             object.sprite.speed_x = 0;
@@ -1219,7 +1219,7 @@ fn ACTION_PRG(level: *lvl.Level, action: PlayerAction) void {
                                     }
                                 }
 
-                                events.triggerEvent(.Event_PlayerPickupEnemy);
+                                events.triggerEvent(.PlayerPickupEnemy);
                                 globals.FUME_FLAG = 0;
                                 enemy.sprite.speed_y = 0;
                                 enemy.sprite.speed_x = 0;
@@ -1279,19 +1279,19 @@ fn ACTION_PRG(level: *lvl.Level, action: PlayerAction) void {
                         if (player_drop_carried(level)) |object| {
                             object.*.sprite.speed_y = speed_y;
                             object.*.sprite.speed_x = speed_x - (speed_x >> 2);
-                            events.triggerEvent(.Event_PlayerThrow);
+                            events.triggerEvent(.PlayerThrow);
                         }
                     } else { // Ordinary throw
                         globals.DROP_FLAG = true;
                         player.sprite2.speed_x = speed_x;
                         player.sprite2.speed_y = speed_y;
-                        events.triggerEvent(.Event_PlayerThrow);
+                        events.triggerEvent(.PlayerThrow);
                     }
                 } else { // Ordinary throw
                     globals.DROP_FLAG = true;
                     player.sprite2.speed_x = speed_x;
                     player.sprite2.speed_y = speed_y;
-                    events.triggerEvent(.Event_PlayerThrow);
+                    events.triggerEvent(.PlayerThrow);
                 }
             }
             sprites.updatesprite(level, &player.sprite, 10, true); // The same as in free fall
@@ -1505,7 +1505,7 @@ fn player_collide_with_objects(level: *lvl.Level) void {
 
         // If the ball lies on the ground
         if (off_object.sprite.speed_y == 0) {
-            events.triggerEvent(.Event_BallBounce);
+            events.triggerEvent(.BallBounce);
             off_object.sprite.speed_y = 0 - player.sprite.speed_y;
             off_object.sprite.y -= off_object.sprite.speed_y >> 4;
             globals.GRAVITY_FLAG = 4;

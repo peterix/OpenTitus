@@ -50,6 +50,7 @@ pub const Settings = extern struct {
     window_height: u16 = window.game_height * 3,
     audio_backend: BackendType = .Adlib,
     input_mode: InputMode = .Modern,
+    rumble: u8 = 8, // 0 = off, 16 = max
     seen_intro: bool = false,
 
     pub fn make_new(allocator: Allocator) !ManagedJSON(Settings) {
@@ -109,6 +110,9 @@ pub const Settings = extern struct {
         }
         if (settings.volume_master > 128) {
             settings.volume_master = 128;
+        }
+        if (settings.rumble > 16) {
+            settings.rumble = 16;
         }
         if (settings.window_width < window.game_width) {
             settings.window_width = window.game_width;
