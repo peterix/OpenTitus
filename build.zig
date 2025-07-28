@@ -64,10 +64,8 @@ fn build_game(b: *std.Build, name: []const u8, target: ResolvedTarget, optimize:
         .target = target,
         .optimize = optimize,
     });
-    if (target.query.os_tag == .windows) {
-        exe.subsystem = .Windows;
-        exe.addWin32ResourceFile(.{ .file = b.path("res/titus.rc") });
-    }
+    exe.subsystem = .Windows;
+    exe.addWin32ResourceFile(.{ .file = b.path("res/titus.rc") });
     setup_game_build(b, options, sdl_lib, exe);
     return exe;
 }
