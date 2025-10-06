@@ -64,5 +64,7 @@ pub fn viewintrotext(_: std.mem.Allocator) !c_int {
     if (retval < 0)
         return retval;
 
+
+
     return (0);
 }

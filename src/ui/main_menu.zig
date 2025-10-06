@@ -183,7 +183,7 @@ fn select_level(allocator: std.mem.Allocator) !?usize {
         y: c_int,
     };
     var level_list = try std.ArrayList(LevelSelect).initCapacity(allocator, data.constants.levelfiles.len);
-    defer level_list.deinit();
+    defer level_list.deinit(allocator);
 
     var selection: usize = 0;
     var max_width: c_int = 0;
@@ -196,7 +196,7 @@ fn select_level(allocator: std.mem.Allocator) !?usize {
             if (width > max_width) {
                 max_width = width;
             }
-            level_list.append(LevelSelect{
+            level_list.append(allocator, LevelSelect{
                 .unlocked = false,
                 .text = "...",
                 .font = &fonts.Gray,
@@ -214,7 +214,7 @@ fn select_level(allocator: std.mem.Allocator) !?usize {
         if (width > max_width) {
             max_width = width;
         }
-        level_list.append(LevelSelect{
+        level_list.append(allocator, LevelSelect{
             .unlocked = unlocked,
             .text = level.title,
             .font = font,

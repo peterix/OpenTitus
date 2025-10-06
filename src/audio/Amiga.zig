@@ -40,7 +40,10 @@ const GameEvent = events.GameEvent;
 
 const data = @import("../data.zig");
 
-const pocketmod = @import("pocketmod/pocketmod.zig");
+const pocketmod = @cImport({
+    @cInclude("pocketmod.h");
+});
+
 
 // TODO: implement a way to use the original game files from the Amiga version of the game
 const track_bonus = @embedFile("amiga/bonus.mod");

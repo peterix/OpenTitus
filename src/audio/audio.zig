@@ -24,8 +24,6 @@ const window = @import("../window.zig");
 const events = @import("../events.zig");
 const GameEvent = events.GameEvent;
 
-const miniaudio = @import("miniaudio/miniaudio.zig");
-
 pub var engine: AudioEngine = .{};
 
 pub fn music_get_last_song() ?AudioTrack {
@@ -126,7 +124,7 @@ pub fn set_volume(volume: u8) void {
     }
     game.settings.volume_master = volume_clamp;
     engine.volume = volume_clamp;
-    _ = miniaudio.ma_device_set_master_volume(
+    _ = AudioEngine.miniaudio.ma_device_set_master_volume(
         &engine.device,
         @as(f32, @floatFromInt(volume_clamp)) / 128.0,
     );

@@ -42,7 +42,9 @@ const Adlib = @import("Adlib.zig");
 const Amiga = @import("Amiga.zig");
 const PCSpeaker = @import("PCSpeaker.zig");
 
-const miniaudio = @import("miniaudio/miniaudio.zig");
+pub const miniaudio = @cImport({
+    @cInclude("miniaudio.h");
+});
 const game = @import("../game.zig");
 const data = @import("../data.zig");
 
@@ -194,7 +196,7 @@ fn fillBuffer(self: *Self, buffer: *u8, nFrames: u32) void {
     }
 }
 
-fn data_callback(pDevice: ?*anyopaque, buffer: ?*anyopaque, pInput: ?*const anyopaque, frameCount: u32) callconv(.C) void {
+fn data_callback(pDevice: ?*anyopaque, buffer: ?*anyopaque, pInput: ?*const anyopaque, frameCount: u32) callconv(.c) void {
     _ = pInput;
     const device: *miniaudio.ma_device = @alignCast(@ptrCast(pDevice.?));
     var self: *Self = @alignCast(@ptrCast(device.pUserData.?));

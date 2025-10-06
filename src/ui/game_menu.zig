@@ -55,6 +55,8 @@ fn renderLabel(text: []const u8, y: i16, selected: bool) void {
 
 pub fn gameMenu() data.GameType {
     var selected: u8 = 0;
+    window.window_clear(null);
+
     while (true) {
         SDL.delay(10);
 

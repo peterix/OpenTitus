@@ -98,7 +98,11 @@ pub fn run() !u8 {
 
     settings_mem = try Settings.read(allocator);
     settings = &settings_mem.value;
-    defer settings_mem.deinit();
+    defer
+    {
+        std.log.info("Freeing Settings...", .{});
+        settings_mem.deinit();
+    }
 
     // NOTE: we want to allocate memory for gamepad state before we start up SDL
     if(!input.init(allocator)) {
@@ -165,7 +169,10 @@ pub fn run() !u8 {
 
     game_state_mem = try GameState.read(allocator);
     game_state = &game_state_mem.value;
-    defer game_state_mem.deinit();
+    defer {
+        std.log.info("Freeing gamestate...", .{});
+        game_state_mem.deinit();
+    }
 
     try audio.engine.init(allocator);
     defer audio.engine.deinit();

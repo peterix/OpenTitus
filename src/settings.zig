@@ -124,8 +124,7 @@ pub const Settings = extern struct {
     }
 
     pub fn write(self: *Settings, allocator: Allocator) !void {
-        const data = try std.json.stringifyAlloc(allocator, self, .{ .whitespace = .indent_4, .emit_null_optional_fields = false });
-        defer allocator.free(data);
-        try std.fs.cwd().writeFile(.{ .data = data, .sub_path = settings_file_name });
+        _ = allocator;
+        try json.WriteJSON(settings_file_name, self);
     }
 };

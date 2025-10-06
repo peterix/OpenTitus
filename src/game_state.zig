@@ -151,9 +151,8 @@ pub const GameState = struct {
     }
 
     pub fn write(self: *GameState, allocator: Allocator) !void {
-        const bytes = try std.json.stringifyAlloc(allocator, self, .{ .whitespace = .indent_4, .emit_null_optional_fields = false });
-        defer allocator.free(bytes);
-        try std.fs.cwd().writeFile(.{ .data = bytes, .sub_path = game_file_name() });
+        _ = allocator;
+        try json.WriteJSON(game_file_name(), self);
     }
 
     pub fn isUnlocked(self: *GameState, level: usize) bool {

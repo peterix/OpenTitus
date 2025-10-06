@@ -57,12 +57,15 @@ fn setup_game_build(
     exe.root_module.addOptions("config", options);
 }
 
-fn build_game(b: *std.Build, name: []const u8, target: ResolvedTarget, optimize: std.builtin.Mode, options: *std.Build.Step.Options, sdl_lib: *std.Build.Step.Compile) *Step.Compile {
+fn build_game(b: *std.Build, name: []const u8, target: ResolvedTarget, optimize: std.builtin.OptimizeMode, options: *std.Build.Step.Options, sdl_lib: *std.Build.Step.Compile) *Step.Compile {
     const exe = b.addExecutable(.{
         .name = name,
-        .root_source_file = b.path("main.zig"),
-        .target = target,
-        .optimize = optimize,
+        .root_module = b.createModule(.{
+            .root_source_file = b.path("main.zig"),
+            .target = target,
+            .optimize = optimize,
+        }),
+        .use_llvm = true,
     });
     exe.subsystem = .Windows;
     exe.addWin32ResourceFile(.{ .file = b.path("res/titus.rc") });
@@ -70,11 +73,14 @@ fn build_game(b: *std.Build, name: []const u8, target: ResolvedTarget, optimize:
     return exe;
 }
 
-fn run_tests(b: *std.Build, target: ResolvedTarget, optimize: std.builtin.Mode, options: *std.Build.Step.Options, sdl_lib: *std.Build.Step.Compile) void {
+fn run_tests(b: *std.Build, target: ResolvedTarget, optimize: std.builtin.OptimizeMode, options: *std.Build.Step.Options, sdl_lib: *std.Build.Step.Compile) void {
     const game_tests = b.addTest(.{
-        .root_source_file = b.path("main.zig"),
-        .target = target,
-        .optimize = optimize,
+        .root_module = b.createModule(.{
+            .root_source_file = b.path("main.zig"),
+            .target = target,
+            .optimize = optimize,
+        }),
+        .use_llvm = true,
     });
     setup_game_build(b, options, sdl_lib, game_tests);
 

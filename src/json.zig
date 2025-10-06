@@ -31,6 +31,24 @@ const innerParse = std.json.innerParse;
 const innerParseFromValue = std.json.innerParseFromValue;
 const Value = std.json.Value;
 
+pub fn WriteJSON(filename: []const u8, data: anytype) !void {
+    var file = try std.fs.cwd().createFile(filename, .{});
+    defer file.close();
+
+    var buffer: [4096]u8 = undefined;
+    var writer = file.writer(&buffer);
+
+    var write_stream: std.json.Stringify = .{
+        .writer = &writer.interface,
+        .options = .{
+            .whitespace = .indent_4,
+            .emit_null_optional_fields = false,
+        },
+    };
+    try write_stream.write(data);
+    try writer.interface.flush();
+}
+
 pub fn ManagedJSON(comptime T: type) type {
     return struct {
         value: T,
@@ -46,6 +64,7 @@ pub fn ManagedJSON(comptime T: type) type {
         }
 
         pub fn deinit(self: Self) void {
+            std.log.info("Freeing ManagedJSON...", .{});
             const arena = self.arena;
             const allocator = arena.child_allocator;
             arena.deinit();
