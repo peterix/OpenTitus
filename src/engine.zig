@@ -51,7 +51,7 @@ const image = @import("ui/image.zig");
 const status = @import("ui/status.zig");
 const final_cutscene = @import("final_cutscene.zig");
 
-pub fn playtitus(firstlevel: u16, allocator: std.mem.Allocator) !c_int {
+pub fn playtitus(io: std.Io, firstlevel: u16, allocator: std.mem.Allocator) !c_int {
     var context = render.ScreenContext{};
 
     var retval: c_int = 0;
@@ -62,7 +62,7 @@ pub fn playtitus(firstlevel: u16, allocator: std.mem.Allocator) !c_int {
     level.lives = 2;
     level.extrabonus = 0;
 
-    const spritedata = sqz.unSQZ(data.constants.*.sprites, allocator) catch {
+    const spritedata = sqz.unSQZ(io, data.constants.*.sprites, allocator) catch {
         std.debug.print("Failed to uncompress sprites file: {s}\n", .{data.constants.*.sprites});
         return -1;
     };
@@ -94,6 +94,7 @@ pub fn playtitus(firstlevel: u16, allocator: std.mem.Allocator) !c_int {
 
         const level_index = @as(usize, @intCast(level.levelnumber));
         const leveldata = sqz.unSQZ(
+            io,
             data.constants.*.levelfiles[level_index].filename,
             allocator,
         ) catch {
@@ -139,13 +140,14 @@ pub fn playtitus(firstlevel: u16, allocator: std.mem.Allocator) !c_int {
             render.flip_screen(&context, true);
 
             game_state.visit_level(
+                io,
                 allocator,
                 level.levelnumber,
             ) catch |err| {
                 std.log.err("Could not record level entry: {}", .{err});
             };
 
-            retval = playlevel(&context, &level);
+            retval = playlevel(io, &context, &level);
             if (retval < 0) {
                 return retval;
             }
@@ -153,6 +155,7 @@ pub fn playtitus(firstlevel: u16, allocator: std.mem.Allocator) !c_int {
             if (globals.NEWLEVEL_FLAG) {
                 if (!globals.SKIPLEVEL_FLAG) {
                     game_state.record_completion(
+                        io,
                         allocator,
                         level.levelnumber,
                         level.bonuscollected,
@@ -188,6 +191,7 @@ pub fn playtitus(firstlevel: u16, allocator: std.mem.Allocator) !c_int {
     if (data.constants.*.finish != null) {
         const finish = data.constants.*.finish.?;
         retval = image.viewImageFile(
+            io,
             finish,
             .FadeOut,
             0,
@@ -226,7 +230,7 @@ fn resetLevel(context: *ScreenContext, level: *lvl.Level) c_int {
     return 0;
 }
 
-fn playlevel(context: *ScreenContext, level: *lvl.Level) c_int {
+fn playlevel(io: std.Io, context: *ScreenContext, level: *lvl.Level) c_int {
     var retval: c_int = 0;
     var firstrun = true;
 
@@ -240,7 +244,7 @@ fn playlevel(context: *ScreenContext, level: *lvl.Level) c_int {
         globals.IMAGE_COUNTER = (globals.IMAGE_COUNTER + 1) & 0x0FFF; //Cycle from 0 to 0x0FFF
         elevators.move(level);
         objects.move_objects(level); //Object gravity
-        retval = player.move_player(context, level); //Key input, update and move player, handle carried object and decrease timers
+        retval = player.move_player(io, context, level); //Key input, update and move player, handle carried object and decrease timers
         if (retval == -1) { //c.TITUS_ERROR_QUIT) {
             return retval;
         }

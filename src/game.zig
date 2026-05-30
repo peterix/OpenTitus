@@ -85,18 +85,13 @@ pub var game_state_mem: ManagedJSON(GameState) = undefined;
 pub var game_state: *GameState = undefined;
 
 pub var allocator: std.mem.Allocator = undefined;
+pub var io: std.Io = undefined;
 
-pub fn run() !u8 {
-    var gpa = std.heap.GeneralPurposeAllocator(.{}){};
-    defer {
-        const deinit_status = gpa.deinit();
-        if (deinit_status == .leak) @panic("Memory leaked!");
-    }
-    // FIXME: stop this. We only do this because the control flow travels through C,
-    //        so we need a global to pass the allocator around.
-    allocator = gpa.allocator();
+pub fn run(init: std.process.Init) !u8 {
+    allocator = init.gpa;
+    io = init.io;
 
-    settings_mem = try Settings.read(allocator);
+    settings_mem = try Settings.read(allocator, io);
     settings = &settings_mem.value;
     defer
     {
@@ -137,11 +132,11 @@ pub fn run() !u8 {
             state = 0;
         } else {
             settings.seen_intro = true;
-            try settings.write(allocator);
+            try settings.write(io, allocator);
         }
     }
 
-    const available_games = data.probeGameFiles();
+    const available_games = data.probeGameFiles(io);
     if(available_games.moktar and available_games.titus)
     {
         switch(gameMenu.gameMenu()) {
@@ -167,18 +162,19 @@ pub fn run() !u8 {
         return error.GameDataNotAvailable;
     }
 
-    game_state_mem = try GameState.read(allocator);
+    game_state_mem = try GameState.read(io, allocator);
     game_state = &game_state_mem.value;
     defer {
         std.log.info("Freeing gamestate...", .{});
         game_state_mem.deinit();
     }
 
-    try audio.engine.init(allocator);
+    try audio.engine.init(io, allocator);
     defer audio.engine.deinit();
 
     if (data.constants.*.logo) |logo| {
         retval = try image.viewImageFile(
+            io,
             logo,
             .FadeInFadeOut,
             4000,
@@ -192,6 +188,7 @@ pub fn run() !u8 {
 
     if (data.constants.*.intro) |intro| {
         retval = try image.viewImageFile(
+            io,
             intro,
             .FadeInFadeOut,
             6500,
@@ -203,6 +200,7 @@ pub fn run() !u8 {
 
     while (state != 0) {
         const curlevel = try main_menu.view_menu(
+            io,
             data.constants.*.menu.?,
             allocator,
         );
@@ -212,6 +210,7 @@ pub fn run() !u8 {
 
         if (state != 0 and (curlevel.? < data.constants.*.levelfiles.len)) {
             retval = try engine.playtitus(
+                io,
                 @truncate(curlevel.?),
                 allocator,
             );
@@ -220,8 +219,8 @@ pub fn run() !u8 {
         }
     }
 
-    try settings.write(allocator);
-    try game_state.write(allocator);
+    try settings.write(io, allocator);
+    try game_state.write(io, allocator);
 
     return 0;
 }

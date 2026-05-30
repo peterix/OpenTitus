@@ -31,12 +31,12 @@ const innerParse = std.json.innerParse;
 const innerParseFromValue = std.json.innerParseFromValue;
 const Value = std.json.Value;
 
-pub fn WriteJSON(filename: []const u8, data: anytype) !void {
-    var file = try std.fs.cwd().createFile(filename, .{});
-    defer file.close();
+pub fn WriteJSON(io: std.Io, filename: []const u8, data: anytype) !void {
+    var file = try std.Io.Dir.cwd().createFile(io, filename, .{});
+    defer file.close(io);
 
     var buffer: [4096]u8 = undefined;
-    var writer = file.writer(&buffer);
+    var writer = file.writer(io, &buffer);
 
     var write_stream: std.json.Stringify = .{
         .writer = &writer.interface,
@@ -79,14 +79,14 @@ pub fn ManagedJSON(comptime T: type) type {
 /// instead of comptime-known struct field names.
 pub fn JsonList(comptime T: type) type {
     return struct {
-        list: std.ArrayListUnmanaged(T) = .{},
+        list: std.ArrayList(T) = .empty,
 
         pub fn deinit(self: *@This(), allocator: Allocator) void {
             self.list.deinit(allocator);
         }
 
         pub fn jsonParse(allocator: Allocator, source: anytype, options: ParseOptions) !@This() {
-            var list = std.ArrayListUnmanaged(T){};
+            var list = std.ArrayListUnmanaged(T).empty;
             errdefer list.deinit(allocator);
 
             if (.array_begin != try source.next()) return error.UnexpectedToken;

@@ -37,13 +37,17 @@ const SqzError = error{
     NotImplemented,
 };
 
-pub fn unSQZ(inputfile: []const u8, allocator: Allocator) ![]u8 {
-    var file = try std.fs.cwd().openFile(inputfile, .{});
-    defer file.close();
+pub fn unSQZ(io: std.Io, inputfile: []const u8, allocator: Allocator) ![]u8 {
+    var file = try std.Io.Dir.cwd().openFile(io, inputfile, .{});
+    defer file.close(io);
+
+    var read_buffer: [1024]u8 = undefined;
+    var fr = file.reader(io, &read_buffer);
+    var reader = &fr.interface;
 
     var header_buf: [4]u8 = undefined;
 
-    _ = try file.read(&header_buf);
+    _ = try reader.readSliceAll(header_buf[0..]);
 
     const b1 = header_buf[0];
     const comp_type = header_buf[1];
@@ -65,16 +69,8 @@ pub fn unSQZ(inputfile: []const u8, allocator: Allocator) ![]u8 {
     errdefer {
         allocator.free(output);
     }
-
-    const file_size = try file.getEndPos();
-    const in_len = file_size - 4;
-    const inbuffer = try allocator.alloc(u8, in_len);
+    const inbuffer = try reader.allocRemaining(allocator, std.Io.Limit.unlimited);
     defer allocator.free(inbuffer);
-
-    const bytes_read = try file.readAll(inbuffer);
-    if (in_len != bytes_read) {
-        return SqzError.InvalidFile;
-    }
 
     if (comp_type == 0x10) {
         try lzw_decode(inbuffer, output);

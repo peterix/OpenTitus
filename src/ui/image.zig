@@ -163,10 +163,10 @@ pub const DisplayMode = enum(c_int) {
     FadeOut = 1,
 };
 
-pub fn viewImageFile(file: ImageFile, display_mode: DisplayMode, delay: c_int, allocator: std.mem.Allocator) !c_int {
+pub fn viewImageFile(io: std.Io, file: ImageFile, display_mode: DisplayMode, delay: c_int, allocator: std.mem.Allocator) !c_int {
     const fade_time = 1000;
 
-    const image_data = try sqz.unSQZ(file.filename, allocator);
+    const image_data = try sqz.unSQZ(io, file.filename, allocator);
     var image_memory = try loadImage(image_data, file.format, allocator);
     defer image_memory.deinit();
     const image_surface = image_memory.value;

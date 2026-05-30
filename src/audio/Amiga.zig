@@ -27,7 +27,7 @@
 const Amiga = @This();
 
 const std = @import("std");
-const Mutex = std.Thread.Mutex;
+const Mutex = std.Io.Mutex;
 
 const Backend = @import("Backend.zig");
 
@@ -64,17 +64,17 @@ const track_over_mok = @embedFile("amiga/overmok.mod");
 const track_pres = @embedFile("amiga/pres.mod");
 const track_null: [0]u8 = .{};
 
-fn loadSample(comptime N: usize, comptime input: [N:0]u8) []const i8 {
-    var output: [N]i8 = undefined;
-    @memcpy(input, output);
-    return &output;
-}
+// fn loadSample(comptime N: usize, comptime input: [N:0]u8) []const i8 {
+//     var output: [N]i8 = undefined;
+//     @memcpy(input, output);
+//     return &output;
+// }
 
-const sfx_tirperso = loadSample(@embedFile("amiga/tirperso"));
-const sfx_ressort = loadSample(@embedFile("amiga/ressort"));
-const sfx_fox = loadSample(@embedFile("amiga/fox"));
-const sfx_coup = loadSample(@embedFile("amiga/coup"));
-const sfx_ballon = loadSample(@embedFile("amiga/ballon"));
+// const sfx_tirperso = loadSample(@embedFile("amiga/tirperso"));
+// const sfx_ressort = loadSample(@embedFile("amiga/ressort"));
+// const sfx_fox = loadSample(@embedFile("amiga/fox"));
+// const sfx_coup = loadSample(@embedFile("amiga/coup"));
+// const sfx_ballon = loadSample(@embedFile("amiga/ballon"));
 
 const Sound = struct {
     sample: []const i8,
@@ -119,7 +119,8 @@ fn getTrackData(track_in: ?AudioTrack) []const u8 {
 
 allocator: std.mem.Allocator = undefined,
 current_track: ?AudioTrack = null,
-mutex: Mutex = Mutex{},
+mutex: Mutex = .init,
+io: std.Io = std.Io.failing,
 sample_rate: u32 = undefined,
 music_context: ?pocketmod.pocketmod_context = null,
 sound_context: ?Sound = null,
@@ -144,11 +145,12 @@ pub fn backend(self: *Amiga) Backend {
     };
 }
 
-fn init(ctx: *anyopaque, engine: *AudioEngine, allocator: std.mem.Allocator, sample_rate: u32) Backend.Error!void {
+fn init(ctx: *anyopaque, io: std.Io, engine: *AudioEngine, allocator: std.mem.Allocator, sample_rate: u32) Backend.Error!void {
     const self: *Amiga = @ptrCast(@alignCast(ctx));
     self.engine = engine;
+    self.io = io;
     self.allocator = allocator;
-    self.mutex = Mutex{};
+    self.mutex = .init;
     self.sample_rate = sample_rate;
     self.current_track = null;
     self.music_context = null;
@@ -157,7 +159,7 @@ fn init(ctx: *anyopaque, engine: *AudioEngine, allocator: std.mem.Allocator, sam
 
 fn deinit(ctx: *anyopaque) void {
     const self: *Amiga = @ptrCast(@alignCast(ctx));
-    self.mutex = Mutex{};
+    self.mutex = .init;
     self.sample_rate = undefined;
     self.current_track = null;
     self.music_context = null;
@@ -166,12 +168,12 @@ fn deinit(ctx: *anyopaque) void {
 
 fn lock(ctx: *anyopaque) void {
     const self: *Amiga = @ptrCast(@alignCast(ctx));
-    self.mutex.lock();
+    self.mutex.lock(self.io) catch { unreachable; };
 }
 
 fn unlock(ctx: *anyopaque) void {
     const self: *Amiga = @ptrCast(@alignCast(ctx));
-    self.mutex.unlock();
+    self.mutex.unlock(self.io);
 }
 
 fn fillBuffer(ctx: *anyopaque, buffer: []i16, nFrames: u32) void {
@@ -188,8 +190,8 @@ fn fillBuffer(ctx: *anyopaque, buffer: []i16, nFrames: u32) void {
     var floatBuffer: [sample_buffer_size]f32 = undefined;
 
     const self: *Amiga = @ptrCast(@alignCast(ctx));
-    self.mutex.lock();
-    defer self.mutex.unlock();
+    self.mutex.lock(self.io) catch { unreachable; };
+    defer self.mutex.unlock(self.io);
 
     if (self.music_context) |*music_context| {
         var rendered: u32 = 0;

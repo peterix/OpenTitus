@@ -148,7 +148,7 @@ pub const PlayerAction = enum(u8) {
     }
 };
 
-pub fn move_player(arg_context: *render.ScreenContext, arg_level: *lvl.Level) c_int {
+pub fn move_player(io: std.Io, arg_context: *render.ScreenContext, arg_level: *lvl.Level) c_int {
     // Part 1: Gather input state
     // Part 2: Determine the player's action, and execute action dependent code
     // Part 3: Move the player + collision detection
@@ -334,7 +334,7 @@ pub fn move_player(arg_context: *render.ScreenContext, arg_level: *lvl.Level) c_
     // Move player in Y
     player.sprite.y += player.sprite.speed_y >> 4;
     // Test for collisions
-    player_collide(level);
+    player_collide(io, level);
 
     // Part 4: Move the throwed/carried object
     // Move throwed/carried object
@@ -448,7 +448,7 @@ fn CASE_DEAD_IM(level: *lvl.Level) void {
     globals.RESETLEVEL_FLAG = 2;
 }
 
-fn player_collide(level: *lvl.Level) void {
+fn player_collide(io: std.Io, level: *lvl.Level) void {
     // Collision detection between player
     // and tiles/objects/elevators
     // Point the foot on the block!
@@ -476,7 +476,7 @@ fn player_collide(level: *lvl.Level) void {
 
     const left_tileX = tileX;
     // Test the tile for vertical blocking
-    TAKE_BLK_AND_YTEST(level, tileY, tileX);
+    TAKE_BLK_AND_YTEST(io, level, tileY, tileX);
 
     if (globals.YFALL == 1) { // Have the fall stopped?
         // No! Is it necessary to test the right tile?
@@ -490,7 +490,7 @@ fn player_collide(level: *lvl.Level) void {
         }
         if (tileX != left_tileX) {
             // Also test the left tile
-            TAKE_BLK_AND_YTEST(level, tileY, tileX);
+            TAKE_BLK_AND_YTEST(io, level, tileY, tileX);
         }
         if (globals.YFALL == 1) {
             if (globals.CROSS_FLAG == 0 and globals.CHOC_FLAG == 0) {
@@ -524,10 +524,10 @@ fn player_collide(level: *lvl.Level) void {
         while (true) {
             const hflag = level.getTileWall(tileX, tileY);
             if (first) {
-                BLOCK_XXPRG(level, hflag, tileY, tileX);
+                BLOCK_XXPRG(io, level, hflag, tileY, tileX);
                 first = false;
             } else if (hflag == .Code or hflag == .Bonus) {
-                BLOCK_XXPRG(level, hflag, tileY, tileX);
+                BLOCK_XXPRG(io, level, hflag, tileY, tileX);
             }
             if (tileY == 0) {
                 return;
@@ -539,7 +539,7 @@ fn player_collide(level: *lvl.Level) void {
     }
 }
 
-fn TAKE_BLK_AND_YTEST(level: *lvl.Level, tileY_in: i16, tileX_in: i16) void {
+fn TAKE_BLK_AND_YTEST(io: std.Io, level: *lvl.Level, tileY_in: i16, tileX_in: i16) void {
     var tileY = tileY_in;
     var tileX = tileX_in;
     const player = &level.*.player;
@@ -568,7 +568,7 @@ fn TAKE_BLK_AND_YTEST(level: *lvl.Level, tileY_in: i16, tileX_in: i16) void {
 
     if (globals.LAST_ORDER.withoutCarry() != .Jump) {
         // Player versus floor
-        BLOCK_YYPRG(level, floor, floor_above, tileY + 1, tileX);
+        BLOCK_YYPRG(io, level, floor, floor_above, tileY + 1, tileX);
     }
     // Test the tile on his head
     if (tileY < 1 or player.sprite.speed_y > 0) {
@@ -656,7 +656,7 @@ fn BLOCK_YYPRGD(level: *lvl.Level, cflag: lvl.CeilingType, tileY_in: i16, tileX_
     }
 }
 
-fn BLOCK_XXPRG(level: *lvl.Level, hflag: lvl.WallType, tileY: i16, tileX: i16) void {
+fn BLOCK_XXPRG(io: std.Io, level: *lvl.Level, hflag: lvl.WallType, tileY: i16, tileX: i16) void {
     switch (hflag) {
         .NoWall => {},
         .Wall => {
@@ -673,13 +673,13 @@ fn BLOCK_XXPRG(level: *lvl.Level, hflag: lvl.WallType, tileY: i16, tileX: i16) v
             }
         },
         .Code => {
-            collect_level_unlock(level, @truncate(level.levelnumber), tileY, tileX);
+            collect_level_unlock(io, level, @truncate(level.levelnumber), tileY, tileX);
         },
         .Padlock => {
             collect_checkpoint(level, tileY, tileX);
         },
         .CodeLevel14 => {
-            collect_level_unlock(level, 14 - 1, tileY, tileX);
+            collect_level_unlock(io, level, 14 - 1, tileY, tileX);
         },
     }
 }
@@ -773,7 +773,7 @@ fn YACCELERATION(player: *lvl.Player, maxspeed: i16) void {
     }
 }
 
-fn BLOCK_YYPRG(level: *lvl.Level, floor: lvl.FloorType, floor_above: lvl.FloorType, tileY: i16, tileX: i16) void {
+fn BLOCK_YYPRG(io: std.Io, level: *lvl.Level, floor: lvl.FloorType, floor_above: lvl.FloorType, tileY: i16, tileX: i16) void {
     // Action on different floor flags
     const player = &level.player;
     switch (floor) {
@@ -856,13 +856,13 @@ fn BLOCK_YYPRG(level: *lvl.Level, floor: lvl.FloorType, floor_above: lvl.FloorTy
             }
         },
         .Code => {
-            collect_level_unlock(level, @truncate(level.levelnumber), tileY, tileX);
+            collect_level_unlock(io, level, @truncate(level.levelnumber), tileY, tileX);
         },
         .Padlock => {
             collect_checkpoint(level, tileY, tileX);
         },
         .CodeLevel14 => {
-            collect_level_unlock(level, 14 - 1, tileY, tileX);
+            collect_level_unlock(io, level, 14 - 1, tileY, tileX);
         },
     }
 }
@@ -906,13 +906,13 @@ fn collect_bonus(level: *lvl.Level, tileY: i16, tileX: i16) bool {
     return false;
 }
 
-fn collect_level_unlock(level: *lvl.Level, level_index: u8, tileY: i16, tileX: i16) void {
+fn collect_level_unlock(io: std.Io, level: *lvl.Level, level_index: u8, tileY: i16, tileX: i16) void {
     // Codelamp
     // if the bonus is found in the bonus list
     if (!collect_bonus(level, tileY, tileX))
         return;
     const allocator = std.heap.page_allocator;
-    game_state.unlock_level(allocator, level_index, level.lives) catch |err| {
+    game_state.unlock_level(io, allocator, level_index, level.lives) catch |err| {
         std.log.err("Failed to save progression: {s}", .{ @errorName(err) });
     };
     events.triggerEvent(.PlayerCollectLamp);

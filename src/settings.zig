@@ -53,9 +53,9 @@ pub const Settings = extern struct {
     rumble: u8 = 8, // 0 = off, 16 = max
     seen_intro: bool = false,
 
-    pub fn make_new(allocator: Allocator) !ManagedJSON(Settings) {
+    pub fn make_new(allocator: Allocator, io: std.Io) !ManagedJSON(Settings) {
         var seed: u32 = undefined;
-        try std.posix.getrandom(std.mem.asBytes(&seed));
+        std.Io.random(io, std.mem.asBytes(&seed));
         var arena = try allocator.create(std.heap.ArenaAllocator);
         errdefer allocator.destroy(arena);
 
@@ -65,18 +65,18 @@ pub const Settings = extern struct {
         return ManagedJSON(Settings){ .value = Settings{}, .arena = arena };
     }
 
-    pub fn read(allocator: Allocator) !ManagedJSON(Settings) {
+    pub fn read(allocator: Allocator, io: std.Io) !ManagedJSON(Settings) {
         var arena = try allocator.create(std.heap.ArenaAllocator);
         errdefer allocator.destroy(arena);
 
         arena.* = std.heap.ArenaAllocator.init(allocator);
         errdefer arena.deinit();
 
-        const data = std.fs.cwd().readFileAlloc(allocator, settings_file_name, 20000) catch |err| {
+        const data = std.Io.Dir.cwd().readFileAlloc(io, settings_file_name, allocator, std.Io.Limit.limited(20000)) catch |err| {
             switch (err) {
                 error.FileNotFound => {
                     std.log.info("No settings file found, starting with defaults.", .{});
-                    return Settings.make_new(arena.allocator());
+                    return Settings.make_new(arena.allocator(), io);
                 },
                 error.OutOfMemory => {
                     return error.OutOfMemory;
@@ -85,7 +85,7 @@ pub const Settings = extern struct {
                     std.log.err("Could not read settings: {}, starting with defaults.", .{err});
                 },
             }
-            return Settings.make_new(arena.allocator());
+            return Settings.make_new(arena.allocator(), io);
         };
         defer allocator.free(data);
 
@@ -100,7 +100,7 @@ pub const Settings = extern struct {
             },
         ) catch |err| {
             std.log.err("Could not read settings: {}, starting with defaults.", .{err});
-            return Settings.make_new(arena.allocator());
+            return Settings.make_new(arena.allocator(), io);
         };
         if (settings.volume_music > 128) {
             settings.volume_music = 128;
@@ -123,8 +123,8 @@ pub const Settings = extern struct {
         return ManagedJSON(Settings){ .value = settings, .arena = arena };
     }
 
-    pub fn write(self: *Settings, allocator: Allocator) !void {
+    pub fn write(self: *Settings, io: std.Io, allocator: Allocator) !void {
         _ = allocator;
-        try json.WriteJSON(settings_file_name, self);
+        try json.WriteJSON(io, settings_file_name, self);
     }
 };

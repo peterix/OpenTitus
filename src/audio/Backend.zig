@@ -61,7 +61,7 @@ name: []const u8,
 backend_type: BackendType,
 
 pub const VTable = struct {
-    init: *const fn (ctx: *anyopaque, engine: *AudioEngine, allocator: std.mem.Allocator, sample_rate: u32) Error!void,
+    init: *const fn (ctx: *anyopaque, io: std.Io, engine: *AudioEngine, allocator: std.mem.Allocator, sample_rate: u32) Error!void,
     deinit: *const fn (ctx: *anyopaque) void,
     fillBuffer: *const fn (ctx: *anyopaque, buffer: []i16, nsamples: u32) void,
     playTrack: *const fn (ctx: *anyopaque, track: ?AudioTrack) void,
@@ -71,8 +71,8 @@ pub const VTable = struct {
     unlock: *const fn (ctx: *anyopaque) void,
 };
 
-pub inline fn init(self: Backend, engine: *AudioEngine, allocator: std.mem.Allocator, sample_rate: u32) Error!void {
-    return self.vtable.init(self.ptr, engine, allocator, sample_rate);
+pub inline fn init(self: Backend, io: std.Io, engine: *AudioEngine, allocator: std.mem.Allocator, sample_rate: u32) Error!void {
+    return self.vtable.init(self.ptr, io, engine, allocator, sample_rate);
 }
 
 pub inline fn deinit(self: Backend) void {

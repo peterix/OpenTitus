@@ -330,8 +330,8 @@ pub const Level = struct {
 
 };
 
-const InitSprite = extern union {
-    unpacked: packed struct {
+const InitSprite = packed union (u16) {
+    unpacked: packed struct (u16) {
         sprite: u13,
         visible: bool,
         flash: bool,
@@ -343,7 +343,7 @@ const InitSprite = extern union {
 // FIXME: we need to @Swap all of the things that are multiple byte integers on .Big endian platforms
 const StaticData = extern struct {
     // 0, planar 16 color images, 16x16
-    tile_images: [256]extern struct {
+    tile_images: [256] extern struct {
         data: [128]u8,
     },
     // 32768
@@ -351,12 +351,12 @@ const StaticData = extern struct {
     // 33024
     floor_flags: [256]u8,
     // 33280
-    ceil_flags: [256]packed struct {
+    ceil_flags: [256]packed struct (u8) {
         ceil: u7 = 0,
         animated: u1 = 0,
     },
     // 33536
-    objects: [40]extern struct {
+    objects: [40] extern struct {
         initSprite: InitSprite,
         initX: i16,
         initY: i16,
@@ -367,11 +367,11 @@ const StaticData = extern struct {
     // 33782
     // It looks like a union based on enemy type, with some holes???
     // I guess we keep the old code for it and just give it 'data' for now
-    enemies: [50]extern struct {
+    enemies: [50] extern struct {
         init_x: i16, // 0, 1
         init_y: i16, // 2, 3
         init_sprite: InitSprite, // 4, 5, only the 'flipped' bit is used, flash and visible are ignored
-        type: packed struct { // 6, 7
+        type: packed struct (u16) { // 6, 7
             value: u13,
             // TODO: what are those bits?
             unknown: u3,
@@ -392,7 +392,7 @@ const StaticData = extern struct {
     // 35482
     xlimit: i16,
     // 35484
-    gates: [20]extern struct {
+    gates: [20] extern struct {
         entranceX: u8,
         entranceY: u8,
         screenX: u8,
@@ -404,7 +404,7 @@ const StaticData = extern struct {
     // 35624
     // TODO: this is rather nebulous. what are all those unknown bytes for
     // TODO: support? flip? See: https://github.com/kaimitai/vtitus/raw/main/resources/elevators.PNG
-    elevators: [10]extern struct {
+    elevators: [10] extern struct {
         unknown0: u16,
         unknown2: u16,
         init_sprite: InitSprite,
@@ -422,20 +422,23 @@ const StaticData = extern struct {
     finishY: i16,
 };
 
+fn compileErrorFmt(comptime fmt: []const u8, args: anytype) noreturn {
+    @compileError(@import("std").fmt.comptimePrint(fmt, args));
+}
+
+fn expectAtOffset(comptime T: type, comptime fieldname: []const u8, expected_offset: comptime_int) void {
+    const offset = @offsetOf(T, fieldname);
+    if (offset != expected_offset) {
+        compileErrorFmt("{s} is at offset {}, expected at {}", .{ fieldname, offset, expected_offset});
+    }
+}
+
 // sanity checks for StaticData
 comptime {
-    if (@offsetOf(StaticData, "tile_images") != 0) {
-        unreachable;
-    }
-    if (@offsetOf(StaticData, "horiz_flags") != 32768) {
-        unreachable;
-    }
-    if (@offsetOf(StaticData, "floor_flags") != 33024) {
-        unreachable;
-    }
-    if (@offsetOf(StaticData, "ceil_flags") != 33280) {
-        unreachable;
-    }
+    expectAtOffset(StaticData, "tile_images", 0);
+    expectAtOffset(StaticData, "horiz_flags", 32768);
+    expectAtOffset(StaticData, "floor_flags", 33024);
+    expectAtOffset(StaticData, "ceil_flags", 33280);
     if (@offsetOf(StaticData, "objects") != 33536) {
         unreachable;
     }

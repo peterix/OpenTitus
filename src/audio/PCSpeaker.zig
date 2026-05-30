@@ -60,7 +60,8 @@ pub fn backend(self: *PCSpeaker) Backend {
     };
 }
 
-fn init(ctx: *anyopaque, engine: *AudioEngine, allocator: std.mem.Allocator, sample_rate: u32) Backend.Error!void {
+fn init(ctx: *anyopaque, io: std.Io, engine: *AudioEngine, allocator: std.mem.Allocator, sample_rate: u32) Backend.Error!void {
+    _ = io;
     _ = allocator;
     const self: *PCSpeaker = @ptrCast(@alignCast(ctx));
     self.engine = engine;

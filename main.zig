@@ -30,8 +30,8 @@ test {
     _ = std.testing.refAllDeclsRecursive(game);
 }
 
-pub fn main() !u8 {
-    return game.run() catch |err| {
+pub fn main(init: std.process.Init) !u8 {
+    return game.run(init) catch |err| {
         std.log.err("Game exited with an error: {}", .{err});
         return 1;
     };

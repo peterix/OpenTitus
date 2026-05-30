@@ -28,7 +28,7 @@
 const Adlib = @This();
 
 const std = @import("std");
-const Mutex = std.Thread.Mutex;
+const Mutex = std.Io.Mutex;
 
 const Backend = @import("Backend.zig");
 
@@ -151,13 +151,14 @@ const Instruction = packed struct {
     }
 };
 
+io: std.Io = std.Io.failing,
 channels: [ChannelCount]Channel = [_]Channel{.{}} ** ChannelCount,
 active_channels: c_int = 0,
 perc_stat: u8 = 0,
 skip_delay: u8 = 0,
 skip_delay_counter: u8 = 0,
 current_track: ?u8 = null,
-mutex: Mutex = Mutex{},
+mutex: Mutex = .init,
 
 seg_reduction: u16 = 0,
 sfx_on: bool = false,
@@ -193,8 +194,9 @@ pub fn backend(self: *Adlib) Backend {
     };
 }
 
-fn init(ctx: *anyopaque, engine: *AudioEngine, _: std.mem.Allocator, sample_rate: u32) Backend.Error!void {
+fn init(ctx: *anyopaque, io: std.Io, engine: *AudioEngine, _: std.mem.Allocator, sample_rate: u32) Backend.Error!void {
     const self: *Adlib = @ptrCast(@alignCast(ctx));
+    self.io = io;
     self.active_channels = 0;
     self.perc_stat = 0;
     self.skip_delay = 0;
@@ -206,7 +208,7 @@ fn init(ctx: *anyopaque, engine: *AudioEngine, _: std.mem.Allocator, sample_rate
     self.sfx_time = 0;
 
     self.engine = engine;
-    self.mutex = Mutex{};
+    self.mutex = .init;
 
     const bytes = switch (data.game)
     {
@@ -246,21 +248,21 @@ fn deinit(ctx: *anyopaque) void {
 
 fn lock(ctx: *anyopaque) void {
     const self: *Adlib = @ptrCast(@alignCast(ctx));
-    self.mutex.lock();
+    self.mutex.lock(self.io) catch { unreachable; };
 }
 
 fn unlock(ctx: *anyopaque) void {
     const self: *Adlib = @ptrCast(@alignCast(ctx));
-    self.mutex.unlock();
+    self.mutex.unlock(self.io);
 }
 
 fn fillBuffer(ctx: *anyopaque, buffer: []i16, nsamples: u32) void {
     const self: *Adlib = @ptrCast(@alignCast(ctx));
-    self.mutex.lock();
+    self.mutex.lock(self.io) catch { unreachable; };
     if (nsamples > 0) {
         OPL3.OPL3_GenerateStream(&self.opl_chip, &buffer[0], nsamples);
     }
-    self.mutex.unlock();
+    self.mutex.unlock(self.io);
 }
 
 fn isPlayingATrack(ctx: *anyopaque) bool {
@@ -731,10 +733,10 @@ fn all_vox_zero(self: *Adlib) void {
 
 fn TimerCallback(callback_data: ?*anyopaque) void {
     var self: *Adlib = @alignCast(@ptrCast(callback_data));
-    self.mutex.lock();
+    self.mutex.lock(self.io) catch { unreachable; };
     // Read data until we must make a delay.
     self.fillchip();
-    self.mutex.unlock();
+    self.mutex.unlock(self.io);
 
     // Schedule the next timer callback.
     // Delay is original 13.75 ms

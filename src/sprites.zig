@@ -137,7 +137,7 @@ pub const SpriteCache = struct {
         flash: bool,
     };
 
-    const HashMap = std.AutoArrayHashMap(Key, *SDL.Surface);
+    const HashMap = std.array_hash_map.Auto(Key, *SDL.Surface);
 
     allocator: std.mem.Allocator,
     hashmap: HashMap,
@@ -149,13 +149,13 @@ pub const SpriteCache = struct {
         allocator: std.mem.Allocator,
     ) !void {
         self.allocator = allocator;
-        self.hashmap = HashMap.init(allocator);
+        self.hashmap = HashMap.empty;
         self.pixelformat = pixelformat;
     }
 
     pub fn deinit(self: *SpriteCache) void {
         evictAll(self);
-        self.hashmap.deinit();
+        self.hashmap.deinit(self.allocator);
     }
 
     // Takes the original 16 color surface and gives you a render optimized surface
@@ -203,7 +203,7 @@ pub const SpriteCache = struct {
             return surface;
         }
         const new_surface = try copysurface(self, spritedata, key.flip, key.flash);
-        try self.hashmap.put(key, new_surface);
+        try self.hashmap.put(self.allocator, key, new_surface);
 
         if(debug.dump_sprites) {
             var buf: [64]u8 = undefined;
@@ -223,7 +223,7 @@ pub const SpriteCache = struct {
             SDL.destroySurface(entry.value_ptr.*);
             index += 1;
         }
-        self.hashmap.clearAndFree();
+        self.hashmap.clearAndFree(self.allocator);
     }
 };
 

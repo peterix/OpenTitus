@@ -39,21 +39,21 @@ fn setup_game_build(
 ) void {
     // NOTE: the use of bit shifts of negative numbers is quite extensive, so we disable ubsan shooting us in the foot with those...
     // FIXME: remove the UB-ness
-    exe.addCSourceFiles(.{ .files = &.{
+    exe.root_module.addCSourceFiles(.{ .files = &.{
         "src/audio/opl3/opl3.c",
         "src/audio/miniaudio/miniaudio.c",
         "src/audio/pocketmod/pocketmod.c",
     }, .flags = &.{
         "-fno-sanitize=shift",
     } });
-    exe.addIncludePath(b.path("src/"));
-    exe.addIncludePath(b.path("src/audio/opl3/"));
-    exe.addIncludePath(b.path("src/audio/miniaudio/"));
-    exe.addIncludePath(b.path("src/audio/pocketmod/"));
+    exe.root_module.addIncludePath(b.path("src/"));
+    exe.root_module.addIncludePath(b.path("src/audio/opl3/"));
+    exe.root_module.addIncludePath(b.path("src/audio/miniaudio/"));
+    exe.root_module.addIncludePath(b.path("src/audio/pocketmod/"));
 
-    exe.linkLibC();
-    exe.linkLibrary(sdl_lib);
-    exe.linkSystemLibrary("m");
+    //exe.linkLibC();
+    exe.root_module.linkLibrary(sdl_lib);
+    exe.root_module.linkSystemLibrary("m", .{});
     exe.root_module.addOptions("config", options);
 }
 
@@ -68,7 +68,7 @@ fn build_game(b: *std.Build, name: []const u8, target: ResolvedTarget, optimize:
         .use_llvm = true,
     });
     exe.subsystem = .Windows;
-    exe.addWin32ResourceFile(.{ .file = b.path("res/titus.rc") });
+    exe.root_module.addWin32ResourceFile(.{ .file = b.path("res/titus.rc") });
     setup_game_build(b, options, sdl_lib, exe);
     return exe;
 }

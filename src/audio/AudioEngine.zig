@@ -26,7 +26,7 @@
 //
 
 const std = @import("std");
-const Mutex = std.Thread.Mutex;
+const Mutex = std.Io.Mutex;
 const Order = std.math.Order;
 
 const Backend = @import("Backend.zig");
@@ -83,6 +83,7 @@ test "test queue priority" {
 const Self = @This();
 
 allocator: std.mem.Allocator = undefined,
+io: std.Io = std.Io.failing,
 
 config: miniaudio.ma_device_config = undefined,
 device: miniaudio.ma_device = undefined,
@@ -95,11 +96,11 @@ last_song: ?AudioTrack = null,
 volume: u8 = 128,
 
 // When the callback mutex is locked using OPL_Lock, callback functions are not invoked.
-callback_mutex: Mutex = Mutex{},
+callback_mutex: Mutex = .init,
 
 // Queue of callbacks to call at future timestamps (tracked in usecs)
 callback_queue: CallbackQueue = undefined,
-callback_queue_mutex: Mutex = Mutex{},
+callback_queue_mutex: Mutex = .init,
 
 // Current time, in us since startup:
 current_time: u64 = 0,
@@ -109,8 +110,9 @@ mix_buffer: []SampleType = &.{},
 
 initialized: bool = false,
 
-pub fn init(self: *Self, allocator: std.mem.Allocator) !void {
+pub fn init(self: *Self, io: std.Io, allocator: std.mem.Allocator) !void {
     self.allocator = allocator;
+    self.io = io;
     self.last_song = null;
     self.volume = game.settings.volume_master;
 
@@ -133,11 +135,11 @@ pub fn init(self: *Self, allocator: std.mem.Allocator) !void {
     );
 
     // Queue structure of callbacks to invoke.
-    self.callback_queue = CallbackQueue.init(allocator, {});
+    self.callback_queue = CallbackQueue.empty;
     self.current_time = 0;
 
-    self.callback_mutex = Mutex{};
-    self.callback_queue_mutex = Mutex{};
+    self.callback_mutex = .init;
+    self.callback_queue_mutex = .init;
 
     self.setBackendType(game.settings.audio_backend);
 
@@ -157,17 +159,17 @@ pub fn deinit(self: *Self) void {
     }
     miniaudio.ma_device_uninit(&self.device);
 
-    self.callback_queue.deinit();
+    self.callback_queue.deinit(self.allocator);
 }
 
 fn advanceTimeAndRunCallbacks(self: *Self, nsamples: u64) void {
-    self.callback_queue_mutex.lock();
+    self.callback_queue_mutex.lock(self.io) catch {unreachable;};
 
     const us: u64 = (nsamples * usecs_in_sec) / @as(u64, @intCast(MixingFreq));
     self.current_time += us;
 
     while (self.callback_queue.count() > 0 and self.current_time >= self.callback_queue.peek().?.time) {
-        const entry = self.callback_queue.remove();
+        const entry = self.callback_queue.pop() orelse unreachable;
 
         // The mutex stuff here is a bit complicated.  We must
         // hold callback_mutex when we invoke the callback (so that
@@ -176,14 +178,14 @@ fn advanceTimeAndRunCallbacks(self: *Self, nsamples: u64) void {
         // callback_queue_mutex, as the callback must be able to
         // call setCallback to schedule new callbacks.
 
-        self.callback_queue_mutex.unlock();
-        self.callback_mutex.lock();
+        self.callback_queue_mutex.unlock(self.io);
+        self.callback_mutex.lock(self.io) catch { unreachable; };
         entry.callback.?(entry.data);
-        self.callback_mutex.unlock();
-        self.callback_queue_mutex.lock();
+        self.callback_mutex.unlock(self.io);
+        self.callback_queue_mutex.lock(self.io) catch { unreachable; };
     }
 
-    self.callback_queue_mutex.unlock();
+    self.callback_queue_mutex.unlock(self.io);
 }
 
 // Call the OPL emulator code to fill the specified buffer.
@@ -207,7 +209,7 @@ fn data_callback(pDevice: ?*anyopaque, buffer: ?*anyopaque, pInput: ?*const anyo
     while (filled < frameCount) {
         var nFrames: u64 = 0;
 
-        self.callback_queue_mutex.lock();
+        self.callback_queue_mutex.lock(self.io) catch {unreachable;};
 
         // Work out the time until the next callback waiting in
         // the callback queue must be invoked.  We can then fill the
@@ -226,7 +228,7 @@ fn data_callback(pDevice: ?*anyopaque, buffer: ?*anyopaque, pInput: ?*const anyo
             }
         }
 
-        self.callback_queue_mutex.unlock();
+        self.callback_queue_mutex.unlock(self.io);
 
         self.fillBuffer(@as([*c]u8, @ptrCast(buffer)) + filled * Stride, @truncate(nFrames));
         filled += nFrames;
@@ -236,22 +238,25 @@ fn data_callback(pDevice: ?*anyopaque, buffer: ?*anyopaque, pInput: ?*const anyo
 }
 
 pub fn setCallback(self: *Self, us: u64, callback: Callback, callback_data: ?*anyopaque) void {
-    self.callback_queue_mutex.lock();
+    self.callback_queue_mutex.lock(self.io) catch { unreachable; };
     // FIXME: actual error handling
-    self.callback_queue.add(QueuedCallback{
-        .callback = callback,
-        .data = callback_data,
-        .time = self.current_time + us,
-    }) catch {
+    self.callback_queue.push(
+        self.allocator,
+        QueuedCallback{
+            .callback = callback,
+            .data = callback_data,
+            .time = self.current_time + us,
+        }
+    ) catch {
         unreachable;
     };
-    self.callback_queue_mutex.unlock();
+    self.callback_queue_mutex.unlock(self.io);
 }
 
 pub fn clearCallbacks(self: *Self) void {
-    self.callback_queue_mutex.lock();
+    self.callback_queue_mutex.lock(self.io) catch { unreachable; };
     self.callback_queue.items.len = 0;
-    self.callback_queue_mutex.unlock();
+    self.callback_queue_mutex.unlock(self.io);
 }
 
 pub fn setBackendType(self: *Self, backend_type: BackendType) void {
@@ -283,7 +288,7 @@ pub fn setBackendType(self: *Self, backend_type: BackendType) void {
         }
     };
     if (backend) |*b| {
-        b.init(self, self.allocator, MixingFreq) catch {
+        b.init(self.io, self, self.allocator, MixingFreq) catch {
             self.backend = null;
             return;
         };

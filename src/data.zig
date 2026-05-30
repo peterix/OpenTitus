@@ -583,9 +583,9 @@ pub fn get_anim_player(action: player.PlayerAction) [*c]const i16 {
     return &anim_player[@intFromEnum(action)][0];
 }
 
-fn isFileOpenable(path: []const u8) bool {
-    if (std.fs.cwd().openFile(path, .{})) |file| {
-        file.close();
+fn isFileOpenable(io: std.Io, path: []const u8) bool {
+    if (std.Io.Dir.cwd().openFile(io, path, .{})) |file| {
+        file.close(io);
         return true;
     } else |_| {
         // NOTE: we assume that any issue opening the file means it's not present
@@ -594,10 +594,10 @@ fn isFileOpenable(path: []const u8) bool {
     }
 }
 
-pub fn probeGameFiles() GamesAvailable {
+pub fn probeGameFiles(io: std.Io) GamesAvailable {
     return .{
-        .titus = isFileOpenable(titus_consts.sprites),
-        .moktar = isFileOpenable(moktar_consts.sprites),
+        .titus = isFileOpenable(io, titus_consts.sprites),
+        .moktar = isFileOpenable(io, moktar_consts.sprites),
     };
 }
 

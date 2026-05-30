@@ -44,10 +44,10 @@ const input = @import("../input.zig");
 // - Add pause menu
 // - Esc opens pause menu instead of instant quit
 
-pub fn view_menu(file: ImageFile, allocator: std.mem.Allocator) !?usize {
+pub fn view_menu(io: std.Io, file: ImageFile, allocator: std.mem.Allocator) !?usize {
     var selection: usize = 0;
 
-    const menudata = try sqz.unSQZ(file.filename, allocator);
+    const menudata = try sqz.unSQZ(io, file.filename, allocator);
     var image_memory = try image.loadImage(menudata, file.format, allocator);
     defer image_memory.deinit();
     const menu = image_memory.value;

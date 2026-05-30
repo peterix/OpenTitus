@@ -21,7 +21,7 @@ OpenTitus is released under the Gnu GPL version 3 or (at your option) any later 
 
 ## Building:
 You need:
-* [zig 0.15.1](https://ziglang.org/download/#release-0.15.1)
+* [zig 0.16.0](https://ziglang.org/download/#release-0.16.0)
 
 This should get things built and ready for testing/use:
 ```

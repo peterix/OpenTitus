@@ -86,9 +86,9 @@ pub const GameState = struct {
     levels: JsonList(LevelEntry),
     seed: u32 = 0,
 
-    pub fn make_new(allocator: Allocator) !ManagedJSON(GameState) {
+    pub fn make_new(io: std.Io, allocator: Allocator) !ManagedJSON(GameState) {
         var seed: u32 = undefined;
-        try std.posix.getrandom(std.mem.asBytes(&seed));
+        std.Io.random(io, std.mem.asBytes(&seed));
         const arena = try allocator.create(std.heap.ArenaAllocator);
         arena.* = std.heap.ArenaAllocator.init(allocator);
         const game_state = GameState{
@@ -98,16 +98,17 @@ pub const GameState = struct {
         return ManagedJSON(GameState){ .value = game_state, .arena = arena };
     }
 
-    pub fn read(allocator: Allocator) !ManagedJSON(GameState) {
-        const bytes = std.fs.cwd().readFileAlloc(
-            allocator,
+    pub fn read(io: std.Io, allocator: Allocator) !ManagedJSON(GameState) {
+        const bytes = std.Io.Dir.cwd().readFileAlloc(
+            io,
             game_file_name(),
-            20000,
+            allocator,
+            std.Io.Limit.limited(20000),
         ) catch |err| {
             switch (err) {
                 error.FileNotFound => {
                     std.log.info("No game state file found, starting with defaults.", .{});
-                    return GameState.make_new(allocator);
+                    return GameState.make_new(io, allocator);
                 },
                 error.OutOfMemory => {
                     return error.OutOfMemory;
@@ -116,7 +117,7 @@ pub const GameState = struct {
                     std.log.err("Could not understand game state: {}, starting with defaults.", .{err});
                 },
             }
-            return GameState.make_new(allocator);
+            return GameState.make_new(io, allocator);
         };
         defer allocator.free(bytes);
 
@@ -138,7 +139,7 @@ pub const GameState = struct {
                 },
                 else => {
                     std.log.err("Could not understand game state: {}, starting with defaults.", .{err});
-                    return GameState.make_new(allocator);
+                    return GameState.make_new(io, allocator);
                 },
             }
         };
@@ -150,9 +151,9 @@ pub const GameState = struct {
         return ManagedJSON(GameState){ .arena = arena, .value = game_state };
     }
 
-    pub fn write(self: *GameState, allocator: Allocator) !void {
+    pub fn write(self: *GameState, io: std.Io, allocator: Allocator) !void {
         _ = allocator;
-        try json.WriteJSON(game_file_name(), self);
+        try json.WriteJSON(io, game_file_name(), self);
     }
 
     pub fn isUnlocked(self: *GameState, level: usize) bool {
@@ -189,15 +190,15 @@ fn ensure_entry(allocator: std.mem.Allocator, level: u16) !*LevelEntry {
     return entry;
 }
 
-pub fn visit_level(allocator: std.mem.Allocator, level: u16) !void {
+pub fn visit_level(io: std.Io, allocator: std.mem.Allocator, level: u16) !void {
     const internal_allocator = game.game_state_mem.arena.*.allocator();
     var entry = try ensure_entry(internal_allocator, level);
     entry.stamp(game.game_state.seed, level);
 
-    try game.game_state.write(allocator);
+    try game.game_state.write(io, allocator);
 }
 
-pub fn unlock_level(allocator: std.mem.Allocator, level: u16, lives: c_int) !void {
+pub fn unlock_level(io: std.Io, allocator: std.mem.Allocator, level: u16, lives: c_int) !void {
     const internal_allocator = game.game_state_mem.arena.*.allocator();
     var entry = try ensure_entry(internal_allocator, level);
 
@@ -205,10 +206,10 @@ pub fn unlock_level(allocator: std.mem.Allocator, level: u16, lives: c_int) !voi
     entry.unlocked = true;
     entry.stamp(game.game_state.seed, level);
 
-    try game.game_state.write(allocator);
+    try game.game_state.write(io, allocator);
 }
 
-pub fn record_completion(allocator: std.mem.Allocator, level: u16, bonus: usize, ticks: usize) !void {
+pub fn record_completion(io: std.Io, allocator: std.mem.Allocator, level: u16, bonus: usize, ticks: usize) !void {
     const internal_allocator = game.game_state_mem.arena.*.allocator();
     var entry = try ensure_entry(internal_allocator, level);
 
@@ -230,5 +231,5 @@ pub fn record_completion(allocator: std.mem.Allocator, level: u16, bonus: usize,
     entry.completed = true;
     entry.stamp(game.game_state.seed, level);
 
-    try game.game_state.write(allocator);
+    try game.game_state.write(io, allocator);
 }
