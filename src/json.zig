@@ -64,7 +64,6 @@ pub fn ManagedJSON(comptime T: type) type {
         }
 
         pub fn deinit(self: Self) void {
-            std.log.info("Freeing ManagedJSON...", .{});
             const arena = self.arena;
             const allocator = arena.child_allocator;
             arena.deinit();

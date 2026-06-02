@@ -95,7 +95,6 @@ pub fn run(init: std.process.Init) !u8 {
     settings = &settings_mem.value;
     defer
     {
-        std.log.info("Freeing Settings...", .{});
         settings_mem.deinit();
     }
 
@@ -165,7 +164,6 @@ pub fn run(init: std.process.Init) !u8 {
     game_state_mem = try GameState.read(io, allocator);
     game_state = &game_state_mem.value;
     defer {
-        std.log.info("Freeing gamestate...", .{});
         game_state_mem.deinit();
     }
 
