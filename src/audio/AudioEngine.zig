@@ -198,7 +198,7 @@ fn fillBuffer(self: *Self, buffer: *u8, nFrames: u32) void {
     }
 }
 
-fn data_callback(pDevice: ?*anyopaque, buffer: ?*anyopaque, pInput: ?*const anyopaque, frameCount: u32) callconv(.c) void {
+fn data_callback(pDevice: [*c]miniaudio.ma_device, buffer: ?*anyopaque, pInput: ?*const anyopaque, frameCount: c_uint) callconv(.c) void {
     _ = pInput;
     const device: *miniaudio.ma_device = @alignCast(@ptrCast(pDevice.?));
     var self: *Self = @alignCast(@ptrCast(device.pUserData.?));
