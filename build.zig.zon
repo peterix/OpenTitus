@@ -28,7 +28,7 @@
 
     // Tracks the earliest Zig version that the package considers to be a
     // supported use case.
-    .minimum_zig_version = "0.15.1",
+    .minimum_zig_version = "0.16.0",
 
     // This field is optional.
     // Each dependency must either provide a `url` and `hash`, or a `path`.
@@ -37,8 +37,8 @@
     // internet connectivity.
     .dependencies = .{
         .sdl = .{
-            .url = "git+https://github.com/dethware/SDL-zig/?ref=HEAD#000662dfcc53ad57d6664ddaba79b822aa1da347",
-            .hash = "sdl-0.2.1+3.2.8-7uIn9A5IfQEcQJ9ww1xWwmAekJCZogZEcmgetpOUSuw6",
+            .url = "https://github.com/Dethware/SDl-zig/archive/refs/tags/v0.5.1+3.4.10.tar.gz",
+            .hash = "sdl-0.5.1+3.4.10-SDL--rLLpgH660BAKTllxM3RRJ8MGsWOKXvCOcQwwE8g",
         },
     },
     .paths = .{
