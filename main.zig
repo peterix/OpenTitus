@@ -26,8 +26,22 @@
 const std = @import("std");
 const game = @import("src/game.zig");
 
+/// Given a type, recursively references all the declarations inside, so that the semantic analyzer sees them.
+/// For deep types, you may use `@setEvalBranchQuota`.
+fn refAllDeclsRecursive(comptime T: type) void {
+    inline for (comptime std.meta.declarations(T)) |decl| {
+        if (@TypeOf(@field(T, decl.name)) == type) {
+            switch (@typeInfo(@field(T, decl.name))) {
+                .@"struct", .@"enum", .@"union", .@"opaque" => refAllDeclsRecursive(@field(T, decl.name)),
+                else => {},
+            }
+        }
+        _ = &@field(T, decl.name);
+    }
+}
+
 test {
-    _ = std.testing.refAllDeclsRecursive(game);
+    _ = refAllDeclsRecursive(game);
 }
 
 pub fn main(init: std.process.Init) !u8 {

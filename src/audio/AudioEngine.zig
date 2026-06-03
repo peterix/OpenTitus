@@ -70,14 +70,14 @@ fn timeOrder(context: void, a: QueuedCallback, b: QueuedCallback) Order {
 const CallbackQueue = std.PriorityQueue(QueuedCallback, void, timeOrder);
 
 test "test queue priority" {
-    var queue = CallbackQueue.init(std.testing.allocator, {});
-    defer queue.deinit();
-    try queue.add(QueuedCallback{ .time = 0 });
-    try queue.add(QueuedCallback{ .time = 1 });
-    try queue.add(QueuedCallback{ .time = 2 });
-    try std.testing.expectEqual(QueuedCallback{ .time = 0 }, queue.remove());
-    try std.testing.expectEqual(QueuedCallback{ .time = 1 }, queue.remove());
-    try std.testing.expectEqual(QueuedCallback{ .time = 2 }, queue.remove());
+    var queue = CallbackQueue.empty;
+    defer queue.deinit(std.testing.allocator);
+    try queue.push(std.testing.allocator, QueuedCallback{ .time = 0 });
+    try queue.push(std.testing.allocator, QueuedCallback{ .time = 1 });
+    try queue.push(std.testing.allocator, QueuedCallback{ .time = 2 });
+    try std.testing.expectEqual(QueuedCallback{ .time = 0 }, queue.pop());
+    try std.testing.expectEqual(QueuedCallback{ .time = 1 }, queue.pop());
+    try std.testing.expectEqual(QueuedCallback{ .time = 2 }, queue.pop());
 }
 
 const Self = @This();
