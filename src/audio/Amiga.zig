@@ -64,17 +64,11 @@ const track_over_mok = @embedFile("amiga/overmok.mod");
 const track_pres = @embedFile("amiga/pres.mod");
 const track_null: [0]u8 = .{};
 
-// fn loadSample(comptime N: usize, comptime input: [N:0]u8) []const i8 {
-//     var output: [N]i8 = undefined;
-//     @memcpy(input, output);
-//     return &output;
-// }
-
-// const sfx_tirperso = loadSample(@embedFile("amiga/tirperso"));
-// const sfx_ressort = loadSample(@embedFile("amiga/ressort"));
-// const sfx_fox = loadSample(@embedFile("amiga/fox"));
-// const sfx_coup = loadSample(@embedFile("amiga/coup"));
-// const sfx_ballon = loadSample(@embedFile("amiga/ballon"));
+const sfx_tirperso = @embedFile("amiga/tirperso");
+const sfx_ressort = @embedFile("amiga/ressort");
+const sfx_fox = @embedFile("amiga/fox");
+const sfx_coup = @embedFile("amiga/coup");
+const sfx_ballon = @embedFile("amiga/ballon");
 
 const Sound = struct {
     sample: []const i8,

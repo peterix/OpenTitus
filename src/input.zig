@@ -35,29 +35,6 @@ const game = @import("game.zig");
 const debug = @import("_debug.zig");
 const GameEvent = events.GameEvent;
 
-pub const InputMode = enum(u8) {
-    Modern,
-    Classic,
-
-    pub const NameTable = [@typeInfo(InputMode).@"enum".fields.len][]const u8{
-        "Modern",
-        "Classic",
-    };
-
-    pub fn str(self: InputMode) []const u8 {
-        return NameTable[@intFromEnum(self)];
-    }
-};
-
-pub fn getInputMode() InputMode {
-    return game.settings.input_mode;
-}
-
-pub fn setInputMode(input_mode: InputMode) void {
-    game.settings.input_mode = input_mode;
-    // FIXME: save the file
-}
-
 pub fn getRumble() u8 {
     return game.settings.rumble;
 }
@@ -748,34 +725,18 @@ fn handle_gamepad(pad_state: *GamepadState) void {
             g_input_state.y_axis = 0;
         }
     }
-    switch(game.settings.input_mode) {
-        .Classic => {
-            // Left stick behaves the same as dpad, no dedicated buttons for jump and crawl
-            g_input_state.action_pressed = pad_state.south_pressed;
-            g_input_state.jump_pressed = g_input_state.y_axis < 0;
-            g_input_state.crouch_pressed = g_input_state.y_axis > 0;
-            if(g_input_state.y_axis < 0) {
-                g_input_state.aim_direction = .Up;
-            }
-            else {
-                g_input_state.aim_direction = .Forward;
-            }
-        },
-        .Modern => {
-            // Left stick controls direction to go in (including up and down ladders), action, jump and crouch have dedicated buttons
-            // dpad behaves just like in classic
-            g_input_state.action_pressed = pad_state.right_trigger > 0.0 or pad_state.west_pressed or pad_state.right_shoulder_pressed;
-            g_input_state.jump_pressed = pad_state.dpad_up_pressed or pad_state.south_pressed;
-            g_input_state.crouch_pressed = pad_state.dpad_down_pressed or pad_state.left_shoulder_pressed or pad_state.left_trigger > 0.0;
-            if(pad_state.left_y < -Y_ZONE and @abs(pad_state.left_y) > @abs(pad_state.left_x))
-            {
-                g_input_state.aim_direction = .Up;
-            }
-            else
-            {
-                g_input_state.aim_direction = .Forward;
-            }
-        },
+    // Left stick controls direction to go in (including up and down ladders), action, jump and crouch have dedicated buttons
+    // dpad controls left, right, jump and crouch and does the ladder stuff... it's a bit crowded.
+    g_input_state.action_pressed = pad_state.right_trigger > 0.0 or pad_state.west_pressed or pad_state.right_shoulder_pressed;
+    g_input_state.jump_pressed = pad_state.dpad_up_pressed or pad_state.south_pressed;
+    g_input_state.crouch_pressed = pad_state.dpad_down_pressed or pad_state.left_shoulder_pressed or pad_state.left_trigger > 0.0;
+    if(pad_state.left_y < -Y_ZONE and @abs(pad_state.left_y) > @abs(pad_state.left_x))
+    {
+        g_input_state.aim_direction = .Up;
+    }
+    else
+    {
+        g_input_state.aim_direction = .Forward;
     }
 }
 

@@ -34,7 +34,6 @@ const JsonList = json.JsonList;
 const audio = @import("audio/audio.zig");
 const BackendType = audio.BackendType;
 const input = @import("input.zig");
-const InputMode = input.InputMode;
 const Allocator = std.mem.Allocator;
 
 const settings_file_name = "settings.json";
@@ -49,7 +48,6 @@ pub const Settings = extern struct {
     window_width: u16 = window.game_width * 3,
     window_height: u16 = window.game_height * 3,
     audio_backend: BackendType = .Adlib,
-    input_mode: InputMode = .Modern,
     rumble: u8 = 8, // 0 = off, 16 = max
     seen_intro: bool = false,
 

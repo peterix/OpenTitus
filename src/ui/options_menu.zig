@@ -35,7 +35,6 @@ const events = @import("../events.zig");
 
 const input = @import("../input.zig");
 const InputAction = input.InputAction;
-const InputMode = input.InputMode;
 
 const menu = @import("menu.zig");
 const MenuContext = menu.MenuContext;
@@ -293,17 +292,7 @@ pub fn optionsMenu(menu_context: *MenuContext) ?c_int {
             .None,
         );
         y += 13;
-        label("Input", y, selected == 3);
-        enumOptions(
-            InputMode,
-            input.getInputMode(),
-            y,
-            selected == 3,
-            input_state.action,
-            input.setInputMode,
-        );
-        y += 13;
-        label("Rumble", y, selected == 4);
+        label("Rumble", y, selected == 3);
         slider(
             u8,
             input.getRumble(),
@@ -318,7 +307,7 @@ pub fn optionsMenu(menu_context: *MenuContext) ?c_int {
             .Options_TestRumble,
         );
         y += 13;
-        label("Fullscreen", y, selected == 5);
+        label("Fullscreen", y, selected == 4);
         toggle(
             window.is_fullscreen(),
             y,

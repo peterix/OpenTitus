@@ -90,7 +90,7 @@ device: miniaudio.ma_device = undefined,
 
 adlib: Adlib = .{},
 amiga: Amiga = .{},
-pcSpeaker: PCSpeaker = .{},
+//pcSpeaker: PCSpeaker = .{},
 backend: ?Backend = null,
 last_song: ?AudioTrack = null,
 volume: u8 = 128,
@@ -279,9 +279,9 @@ pub fn setBackendType(self: *Self, backend_type: BackendType) void {
             .Amiga => {
                 break :BACKEND self.amiga.backend();
             },
-            .PCSpeaker => {
-                break :BACKEND self.pcSpeaker.backend();
-            },
+//             .PCSpeaker => {
+//                 break :BACKEND self.pcSpeaker.backend();
+//             },
             .Silence => {
                 break :BACKEND null;
             },

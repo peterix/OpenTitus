@@ -35,13 +35,13 @@ pub const BackendType = enum(u8) {
     Silence = 0,
     Adlib,
     Amiga,
-    PCSpeaker,
+    //PCSpeaker,
 
     pub const NameTable = [@typeInfo(BackendType).@"enum".fields.len][]const u8{
         "Silence",
         "AdLib",
         "Amiga",
-        "PC-Speaker",
+        //"PC-Speaker",
     };
 
     pub fn str(self: BackendType) []const u8 {
