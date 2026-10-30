@@ -39,12 +39,15 @@ fn setup_game_build(
 ) void {
     // NOTE: the use of bit shifts of negative numbers is quite extensive, so we disable ubsan shooting us in the foot with those...
     // FIXME: remove the UB-ness
+    // NOTE: the audio code runs in real time, so it is always optimized. Unoptimized OPL emulation is too slow for debug builds.
     exe.root_module.addCSourceFiles(.{ .files = &.{
         "src/audio/opl3/opl3.c",
+        "src/audio/opl3/dbopl.c",
         "src/audio/miniaudio/miniaudio.c",
         "src/audio/pocketmod/pocketmod.c",
     }, .flags = &.{
         "-fno-sanitize=shift",
+        "-O2",
     } });
     exe.root_module.addIncludePath(b.path("src/"));
     exe.root_module.addIncludePath(b.path("src/audio/opl3/"));

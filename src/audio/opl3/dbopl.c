@@ -48,6 +48,7 @@
 #include <math.h>
 #include <stdlib.h>
 #include <string.h>
+#include <stddef.h>
 //#include "dosbox.h"
 #include "dbopl.h"
 
@@ -1398,11 +1399,11 @@ void Chip__Setup(Chip *self, Bit32u rate ) {
 			if ( diff < 0 ) {
 				//Better than the last time
 				Bit32s mul = ((original - diff) << 12) / original;
-				guessAdd = ((guessAdd * mul) >> 12);
+				guessAdd = ((Bit32s)((Bit32u)guessAdd * (Bit32u)mul) >> 12); // wrap like the original 32-bit math
 				guessAdd++;
 			} else if ( diff > 0 ) {
 				Bit32s mul = ((original - diff) << 12) / original;
-				guessAdd = (guessAdd * mul) >> 12;
+				guessAdd = (Bit32s)((Bit32u)guessAdd * (Bit32u)mul) >> 12; // wrap like the original 32-bit math
 				guessAdd--;
 			}
 		}
@@ -1547,7 +1548,6 @@ void DBOPL_InitTables( void ) {
 	}
 	//Create a table with offsets of the channels from the start of the chip
 	{ // haleyjd 09/09/10: Driving me #$%^@ insane
-		Chip *chip = NULL;
 		for ( i = 0; i < 32; i++ ) {
 			Bitu index = i & 0xf;
 			Bitu blah; // haleyjd 09/09/10
@@ -1562,7 +1562,7 @@ void DBOPL_InitTables( void ) {
 			//Add back the bits for highest ones
 			if ( i >= 16 )
 				index += 9;
-			blah = (Bitu) ( &(chip->chan[ index ]) );
+			blah = (Bitu) ( offsetof(Chip, chan) + index * sizeof(Channel) );
 			ChanOffsetTable[i] = blah;
 		}
 		//Same for operators
@@ -1570,7 +1570,6 @@ void DBOPL_InitTables( void ) {
 			Bitu chNum; // haleyjd 09/09/10
 			Bitu opNum;
 			Bitu blah;
-			Channel* chan = NULL;
 			if ( i % 8 >= 6 || ( (i / 8) % 4 == 3 ) ) {
 				OpOffsetTable[i] = 0;
 				continue;
@@ -1580,7 +1579,7 @@ void DBOPL_InitTables( void ) {
 			if ( chNum >= 12 )
 				chNum += 16 - 12;
 			opNum = ( i % 8 ) / 3;
-			blah = (Bitu) ( &(chan->op[opNum]) );
+			blah = (Bitu) ( offsetof(Channel, op) + opNum * sizeof(Operator) );
 			OpOffsetTable[i] = ChanOffsetTable[ chNum ] + blah;
 		}
 #if 0

@@ -42,11 +42,12 @@ const GameEvent = events.GameEvent;
 const _bytes = @import("../bytes.zig");
 
 const OPL3 = @import("opl3/opl3.zig");
+const DBOPL = @cImport({
+    @cInclude("dbopl.h");
+});
 
 const data = @import("../data.zig");
-
-const data_titus = @embedFile("dos/titus.bin");
-const data_moktar = @embedFile("dos/moktar.bin");
+const dos_data = @import("dos_data.zig");
 
 inline fn chomp_u8(bytes: *[]const u8) u8 {
     return _bytes.chompInt(u8, .little, bytes);
@@ -76,10 +77,6 @@ fn getTrackNumber(track_in: ?AudioTrack) ?u8 {
         .Win => return 14,
     }
 }
-
-const MUS_OFFSET = 0;
-const INS_OFFSET = 352;
-const SFX_OFFSET = 1950;
 
 const opera: []const u8 = &.{ 0, 0, 1, 2, 3, 4, 5, 8, 9, 0xA, 0xB, 0xC, 0xD, 0x10, 0x11, 0x12, 0x13, 0x14, 0x15 };
 const voxp: []const u8 = &.{ 1, 2, 3, 7, 8, 9, 13, 17, 15, 18, 14 };
@@ -151,7 +148,15 @@ const Instruction = packed struct {
     }
 };
 
+pub const Emulator = enum {
+    /// Nuked OPL3: accurate, but needs a reasonably fast CPU
+    Nuked,
+    /// DOSBox DBOPL (as used by Chocolate Doom): less accurate, but much faster
+    DBOPL,
+};
+
 io: std.Io = std.Io.failing,
+allocator: std.mem.Allocator = undefined,
 channels: [ChannelCount]Channel = [_]Channel{.{}} ** ChannelCount,
 active_channels: c_int = 0,
 perc_stat: u8 = 0,
@@ -160,26 +165,42 @@ skip_delay_counter: u8 = 0,
 current_track: ?u8 = null,
 mutex: Mutex = .init,
 
-seg_reduction: u16 = 0,
 sfx_on: bool = false,
 sfx_time: u16 = 0,
 
 sfx: [SfxCount]Instrument = [_]Instrument{.{}} ** SfxCount,
+sfx_count: usize = 0,
 instrument_data: [InstrumentCount]Instrument = [_]Instrument{.{}} ** InstrumentCount,
+music: ?dos_data.MusicData = null,
+/// The data segment of the original game. All pointers in the music data are offsets into it.
 music_data: []const u8 = "",
 engine: *AudioEngine = undefined,
 
-// OPL software emulator structure.
+emulator: Emulator = .Nuked,
+
+// OPL software emulator structures.
 opl_chip: OPL3.opl3_chip = undefined,
+dbopl_chip: DBOPL.Chip = undefined,
+dbopl_tables_initialized: bool = false,
 
 inline fn writeRegister(self: *Adlib, reg_num: u16, value: u8) void {
-    OPL3.OPL3_WriteRegBuffered(&self.opl_chip, reg_num, value);
+    switch (self.emulator) {
+        .Nuked => OPL3.OPL3_WriteRegBuffered(&self.opl_chip, reg_num, value),
+        .DBOPL => DBOPL.Chip__WriteReg(&self.dbopl_chip, reg_num, value),
+    }
 }
 
-pub fn backend(self: *Adlib) Backend {
+pub fn backend(self: *Adlib, emulator: Emulator) Backend {
+    self.emulator = emulator;
     return .{
-        .name = "AdLib",
-        .backend_type = .Adlib,
+        .name = switch (emulator) {
+            .Nuked => "AdLib",
+            .DBOPL => "AdLib (fast)",
+        },
+        .backend_type = switch (emulator) {
+            .Nuked => .Adlib,
+            .DBOPL => .AdlibFast,
+        },
         .ptr = self,
         .vtable = &.{
             .init = init,
@@ -194,48 +215,41 @@ pub fn backend(self: *Adlib) Backend {
     };
 }
 
-fn init(ctx: *anyopaque, io: std.Io, engine: *AudioEngine, _: std.mem.Allocator, sample_rate: u32) Backend.Error!void {
+fn init(ctx: *anyopaque, io: std.Io, engine: *AudioEngine, allocator: std.mem.Allocator, sample_rate: u32) Backend.Error!void {
     const self: *Adlib = @ptrCast(@alignCast(ctx));
     self.io = io;
+    self.allocator = allocator;
     self.active_channels = 0;
     self.perc_stat = 0;
     self.skip_delay = 0;
     self.skip_delay_counter = 0;
     self.current_track = null;
 
-    self.seg_reduction = 0;
     self.sfx_on = false;
     self.sfx_time = 0;
 
     self.engine = engine;
     self.mutex = .init;
 
-    const bytes = switch (data.game)
-    {
-        .Moktar => data_moktar,
-        .Titus => data_titus,
-        .None => {
-            return Backend.Error.InvalidData;
-        }
+    self.music = dos_data.load(io, allocator, data.game) catch |err| {
+        std.log.err("Cannot load AdLib music from the game executable: {}", .{err});
+        return Backend.Error.InvalidData;
     };
+    self.music_data = self.music.?.data_segment;
 
-    switch (bytes.len) {
-        18749 => {
-            self.seg_reduction = 1301;
-        },
-        18184 => {
-            self.seg_reduction = 1345;
-        },
-        else => {
-            std.log.err("music.bin has unexpected size!", .{});
-            return Backend.Error.InvalidData;
+    // Create the emulator structure:
+    switch (self.emulator) {
+        .Nuked => OPL3.OPL3_Reset(&self.opl_chip, sample_rate),
+        .DBOPL => {
+            if (!self.dbopl_tables_initialized) {
+                DBOPL.DBOPL_InitTables();
+                self.dbopl_tables_initialized = true;
+            }
+            DBOPL.Chip__Chip(&self.dbopl_chip);
+            DBOPL.Chip__Setup(&self.dbopl_chip, sample_rate);
         },
     }
 
-    // Create the emulator structure:
-    OPL3.OPL3_Reset(&self.opl_chip, sample_rate);
-
-    self.music_data = bytes;
     self.sfx_init();
 
     self.engine.setCallback(0, TimerCallback, @constCast(@ptrCast(self)));
@@ -244,6 +258,11 @@ fn init(ctx: *anyopaque, io: std.Io, engine: *AudioEngine, _: std.mem.Allocator,
 fn deinit(ctx: *anyopaque) void {
     const self: *Adlib = @ptrCast(@alignCast(ctx));
     self.engine.clearCallbacks();
+    if (self.music) |*music| {
+        music.deinit(self.allocator);
+    }
+    self.music = null;
+    self.music_data = "";
 }
 
 fn lock(ctx: *anyopaque) void {
@@ -260,9 +279,28 @@ fn fillBuffer(ctx: *anyopaque, buffer: []i16, nsamples: u32) void {
     const self: *Adlib = @ptrCast(@alignCast(ctx));
     self.mutex.lock(self.io) catch { unreachable; };
     if (nsamples > 0) {
-        OPL3.OPL3_GenerateStream(&self.opl_chip, &buffer[0], nsamples);
+        switch (self.emulator) {
+            .Nuked => OPL3.OPL3_GenerateStream(&self.opl_chip, &buffer[0], nsamples),
+            .DBOPL => self.generateDBOPL(buffer, nsamples),
+        }
     }
     self.mutex.unlock(self.io);
+}
+
+/// DBOPL renders mono 32-bit samples, we need interleaved stereo 16-bit ones
+fn generateDBOPL(self: *Adlib, buffer: []i16, nsamples: u32) void {
+    var mono: [512]i32 = undefined;
+    var done: usize = 0;
+    while (done < nsamples) {
+        const count = @min(mono.len, nsamples - done);
+        DBOPL.Chip__GenerateBlock2(&self.dbopl_chip, count, &mono[0]);
+        for (mono[0..count], 0..) |sample, i| {
+            const clamped: i16 = @intCast(std.math.clamp(sample, std.math.minInt(i16), std.math.maxInt(i16)));
+            buffer[(done + i) * 2] = clamped;
+            buffer[(done + i) * 2 + 1] = clamped;
+        }
+        done += count;
+    }
 }
 
 fn isPlayingATrack(ctx: *anyopaque) bool {
@@ -277,7 +315,7 @@ fn playTrackNumber(self: *Adlib, song_number: u8) void {
     self.perc_stat = 0x20;
 
     //Load instruments
-    var instrument_buffer = raw_data[INS_OFFSET..];
+    var instrument_buffer = raw_data[self.music.?.instrument_table..];
 
     for (0..song_number) |_| {
         while (true) {
@@ -306,7 +344,7 @@ fn playTrackNumber(self: *Adlib, song_number: u8) void {
         if (previous == 0) //Instrument not in use
             continue;
 
-        var read_buffer = raw_data[previous - self.seg_reduction ..];
+        var read_buffer = raw_data[previous..];
 
         if (i > 14) {
             //Perc instrument (15-18) have an extra byte, melodic (0-14) have not
@@ -331,7 +369,7 @@ fn playTrackNumber(self: *Adlib, song_number: u8) void {
     self.skip_delay_counter = @truncate(previous);
 
     //Load music
-    var mus_buffer = raw_data[MUS_OFFSET..];
+    var mus_buffer = raw_data[self.music.?.music_table..];
 
     for (0..song_number) |_| {
         while (true) {
@@ -350,7 +388,7 @@ fn playTrackNumber(self: *Adlib, song_number: u8) void {
         }
         self.active_channels += 1;
         self.channels[i] = .{
-            .offset = offset - self.seg_reduction,
+            .offset = offset,
             .vox = @truncate(i),
         };
     }
@@ -390,8 +428,11 @@ fn triggerEvent(ctx: *anyopaque, event: GameEvent) void {
         .PlayerJump => {
             // Nothing here, but we could
         },
-        .BallBounce => {
+        .BallBounce, .SpringBounce => {
             self.playSfx(12);
+        },
+        .EnemyShoot => {
+            // The DOS version has no sound for this
         },
         .PlayerCollectWaypoint => {
             self.playTrackNumber(5);
@@ -407,6 +448,10 @@ fn triggerEvent(ctx: *anyopaque, event: GameEvent) void {
 }
 
 fn playSfx(self: *Adlib, fx_number: u8) void {
+    if (fx_number >= self.sfx_count) {
+        // Moktar has no AdLib sound effects
+        return;
+    }
     self.sfx_time = 15;
     self.sfx_on = true;
     const index: usize = @intCast(fx_number);
@@ -419,9 +464,16 @@ fn sfx_init(self: *Adlib) void {
     self.sfx_on = false;
     self.sfx_time = 0;
 
-    var raw_data = self.music_data[SFX_OFFSET..];
+    self.sfx_count = 0;
+    const sfx_table = self.music.?.sfx_table orelse return;
+    var pointers = self.music_data[sfx_table..];
 
     for (0..SfxCount) |i| {
+        const pointer = chomp_u16(&pointers);
+        if (pointer == 0) {
+            break;
+        }
+        var raw_data = self.music_data[pointer..];
         for (0..5) |k| {
             self.sfx[i].op[0][k] = chomp_u8(&raw_data);
         }
@@ -431,6 +483,7 @@ fn sfx_init(self: *Adlib) void {
         }
 
         self.sfx[i].fb_alg = chomp_u8(&raw_data);
+        self.sfx_count = i + 1;
     }
 }
 
@@ -508,12 +561,8 @@ fn processInstruction(self: *Adlib, channel: *Channel, instruction: Instruction)
                 channel.instrument = freq;
                 const percussion_bit = @as(c_int, channel.vox) - 6;
                 if (percussion_bit >= 0) {
-                    // turn off a percussion instrument ?
-                    // clear a bit from perc_stat
-                    var temp: u8 = @as(u8, 0x10) << @intCast(percussion_bit);
-                    self.perc_stat = self.perc_stat | temp;
-                    temp = ~(temp) & 0xFF;
-                    self.perc_stat = self.perc_stat & temp;
+                    // the channel is now melodic, turn off its percussion instrument
+                    self.perc_stat &= ~(@as(u8, 0x10) >> @intCast(percussion_bit));
                     self.writeRegister(0xBD, self.perc_stat);
                 }
             }
@@ -534,7 +583,7 @@ fn processInstruction(self: *Adlib, channel: *Channel, instruction: Instruction)
                     channel.return_offset = channel.offset.? + 2;
                     var temp = (@as(c_uint, self.music_data[channel.offset.? + 1]) << 8) & 0xFF00;
                     temp += @as(c_uint, self.music_data[channel.offset.?]) & 0xFF;
-                    channel.offset = temp - self.seg_reduction;
+                    channel.offset = temp;
                 },
 
                 .UpdateLoopCounter => {
@@ -547,7 +596,7 @@ fn processInstruction(self: *Adlib, channel: *Channel, instruction: Instruction)
                         channel.loop_counter -= 1;
                         var temp = (@as(c_uint, self.music_data[channel.offset.? + 1]) << 8);
                         temp += @as(c_uint, self.music_data[channel.offset.?]);
-                        channel.offset = temp - self.seg_reduction;
+                        channel.offset = temp;
                     } else {
                         channel.offset.? += 2;
                     }
@@ -561,7 +610,7 @@ fn processInstruction(self: *Adlib, channel: *Channel, instruction: Instruction)
                 .Jump => {
                     var temp = (@as(c_uint, self.music_data[channel.offset.? + 1]) << 8);
                     temp += @as(c_uint, self.music_data[channel.offset.?]);
-                    channel.offset = temp - self.seg_reduction;
+                    channel.offset = temp;
                 },
 
                 .Finish => {
@@ -739,6 +788,6 @@ fn TimerCallback(callback_data: ?*anyopaque) void {
     self.mutex.unlock(self.io);
 
     // Schedule the next timer callback.
-    // Delay is original 13.75 ms
-    self.engine.setCallback(13750, TimerCallback, callback_data);
+    // The original game sets the PIT divisor to 0x4000: 1193182 Hz / 16384 = 72.8 Hz
+    self.engine.setNextCallback(13731, TimerCallback, callback_data);
 }

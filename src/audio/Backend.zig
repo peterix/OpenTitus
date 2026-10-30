@@ -34,12 +34,14 @@ const GameEvent = events.GameEvent;
 pub const BackendType = enum(u8) {
     Silence = 0,
     Adlib,
+    AdlibFast,
     Amiga,
     //PCSpeaker,
 
     pub const NameTable = [@typeInfo(BackendType).@"enum".fields.len][]const u8{
         "Silence",
         "AdLib",
+        "AdLib (fast)",
         "Amiga",
         //"PC-Speaker",
     };

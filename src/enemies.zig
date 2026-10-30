@@ -1337,4 +1337,5 @@ fn PUT_BULLET(level: *lvl.Level, enemy: *lvl.Enemy, bullet: *lvl.Sprite) void {
     }
     bullet.speed_y = 0;
     bullet.x += bullet.speed_x >> 4;
+    events.triggerEvent(.EnemyShoot);
 }

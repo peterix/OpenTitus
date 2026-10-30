@@ -11,6 +11,8 @@ pub const GameEvent = enum {
     PlayerThrow,
     PlayerJump,
     BallBounce,
+    SpringBounce,
+    EnemyShoot,
     PlayerCollectWaypoint,
     PlayerCollectBonus,
     PlayerCollectLamp,

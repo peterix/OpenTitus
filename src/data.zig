@@ -594,6 +594,23 @@ fn isFileOpenable(io: std.Io, path: []const u8) bool {
     }
 }
 
+/// Reads a file from `dir_path`, matching `name` case-insensitively.
+pub fn readGameFile(io: std.Io, allocator: std.mem.Allocator, dir_path: []const u8, name: []const u8) ![]u8 {
+    var dir = std.Io.Dir.cwd().openDir(io, dir_path, .{ .iterate = true }) catch return error.FileNotFound;
+    defer dir.close(io);
+
+    var it = dir.iterate();
+    while (try it.next(io)) |entry| {
+        if (entry.kind == .directory) {
+            continue;
+        }
+        if (std.ascii.eqlIgnoreCase(entry.name, name)) {
+            return dir.readFileAlloc(io, entry.name, allocator, .limited(1024 * 1024));
+        }
+    }
+    return error.FileNotFound;
+}
+
 pub fn probeGameFiles(io: std.Io) GamesAvailable {
     return .{
         .titus = isFileOpenable(io, titus_consts.sprites),

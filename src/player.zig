@@ -1505,7 +1505,11 @@ fn player_collide_with_objects(level: *lvl.Level) void {
 
         // If the ball lies on the ground
         if (off_object.sprite.speed_y == 0) {
-            events.triggerEvent(.BallBounce);
+            if (off_object.sprite.number == globals.FIRST_OBJET + 24 or off_object.sprite.number == globals.FIRST_OBJET + 25) {
+                events.triggerEvent(.SpringBounce);
+            } else {
+                events.triggerEvent(.BallBounce);
+            }
             off_object.sprite.speed_y = 0 - player.sprite.speed_y;
             off_object.sprite.y -= off_object.sprite.speed_y >> 4;
             globals.GRAVITY_FLAG = 4;

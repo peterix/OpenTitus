@@ -105,6 +105,9 @@ callback_queue_mutex: Mutex = .init,
 // Current time, in us since startup:
 current_time: u64 = 0,
 
+// The time the currently running callback was scheduled for (it may run slightly late)
+callback_time: u64 = 0,
+
 // Temporary mixing buffer used by the mixing callback.
 mix_buffer: []SampleType = &.{},
 
@@ -180,6 +183,7 @@ fn advanceTimeAndRunCallbacks(self: *Self, nsamples: u64) void {
 
         self.callback_queue_mutex.unlock(self.io);
         self.callback_mutex.lock(self.io) catch { unreachable; };
+        self.callback_time = entry.time;
         entry.callback.?(entry.data);
         self.callback_mutex.unlock(self.io);
         self.callback_queue_mutex.lock(self.io) catch { unreachable; };
@@ -220,7 +224,7 @@ fn data_callback(pDevice: [*c]miniaudio.ma_device, buffer: ?*anyopaque, pInput: 
         } else {
             const next_callback_time = self.callback_queue.peek().?.time;
 
-            nFrames = (next_callback_time - self.current_time) * @as(u32, @intCast(MixingFreq));
+            nFrames = (next_callback_time -| self.current_time) * @as(u32, @intCast(MixingFreq));
             nFrames = (nFrames + usecs_in_sec - 1) / usecs_in_sec;
 
             if (nFrames > frameCount - filled) {
@@ -253,6 +257,26 @@ pub fn setCallback(self: *Self, us: u64, callback: Callback, callback_data: ?*an
     self.callback_queue_mutex.unlock(self.io);
 }
 
+/// Schedule a callback `us` after the scheduled time of the currently running callback.
+///
+/// Unlike `setCallback`, this doesn't accumulate the delay caused by rounding callback times to whole samples,
+/// so callbacks rescheduling themselves keep an exact period.
+pub fn setNextCallback(self: *Self, us: u64, callback: Callback, callback_data: ?*anyopaque) void {
+    self.callback_queue_mutex.lock(self.io) catch { unreachable; };
+    // FIXME: actual error handling
+    self.callback_queue.push(
+        self.allocator,
+        QueuedCallback{
+            .callback = callback,
+            .data = callback_data,
+            .time = self.callback_time + us,
+        }
+    ) catch {
+        unreachable;
+    };
+    self.callback_queue_mutex.unlock(self.io);
+}
+
 pub fn clearCallbacks(self: *Self) void {
     self.callback_queue_mutex.lock(self.io) catch { unreachable; };
     self.callback_queue.items.len = 0;
@@ -274,7 +298,10 @@ pub fn setBackendType(self: *Self, backend_type: BackendType) void {
     var backend = BACKEND: {
         switch (backend_type) {
             .Adlib => {
-                break :BACKEND self.adlib.backend();
+                break :BACKEND self.adlib.backend(.Nuked);
+            },
+            .AdlibFast => {
+                break :BACKEND self.adlib.backend(.DBOPL);
             },
             .Amiga => {
                 break :BACKEND self.amiga.backend();

@@ -45,14 +45,22 @@ pub fn unSQZ(io: std.Io, inputfile: []const u8, allocator: Allocator) ![]u8 {
     var fr = file.reader(io, &read_buffer);
     var reader = &fr.interface;
 
-    var header_buf: [4]u8 = undefined;
+    const inbuffer = try reader.allocRemaining(allocator, std.Io.Limit.unlimited);
+    defer allocator.free(inbuffer);
 
-    _ = try reader.readSliceAll(header_buf[0..]);
+    return unSQZBytes(inbuffer, allocator);
+}
 
-    const b1 = header_buf[0];
-    const comp_type = header_buf[1];
-    const b3 = header_buf[2];
-    const b4 = header_buf[3];
+/// Decompress SQZ data (4 byte header followed by LZW or Huffman compressed data) that is already in memory.
+pub fn unSQZBytes(input: []const u8, allocator: Allocator) ![]u8 {
+    if (input.len < 4) {
+        return SqzError.InvalidFile;
+    }
+
+    const b1 = input[0];
+    const comp_type = input[1];
+    const b3 = input[2];
+    const b4 = input[3];
 
     var out_len: usize = 0;
     out_len = (b1 & 0x0F);
@@ -69,15 +77,37 @@ pub fn unSQZ(io: std.Io, inputfile: []const u8, allocator: Allocator) ![]u8 {
     errdefer {
         allocator.free(output);
     }
-    const inbuffer = try reader.allocRemaining(allocator, std.Io.Limit.unlimited);
-    defer allocator.free(inbuffer);
 
     if (comp_type == 0x10) {
-        try lzw_decode(inbuffer, output);
+        try lzw_decode(input[4..], output);
     } else {
-        try huffman_decode(.little, inbuffer, output);
+        try huffman_decode(.little, input[4..], output);
     }
     return output;
+}
+
+/// Unpack a DOS executable packed with "ZIVpackED by Eric ZMIRO 1991" (used by FOX.COM of Titus the Fox).
+///
+/// The packer stub is a .COM program followed by an "MZ" marker and then plain SQZ (LZW) data.
+/// Unpacking yields the original MZ executable.
+pub fn unZIV(input: []const u8, allocator: Allocator) ![]u8 {
+    const signature = "ZIVpackED";
+    if (input.len < 0x40 or std.mem.indexOf(u8, input[0..0x40], signature) == null) {
+        return SqzError.InvalidFile;
+    }
+    // The stub scans for the "MZ" marker starting at offset 0x3ED in memory (0x2ED in the file),
+    // then uses the following word aligned address as the start of the packed data.
+    const search_start = 0x2ED;
+    if (input.len <= search_start) {
+        return SqzError.InvalidFile;
+    }
+    const marker = std.mem.indexOfPos(u8, input, search_start, "MZ") orelse return SqzError.InvalidFile;
+    // NOTE: the .COM is loaded at offset 0x100, which is even, so file alignment matches memory alignment
+    const data_start = (marker + 2) & ~@as(usize, 1);
+    if (data_start + 4 > input.len or (input[data_start + 1] & 0xF0) != 0x10) {
+        return SqzError.InvalidFile;
+    }
+    return unSQZBytes(input[data_start..], allocator);
 }
 
 // TODO: test on a big endian machine

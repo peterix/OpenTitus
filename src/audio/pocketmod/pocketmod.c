@@ -600,6 +600,8 @@ static int32_t _pocketmod_ident(pocketmod_context *c, const uint8_t *data, int32
     return 1;
 }
 
+#define POCKETMOD_MUTE_CHUNK 1024
+
 bool pocketmod_init(pocketmod_context *c, const uint8_t *data, uint32_t size, uint32_t rate)
 {
     int32_t i, remaining, header_bytes, pattern_bytes;
@@ -710,7 +712,18 @@ uint32_t pocketmod_render(pocketmod_context *c, void *buffer, uint32_t buffer_si
             for (uint32_t i = 0; i < c->num_channels; i++) {
                 _pocketmod_chan *chan = &c->channels[i];
                 if (chan->sample != 0 && chan->position >= 0.0f) {
-                    _pocketmod_render_channel(c, chan, *output, num);
+                    if (c->muted_channels & (1u << i)) {
+                        /* Muted channels still play, they are just not heard */
+                        static float discard[POCKETMOD_MUTE_CHUNK][2];
+                        int32_t done = 0;
+                        while (done < num) {
+                            int32_t chunk = _pocketmod_min(num - done, POCKETMOD_MUTE_CHUNK);
+                            _pocketmod_render_channel(c, chan, *discard, chunk);
+                            done += chunk;
+                        }
+                    } else {
+                        _pocketmod_render_channel(c, chan, *output, num);
+                    }
                 }
             }
             samples_remaining -= num;

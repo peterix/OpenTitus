@@ -81,6 +81,7 @@ struct pocketmod_context
     /* Render state */
     _pocketmod_chan channels[POCKETMOD_MAX_CHANNELS];
     uint8_t pattern_delay;       /* EEx pattern delay counter               */
+    uint32_t muted_channels;     /* Bit mask of channels to keep silent     */
     uint32_t lfo_rng;            /* RNG used for the random LFO waveform    */
 
     /* Position in song (from least to most granular) */

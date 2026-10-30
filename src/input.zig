@@ -176,9 +176,10 @@ pub const GamepadState = struct {
             .PlayerJump => {
                 //self.rumbleGamepad(6000, 6000, 100);
             },
-            .BallBounce => {
+            .BallBounce, .SpringBounce => {
                 self.rumbleGamepad(0.25, 0.25, 150);
             },
+            .EnemyShoot => {},
             .Options_TestRumble => {
                 self.rumbleGamepad(1.0, 1.0, 100);
             },
