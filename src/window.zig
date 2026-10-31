@@ -84,13 +84,12 @@ pub fn set_fullscreen(fullscreen: bool) void {
 }
 
 pub fn window_init() !void {
-    var windowflags: u32 = 0;
+    // Resizable even when starting in fullscreen, the window keeps its flags when switching to windowed mode
+    var windowflags: u32 = SDL.WINDOW_RESIZABLE | SDL.WINDOW_OPENGL;
     const w: c_int = game.settings.window_width;
     const h: c_int = game.settings.window_height;
     if (game.settings.fullscreen) {
-        windowflags = SDL.WINDOW_FULLSCREEN | SDL.WINDOW_OPENGL;
-    } else {
-        windowflags = SDL.WINDOW_RESIZABLE | SDL.WINDOW_OPENGL;
+        windowflags |= SDL.WINDOW_FULLSCREEN;
     }
 
     window = SDL.createWindow(getGameTitle(), w, h, windowflags);
