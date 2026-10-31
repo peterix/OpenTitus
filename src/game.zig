@@ -280,24 +280,18 @@ pub fn run(init: std.process.Init) !u8 {
     }
 
     while (state != 0) {
-        const curlevel = try main_menu.view_menu(
+        const choice = try main_menu.view_menu(
             io,
             data.constants.*.menu.?,
             allocator,
-        );
+        ) orelse break;
 
-        if (curlevel == null)
+        retval = switch (choice) {
+            .new_game => |level| try engine.playtitus(io, level, null, allocator),
+            .continue_game => |saved| try engine.playtitus(io, 0, saved, allocator),
+        };
+        if (retval < 0)
             state = 0;
-
-        if (state != 0 and (curlevel.? < data.constants.*.levelfiles.len)) {
-            retval = try engine.playtitus(
-                io,
-                @truncate(curlevel.?),
-                allocator,
-            );
-            if (retval < 0)
-                state = 0;
-        }
     }
 
     try settings.write(io, allocator);

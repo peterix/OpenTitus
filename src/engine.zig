@@ -125,7 +125,8 @@ pub fn updateFrame(io: std.Io, context: *ScreenContext, level: *lvl.Level) c_int
     return 0;
 }
 
-pub fn playtitus(io: std.Io, firstlevel: u16, allocator: std.mem.Allocator) !c_int {
+/// Play the game from `firstlevel`, or continue `saved_game` if there is one
+pub fn playtitus(io: std.Io, firstlevel: u16, saved_game: ?game_state.SavedGame, allocator: std.mem.Allocator) !c_int {
     var context = render.ScreenContext{};
 
     var retval: c_int = 0;
@@ -141,7 +142,9 @@ pub fn playtitus(io: std.Io, firstlevel: u16, allocator: std.mem.Allocator) !c_i
     };
     defer unloadSprites();
 
-    level.levelnumber = firstlevel;
+    // Only the first level continues from the saved game
+    var continuing = saved_game;
+    level.levelnumber = if (saved_game) |saved| saved.level else firstlevel;
     while (level.levelnumber < data.constants.*.levelfiles.len) : (level.levelnumber += 1) {
         retval = loadLevel(io, allocator, &level) catch |err| switch (err) {
             error.CannotReadLevelFile => return 1,
@@ -151,14 +154,23 @@ pub fn playtitus(io: std.Io, firstlevel: u16, allocator: std.mem.Allocator) !c_i
             return retval;
         }
         defer lvl.freelevel(&level, allocator);
-
+        // The status screen converts extra bonus into lives when entering a level, not when continuing it
         var first = true;
+        if (continuing) |saved| {
+            saved.apply(&level);
+            continuing = null;
+            first = false;
+        }
+
         while (true) {
             audio.playTrack(.Bonus);
             reset.CLEAR_DATA(&level);
 
             globals.GODMODE = false;
             globals.NOCLIP = false;
+
+            // The level (re)starts here, so the game can continue from here too
+            saveGame(io, allocator, &level);
 
             retval = status.viewstatus(&level, first);
             first = false;
@@ -184,7 +196,7 @@ pub fn playtitus(io: std.Io, firstlevel: u16, allocator: std.mem.Allocator) !c_i
                 std.log.err("Could not record level entry: {}", .{err});
             };
 
-            retval = playlevel(io, &context, &level);
+            retval = playlevel(io, allocator, &context, &level);
             if (retval < 0) {
                 return retval;
             }
@@ -215,6 +227,9 @@ pub fn playtitus(io: std.Io, firstlevel: u16, allocator: std.mem.Allocator) !c_i
             }
 
             if (globals.GAMEOVER_FLAG) {
+                game_state.clear_saved_game(io, allocator) catch |err| {
+                    std.log.err("Could not clear the saved game: {}", .{err});
+                };
                 gameover(&context, &level);
                 return 0;
             }
@@ -225,6 +240,10 @@ pub fn playtitus(io: std.Io, firstlevel: u16, allocator: std.mem.Allocator) !c_i
             // return retval;
         }
     }
+    // The game is finished, there's nothing to continue
+    game_state.clear_saved_game(io, allocator) catch |err| {
+        std.log.err("Could not clear the saved game: {}", .{err});
+    };
     if (data.constants.*.finish != null) {
         const finish = data.constants.*.finish.?;
         retval = image.viewImageFile(
@@ -267,9 +286,16 @@ fn resetLevel(context: *ScreenContext, level: *lvl.Level) c_int {
     return 0;
 }
 
-fn playlevel(io: std.Io, context: *ScreenContext, level: *lvl.Level) c_int {
+fn saveGame(io: std.Io, allocator: std.mem.Allocator, level: *const lvl.Level) void {
+    game_state.save_game(io, allocator, level) catch |err| {
+        std.log.err("Could not save the game: {}", .{err});
+    };
+}
+
+fn playlevel(io: std.Io, allocator: std.mem.Allocator, context: *ScreenContext, level: *lvl.Level) c_int {
     var retval: c_int = 0;
     var firstrun = true;
+    var checkpoint = .{ level.player.initX, level.player.initY };
 
     while (true) {
         if (!firstrun) {
@@ -280,7 +306,14 @@ fn playlevel(io: std.Io, context: *ScreenContext, level: *lvl.Level) c_int {
         firstrun = false;
         retval = updateFrame(io, context, level);
         if (retval == -1) {
+            // Quitting keeps the checkpoint, and the lives and bonuses so far
+            saveGame(io, allocator, level);
             return retval;
+        }
+        // Reached a checkpoint
+        if (level.player.initX != checkpoint[0] or level.player.initY != checkpoint[1]) {
+            checkpoint = .{ level.player.initX, level.player.initY };
+            saveGame(io, allocator, level);
         }
         retval = resetLevel(context, level); //Check terminate flags (finishlevel, gameover, death or theend)
         if (retval < 0) {

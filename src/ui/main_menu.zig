@@ -39,6 +39,15 @@ const input = @import("../input.zig");
 const menu = @import("menu.zig");
 const options_menu = @import("options_menu.zig");
 const level_select = @import("level_select.zig");
+const game = @import("../game.zig");
+const game_state = @import("../game_state.zig");
+
+/// What the player chose to play
+pub const Choice = union(enum) {
+    /// Start a new game at this level
+    new_game: u16,
+    continue_game: game_state.SavedGame,
+};
 
 const MenuItem = enum {
     Start,
@@ -46,9 +55,9 @@ const MenuItem = enum {
     Options,
     Quit,
 
-    fn label(self: MenuItem) []const u8 {
+    fn label(self: MenuItem, can_continue: bool) []const u8 {
         return switch (self) {
-            .Start => "START",
+            .Start => if (can_continue) "CONTINUE" else "START",
             .LevelSelect => "LEVEL SELECT",
             .Options => "OPTIONS",
             .Quit => "QUIT",
@@ -115,7 +124,7 @@ const MenuImage = struct {
     cursor: *SDL.Surface,
     layout: *const Layout,
 
-    fn init(original: *SDL.Surface) !MenuImage {
+    fn init(original: *SDL.Surface, can_continue: bool) !MenuImage {
         const layout: *const Layout = if (data.game == .Moktar) &moktar_layout else &titus_layout;
 
         const base = try SDL.duplicateSurface(original);
@@ -129,7 +138,7 @@ const MenuImage = struct {
         }
         for (menu_items, 0..) |item, i| {
             const y = layout.text_y + @as(c_int, @intCast(i)) * line_height;
-            layout.font.renderOn(base, item.label(), layout.text_x, y, layout.font_options);
+            layout.font.renderOn(base, item.label(can_continue), layout.text_x, y, layout.font_options);
         }
 
         const cursor = try loadBitmap(layout.cursor);
@@ -165,14 +174,16 @@ fn subMenuContext(background: *SDL.Surface) menu.MenuContext {
     };
 }
 
-pub fn view_menu(io: std.Io, file: ImageFile, allocator: std.mem.Allocator) !?usize {
+pub fn view_menu(io: std.Io, file: ImageFile, allocator: std.mem.Allocator) !?Choice {
     var selection: usize = 0;
+    // Start continues the game in progress, if there is one
+    const saved_game = game.game_state.getSavedGame();
 
     const menudata = try sqz.unSQZ(io, file.filename, allocator);
     var image_memory = try image.loadImage(menudata, file.format, allocator);
     defer image_memory.deinit();
 
-    var menu_image = try MenuImage.init(image_memory.value);
+    var menu_image = try MenuImage.init(image_memory.value, saved_game != null);
     defer menu_image.deinit();
 
     // The menu with the cursor
@@ -210,7 +221,7 @@ pub fn view_menu(io: std.Io, file: ImageFile, allocator: std.mem.Allocator) !?us
     }
     _ = SDL.setSurfaceBlendMode(frame, SDL.BLENDMODE_NONE);
 
-    var curlevel: ?usize = null;
+    var choice: ?Choice = null;
     // View the menu
     MENULOOP: while (true) {
         const input_state = input.processEvents();
@@ -231,7 +242,7 @@ pub fn view_menu(io: std.Io, file: ImageFile, allocator: std.mem.Allocator) !?us
             .Activate => {
                 switch (menu_items[selection]) {
                     .Start => {
-                        curlevel = 0;
+                        choice = if (saved_game) |saved| .{ .continue_game = saved } else .{ .new_game = 0 };
                         break :MENULOOP;
                     },
                     .LevelSelect => {
@@ -240,7 +251,7 @@ pub fn view_menu(io: std.Io, file: ImageFile, allocator: std.mem.Allocator) !?us
                         var menu_context = subMenuContext(background);
                         switch (try level_select.levelSelect(&menu_context, allocator)) {
                             .level => |level| {
-                                curlevel = level;
+                                choice = .{ .new_game = @intCast(level) };
                                 break :MENULOOP;
                             },
                             .cancel => {},
@@ -274,5 +285,5 @@ pub fn view_menu(io: std.Io, file: ImageFile, allocator: std.mem.Allocator) !?us
 
     // Close the menu
     render.fadeout();
-    return curlevel;
+    return choice;
 }

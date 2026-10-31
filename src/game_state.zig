@@ -28,6 +28,7 @@ const std = @import("std");
 const window = @import("window.zig");
 const game = @import("game.zig");
 const data = @import("data.zig");
+const lvl = @import("level.zig");
 
 const json = @import("json.zig");
 const ManagedJSON = json.ManagedJSON;
@@ -82,12 +83,90 @@ pub const LevelEntry = struct {
     }
 };
 
+/// Where to continue the game from: the state a level restarts in when the player dies.
+/// That's the level, the last checkpoint and the bonuses collected so far. Everything else starts over.
+pub const SavedGame = struct {
+    level: u16 = 0,
+    lives: u16 = 0,
+    extrabonus: u16 = 0,
+    checkpoint_x: i16 = 0,
+    checkpoint_y: i16 = 0,
+    cage_x: i16 = 0,
+    cage_y: i16 = 0,
+    /// One bit for each entry of the level's bonus list, set when it was collected
+    collected: [2]u64 = .{ 0, 0 },
+    bonus_collected: usize = 0,
+    ticks: usize = 0,
+    check: u64 = 0,
+
+    pub fn fromLevel(level: *const lvl.Level) SavedGame {
+        var result = SavedGame{
+            .level = level.levelnumber,
+            .lives = @intCast(level.lives),
+            .extrabonus = @intCast(level.extrabonus),
+            .checkpoint_x = level.player.initX,
+            .checkpoint_y = level.player.initY,
+            .cage_x = level.player.cageX,
+            .cage_y = level.player.cageY,
+            .bonus_collected = level.bonuscollected,
+            .ticks = level.tickcount,
+        };
+        for (level.bonus, 0..) |bonus, i| {
+            // A collected bonus has its tile replaced
+            if (bonus.exists and level.getTile(bonus.x, bonus.y) != bonus.bonustile) {
+                result.collected[i / 64] |= @as(u64, 1) << @intCast(i % 64);
+            }
+        }
+        return result;
+    }
+
+    /// Put a freshly loaded level into the saved state
+    pub fn apply(self: *const SavedGame, level: *lvl.Level) void {
+        level.lives = self.lives;
+        level.extrabonus = self.extrabonus;
+        level.player.initX = self.checkpoint_x;
+        level.player.initY = self.checkpoint_y;
+        level.player.cageX = self.cage_x;
+        level.player.cageY = self.cage_y;
+        level.bonuscollected = self.bonus_collected;
+        level.tickcount = self.ticks;
+        for (&level.bonus, 0..) |*bonus, i| {
+            if (bonus.exists and self.collected[i / 64] & (@as(u64, 1) << @intCast(i % 64)) != 0) {
+                level.setTile(bonus.x, bonus.y, bonus.replacetile);
+            }
+        }
+    }
+
+    fn makeCheck(self: *const SavedGame, seed: u32) u64 {
+        var buf = [_]u8{0} ** 256;
+        const bytes = std.fmt.bufPrint(&buf, "{d}.{d}.{d}.{d}.{d}.{d}.{d}.{d}.{d}.{d}.{d}.{d}", .{
+            self.level,
+            self.lives,
+            self.extrabonus,
+            self.checkpoint_x,
+            self.checkpoint_y,
+            self.cage_x,
+            self.cage_y,
+            self.collected[0],
+            self.collected[1],
+            self.bonus_collected,
+            self.ticks,
+            seed,
+        }) catch {
+            unreachable;
+        };
+        return std.hash.Murmur2_64.hash(bytes);
+    }
+};
+
 /// When false, changes to the game state are kept in memory only (used by the replay)
 pub var persist: bool = true;
 
 pub const GameState = struct {
     levels: JsonList(LevelEntry),
     seed: u32 = 0,
+    /// The game in progress, if any
+    saved_game: ?SavedGame = null,
 
     pub fn make_new(io: std.Io, allocator: Allocator) !ManagedJSON(GameState) {
         var seed: u32 = undefined;
@@ -174,7 +253,33 @@ pub const GameState = struct {
     pub fn isKnown(self: *GameState, level: usize) bool {
         return level == 0 or level < self.levels.list.items.len;
     }
+
+    /// The game to continue, if there is one and it wasn't tampered with
+    pub fn getSavedGame(self: *const GameState) ?SavedGame {
+        const saved = self.saved_game orelse return null;
+        if (saved.check != saved.makeCheck(self.seed) or saved.level >= data.constants.levelfiles.len) {
+            return null;
+        }
+        return saved;
+    }
 };
+
+/// Remember where to continue the game from
+pub fn save_game(io: std.Io, allocator: std.mem.Allocator, level: *const lvl.Level) !void {
+    var saved = SavedGame.fromLevel(level);
+    saved.check = saved.makeCheck(game.game_state.seed);
+    game.game_state.saved_game = saved;
+    try game.game_state.write(io, allocator);
+}
+
+/// The game is over, there's nothing to continue
+pub fn clear_saved_game(io: std.Io, allocator: std.mem.Allocator) !void {
+    if (game.game_state.saved_game == null) {
+        return;
+    }
+    game.game_state.saved_game = null;
+    try game.game_state.write(io, allocator);
+}
 
 fn ensure_entry(allocator: std.mem.Allocator, level: u16) !*LevelEntry {
     var list = &game.game_state.levels.list;
