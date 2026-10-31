@@ -194,7 +194,9 @@ pub fn move_objects(level: *lvl.Level) void {
                     continue;
                 }
             }
-            if ((fflag != .Ladder) and ((fflag != .NoFloor) or (hflag == .Wall) or (hflag == .Deadly) or (hflag == .Padlock))) {
+            if ((fflag != .Ladder) and ((fflag != .NoFloor) or (hflag == .Wall) or (hflag == .Deadly) or (hflag == .Padlock)) and
+                !insideOneWayPlatform(level, object, fflag, tileX, tileY))
+            {
                 object.sprite.speed_y = 0;
                 if (!object.objectdata.*.bounce) {
                     object.sprite.y = @as(i16, @bitCast(@as(c_short, @truncate(@as(c_int, @bitCast(@as(c_int, object.sprite.y))) & @as(c_int, 0xFFF0)))));
@@ -332,38 +334,62 @@ fn shock(level: *lvl.Level, object: *lvl.Object) void {
     }
 }
 
+/// Platforms without a ceiling only hold up what lands on top of them.
+///
+/// Objects that end up inside one, by being thrown up through it or into it from the side, would otherwise rest inside
+/// the platform: bouncing objects (like the ball) aren't snapped on top, so they slide along inside it and eventually
+/// get stuck for good. Let them fall through instead, like they would through any other one-way platform.
+fn insideOneWayPlatform(level: *lvl.Level, object: *const lvl.Object, floor: lvl.FloorType, tileX: i16, tileY: i16) bool {
+    if (floor == .NoFloor) {
+        return false;
+    }
+    if (object.sprite.y & 0x000F == 0) {
+        // Resting on the top edge
+        return false;
+    }
+    return level.getTileCeiling(tileX, tileY) == .NoCeiling;
+}
+
 // check if there is an object below that can support the input object
 pub fn SPRITES_VS_SPRITES(level: *lvl.Level, sprite1: *lvl.Sprite, sprite1data: *const lvl.SpriteData, object2_out: **lvl.Object) bool {
-    var i: u8 = undefined;
-    _ = &i;
-    // sprite1ref is equal to sprite1, except when sprite1 is the player, then
-    // sprite1ref is level->spritedata[0] (first player sprite)
-    const obj1left = sprite1.x - (sprite1data.width >> 1);
-    i = 0;
+    return SPRITES_VS_SPRITES_EXCEPT(level, sprite1, sprite1data, null, object2_out);
+}
+
+/// Same as SPRITES_VS_SPRITES, but never reports `ignored`
+pub fn SPRITES_VS_SPRITES_EXCEPT(level: *lvl.Level, sprite1: *lvl.Sprite, sprite1data: *const lvl.SpriteData, ignored: ?*const lvl.Object, object2_out: **lvl.Object) bool {
     for (&level.object) |*object2| {
-        const sprite2 = &object2.sprite;
-        if (sprite2 == sprite1 or !sprite2.enabled or !object2.objectdata.*.support)
+        if (ignored == object2)
             continue;
-        if (@abs(@as(c_int, @bitCast(@as(c_int, sprite2.x))) - @as(c_int, @bitCast(@as(c_int, obj1left)))) > @as(c_int, 64))
-            continue;
-        if (@abs(@as(c_int, @bitCast(@as(c_int, sprite2.y))) - @as(c_int, @bitCast(@as(c_int, sprite1.y)))) > @as(c_int, 70))
-            continue;
-        const obj2left = sprite2.x - (sprite2.spritedata.?.collwidth >> 1);
-        if (@as(c_int, @bitCast(@as(c_int, obj2left))) > @as(c_int, @bitCast(@as(c_int, obj1left)))) {
-            if ((@as(c_int, @bitCast(@as(c_int, obj1left))) + @as(c_int, @bitCast(@as(c_uint, sprite1data.*.collwidth)))) <= @as(c_int, @bitCast(@as(c_int, obj2left))))
-                continue;
-        } else {
-            if ((@as(c_int, @bitCast(@as(c_int, obj2left))) + @as(c_int, @bitCast(@as(c_uint, sprite2.spritedata.?.collwidth)))) <= @as(c_int, @bitCast(@as(c_int, obj1left))))
-                continue;
-        }
-        if ((@as(c_int, @bitCast(@as(c_int, sprite2.y))) - (@as(c_int, @bitCast(@as(c_uint, sprite2.spritedata.?.collheight))) >> @intCast(3))) >= @as(c_int, @bitCast(@as(c_int, sprite1.*.y)))) {
-            if ((@as(c_int, @bitCast(@as(c_int, sprite2.y))) - @as(c_int, @bitCast(@as(c_uint, sprite2.spritedata.?.collheight)))) <= @as(c_int, @bitCast(@as(c_int, sprite1.y)))) {
-                object2_out.* = object2;
-                return true;
-            }
+        if (spriteStandsOn(sprite1, sprite1data, object2)) {
+            object2_out.* = object2;
+            return true;
         }
     }
     return false;
+}
+
+/// Is the bottom of `sprite1` in the top part of `object2`, so it would stand on it?
+///
+/// sprite1data is equal to sprite1's data, except when sprite1 is the player, then it is level.spritedata[0] (first player sprite)
+pub fn spriteStandsOn(sprite1: *const lvl.Sprite, sprite1data: *const lvl.SpriteData, object2: *const lvl.Object) bool {
+    const sprite2 = &object2.sprite;
+    if (sprite2 == sprite1 or !sprite2.enabled or !object2.objectdata.*.support)
+        return false;
+    const obj1left = sprite1.x - (sprite1data.width >> 1);
+    if (@abs(sprite2.x - obj1left) > 64)
+        return false;
+    if (@abs(sprite2.y - sprite1.y) > 70)
+        return false;
+    const obj2left = sprite2.x - (sprite2.spritedata.?.collwidth >> 1);
+    if (obj2left > obj1left) {
+        if (obj1left + sprite1data.collwidth <= obj2left)
+            return false;
+    } else {
+        if (obj2left + sprite2.spritedata.?.collwidth <= obj1left)
+            return false;
+    }
+    const collheight: i16 = sprite2.spritedata.?.collheight;
+    return (sprite2.y - (collheight >> 3) >= sprite1.y) and (sprite2.y - collheight <= sprite1.y);
 }
 
 pub fn updateobjectsprite(level: *lvl.Level, obj: *lvl.Object, number: i16, clearflags: bool) void {

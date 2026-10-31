@@ -49,6 +49,7 @@ fn SET_DATA_NMI(level: *lvl.Level) void {
 }
 
 pub fn CLEAR_DATA(level: *lvl.Level) void {
+    level.player.dropping_through = null;
     globals.loop_cycle = 0;
     globals.tile_anim = 0;
     globals.IMAGE_COUNTER = 0;

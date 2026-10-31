@@ -188,6 +188,9 @@ pub const Player = struct {
     jump_pressed: bool,
     crouch_pressed: bool,
     aim_direction: input.AimDirection,
+
+    /// Object the player is dropping down from (by kneeling on it). The player ignores it until they fall past it.
+    dropping_through: ?*Object = null,
 };
 
 pub const BONUS_CAPACITY = 100;

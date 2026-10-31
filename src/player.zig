@@ -504,6 +504,16 @@ fn player_collide(io: std.Io, level: *lvl.Level) void {
                     }
                 }
             } else {
+                if (globals.CROSS_FLAG != 0 and player.dropping_through == null) {
+                    // Dropping down: if the player stands on an object, ignore it until they fall past it.
+                    // The drop only lasts a few frames, not long enough to get past tall objects like the trash can.
+                    // NOTE: only one object is remembered. Standing across two tall objects right next to each other,
+                    // the player would still land on the second one.
+                    var below: *lvl.Object = undefined;
+                    if (objects.SPRITES_VS_SPRITES(level, &player.sprite, &level.spritedata[0], &below)) {
+                        player.dropping_through = below;
+                    }
+                }
                 player_fall(level); // Fall down!
             }
         }
@@ -1443,7 +1453,15 @@ fn player_collide_with_objects(level: *lvl.Level) void {
     }
     // Collision with a sprite
     var off_object_c: *lvl.Object = undefined;
-    if (!objects.SPRITES_VS_SPRITES(level, &player.sprite, &level.spritedata[@as(c_uint, @intCast(0))], &off_object_c)) {
+
+    // Kneeling on an object for a while drops the player down from it, like from elevators and drop floors
+    if (player.dropping_through) |dropping| {
+        if (!objects.spriteStandsOn(&player.sprite, &level.spritedata[0], dropping)) {
+            // Fell past it (or it went away)
+            player.dropping_through = null;
+        }
+    }
+    if (!objects.SPRITES_VS_SPRITES_EXCEPT(level, &player.sprite, &level.spritedata[0], player.dropping_through, &off_object_c)) {
         return;
     }
     const off_object: *lvl.Object = off_object_c;
