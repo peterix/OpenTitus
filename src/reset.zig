@@ -136,10 +136,10 @@ fn SET_ALL_SPRITES(level: *lvl.Level) void {
         if (level.enemy[i].init_enabled) {
             enemies.updateenemysprite(level, &(level.enemy[i]), @intCast(level.enemy[i].init_sprite), true);
             level.enemy[i].sprite.flipped = level.enemy[i].init_flipped;
-            level.enemy[i].sprite.x = @truncate(level.enemy[i].init_x);
-            level.enemy[i].sprite.y = @truncate(level.enemy[i].init_y);
-            level.enemy[i].sprite.speed_x = @truncate(level.enemy[i].init_speed_x);
-            level.enemy[i].sprite.speed_y = @truncate(level.enemy[i].init_speed_y);
+            level.enemy[i].sprite.x = level.enemy[i].init_x;
+            level.enemy[i].sprite.y = level.enemy[i].init_y;
+            level.enemy[i].sprite.speed_x = level.enemy[i].init_speed_x;
+            level.enemy[i].sprite.speed_y = level.enemy[i].init_speed_y;
         }
     }
 
@@ -150,8 +150,8 @@ fn SET_ALL_SPRITES(level: *lvl.Level) void {
             level.elevator[i].sprite.visible = level.elevator[i].init_visible;
             level.elevator[i].sprite.flash = level.elevator[i].init_flash;
             level.elevator[i].sprite.flipped = level.elevator[i].init_flipped;
-            level.elevator[i].sprite.x = @truncate(level.elevator[i].init_x);
-            level.elevator[i].sprite.y = @truncate(level.elevator[i].init_y);
+            level.elevator[i].sprite.x = level.elevator[i].init_x;
+            level.elevator[i].sprite.y = @bitCast(level.elevator[i].init_y);
             level.elevator[i].counter = 0;
             level.elevator[i].sprite.speed_x = level.elevator[i].init_speed_x;
             level.elevator[i].sprite.speed_y = level.elevator[i].init_speed_y;
@@ -166,8 +166,8 @@ fn SET_ALL_SPRITES(level: *lvl.Level) void {
             level.object[i].sprite.visible = level.object[i].init_visible;
             level.object[i].sprite.flash = level.object[i].init_flash;
             level.object[i].sprite.flipped = level.object[i].init_flipped;
-            level.object[i].sprite.x = @truncate(level.object[i].init_x);
-            level.object[i].sprite.y = @truncate(level.object[i].init_y);
+            level.object[i].sprite.x = level.object[i].init_x;
+            level.object[i].sprite.y = level.object[i].init_y;
             if ((player.cageY != 0) and
                 ((level.object[i].sprite.number == globals.FIRST_OBJET + 26) or (level.object[i].sprite.number == globals.FIRST_OBJET + 27)))
             {

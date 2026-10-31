@@ -51,6 +51,80 @@ const image = @import("ui/image.zig");
 const status = @import("ui/status.zig");
 const final_cutscene = @import("final_cutscene.zig");
 
+/// Load the sprites used by all the levels. Free them with `unloadSprites`.
+pub fn loadSprites(io: std.Io, allocator: std.mem.Allocator) !void {
+    const spritedata = sqz.unSQZ(io, data.constants.*.sprites, allocator) catch |err| {
+        std.debug.print("Failed to uncompress sprites file: {s}\n", .{data.constants.*.sprites});
+        return err;
+    };
+
+    sprites.init(
+        allocator,
+        spritedata,
+        &data.titus_palette,
+    ) catch |err| {
+        std.debug.print("Failed to load sprites: {}\n", .{err});
+        return err;
+    };
+    errdefer sprites.deinit();
+
+    const pixelformat = SDL.getWindowPixelFormat(window.window);
+    sprites.sprite_cache.init(pixelformat, allocator) catch |err| {
+        std.debug.print("Failed to initialize sprite cache: {}\n", .{err});
+        return err;
+    };
+}
+
+pub fn unloadSprites() void {
+    sprites.sprite_cache.deinit();
+    sprites.deinit();
+}
+
+/// Load the level `level.levelnumber`. Free it with `lvl.freelevel`.
+pub fn loadLevel(io: std.Io, allocator: std.mem.Allocator, level: *lvl.Level) !c_int {
+    const current_constants = data.constants.levelfiles[level.levelnumber];
+    level.is_finish = current_constants.is_finish;
+    level.has_cage = current_constants.has_cage;
+    level.boss_power = current_constants.boss_power;
+    level.music = current_constants.music;
+
+    const leveldata = sqz.unSQZ(io, current_constants.filename, allocator) catch {
+        std.debug.print("Failed to uncompress level file: {}\n", .{level.levelnumber});
+        return error.CannotReadLevelFile;
+    };
+    defer allocator.free(leveldata);
+
+    return lvl.loadlevel(
+        level,
+        allocator,
+        leveldata,
+        &data.object_data,
+        @constCast(&current_constants.color),
+    );
+}
+
+/// Advance the game by one frame and draw it.
+/// Returns -1 when the player quits the game.
+pub fn updateFrame(io: std.Io, context: *ScreenContext, level: *lvl.Level) c_int {
+    globals.IMAGE_COUNTER = (globals.IMAGE_COUNTER + 1) & 0x0FFF; //Cycle from 0 to 0x0FFF
+    elevators.move(level);
+    objects.move_objects(level); //Object gravity
+    const retval = player.move_player(io, context, level); //Key input, update and move player, handle carried object and decrease timers
+    if (retval == -1) { //c.TITUS_ERROR_QUIT) {
+        return retval;
+    }
+    enemies.moveEnemies(level); //Move enemies
+    enemies.moveTrash(level); //Move enemy throwed objects
+    enemies.SET_NMI(level); //Handle enemies on the screen
+    gates.CROSSING_GATE(context, level); //Check and handle level completion, and if the player does a kneestand on a secret entrance
+    sprites.animateSprites(level); //Animate player and objects
+    scroll.scroll(level); //X- and Y-scrolling
+    render.render_tiles(level);
+    render.render_sprites(level);
+    level.tickcount += 1;
+    return 0;
+}
+
 pub fn playtitus(io: std.Io, firstlevel: u16, allocator: std.mem.Allocator) !c_int {
     var context = render.ScreenContext{};
 
@@ -62,54 +136,17 @@ pub fn playtitus(io: std.Io, firstlevel: u16, allocator: std.mem.Allocator) !c_i
     level.lives = 2;
     level.extrabonus = 0;
 
-    const spritedata = sqz.unSQZ(io, data.constants.*.sprites, allocator) catch {
-        std.debug.print("Failed to uncompress sprites file: {s}\n", .{data.constants.*.sprites});
+    loadSprites(io, allocator) catch {
         return -1;
     };
-
-    sprites.init(
-        allocator,
-        spritedata,
-        &data.titus_palette,
-    ) catch |err| {
-        std.debug.print("Failed to load sprites: {}\n", .{err});
-        return -1;
-    };
-    defer sprites.deinit();
-
-    const pixelformat = SDL.getWindowPixelFormat(window.window);
-    sprites.sprite_cache.init(pixelformat, allocator) catch |err| {
-        std.debug.print("Failed to initialize sprite cache: {}\n", .{err});
-        return -1;
-    };
-    defer sprites.sprite_cache.deinit();
+    defer unloadSprites();
 
     level.levelnumber = firstlevel;
     while (level.levelnumber < data.constants.*.levelfiles.len) : (level.levelnumber += 1) {
-        const current_constants = data.constants.levelfiles[level.levelnumber];
-        level.is_finish = current_constants.is_finish;
-        level.has_cage = current_constants.has_cage;
-        level.boss_power = current_constants.boss_power;
-        level.music = current_constants.music;
-
-        const level_index = @as(usize, @intCast(level.levelnumber));
-        const leveldata = sqz.unSQZ(
-            io,
-            data.constants.*.levelfiles[level_index].filename,
-            allocator,
-        ) catch {
-            std.debug.print("Failed to uncompress level file: {}\n", .{level.levelnumber});
-            return 1;
+        retval = loadLevel(io, allocator, &level) catch |err| switch (err) {
+            error.CannotReadLevelFile => return 1,
+            else => return err,
         };
-
-        retval = try lvl.loadlevel(
-            &level,
-            allocator,
-            leveldata,
-            &data.object_data,
-            @constCast(&data.constants.levelfiles[level.levelnumber].color),
-        );
-        allocator.free(leveldata);
         if (retval < 0) {
             return retval;
         }
@@ -241,22 +278,10 @@ fn playlevel(io: std.Io, context: *ScreenContext, level: *lvl.Level) c_int {
             render.flip_screen(context, true);
         }
         firstrun = false;
-        globals.IMAGE_COUNTER = (globals.IMAGE_COUNTER + 1) & 0x0FFF; //Cycle from 0 to 0x0FFF
-        elevators.move(level);
-        objects.move_objects(level); //Object gravity
-        retval = player.move_player(io, context, level); //Key input, update and move player, handle carried object and decrease timers
-        if (retval == -1) { //c.TITUS_ERROR_QUIT) {
+        retval = updateFrame(io, context, level);
+        if (retval == -1) {
             return retval;
         }
-        enemies.moveEnemies(level); //Move enemies
-        enemies.moveTrash(level); //Move enemy throwed objects
-        enemies.SET_NMI(level); //Handle enemies on the screen
-        gates.CROSSING_GATE(context, level); //Check and handle level completion, and if the player does a kneestand on a secret entrance
-        sprites.animateSprites(level); //Animate player and objects
-        scroll.scroll(level); //X- and Y-scrolling
-        render.render_tiles(level);
-        render.render_sprites(level);
-        level.tickcount += 1;
         retval = resetLevel(context, level); //Check terminate flags (finishlevel, gameover, death or theend)
         if (retval < 0) {
             return retval;

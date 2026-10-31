@@ -82,6 +82,9 @@ pub const LevelEntry = struct {
     }
 };
 
+/// When false, changes to the game state are kept in memory only (used by the replay)
+pub var persist: bool = true;
+
 pub const GameState = struct {
     levels: JsonList(LevelEntry),
     seed: u32 = 0,
@@ -153,6 +156,9 @@ pub const GameState = struct {
 
     pub fn write(self: *GameState, io: std.Io, allocator: Allocator) !void {
         _ = allocator;
+        if (!persist) {
+            return;
+        }
         try json.WriteJSON(io, game_file_name(), self);
     }
 

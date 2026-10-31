@@ -264,7 +264,15 @@ fn getAxisValueWithDeadzone(value_in: i16, dead_zone: i16, gamepad_id: SDL.Joyst
     return value;
 }
 
+/// When set, the player's input comes from this instead of the keyboard and gamepads (used by the replay)
+pub var scripted_input: ?*const fn (state: *InputState) void = null;
+
 pub fn processEvents() *InputState {
+    if (scripted_input) |script| {
+        g_input_state.action = .None;
+        script(&g_input_state);
+        return &g_input_state;
+    }
     SDL.pumpEvents();
     SDL.updateGamepads();
     const keystate = SDL.getKeyboardState();

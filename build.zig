@@ -127,6 +127,19 @@ pub fn build(b: *std.Build) void {
     const titus = build_game(b, "opentitus", target, optimize, options, sdl_lib);
     const install_titus = b.addInstallArtifact(titus, .{ .dest_dir = .{ .override = .{ .custom = "./" } } });
     b.default_step.dependOn(&install_titus.step);
+    // Deterministic replay of all levels, see src/replay.zig
+    // Runs from the install directory, where the game files are expected to be.
+    const replay_cmd = b.addRunArtifact(titus);
+    replay_cmd.setCwd(.{ .cwd_relative = b.install_path });
+    replay_cmd.step.dependOn(b.getInstallStep());
+    replay_cmd.setEnvironmentVariable("SDL_VIDEODRIVER", "offscreen");
+    replay_cmd.addArg("--replay");
+    if (b.args) |args| {
+        replay_cmd.addArgs(args);
+    }
+    const replay_step = b.step("replay", "Play all levels with scripted input and print fingerprints of the game state");
+    replay_step.dependOn(&replay_cmd.step);
+
     b.installFile("./install/README.txt.titus", "./TITUS/README.txt");
     b.installFile("./install/README.txt.moktar", "./MOKTAR/README.txt");
 }

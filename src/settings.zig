@@ -74,7 +74,10 @@ pub const Settings = extern struct {
             switch (err) {
                 error.FileNotFound => {
                     std.log.info("No settings file found, starting with defaults.", .{});
-                    return Settings.make_new(arena.allocator(), io);
+                    // make_new sets up its own arena
+                    arena.deinit();
+                    allocator.destroy(arena);
+                    return Settings.make_new(allocator, io);
                 },
                 error.OutOfMemory => {
                     return error.OutOfMemory;

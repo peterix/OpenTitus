@@ -94,40 +94,41 @@ pub const Object = struct {
     init_flash: bool,
     init_visible: bool,
     init_flipped: bool,
-    init_x: c_int,
-    init_y: c_int,
+    init_x: i16,
+    init_y: i16,
     objectdata: *ObjectData,
 };
 
+/// Not all enemy types use all the fields, the ones they don't use keep their default values
 pub const Enemy = struct {
-    dying: u8, //00: alive, not 00: dying/dead
-    phase: u8, //the current phase of the enemy
-    sprite: Sprite,
-    type: u16, //What kind of enemy
-    power: i16,
-    center_x: c_int,
-    range_x: c_uint,
-    delay: c_uint,
-    direction: u8,
-    range_y: c_uint,
-    saved_y: i16, // Used for jumping fish
+    dying: u8 = 0, //00: alive, not 00: dying/dead
+    phase: u8 = 0, //the current phase of the enemy
+    sprite: Sprite = undefined, // set up when the level is (re)started
+    type: u16 = 0, //What kind of enemy
+    power: i16 = 0,
+    center_x: i16 = 0,
+    range_x: u16 = 0,
+    delay: u16 = 0,
+    direction: u8 = 0,
+    range_y: u16 = 0,
+    saved_y: i16 = 0, // Used for jumping fish
 
-    init_enabled: bool,
-    init_sprite: u16,
-    init_flipped: bool,
-    init_x: c_int,
-    init_y: c_int,
-    init_speed_x: c_int,
-    init_speed_y: c_int,
+    init_enabled: bool = false,
+    init_sprite: u16 = 0,
+    init_flipped: bool = false,
+    init_x: i16 = 0,
+    init_y: i16 = 0,
+    init_speed_x: i16 = 0,
+    init_speed_y: i16 = 0,
 
-    carry_sprite: i16,
-    dead_sprite: i16,
+    carry_sprite: i16 = -1,
+    dead_sprite: i16 = -1,
 
-    boss: bool,
-    trigger: bool,
-    visible: bool,
-    counter: u8,
-    walkspeed_x: u8,
+    boss: bool = false,
+    trigger: bool = false,
+    visible: bool = false,
+    counter: u8 = 0,
+    walkspeed_x: u8 = 0,
 };
 
 pub const Bonus = struct {
@@ -164,8 +165,9 @@ pub const Elevator = struct {
     init_flash: bool,
     init_visible: bool,
     init_flipped: bool,
-    init_x: c_int,
-    init_y: c_int,
+    init_x: i16,
+    /// As stored in the level, the sprite position is this reinterpreted as signed
+    init_y: u16,
 };
 
 pub const Player = struct {
@@ -208,6 +210,11 @@ pub const WallType = enum(u8) {
     Code = 4,
     Padlock = 5,
     CodeLevel14 = 6,
+
+    /// Walls that stop things moving sideways
+    pub fn isSolid(self: WallType) bool {
+        return self == .Wall or self == .Deadly or self == .Padlock;
+    }
 };
 
 pub const FloorType = enum(u7) {
@@ -552,6 +559,7 @@ pub fn loadlevel(
 
     // 33782
     for (0..ENEMY_CAPACITY) |i| {
+        level.enemy[i] = .{};
         const init_sprite = other_data.enemies[i].init_sprite;
         level.enemy[i].init_enabled = init_sprite.value != 0xFFFF;
 

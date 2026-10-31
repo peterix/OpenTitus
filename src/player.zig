@@ -625,7 +625,7 @@ fn BLOCK_YYPRGD(level: *lvl.Level, cflag: lvl.CeilingType, tileY_in: i16, tileX_
             } else if (player.sprite.speed_y != 0) {
                 // Stop movement
                 player.sprite.speed_y = 0;
-                player.sprite.y = @as(i16, @bitCast(@as(u16, @bitCast(player.sprite.y)) & 0xFFF0)) + 16;
+                player.sprite.y = common.alignToTile(player.sprite.y) + 16;
                 globals.jump_acceleration_counter = 0xFF;
             } else if (player.sprite.number != 10 and // 10 = Free fall
                 player.sprite.number != 21 and // 21 = Free fall (c)
@@ -889,7 +889,7 @@ fn player_block_yu(player: *lvl.Player) void {
         globals.YFALL = globals.YFALL | 0x01;
         return;
     }
-    player.sprite.y = @bitCast(@as(u16, @bitCast(player.sprite.y)) & 0xFFF0);
+    player.sprite.y = common.alignToTile(player.sprite.y);
     player.sprite.speed_y = 0;
     common.subto0(&globals.jump_timer);
     globals.jump_acceleration_counter = 0;
@@ -1074,7 +1074,7 @@ fn ACTION_PRG(level: *lvl.Level, action: PlayerAction) void {
                     }
                 }
                 // put player in the middle of the new tile
-                endX = @as(i16, @bitCast(@as(u16, @bitCast(endX)) & 0xFFF0)) + 8;
+                endX = common.alignToTile(endX) + 8;
 
                 player.sprite.x = endX;
                 if (player.y_axis > 0) {
@@ -1367,16 +1367,17 @@ fn NEW_FORM(player: *lvl.Player, action: PlayerAction) void {
 fn GET_IMAGE(level: *lvl.Level) void {
     const player = &level.player;
     var frame: i16 = player.sprite.animation.*;
-    if (@as(c_int, @bitCast(@as(c_int, frame))) < 0) {
-        if (@as(c_int, @bitCast(@as(c_int, frame))) == -1) {
-            std.log.err("Player frame is -1, advancing by {}\n", .{@divTrunc(@as(c_int, frame), 2)});
+    if (frame < 0) {
+        // Negative values in the animation jump back
+        if (frame == -1) {
+            std.log.err("Player frame is -1, advancing by {}\n", .{@divTrunc(frame, 2)});
         }
-        player.*.sprite.animation += @as(usize, @bitCast(@as(isize, @intCast(@divTrunc(@as(c_int, frame), 2)))));
-        frame = player.*.sprite.animation.*;
+        player.sprite.animation -= @as(usize, @intCast(-@divTrunc(frame, 2)));
+        frame = player.sprite.animation.*;
     }
-    sprites.updatesprite(level, &player.*.sprite, frame, true);
-    player.*.sprite.flipped = @as(c_int, @bitCast(@as(c_int, globals.SENSX))) < 0;
-    player.*.sprite.animation += 1;
+    sprites.updatesprite(level, &player.sprite, frame, true);
+    player.sprite.flipped = globals.SENSX < 0;
+    player.sprite.animation += 1;
 }
 
 fn YACCELERATION_NEG(player: *lvl.Player, maxspeed_in: i16) void {

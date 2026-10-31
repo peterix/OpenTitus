@@ -36,6 +36,8 @@ You need the original game files to make use of OpenTitus. OpenTitus parses the 
 * Optionally, for the Amiga music and sound effects, copy the files from the Amiga version of the game into an `AMIGA` subfolder, like `zig-out/TITUS/AMIGA`. The music needs the `.pat` files and the instrument samples (`kiki`, `cristelle`, ...), the sound effects need `ressort`, `ballon`, `tirperso`, `coup` and `fox` (Titus) or `lagaf` (Moktar).
 * Run `opentitus` inside the `zig-out` folder.
 
+With both games installed, `opentitus --game titus` or `opentitus --game moktar` skips the game selection.
+
 You can get the game files from:
 
 * Your old floppy disks!
@@ -47,5 +49,16 @@ You can get the game files from:
     * https://store.epicgames.com/sv/p/titus-the-fox-150ecc
 
 Please do not upload the original game files to the git server, as they are proprietary!
+
+## Checking changes to the game logic:
+The game has no randomness, so the game logic can be checked with a deterministic replay. It plays every level with scripted input and prints fingerprints of the whole game state. If the fingerprints are the same before and after a change, the game behaves exactly the same.
+
+```
+zig build replay > before.txt
+zig build replay > after.txt
+diff before.txt after.txt
+```
+
+It needs the game files in `zig-out` (see above), runs without a window or audio, and doesn't touch your settings or saved progress. `zig build replay -- 500 --game moktar` replays Moktar with 500 frames per level instead of the default 3000. See `src/replay.zig` for details.
 
 Enjoy!

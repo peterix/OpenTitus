@@ -58,6 +58,7 @@ const input = @import("input.zig");
 const main_menu = @import("ui/main_menu.zig");
 
 const audio = @import("audio/audio.zig");
+const replay = @import("replay.zig");
 const data = @import("data.zig");
 const globals = @import("globals.zig");
 const engine = @import("engine.zig");
@@ -87,9 +88,84 @@ pub var game_state: *GameState = undefined;
 pub var allocator: std.mem.Allocator = undefined;
 pub var io: std.Io = undefined;
 
+const Options = struct {
+    /// Run the deterministic replay with this many frames per level instead of the game
+    replay_frames: ?usize = null,
+    /// Which game to use when both are available
+    game: ?data.GameType = null,
+};
+
+fn parseOptions(args: []const [:0]const u8) !Options {
+    var options: Options = .{};
+    var i: usize = 1;
+    while (i < args.len) : (i += 1) {
+        const arg = args[i];
+        if (std.mem.eql(u8, arg, "--replay")) {
+            options.replay_frames = replay.default_frames;
+            if (i + 1 < args.len) {
+                if (std.fmt.parseInt(usize, args[i + 1], 10)) |frames| {
+                    options.replay_frames = frames;
+                    i += 1;
+                } else |_| {}
+            }
+        } else if (std.mem.eql(u8, arg, "--game") and i + 1 < args.len) {
+            i += 1;
+            if (std.ascii.eqlIgnoreCase(args[i], "titus")) {
+                options.game = .Titus;
+            } else if (std.ascii.eqlIgnoreCase(args[i], "moktar")) {
+                options.game = .Moktar;
+            } else {
+                std.log.err("Unknown game '{s}', use 'titus' or 'moktar'", .{args[i]});
+                return error.InvalidArguments;
+            }
+        } else {
+            std.log.err("Unknown argument '{s}'. Usage: opentitus [--game titus|moktar] [--replay [frames per level]]", .{arg});
+            return error.InvalidArguments;
+        }
+    }
+    return options;
+}
+
+/// Pick the game from the command line, or the only one available
+fn pickGame(available: data.GamesAvailable, requested: ?data.GameType) ?data.GameType {
+    if (requested) |game| {
+        const present = switch (game) {
+            .Titus => available.titus,
+            .Moktar => available.moktar,
+            .None => false,
+        };
+        return if (present) game else null;
+    }
+    if (available.titus) return .Titus;
+    if (available.moktar) return .Moktar;
+    return null;
+}
+
+fn runReplay(frames: usize, requested_game: ?data.GameType) !u8 {
+    const game = pickGame(data.probeGameFiles(io), requested_game) orelse {
+        std.log.err("Game files not found for the replay", .{});
+        return error.GameDataNotAvailable;
+    };
+    data.init(game);
+
+    // Start from a fresh game state, and don't save anything the replay does (like unlocking levels)
+    gs.persist = false;
+    game_state_mem = try GameState.make_new(io, allocator);
+    game_state = &game_state_mem.value;
+    defer game_state_mem.deinit();
+
+    var buffer: [1024]u8 = undefined;
+    var stdout = std.Io.File.stdout().writer(io, &buffer);
+    try replay.run(io, allocator, &stdout.interface, frames);
+    try stdout.interface.flush();
+    return 0;
+}
+
 pub fn run(init: std.process.Init) !u8 {
     allocator = init.gpa;
     io = init.io;
+
+    const options = try parseOptions(try init.minimal.args.toSlice(init.arena.allocator()));
 
     settings_mem = try Settings.read(allocator, io);
     settings = &settings_mem.value;
@@ -118,6 +194,10 @@ pub fn run(init: std.process.Init) !u8 {
     try fonts.fonts_load();
     defer fonts.fonts_free();
 
+    if (options.replay_frames) |frames| {
+        return runReplay(frames, options.game);
+    }
+
     // View the menu when the main loop starts
     var state: c_int = 1;
     var retval: c_int = 0;
@@ -136,7 +216,10 @@ pub fn run(init: std.process.Init) !u8 {
     }
 
     const available_games = data.probeGameFiles(io);
-    if(available_games.moktar and available_games.titus)
+    if (options.game != null) {
+        data.init(pickGame(available_games, options.game) orelse return error.GameDataNotAvailable);
+    }
+    else if(available_games.moktar and available_games.titus)
     {
         switch(gameMenu.gameMenu()) {
             .Titus => {
