@@ -39,6 +39,7 @@ const input = @import("../input.zig");
 const menu = @import("menu.zig");
 const options_menu = @import("options_menu.zig");
 const level_select = @import("level_select.zig");
+const credits = @import("credits.zig");
 const game = @import("../game.zig");
 const game_state = @import("../game_state.zig");
 
@@ -66,6 +67,9 @@ const MenuItem = enum {
 };
 const menu_items = std.enums.values(MenuItem);
 const line_height = 13;
+
+/// Like in the original, the credits show up when nobody touches the menu for a while
+const idle_ms_before_credits = 60 * 1000;
 
 /// The original menu images have only two items painted on them. We paint over them and draw our own.
 const Layout = struct {
@@ -222,9 +226,19 @@ pub fn view_menu(io: std.Io, file: ImageFile, allocator: std.mem.Allocator) !?Ch
     _ = SDL.setSurfaceBlendMode(frame, SDL.BLENDMODE_NONE);
 
     var choice: ?Choice = null;
+    var last_input = SDL.getTicks();
     // View the menu
     MENULOOP: while (true) {
         const input_state = input.processEvents();
+        if (input_state.any_key_pressed or input_state.action != .None) {
+            last_input = SDL.getTicks();
+        } else if (SDL.getTicks() - last_input > idle_ms_before_credits) {
+            // Any key goes back to the menu
+            if (credits.credits_screen() < 0) {
+                return null;
+            }
+            last_input = SDL.getTicks();
+        }
         switch (input_state.action) {
             .Escape, .Cancel, .Quit => {
                 return null;
