@@ -96,6 +96,7 @@ fn check_gates(context: *render.ScreenContext, level: *lvl.Level) void {
             while (globals.BITMAP_X > level.gate[i].screenX) {
                 _ = scroll.scroll_left(level);
             }
+            scroll.syncCameraY();
             globals.NOSCROLL_FLAG = level.gate[i].noscroll;
         }
     }

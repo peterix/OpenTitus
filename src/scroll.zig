@@ -110,63 +110,128 @@ fn X_ADJUST(level: *lvl.Level) void {
     }
 }
 
-fn Y_ADJUST(level: *lvl.Level) void {
-    const player = &(level.player);
-    if (player.sprite.speed_y == 0) {
-        globals.g_scroll_y = false;
+// Vertical camera.
+//
+// Unlike the horizontal camera, this one is deliberately asymmetric: the levels hide things below the player
+// (like the sewers in level 3), so the view never moves down just to frame the player nicely.
+// Like in the original, it only shows the tile the player stands on, and looks further down only during a real fall.
+// Moving up is fine, and it eases up when the player stands or climbs high on the screen.
+
+/// Top of the view in world pixels
+var camera_top: i16 = 0;
+
+/// Height of the player's feet the last time they stood on something or held on to a ladder
+var last_settled_feet: i16 = 0;
+
+/// If the player's feet go below this line on the screen, the view follows them down.
+/// This shows the tile they stand on and nothing more, same as the original.
+const BOTTOM_LINE = window.game_height - 16;
+/// When the player falls further than this below where they last stood, the view starts looking ahead down
+const FALL_LOOKAHEAD_START = 32;
+/// The most the view looks ahead while falling
+const FALL_LOOKAHEAD_MAX = 80;
+/// If the player's feet go above this line on the screen, the view follows them up
+const TOP_LINE = 64;
+/// When standing or climbing above this line, the view eases up to put the feet here
+const REST_LINE = 136;
+/// Easing speed: the view moves by 1/EASING_DIVISOR of the remaining distance each frame
+const EASING_DIVISOR = 6;
+
+fn easeTowards(current: i16, target: i16) i16 {
+    const distance = target - current;
+    if (distance == 0) {
+        return current;
     }
-    const pstileY: i16 = (player.sprite.y >> 4) - globals.BITMAP_Y; //Player screen tile Y (0 to 11)
-    if (!globals.g_scroll_y) {
-        if ((player.sprite.speed_y == 0) and (globals.LADDER_FLAG == false)) {
-            if (pstileY >= globals.screen_height - 1) {
-                globals.g_scroll_y_target = globals.screen_height - 2;
-                globals.g_scroll_y = true;
-            } else if (pstileY <= 2) {
-                globals.g_scroll_y_target = globals.screen_height - 3;
-                globals.g_scroll_y = true;
-            }
-        } else {
-            if (pstileY >= globals.screen_height - 2) { //The player is at the bottom of the screen, scroll down!
-                globals.g_scroll_y_target = 3;
-                globals.g_scroll_y = true;
-            } else if (pstileY <= 2) { //The player is at the top of the screen, scroll up!
-                globals.g_scroll_y_target = globals.screen_height - 3;
-                globals.g_scroll_y = true;
-            }
+    var step = @divTrunc(distance, EASING_DIVISOR);
+    if (step == 0) {
+        step = if (distance > 0) 1 else -1;
+    }
+    return current + step;
+}
+
+/// Lowest allowed top of the view for the whole level
+fn levelBottomLimit(level: *lvl.Level) i16 {
+    return @max(0, @as(i16, @intCast(level.height)) * 16 - window.game_height);
+}
+
+/// Lowest allowed top of the view while the player is above the ALTITUDE_ZERO line
+fn altitudeLimit(level: *lvl.Level) ?i16 {
+    const line: i16 = (@as(i16, globals.ALTITUDE_ZERO) + globals.screen_height) * 16;
+    if (level.player.sprite.y > line) {
+        return null;
+    }
+    // The original stops one tile row past the line
+    return @max(0, line + 16 - window.game_height);
+}
+
+fn applyCamera() void {
+    // BITMAP_Y is the first tile row that starts on the screen, the row above it is partially visible
+    globals.BITMAP_Y = @intCast(@divFloor(camera_top + 15, 16));
+    globals.g_scroll_py_offset = globals.BITMAP_Y * 16 - camera_top;
+}
+
+fn Y_ADJUST(level: *lvl.Level) void {
+    const player = &level.player;
+    const feet = player.sprite.y;
+    var top = camera_top;
+
+    const in_air = globals.YFALL != 0 or globals.jump_acceleration_counter != 0;
+    const settled = !in_air or globals.LADDER_FLAG;
+    if (settled) {
+        last_settled_feet = feet;
+    }
+
+    // Show what's above when the player stands or climbs high on the screen
+    if (settled and feet - top < REST_LINE) {
+        top = easeTowards(top, feet - REST_LINE);
+    }
+
+    // Look ahead while falling, but not during ordinary jumps
+    const fall_depth = feet - last_settled_feet;
+    const lookahead = std.math.clamp(fall_depth - FALL_LOOKAHEAD_START, 0, FALL_LOOKAHEAD_MAX);
+    const bottom_line = BOTTOM_LINE - lookahead;
+
+    // Don't show anything below ALTITUDE_ZERO while the player is above it
+    const altitude_limit = altitudeLimit(level);
+    if (altitude_limit) |limit| {
+        if (top > limit) {
+            top = easeTowards(top, limit);
         }
     }
 
-    // TODO: do something about this weirdness of discrete tile scrolling.
-    if ((player.sprite.y <= ((@as(i16, globals.ALTITUDE_ZERO) + globals.screen_height) >> 4)) and //If the player is above the horizontal limit
-        (globals.BITMAP_Y > globals.ALTITUDE_ZERO + 1)) //... and the screen have scrolled below the the horizontal limit
-    {
-        if (scroll_up(level)) {
-            globals.g_scroll_y = false;
-        }
-    } else if ((globals.BITMAP_Y > globals.ALTITUDE_ZERO - 5) and // If the screen is less than 5 tiles above the horizontal limit
-        (globals.BITMAP_Y <= globals.ALTITUDE_ZERO) and // ... and still above the horizontal limit
-        (player.sprite.y + (7 * 16) > ((globals.ALTITUDE_ZERO + globals.screen_height) << 4)))
-    {
-        if (scroll_down(level)) {
-            globals.g_scroll_y = false;
-        }
-    } else if (globals.g_scroll_y) {
-        if (globals.g_scroll_y_target == pstileY) {
-            globals.g_scroll_y = false;
-        } else if (globals.g_scroll_y_target > pstileY) {
-            if (scroll_up(level)) {
-                globals.g_scroll_y = false;
-            }
-        } else if ((player.sprite.y <= ((globals.ALTITUDE_ZERO + globals.screen_height) << 4)) and //If the player is above the horizontal limit
-            (globals.BITMAP_Y > globals.ALTITUDE_ZERO)) //... and the screen is below the horizontal limit
-        {
-            globals.g_scroll_y = false; //Stop scrolling
-        } else {
-            if (scroll_down(level)) {
-                globals.g_scroll_y = false;
-            }
+    // Keep the player on the screen
+    if (feet - top > bottom_line) {
+        top = feet - bottom_line;
+        if (altitude_limit) |limit| {
+            // The feet are above the ALTITUDE_ZERO line, so the player stays visible anyway
+            top = @min(top, @max(limit, camera_top));
         }
     }
+    if (feet - top < TOP_LINE) {
+        top = feet - TOP_LINE;
+    }
+
+    camera_top = std.math.clamp(top, 0, levelBottomLimit(level));
+    globals.g_scroll_y = camera_top != top;
+    applyCamera();
+}
+
+/// Put the camera where it would settle around the player, without easing
+fn snapCameraY(level: *lvl.Level) void {
+    last_settled_feet = level.player.sprite.y;
+    var top = level.player.sprite.y - BOTTOM_LINE;
+    if (altitudeLimit(level)) |limit| {
+        top = @min(top, limit);
+    }
+    camera_top = std.math.clamp(top, 0, levelBottomLimit(level));
+    applyCamera();
+}
+
+/// Call after moving BITMAP_Y by whole tiles (like the gates do), so the camera continues from there.
+/// Matches how those fixed screens always looked: half a tile of the row above is visible.
+pub fn syncCameraY() void {
+    camera_top = if (globals.BITMAP_Y > 0) globals.BITMAP_Y * 16 - 8 else 0;
+    applyCamera();
 }
 
 // TODO: put this somewhere else, like `engine`, it has nothing to do with scrolling
@@ -185,12 +250,12 @@ pub fn animate_tiles() void {
 
 pub fn scrollToPlayer(level: *lvl.Level) void {
     globals.BITMAP_X = 0;
-    globals.BITMAP_Y = 0;
+    snapCameraY(level);
 
-    globals.g_scroll_y = true;
     globals.g_scroll_x = true;
-    while (globals.g_scroll_y or globals.g_scroll_x) {
-        scroll(level);
+    while (globals.g_scroll_x) {
+        animate_tiles();
+        X_ADJUST(level);
     }
 }
 

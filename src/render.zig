@@ -79,10 +79,8 @@ pub fn flip_screen(context: *ScreenContext, slow: bool) void {
     }
 }
 
-// We use this to fill the whole 320x200 space in most cases instead of not rendering the bottom 8 pixels
-// TODO: actual vertical smooth scrolling instead of this coarse stuff and half-tile workarounds
-fn get_y_offset() u8 {
-    return if (globals.BITMAP_Y == 0) 0 else 8;
+fn get_y_offset() i16 {
+    return globals.g_scroll_py_offset;
 }
 
 pub fn render_tiles(level: *lvl.Level) void {
@@ -187,7 +185,7 @@ fn render_sprite(spr: *allowzero lvl.Sprite) void {
     if ((dest.x >= globals.screen_width * 16) or //Right for the screen
         (dest.x + spr.spritedata.?.width < 0) or //Left for the screen
         (dest.y + spr.spritedata.?.height < 0) or //Above the screen
-        (dest.y >= globals.screen_height * 16)) //Below the screen
+        (dest.y >= window.game_height)) //Below the screen
     {
         return;
     }

@@ -137,6 +137,9 @@ pub var g_scroll_y: bool = false;
 //If scrolling: scroll until player is in this tile (Y)
 pub var g_scroll_y_target: TileCoord = 0;
 
+// Pixels between the top of the screen and the top of the BITMAP_Y tile row (0 to 15)
+pub var g_scroll_py_offset: PixelCoord = 0;
+
 //The engine will not scroll below this tile before the player have gone below (Y)
 pub var ALTITUDE_ZERO: TileCoord = 0;
 

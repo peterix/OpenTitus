@@ -84,6 +84,7 @@ pub fn CLEAR_DATA(level: *lvl.Level) void {
     globals.g_scroll_y = false;
     globals.g_scroll_y_target = 0;
     globals.g_scroll_px_offset = 0;
+    globals.g_scroll_py_offset = 0;
     globals.YFALL = 0;
 
     globals.GRAVITY_FLAG = 4;
