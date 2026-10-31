@@ -290,8 +290,11 @@ pub fn run(init: std.process.Init) !u8 {
             .new_game => |level| try engine.playtitus(io, level, null, allocator),
             .continue_game => |saved| try engine.playtitus(io, 0, saved, allocator),
         };
-        if (retval < 0)
+        if (retval == engine.exit_to_menu) {
+            audio.playTrack(.MainTitle);
+        } else if (retval < 0) {
             state = 0;
+        }
     }
 
     try settings.write(io, allocator);

@@ -32,6 +32,7 @@ const fonts = @import("fonts.zig");
 const globals = @import("../globals.zig");
 const audio = @import("../audio/audio.zig");
 const options_menu = @import("options_menu.zig");
+const engine = @import("../engine.zig");
 
 const input = @import("../input.zig");
 const InputAction = input.InputAction;
@@ -42,6 +43,11 @@ const MenuContext = menu.MenuContext;
 fn continueFn(menu_context: *MenuContext) ?c_int {
     _ = menu_context;
     return 0;
+}
+
+fn exitToMenuFn(menu_context: *MenuContext) ?c_int {
+    _ = menu_context;
+    return engine.exit_to_menu;
 }
 
 fn quitFn(menu_context: *MenuContext) ?c_int {
@@ -57,6 +63,7 @@ const MenuEntry = struct {
 const menu_entries: []const MenuEntry = &.{
     .{ .text = "Continue", .handler = continueFn },
     .{ .text = "Options", .handler = options_menu.optionsMenu },
+    .{ .text = "Exit to Menu", .handler = exitToMenuFn },
     .{ .text = "Quit", .handler = quitFn },
 };
 

@@ -103,14 +103,17 @@ pub fn loadLevel(io: std.Io, allocator: std.mem.Allocator, level: *lvl.Level) !c
     );
 }
 
+/// Returned up from the game loop when the player leaves the game for the main menu
+pub const exit_to_menu: c_int = -2;
+
 /// Advance the game by one frame and draw it.
-/// Returns -1 when the player quits the game.
+/// Returns -1 when the player quits the game, `exit_to_menu` when they go back to the main menu.
 pub fn updateFrame(io: std.Io, context: *ScreenContext, level: *lvl.Level) c_int {
     globals.IMAGE_COUNTER = (globals.IMAGE_COUNTER + 1) & 0x0FFF; //Cycle from 0 to 0x0FFF
     elevators.move(level);
     objects.move_objects(level); //Object gravity
     const retval = player.move_player(io, context, level); //Key input, update and move player, handle carried object and decrease timers
-    if (retval == -1) { //c.TITUS_ERROR_QUIT) {
+    if (retval < 0) {
         return retval;
     }
     enemies.moveEnemies(level); //Move enemies
@@ -305,7 +308,7 @@ fn playlevel(io: std.Io, allocator: std.mem.Allocator, context: *ScreenContext, 
         }
         firstrun = false;
         retval = updateFrame(io, context, level);
-        if (retval == -1) {
+        if (retval < 0) {
             // Quitting keeps the checkpoint, and the lives and bonuses so far
             saveGame(io, allocator, level);
             return retval;
