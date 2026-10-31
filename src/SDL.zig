@@ -33,6 +33,7 @@ pub const EVENT_WINDOW_EXPOSED = This.SDL_EVENT_WINDOW_EXPOSED;
 // Blend modes
 pub const BlendMode = This.SDL_BlendMode;
 pub const BLENDMODE_BLEND = This.SDL_BLENDMODE_BLEND;
+pub const BLENDMODE_NONE = This.SDL_BLENDMODE_NONE;
 
 // Pixel format enum
 pub const PIXELFORMAT_INDEX8 = This.SDL_PIXELFORMAT_INDEX8;
@@ -270,6 +271,7 @@ pub fn loadBMP_IO(src: ?*This.SDL_IOStream, closeio: bool) [*c]Surface {
 pub const saveBMP = This.SDL_SaveBMP;
 
 pub const setSurfaceColorKey = This.SDL_SetSurfaceColorKey;
+pub const setSurfaceColorMod = This.SDL_SetSurfaceColorMod;
 
 pub fn setSurfaceAlphaMod(surface: *Surface, alpha: u8) bool {
     return This.SDL_SetSurfaceAlphaMod(surface, alpha);

@@ -65,6 +65,8 @@ pub const Font = struct {
     pub const RenderOptions = packed struct {
         monospace: bool = false,
         transpatent: bool = false,
+        /// Black shadow one pixel to the left and below, like the menu text in Moktar. Implies `transpatent`.
+        shadow: bool = false,
     };
 
     pub fn render_columns(self: *Font, left: []const u8, right: []const u8, y: c_int, options: RenderOptions) void {
@@ -82,6 +84,26 @@ pub const Font = struct {
     }
 
     pub fn render(self: *Font, text: []const u8, x: c_int, y: c_int, options: RenderOptions) void {
+        self.renderOn(window.screen.?, text, x, y, options);
+    }
+
+    /// Render text onto any surface
+    pub fn renderOn(self: *Font, target: *SDL.Surface, text: []const u8, x: c_int, y: c_int, options: RenderOptions) void {
+        if (options.shadow) {
+            var shadow_options = options;
+            shadow_options.shadow = false;
+            shadow_options.transpatent = true;
+            _ = SDL.setSurfaceColorMod(self.sheet, 0, 0, 0);
+            self.renderOn(target, text, x - 1, y, shadow_options);
+            self.renderOn(target, text, x, y + 1, shadow_options);
+            _ = SDL.setSurfaceColorMod(self.sheet, 255, 255, 255);
+            var text_options = options;
+            text_options.shadow = false;
+            text_options.transpatent = true;
+            self.renderOn(target, text, x, y, text_options);
+            return;
+        }
+
         var dest: SDL.Rect = .{ .x = x, .y = y, .w = 0, .h = 0 };
 
         const black = SDL.mapSurfaceRGB(self.sheet, 0, 0, 0);
@@ -94,14 +116,14 @@ pub const Font = struct {
                 var src = SDL.Rect{ .x = chardesc.x_mono, .y = chardesc.y, .w = chardesc.w_mono, .h = chardesc.h };
                 dest.w = chardesc.w_mono;
                 dest.h = chardesc.h;
-                _ = SDL.blitSurface(self.sheet, &src, window.screen, &dest);
+                _ = SDL.blitSurface(self.sheet, &src, target, &dest);
                 dest.x += chardesc.w_mono;
             } else {
                 dest.x += chardesc.x_offset;
                 var src = SDL.Rect{ .x = chardesc.x, .y = chardesc.y, .w = chardesc.w, .h = chardesc.h };
                 dest.w = chardesc.w;
                 dest.h = chardesc.h;
-                _ = SDL.blitSurface(self.sheet, &src, window.screen, &dest);
+                _ = SDL.blitSurface(self.sheet, &src, target, &dest);
                 dest.x += chardesc.w;
             }
         }
@@ -133,14 +155,20 @@ pub var Gold: Font = undefined;
 const gray_font_data = @embedFile("gray_font.bmp");
 pub var Gray: Font = undefined;
 
+/// Like the Titus the Fox menu text
+const red_font_data = @embedFile("red_font.bmp");
+pub var Red: Font = undefined;
+
 pub fn fonts_load() !void {
     try Gold.init(gold_font_data);
     try Gray.init(gray_font_data);
+    try Red.init(red_font_data);
 }
 
 pub fn fonts_free() void {
     Gold.deinit();
     Gray.deinit();
+    Red.deinit();
 }
 
 const CHAR_QUESTION = 63;

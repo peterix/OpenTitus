@@ -222,6 +222,9 @@ fn slider(
     font.render("]", x, y, options);
 }
 
+/// Audio, Music, Volume, Rumble, Fullscreen
+const item_count = 5;
+
 pub fn optionsMenu(menu_context: *MenuContext) ?c_int {
     var selected: u8 = 0;
     while (true) {
@@ -242,7 +245,7 @@ pub fn optionsMenu(menu_context: *MenuContext) ?c_int {
                 }
             },
             .Down => {
-                if (selected < 5) {
+                if (selected < item_count - 1) {
                     selected += 1;
                 }
             },
@@ -301,7 +304,7 @@ pub fn optionsMenu(menu_context: *MenuContext) ?c_int {
             1,
             8,
             y,
-            selected == 4,
+            selected == 3,
             input_state.action,
             input.setRumble,
             .Options_TestRumble,
@@ -311,7 +314,7 @@ pub fn optionsMenu(menu_context: *MenuContext) ?c_int {
         toggle(
             window.is_fullscreen(),
             y,
-            selected == 5,
+            selected == 4,
             input_state.action,
             window.set_fullscreen,
         );
