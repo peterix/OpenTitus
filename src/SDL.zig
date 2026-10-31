@@ -298,6 +298,8 @@ pub const mapSurfaceRGB = This.SDL_MapSurfaceRGB;
 pub const fillSurfaceRect = This.SDL_FillSurfaceRect;
 pub const setSurfaceClipRect = This.SDL_SetSurfaceClipRect;
 pub const blitSurface = This.SDL_BlitSurface;
+pub const blitSurfaceScaled = This.SDL_BlitSurfaceScaled;
+pub const SCALEMODE_LINEAR = This.SDL_SCALEMODE_LINEAR;
 
 // Event loop
 

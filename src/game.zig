@@ -221,7 +221,7 @@ pub fn run(init: std.process.Init) !u8 {
     }
     else if(available_games.moktar and available_games.titus)
     {
-        switch(gameMenu.gameMenu()) {
+        switch(gameMenu.gameMenu(io, allocator)) {
             .Titus => {
                 data.init(.Titus);
             },
@@ -240,8 +240,9 @@ pub fn run(init: std.process.Init) !u8 {
         data.init(.Moktar);
     }
     else {
-        // TODO: add some screen that shows the error to the user
-        return error.GameDataNotAvailable;
+        std.log.err("No game data found. Put the original game files in a TITUS or MOKTAR folder.", .{});
+        gameMenu.noGameData();
+        return 1;
     }
 
     game_state_mem = try GameState.read(io, allocator);

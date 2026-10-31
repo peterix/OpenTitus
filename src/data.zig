@@ -618,13 +618,18 @@ pub fn probeGameFiles(io: std.Io) GamesAvailable {
     };
 }
 
-pub fn init(game_to_init : GameType) void {
-    game = game_to_init;
-    constants = switch (game_to_init) {
+/// The data of a game, without choosing it like `init` does
+pub fn constantsFor(game_type: GameType) *const Constants {
+    return switch (game_type) {
         .Moktar => &moktar_consts,
         .Titus => &titus_consts,
         .None => &null_consts,
     };
+}
+
+pub fn init(game_to_init : GameType) void {
+    game = game_to_init;
+    constants = constantsFor(game_to_init);
 
     if (game == .Titus) {
         anim_player[1] = &.{ 2, 2, 2, 1, 1, 1, 1, 2, 2, 2, 3, 3, 3, 3, -14 * 2 };
