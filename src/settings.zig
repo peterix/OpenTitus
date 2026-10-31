@@ -49,6 +49,8 @@ pub const Settings = extern struct {
     window_height: u16 = window.game_height * 3,
     audio_backend: BackendType = .Adlib,
     rumble: u8 = 8, // 0 = off, 16 = max
+    /// Lives, energy and extra bonus always on screen, instead of the energy showing up when it changes
+    status_display: bool = true,
     seen_intro: bool = false,
 
     pub fn make_new(allocator: Allocator, io: std.Io) !ManagedJSON(Settings) {

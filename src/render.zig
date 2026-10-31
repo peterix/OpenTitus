@@ -111,6 +111,9 @@ pub fn render_tiles(level: *lvl.Level) void {
     }
 }
 
+/// Debug and cheat labels go below the status display in the top right corner
+const label_y = 2 * 12;
+
 pub fn render_sprites(level: *lvl.Level) void {
     for (0..lvl.ELEVATOR_CAPACITY) |i| {
         render_sprite(&level.elevator[lvl.ELEVATOR_CAPACITY - 1 - i].sprite);
@@ -143,22 +146,22 @@ pub fn render_sprites(level: *lvl.Level) void {
         const bytes = std.fmt.bufPrint(&buf, "{d},{d}", .{level.player.sprite.x >> 4, level.player.sprite.y >> 4}) catch {
             unreachable;
         };
-        fonts.Gold.render(bytes, 30 * 8, 0 * 12, .{ .monospace = true });
+        fonts.Gold.render(bytes, 30 * 8, label_y + 0 * 12, .{ .monospace = true });
     }
     if (debug.ladder_flag) {
         if(globals.LADDER_FLAG) {
-            fonts.Gold.render("LADDER", 30 * 8, 1 * 12, .{ .monospace = true });
+            fonts.Gold.render("LADDER", 30 * 8, label_y + 1 * 12, .{ .monospace = true });
         }
     }
     if (debug.player_action) {
-        fonts.Gold.render(globals.LAST_ORDER.str(), 30 * 8, 2 * 12, .{ .monospace = true });
+        fonts.Gold.render(globals.LAST_ORDER.str(), 30 * 8, label_y + 2 * 12, .{ .monospace = true });
     }
 
     if (globals.GODMODE) {
-        fonts.Gold.render("GODMODE", 30 * 8, 0 * 12, .{ .monospace = true });
+        fonts.Gold.render("GODMODE", 30 * 8, label_y + 0 * 12, .{ .monospace = true });
     }
     if (globals.NOCLIP) {
-        fonts.Gold.render("NOCLIP", 30 * 8, 1 * 12, .{ .monospace = true });
+        fonts.Gold.render("NOCLIP", 30 * 8, label_y + 1 * 12, .{ .monospace = true });
     }
 }
 

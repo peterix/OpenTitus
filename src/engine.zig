@@ -49,6 +49,7 @@ const input = @import("input.zig");
 
 const image = @import("ui/image.zig");
 const status = @import("ui/status.zig");
+const hud = @import("ui/hud.zig");
 const final_cutscene = @import("final_cutscene.zig");
 
 /// Load the sprites used by all the levels. Free them with `unloadSprites`.
@@ -302,7 +303,11 @@ fn playlevel(io: std.Io, allocator: std.mem.Allocator, context: *ScreenContext, 
 
     while (true) {
         if (!firstrun) {
-            render.render_health_bars(level);
+            if (hud.isEnabled()) {
+                hud.render(level);
+            } else {
+                render.render_health_bars(level);
+            }
             audio.music_restart_if_finished();
             render.flip_screen(context, true);
         }

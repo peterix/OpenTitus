@@ -36,6 +36,7 @@ const input = @import("../input.zig");
 const InputAction = input.InputAction;
 
 const menu = @import("menu.zig");
+const hud = @import("hud.zig");
 const MenuContext = menu.MenuContext;
 
 const x_baseline = 90;
@@ -235,6 +236,7 @@ const Row = enum {
     Music,
     Volume,
     Rumble,
+    Status,
     Fullscreen,
 };
 
@@ -290,6 +292,10 @@ pub fn optionsMenu(menu_context: *MenuContext) ?c_int {
                 .Rumble => {
                     label("Rumble", y, is_selected);
                     slider(u8, input.getRumble(), 0, 16, 1, 8, y, is_selected, input_state.action, input.setRumble, .Options_TestRumble);
+                },
+                .Status => {
+                    label("Status", y, is_selected);
+                    toggle(hud.isEnabled(), y, is_selected, input_state.action, hud.setEnabled);
                 },
                 .Fullscreen => {
                     label("Fullscreen", y, is_selected);
