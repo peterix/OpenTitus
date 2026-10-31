@@ -31,7 +31,6 @@ const sqz = @import("../sqz.zig");
 const image = @import("image.zig");
 const window = @import("../window.zig");
 const data = @import("../data.zig");
-const game = @import("../game.zig");
 const fonts = @import("fonts.zig");
 const render = @import("../render.zig");
 const ImageFile = image.ImageFile;
@@ -39,6 +38,7 @@ const input = @import("../input.zig");
 
 const menu = @import("menu.zig");
 const options_menu = @import("options_menu.zig");
+const level_select = @import("level_select.zig");
 
 const MenuItem = enum {
     Start,
@@ -155,6 +155,16 @@ const MenuImage = struct {
     }
 };
 
+/// Menus opened from the main menu draw themselves over a dimmed picture of it.
+/// It's much brighter and busier than a level, so it fades darker and faster than in the pause menu.
+fn subMenuContext(background: *SDL.Surface) menu.MenuContext {
+    return .{
+        .background_image = background,
+        .fade_target = 230,
+        .fade_step = 6,
+    };
+}
+
 pub fn view_menu(io: std.Io, file: ImageFile, allocator: std.mem.Allocator) !?usize {
     var selection: usize = 0;
 
@@ -225,21 +235,22 @@ pub fn view_menu(io: std.Io, file: ImageFile, allocator: std.mem.Allocator) !?us
                         break :MENULOOP;
                     },
                     .LevelSelect => {
-                        curlevel = try select_level(allocator);
-                        if (curlevel != null) {
-                            break :MENULOOP;
+                        const background = try SDL.duplicateSurface(frame);
+                        defer SDL.destroySurface(background);
+                        var menu_context = subMenuContext(background);
+                        switch (try level_select.levelSelect(&menu_context, allocator)) {
+                            .level => |level| {
+                                curlevel = level;
+                                break :MENULOOP;
+                            },
+                            .cancel => {},
+                            .quit => return null,
                         }
                     },
                     .Options => {
-                        // The options menu draws itself over a dimmed picture of this menu.
-                        // It's much brighter and busier than a level, so it fades darker and faster than in the pause menu.
                         const background = try SDL.duplicateSurface(frame);
                         defer SDL.destroySurface(background);
-                        var menu_context: menu.MenuContext = .{
-                            .background_image = background,
-                            .fade_target = 230,
-                            .fade_step = 6,
-                        };
+                        var menu_context = subMenuContext(background);
                         if (options_menu.optionsMenu(&menu_context)) |result| {
                             if (result < 0) {
                                 return null;
@@ -264,100 +275,4 @@ pub fn view_menu(io: std.Io, file: ImageFile, allocator: std.mem.Allocator) !?us
     // Close the menu
     render.fadeout();
     return curlevel;
-}
-
-fn select_level(allocator: std.mem.Allocator) !?usize {
-    const LevelSelect = struct {
-        unlocked: bool,
-        text: []const u8,
-        font: *fonts.Font,
-        width: u16,
-        y: c_int,
-    };
-    var level_list = try std.ArrayList(LevelSelect).initCapacity(allocator, data.constants.levelfiles.len);
-    defer level_list.deinit(allocator);
-
-    var selection: usize = 0;
-    var max_width: c_int = 0;
-
-    for (data.constants.levelfiles, 0..) |level, i| {
-        const y: c_int = @intCast(i * 13);
-        const known = game.game_state.isKnown(i);
-        if (!known) {
-            const width = fonts.Gray.metrics("...", .{});
-            if (width > max_width) {
-                max_width = width;
-            }
-            level_list.append(allocator, LevelSelect{
-                .unlocked = false,
-                .text = "...",
-                .font = &fonts.Gray,
-                .width = width,
-                .y = y,
-            }) catch {
-                // already inited up to capacity, this is fine
-                unreachable;
-            };
-            break;
-        }
-        const unlocked = game.game_state.isUnlocked(i);
-        const font = if (unlocked) &fonts.Gold else &fonts.Gray;
-        const width = font.metrics(level.title, .{});
-        if (width > max_width) {
-            max_width = width;
-        }
-        level_list.append(allocator, LevelSelect{
-            .unlocked = unlocked,
-            .text = level.title,
-            .font = font,
-            .width = width,
-            .y = y,
-        }) catch {
-            // already inited up to capacity, this is fine
-            unreachable;
-        };
-    }
-
-    while (true) {
-        const input_state = input.processEvents();
-        switch (input_state.action) {
-            .Escape, .Cancel, .Quit => {
-                return null;
-            },
-            .Up => {
-                if (selection > 0) {
-                    selection -= 1;
-                }
-            },
-            .Down => {
-                if (selection < level_list.items.len - 1) {
-                    selection += 1;
-                }
-            },
-            .Activate => {
-                if (game.game_state.isUnlocked(selection)) {
-                    return selection;
-                } else {}
-            },
-            else => {},
-        }
-
-        // TODO: render this nicer...
-        window.window_clear(null);
-        for (level_list.items, 0..) |level, i| {
-            if (selection == i) {
-                const x = 160 - level.width / 2;
-                level.font.render(level.text, x, level.y, .{});
-                const left = ">";
-                const right = "<";
-                const left_width = fonts.Gold.metrics(left, .{});
-                fonts.Gold.render(left, x - 4 - left_width, level.y, .{});
-                fonts.Gold.render(right, x + level.width + 4, level.y, .{});
-            } else {
-                level.font.render_center(level.text, level.y, .{});
-            }
-        }
-        window.window_render();
-        SDL.delay(1);
-    }
 }

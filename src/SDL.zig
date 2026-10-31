@@ -292,6 +292,7 @@ pub fn getError() []const u8 {
 pub const mapSurfaceRGB = This.SDL_MapSurfaceRGB;
 
 pub const fillSurfaceRect = This.SDL_FillSurfaceRect;
+pub const setSurfaceClipRect = This.SDL_SetSurfaceClipRect;
 pub const blitSurface = This.SDL_BlitSurface;
 
 // Event loop

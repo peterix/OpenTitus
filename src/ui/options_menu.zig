@@ -253,13 +253,8 @@ pub fn optionsMenu(menu_context: *MenuContext) ?c_int {
         }
 
         menu_context.renderBackground();
-        const title_width = fonts.Gold.metrics("OPTIONS", .{ .transpatent = true }) + 4;
-        var y: i16 = 8;
-        fonts.Gold.render_center("OPTIONS", y, .{ .transpatent = true });
-        y += 12;
-        const bar = SDL.Rect{ .x = 160 - title_width / 2, .y = y, .w = title_width, .h = 1 };
-        _ = SDL.fillSurfaceRect(window.screen.?, &bar, SDL.mapSurfaceRGB(window.screen, 0xd0, 0xb0, 0x00));
-        y += 27;
+        var y: i16 = menu_context.renderTitle("OPTIONS");
+        y += 26;
 
         label("Audio", y, selected == 0);
         enumOptions(
