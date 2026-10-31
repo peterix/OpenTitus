@@ -82,14 +82,11 @@ const SoundEffectCount = @typeInfo(SoundEffect).@"enum".fields.len;
 /// How many module ticks make one bar of the DOS version of a song, so the music can continue from where another
 /// backend was. Measured by matching the notes of the two versions bar by bar. Songs that don't line up start over.
 fn ticksPerBar(track: AudioTrack) ?u32 {
-    // TODO: measure the Moktar songs too
-    if (data.game != .Titus) {
-        return null;
-    }
     return switch (track) {
         .Play1, .Play2 => 72,
         .Play3 => 128,
-        .Play4 => 112,
+        // Titus and Moktar have a different song here
+        .Play4 => if (data.game == .Moktar) 96 else 112,
         .Play5 => 96,
         .MainTitle => 64,
         .Bonus => 84,
@@ -97,6 +94,7 @@ fn ticksPerBar(track: AudioTrack) ?u32 {
         .Credits, .Win, .LevelEnd, .GameOver, .Death => null,
     };
 }
+
 const TrackCount = @typeInfo(AudioTrack).@"enum".fields.len;
 
 /// NTSC Paula clock the Amiga version uses to compute sample periods
