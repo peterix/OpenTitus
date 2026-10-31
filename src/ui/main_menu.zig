@@ -81,7 +81,7 @@ const Layout = struct {
 const titus_layout: Layout = .{
     .clear = .{ .x = 100, .y = 145, .w = 140, .h = 55 },
     .font = &fonts.Red,
-    .font_options = .{ .monospace = true, .transpatent = true },
+    .font_options = .{ .monospace = true, .transparent = true },
     .text_x = 112,
     .text_y = 148,
     .cursor = @embedFile("menu_cursor_titus.bmp"),

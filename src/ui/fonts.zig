@@ -64,8 +64,8 @@ pub const Font = struct {
 
     pub const RenderOptions = packed struct {
         monospace: bool = false,
-        transpatent: bool = false,
-        /// Black shadow one pixel to the left and below, like the menu text in Moktar. Implies `transpatent`.
+        transparent: bool = false,
+        /// Black shadow one pixel to the left and below, like the menu text in Moktar. Implies `transparent`.
         shadow: bool = false,
     };
 
@@ -92,14 +92,14 @@ pub const Font = struct {
         if (options.shadow) {
             var shadow_options = options;
             shadow_options.shadow = false;
-            shadow_options.transpatent = true;
+            shadow_options.transparent = true;
             _ = SDL.setSurfaceColorMod(self.sheet, 0, 0, 0);
             self.renderOn(target, text, x - 1, y, shadow_options);
             self.renderOn(target, text, x, y + 1, shadow_options);
             _ = SDL.setSurfaceColorMod(self.sheet, 255, 255, 255);
             var text_options = options;
             text_options.shadow = false;
-            text_options.transpatent = true;
+            text_options.transparent = true;
             self.renderOn(target, text, x, y, text_options);
             return;
         }
@@ -107,7 +107,8 @@ pub const Font = struct {
         var dest: SDL.Rect = .{ .x = x, .y = y, .w = 0, .h = 0 };
 
         const black = SDL.mapSurfaceRGB(self.sheet, 0, 0, 0);
-        _ = SDL.setSurfaceColorKey(self.sheet, options.transpatent, black);
+        _ = SDL.setSurfaceColorKey(self.sheet, options.transparent, black);
+
 
         // Let's assume ASCII for now... original code was trying to do something with UTF-8, but had the font files have no support for that
         for (text) |character| {

@@ -164,7 +164,7 @@ fn renderList(entries: []const Entry, selection: usize, scroll_position: i32) vo
     _ = SDL.setSurfaceClipRect(screen, &clip);
     defer _ = SDL.setSurfaceClipRect(screen, null);
 
-    const options = fonts.Font.RenderOptions{ .transpatent = true };
+    const options = fonts.Font.RenderOptions{ .transparent = true };
     for (entries, 0..) |entry, i| {
         const y: c_int = list_top + @as(c_int, @intCast(i)) * line_height - scroll_position;
         if (y + line_height <= list_top or y >= list_bottom) {

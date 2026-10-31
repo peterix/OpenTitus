@@ -49,7 +49,7 @@ const menu_entries: []const MenuEntry = &.{
 
 fn renderLabel(text: []const u8, y: i16, selected: bool) void {
     const font = if (selected) &fonts.Gold else &fonts.Gray;
-    const options = fonts.Font.RenderOptions{ .transpatent = true };
+    const options = fonts.Font.RenderOptions{ .transparent = true };
     font.render_center(text, y, options);
 }
 
@@ -84,9 +84,9 @@ pub fn gameMenu() data.GameType {
             else => {},
         }
 
-        const title_width = fonts.Gold.metrics("Select Game", .{ .transpatent = true }) + 4;
+        const title_width = fonts.Gold.metrics("Select Game", .{ .transparent = true }) + 4;
         var y: i16 = 40;
-        fonts.Gold.render_center("Select Game", y, .{ .transpatent = true });
+        fonts.Gold.render_center("Select Game", y, .{ .transparent = true });
         y += 12;
         const bar = SDL.Rect{ .x = 160 - title_width / 2, .y = y, .w = title_width, .h = 1 };
         _ = SDL.fillSurfaceRect(window.screen.?, &bar, SDL.mapSurfaceRGB(window.screen, 0xd0, 0xb0, 0x00));

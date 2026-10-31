@@ -19,7 +19,7 @@ pub const MenuContext = struct {
     /// Render the menu title with a line under it, returns the y coordinate under the line
     pub fn renderTitle(self: *MenuContext, title: []const u8) i16 {
         _ = self;
-        const options = fonts.Font.RenderOptions{ .transpatent = true };
+        const options = fonts.Font.RenderOptions{ .transparent = true };
         const title_width = fonts.Gold.metrics(title, options) + 4;
         var y: i16 = 8;
         fonts.Gold.render_center(title, y, options);

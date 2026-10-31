@@ -29,7 +29,6 @@ const SDL = @import("../SDL.zig");
 const fonts = @import("fonts.zig");
 const window = @import("../window.zig");
 const audio = @import("../audio/audio.zig");
-const BackendType = audio.BackendType;
 
 const events = @import("../events.zig");
 
@@ -43,52 +42,61 @@ const x_baseline = 90;
 
 fn label(text: []const u8, y: i16, selected: bool) void {
     const font = if (selected) &fonts.Gold else &fonts.Gray;
-    const options = fonts.Font.RenderOptions{ .transpatent = true };
+    const options = fonts.Font.RenderOptions{ .transparent = true };
     const label_width = fonts.Gold.metrics(text, options);
     font.render(text, x_baseline - label_width - 4, y, options);
 }
 
-fn enumOptions(
+/// Right edge of the value column, where the sliders end
+fn valueAreaRight() i16 {
+    const bracket_width = fonts.Gold.metrics("[", .{ .transparent = true });
+    return x_baseline + 4 + @as(i16, @intCast(bracket_width)) - 4 + 128;
+}
+
+/// A setting with a few possible values. The current value is in the middle between fixed `<` and `>`.
+/// Left and right go through the values.
+fn choice(
     comptime T: type,
+    values: []const T,
     value: T,
     y: i16,
     selected: bool,
     action: InputAction,
     setter: *const fn (T) void,
 ) void {
-    if (@typeInfo(T) != .@"enum") {
-        @compileError("enumOptions can only be used with an enum type");
-    }
+    const options = fonts.Font.RenderOptions{ .transparent = true };
+    const index = std.mem.indexOfScalar(T, values, value) orelse 0;
+    if (selected) switch (action) {
+        .Left => {
+            if (index > 0) {
+                setter(values[index - 1]);
+            }
+        },
+        .Right => {
+            if (index < values.len - 1) {
+                setter(values[index + 1]);
+            }
+        },
+        else => {
+            // NIL
+        },
+    };
 
-    const options = fonts.Font.RenderOptions{ .transpatent = true };
-    const fields = std.meta.fields(T);
+    // The arrows stay in place
+    const left_x: i16 = x_baseline + 4;
+    const right_x = valueAreaRight();
+    const left_font = if (selected and index > 0) &fonts.Gold else &fonts.Gray;
+    const right_font = if (selected and index < values.len - 1) &fonts.Gold else &fonts.Gray;
+    left_font.render("<", left_x, y, options);
+    right_font.render(">", right_x, y, options);
 
-    const intValue = @intFromEnum(value);
-    var x: u16 = x_baseline + 4;
-    inline for (fields, 0..) |f, index| {
-        const value_selected = f.value == intValue;
-        const enum_value: T = @enumFromInt(f.value);
-        if (selected and value_selected) switch (action) {
-            .Left => {
-                if (index > 0) {
-                    setter(@enumFromInt(fields[index - 1].value));
-                }
-            },
-            .Right => {
-                if (index < fields.len - 1) {
-                    setter(@enumFromInt(fields[index + 1].value));
-                }
-            },
-            else => {
-                // NIL
-            },
-        };
-        const font = if (value_selected) &fonts.Gold else &fonts.Gray;
-        const text = enum_value.str();
-        const label_width = fonts.Gold.metrics(text, options);
-        font.render(text, x, y, options);
-        x += label_width + 4;
-    }
+    // The value goes in the middle between them
+    const arrow_width: i16 = @intCast(fonts.Gold.metrics("<", options));
+    const center = @divTrunc(left_x + arrow_width + right_x, 2);
+    const text = value.str();
+    const width: i16 = @intCast(fonts.Gold.metrics(text, options));
+    const value_font = if (selected) &fonts.Gold else &fonts.Gray;
+    value_font.render(text, center - @divTrunc(width, 2), y, options);
 }
 
 fn toggle(
@@ -98,7 +106,7 @@ fn toggle(
     action: InputAction,
     setter: *const fn (bool) void,
 ) void {
-    const options = fonts.Font.RenderOptions{ .transpatent = true };
+    const options = fonts.Font.RenderOptions{ .transparent = true };
 
     var set_value = value;
     if (selected) switch (action) {
@@ -171,7 +179,7 @@ fn slider(
     setter: *const fn (T) void,
     event: events.GameEvent,
 ) void {
-    const options = fonts.Font.RenderOptions{ .transpatent = true };
+    const options = fonts.Font.RenderOptions{ .transparent = true };
     if (@typeInfo(T) != .int) {
         @compileError("slider can only be used with an enum type");
     }
@@ -222,11 +230,19 @@ fn slider(
     font.render("]", x, y, options);
 }
 
-/// Audio, Music, Volume, Rumble, Fullscreen
-const item_count = 5;
+const Row = enum {
+    Audio,
+    Music,
+    Volume,
+    Rumble,
+    Fullscreen,
+};
+
+const rows = std.enums.values(Row);
+const audio_backends = std.enums.values(audio.BackendType);
 
 pub fn optionsMenu(menu_context: *MenuContext) ?c_int {
-    var selected: u8 = 0;
+    var selected: usize = 0;
     while (true) {
         const timeout = menu_context.updateBackground();
         SDL.delay(timeout);
@@ -245,7 +261,7 @@ pub fn optionsMenu(menu_context: *MenuContext) ?c_int {
                 }
             },
             .Down => {
-                if (selected < item_count - 1) {
+                if (selected < rows.len - 1) {
                     selected += 1;
                 }
             },
@@ -256,63 +272,33 @@ pub fn optionsMenu(menu_context: *MenuContext) ?c_int {
         var y: i16 = menu_context.renderTitle("OPTIONS");
         y += 26;
 
-        label("Audio", y, selected == 0);
-        enumOptions(
-            BackendType,
-            audio.getBackendType(),
-            y,
-            selected == 0,
-            input_state.action,
-            audio.setBackendType,
-        );
-        y += 13;
-        label("Music", y, selected == 1);
-        toggle(
-            audio.music_is_playing(),
-            y,
-            selected == 1,
-            input_state.action,
-            audio.music_set_playing,
-        );
-        y += 13;
-        label("Volume", y, selected == 2);
-        slider(
-            u8,
-            audio.get_volume(),
-            0,
-            128,
-            2,
-            1,
-            y,
-            selected == 2,
-            input_state.action,
-            audio.set_volume,
-            .None,
-        );
-        y += 13;
-        label("Rumble", y, selected == 3);
-        slider(
-            u8,
-            input.getRumble(),
-            0,
-            16,
-            1,
-            8,
-            y,
-            selected == 3,
-            input_state.action,
-            input.setRumble,
-            .Options_TestRumble,
-        );
-        y += 13;
-        label("Fullscreen", y, selected == 4);
-        toggle(
-            window.is_fullscreen(),
-            y,
-            selected == 4,
-            input_state.action,
-            window.set_fullscreen,
-        );
+        for (rows, 0..) |row, i| {
+            const is_selected = selected == i;
+            switch (row) {
+                .Audio => {
+                    label("Audio", y, is_selected);
+                    choice(audio.BackendType, audio_backends, audio.getBackendType(), y, is_selected, input_state.action, audio.setBackendType);
+                },
+                .Music => {
+                    label("Music", y, is_selected);
+                    toggle(audio.music_is_playing(), y, is_selected, input_state.action, audio.music_set_playing);
+                },
+                .Volume => {
+                    label("Volume", y, is_selected);
+                    slider(u8, audio.get_volume(), 0, 128, 2, 1, y, is_selected, input_state.action, audio.set_volume, .None);
+                },
+                .Rumble => {
+                    label("Rumble", y, is_selected);
+                    slider(u8, input.getRumble(), 0, 16, 1, 8, y, is_selected, input_state.action, input.setRumble, .Options_TestRumble);
+                },
+                .Fullscreen => {
+                    label("Fullscreen", y, is_selected);
+                    toggle(window.is_fullscreen(), y, is_selected, input_state.action, window.set_fullscreen);
+                },
+            }
+            y += 13;
+        }
+
         window.window_render();
         audio.music_restart_if_finished();
     }
