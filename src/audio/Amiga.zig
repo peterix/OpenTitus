@@ -37,30 +37,13 @@ const events = @import("../events.zig");
 const GameEvent = events.GameEvent;
 
 const data = @import("../data.zig");
+const amiga_music = @import("amiga_music.zig");
 
 const pocketmod = @cImport({
     @cInclude("pocketmod.h");
 });
 
 
-// TODO: implement a way to use the original game files from the Amiga version of the game
-const track_bonus = @embedFile("amiga/bonus.mod");
-const track_cba = @embedFile("amiga/cba.mod");
-const track_gagne_ttf = @embedFile("amiga/gagnettf.mod");
-const track_gagne_mok = @embedFile("amiga/gagnemok.mod");
-const track_jeu1 = @embedFile("amiga/jeu1.mod");
-const track_jeu2_ttf = @embedFile("amiga/jeu2ttf.mod");
-const track_jeu2_mok = @embedFile("amiga/jeu2mok.mod");
-const track_jeu3_ttf = @embedFile("amiga/jeu3ttf.mod");
-const track_jeu3_mok = @embedFile("amiga/jeu3mok.mod");
-const track_jeu4_ttf = @embedFile("amiga/jeu4ttf.mod");
-const track_jeu4_mok = @embedFile("amiga/jeu4mok.mod");
-const track_jeu5 = @embedFile("amiga/jeu5.mod");
-const track_mort = @embedFile("amiga/mort.mod");
-const track_over_ttf = @embedFile("amiga/overttf.mod");
-const track_over_mok = @embedFile("amiga/overmok.mod");
-const track_pres = @embedFile("amiga/pres.mod");
-const track_null: [0]u8 = .{};
 
 /// Sound effects of the Amiga version, in the order the game loads them.
 ///
@@ -95,6 +78,7 @@ const SoundEffect = enum(u8) {
     }
 };
 const SoundEffectCount = @typeInfo(SoundEffect).@"enum".fields.len;
+const TrackCount = @typeInfo(AudioTrack).@"enum".fields.len;
 
 /// NTSC Paula clock the Amiga version uses to compute sample periods
 const PaulaClock = 3579545;
@@ -115,42 +99,6 @@ const Sound = struct {
     step: u64,
 };
 
-fn getTrackData(track_in: ?AudioTrack) []const u8 {
-    if (track_in == null) {
-        return &track_null;
-    }
-    const track = track_in.?;
-    if (data.game == .Titus) switch (track) {
-        .Play1 => return track_jeu1,
-        .Play2 => return track_jeu2_ttf,
-        .Play3 => return track_jeu3_ttf,
-        .Play4 => return track_jeu4_ttf,
-        .Play5 => return track_jeu5,
-        .Bonus => return track_bonus,
-        // Amiga version doesn't really have credits music, so we just reuse title music
-        .Credits => return track_pres,
-        .Death => return track_mort,
-        .GameOver => return track_over_ttf,
-        .LevelEnd => return track_cba,
-        .MainTitle => return track_pres,
-        .Win => return track_gagne_ttf,
-    } else switch (track) {
-        .Play1 => return track_jeu1,
-        .Play2 => return track_jeu2_mok,
-        .Play3 => return track_jeu3_mok,
-        .Play4 => return track_jeu4_mok,
-        .Play5 => return track_jeu5,
-        .Bonus => return track_bonus,
-        // Amiga version doesn't really have credits music, so we just reuse title music
-        .Credits => return track_pres,
-        .Death => return track_mort,
-        .GameOver => return track_over_mok,
-        .LevelEnd => return track_cba,
-        .MainTitle => return track_pres,
-        .Win => return track_gagne_mok,
-    }
-}
-
 allocator: std.mem.Allocator = undefined,
 current_track: ?AudioTrack = null,
 mutex: Mutex = .init,
@@ -159,6 +107,8 @@ sample_rate: u32 = undefined,
 music_context: ?pocketmod.pocketmod_context = null,
 sound_context: ?Sound = null,
 samples: [SoundEffectCount]?[]u8 = @splat(null),
+/// Music, rebuilt from the original files as ProTracker modules
+tracks: [TrackCount]?[]u8 = @splat(null),
 
 engine: *AudioEngine = undefined,
 
@@ -191,14 +141,30 @@ fn init(ctx: *anyopaque, io: std.Io, engine: *AudioEngine, allocator: std.mem.Al
     self.music_context = null;
     self.sound_context = null;
     self.loadSamples();
+    self.loadTracks();
+}
+
+fn getGameDir() ?[]const u8 {
+    return switch (data.game) {
+        .Titus => "TITUS/AMIGA",
+        .Moktar => "MOKTAR/AMIGA",
+        .None => null,
+    };
+}
+
+fn loadTracks(self: *Amiga) void {
+    const game_dir = getGameDir() orelse return;
+    for (&self.tracks, 0..) |*track, i| {
+        const audio_track: AudioTrack = @enumFromInt(i);
+        track.* = amiga_music.loadTrack(self.io, self.allocator, game_dir, data.game, audio_track) catch |err| blk: {
+            std.log.warn("Amiga music for '{s}' not available: {}", .{ @tagName(audio_track), err });
+            break :blk null;
+        };
+    }
 }
 
 fn loadSamples(self: *Amiga) void {
-    const game_dir = switch (data.game) {
-        .Titus => "TITUS/AMIGA",
-        .Moktar => "MOKTAR/AMIGA",
-        .None => return,
-    };
+    const game_dir = getGameDir() orelse return;
     for (&self.samples, 0..) |*sample, i| {
         const effect: SoundEffect = @enumFromInt(i);
         sample.* = data.readGameFile(self.io, self.allocator, game_dir, effect.fileName()) catch |err| blk: {
@@ -220,6 +186,12 @@ fn deinit(ctx: *anyopaque) void {
             self.allocator.free(bytes);
         }
         sample.* = null;
+    }
+    for (&self.tracks) |*track| {
+        if (track.*) |bytes| {
+            self.allocator.free(bytes);
+        }
+        track.* = null;
     }
 }
 
@@ -310,18 +282,17 @@ fn playSoundEffect(self: *Amiga, effect: SoundEffect) void {
 
 fn playTrack(ctx: *anyopaque, track: ?AudioTrack) void {
     const self: *Amiga = @ptrCast(@alignCast(ctx));
-    if (track == null) {
-        self.music_context = null;
-        self.current_track = null;
-    } else {
-        var music_context: pocketmod.pocketmod_context = undefined;
-        const track_data = getTrackData(track);
-        if (!pocketmod.pocketmod_init(&music_context, track_data.ptr, @truncate(track_data.len), self.sample_rate)) {
-            unreachable;
-        }
-        self.music_context = music_context;
-        self.current_track = track;
+    self.music_context = null;
+    self.current_track = null;
+    const track_ = track orelse return;
+    const track_data = self.tracks[@intFromEnum(track_)] orelse return;
+    var music_context: pocketmod.pocketmod_context = undefined;
+    if (!pocketmod.pocketmod_init(&music_context, track_data.ptr, @intCast(track_data.len), self.sample_rate)) {
+        std.log.err("Amiga music for '{s}' cannot be played", .{@tagName(track_)});
+        return;
     }
+    self.music_context = music_context;
+    self.current_track = track;
 }
 
 fn triggerEvent(ctx: *anyopaque, event: GameEvent) void {

@@ -33,7 +33,7 @@ You need the original game files to make use of OpenTitus. OpenTitus parses the 
 
 * Build and install using `make release`. The files go into `zig-out`.
 * Place the original game files in `zig-out/MOKTAR` and/or `zig-out/TITUS` folders.
-* Optionally, for Amiga sound effects, copy the sample files from the Amiga version (`ressort`, `ballon`, `tirperso`, `coup` and `fox` for Titus or `lagaf` for Moktar) into an `AMIGA` subfolder, like `zig-out/TITUS/AMIGA`.
+* Optionally, for the Amiga music and sound effects, copy the files from the Amiga version of the game into an `AMIGA` subfolder, like `zig-out/TITUS/AMIGA`. The music needs the `.pat` files and the instrument samples (`kiki`, `cristelle`, ...), the sound effects need `ressort`, `ballon`, `tirperso`, `coup` and `fox` (Titus) or `lagaf` (Moktar).
 * Run `opentitus` inside the `zig-out` folder.
 
 You can get the game files from:
