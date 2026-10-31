@@ -841,7 +841,10 @@ fn BLOCK_YYPRG(io: std.Io, level: *lvl.Level, floor: lvl.FloorType, floor_above:
             const is_in_air = globals.YFALL != 0 or globals.jump_acceleration_counter != 0;
             // Skip if walking/crawling
             if (order == .Walk or order == .Crawl or order == .Grab or order == .Drop or order == .KneeStand or order == .Rest) {
-                if(player.y_axis <= 0 and !is_in_air) {
+                // Rising past the top of the ladder (climbing off it) is not falling onto it: the top acts as a floor.
+                // Grabbing the ladder here would drop the player back down and, with up held, loop forever.
+                const rising_past_top = floor_above != .Ladder and player.sprite.speed_y < 0;
+                if (player.y_axis <= 0 and (!is_in_air or rising_past_top)) {
                     player_block_yu(player); // Stop fall
                     return;
                 }
