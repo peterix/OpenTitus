@@ -90,13 +90,17 @@ device: miniaudio.ma_device = undefined,
 
 adlib: Adlib = .{},
 amiga: Amiga = .{},
-//pcSpeaker: PCSpeaker = .{},
+pcSpeaker: PCSpeaker = .{},
 backend: ?Backend = null,
 last_song: ?AudioTrack = null,
 volume: u8 = 128,
 
 // When the callback mutex is locked using OPL_Lock, callback functions are not invoked.
 callback_mutex: Mutex = .init,
+
+// Held while rendering audio and while switching backends, so the audio thread never sees a backend mid-switch.
+// Lock order: backend_mutex -> callback_queue_mutex -> the backend's own lock.
+backend_mutex: Mutex = .init,
 
 // Queue of callbacks to call at future timestamps (tracked in usecs)
 callback_queue: CallbackQueue = undefined,
@@ -143,6 +147,7 @@ pub fn init(self: *Self, io: std.Io, allocator: std.mem.Allocator) !void {
 
     self.callback_mutex = .init;
     self.callback_queue_mutex = .init;
+    self.backend_mutex = .init;
 
     self.setBackendType(game.settings.audio_backend);
 
@@ -207,6 +212,11 @@ fn data_callback(pDevice: [*c]miniaudio.ma_device, buffer: ?*anyopaque, pInput: 
     const device: *miniaudio.ma_device = @alignCast(@ptrCast(pDevice.?));
     var self: *Self = @alignCast(@ptrCast(device.pUserData.?));
     var filled: u64 = 0;
+
+    self.backend_mutex.lock(self.io) catch {
+        unreachable;
+    };
+    defer self.backend_mutex.unlock(self.io);
 
     // Repeatedly call the OPL emulator update function until the buffer is full.
     // TODO: move this OPL mess into AdLib, expect backends to do their internal business... internally
@@ -291,9 +301,15 @@ pub fn setBackendType(self: *Self, backend_type: BackendType) void {
 
     game.settings.audio_backend = backend_type;
 
+    self.backend_mutex.lock(self.io) catch {
+        unreachable;
+    };
+    defer self.backend_mutex.unlock(self.io);
+
     if (self.backend) |*backend| {
         backend.deinit();
     }
+    self.backend = null;
 
     var backend = BACKEND: {
         switch (backend_type) {
@@ -306,9 +322,9 @@ pub fn setBackendType(self: *Self, backend_type: BackendType) void {
             .Amiga => {
                 break :BACKEND self.amiga.backend();
             },
-//             .PCSpeaker => {
-//                 break :BACKEND self.pcSpeaker.backend();
-//             },
+            .PCSpeaker => {
+                break :BACKEND self.pcSpeaker.backend();
+            },
             .Silence => {
                 break :BACKEND null;
             },

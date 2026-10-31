@@ -1,5 +1,5 @@
 //
-// Copyright (C) 2024 The OpenTitus team
+// Copyright (C) 2024 - 2026 The OpenTitus team
 //
 // Authors:
 // Petr Mrázek
@@ -22,12 +22,16 @@
 // General Public License for more details.
 //
 
-// TODO: include QBasic files from https://ttf.mine.nu/music.htm as data
-// TODO: implement something like this: https://github.com/QB64Official/qb64/blob/master/internal/c/parts/audio/out/audio.cpp#L871-L1527
+//! PC speaker music, as played by the original DOS games.
+//!
+//! The driver is a single voice interpreter of the same music byte code the AdLib driver uses for each of its channels.
+//! It drives channel 2 of the PIT, which produces a square wave on the speaker.
+//! The original has no PC speaker sound effects, only music (including the jingles for collecting things).
 
 const PCSpeaker = @This();
 
 const std = @import("std");
+const Mutex = std.Io.Mutex;
 
 const Backend = @import("Backend.zig");
 
@@ -38,9 +42,84 @@ const AudioTrack = audio.AudioTrack;
 const events = @import("../events.zig");
 const GameEvent = events.GameEvent;
 
-sample_rate: u32 = undefined,
+const data = @import("../data.zig");
+const dos_data = @import("dos_data.zig");
 
+/// Input clock of the PIT
+const PitClock = 1193182;
+
+/// Two ticks before a note ends, the driver switches to this low tone, unless the note is tied to the next one.
+const ArticulationDivisor = 0x3A98;
+
+/// The game sets the PIT channel 0 divisor to 0x4000, the driver runs at 1193182 Hz / 16384 = 72.8 Hz
+const TickMicroseconds = 13731;
+
+/// Loudness of the square wave. Roughly matches the level of the other backends.
+const Amplitude = 7500;
+
+// The real thing was a small speaker inside the case. It couldn't reproduce much bass or the sharp edges of the square
+// wave, so we filter the output to sound less harsh than an ideal square wave out of proper speakers.
+const LowPassHz = 3500;
+const HighPassHz = 150;
+
+/// Registers set by the music commands, in the order of their command numbers
+const Register = enum(u3) {
+    Duration = 0,
+    Volume = 1,
+    Tempo = 2,
+    TripleDuration = 3,
+    Lie = 4,
+    Vox = 5,
+    Instrument = 6,
+};
+
+const SubCommand = enum(u4) {
+    CallSub = 0,
+    UpdateLoopCounter = 1,
+    Loop = 2,
+    ReturnFromSub = 3,
+    Jump = 4,
+    Finish = 15,
+    _,
+};
+
+io: std.Io = std.Io.failing,
+allocator: std.mem.Allocator = undefined,
 engine: *AudioEngine = undefined,
+sample_rate: u32 = undefined,
+mutex: Mutex = .init,
+
+music: ?dos_data.MusicData = null,
+/// The data segment of the original game. All pointers in the music data are offsets into it.
+music_data: []const u8 = "",
+tables: dos_data.PCSpeakerData = undefined,
+
+// Driver state
+current_song: ?u8 = null,
+/// Offset of the next music byte, null when not playing
+position: ?usize = null,
+delay_counter: u8 = 0,
+skip_counter: u8 = 0,
+skip_reload: u8 = 0,
+registers: [7]u8 = @splat(0),
+return_offset: usize = 0,
+loop_counter: u8 = 0,
+
+// Speaker and PIT channel 2 state
+speaker_on: bool = false,
+/// PIT channel 2 divisor (a written value of 0 means 65536)
+divisor: u32 = 65536,
+/// Position within the square wave period, in PIT clock ticks
+phase: u32 = 0,
+/// Fractional PIT clock ticks carried between output samples, in units of 1/sample_rate
+clock_remainder: u32 = 0,
+
+// Small speaker filter state
+low_pass_coefficient: f32 = 1,
+high_pass_coefficient: f32 = 1,
+low_pass: [2]f32 = .{ 0, 0 },
+high_pass_input: f32 = 0,
+high_pass_output: f32 = 0,
 
 pub fn backend(self: *PCSpeaker) Backend {
     return .{
@@ -61,49 +140,290 @@ pub fn backend(self: *PCSpeaker) Backend {
 }
 
 fn init(ctx: *anyopaque, io: std.Io, engine: *AudioEngine, allocator: std.mem.Allocator, sample_rate: u32) Backend.Error!void {
-    _ = io;
-    _ = allocator;
     const self: *PCSpeaker = @ptrCast(@alignCast(ctx));
-    self.engine = engine;
-    self.sample_rate = sample_rate;
+    self.* = .{
+        .io = io,
+        .allocator = allocator,
+        .engine = engine,
+        .sample_rate = sample_rate,
+    };
+    self.setupFilter();
+
+    var music = dos_data.load(io, allocator, data.game) catch |err| {
+        std.log.err("Cannot load PC speaker music from the game executable: {}", .{err});
+        return Backend.Error.InvalidData;
+    };
+    self.tables = music.pc_speaker orelse {
+        std.log.err("No PC speaker music found in the game executable", .{});
+        music.deinit(allocator);
+        return Backend.Error.InvalidData;
+    };
+    self.music = music;
+    self.music_data = music.data_segment;
+
+    self.engine.setCallback(0, TimerCallback, @ptrCast(self));
 }
 
 fn deinit(ctx: *anyopaque) void {
-    _ = ctx;
+    const self: *PCSpeaker = @ptrCast(@alignCast(ctx));
+    self.engine.clearCallbacks();
+    if (self.music) |*music| {
+        music.deinit(self.allocator);
+    }
+    self.music = null;
+    self.music_data = "";
+    self.position = null;
+    self.speaker_on = false;
 }
 
 fn lock(ctx: *anyopaque) void {
-    _ = ctx;
+    const self: *PCSpeaker = @ptrCast(@alignCast(ctx));
+    self.mutex.lock(self.io) catch {
+        unreachable;
+    };
 }
 
 fn unlock(ctx: *anyopaque) void {
-    _ = ctx;
+    const self: *PCSpeaker = @ptrCast(@alignCast(ctx));
+    self.mutex.unlock(self.io);
 }
 
-fn fillBuffer(ctx: *anyopaque, buffer: []i16, nsamples: u32) void {
-    _ = ctx;
-    if (nsamples > 0) {
-        //pocketmod.OPL3_GenerateStream(&self.opl_chip, &buffer[0], nsamples);
-        @memset(buffer, 0);
+fn getWord(self: *PCSpeaker, offset: usize) u16 {
+    return std.mem.readInt(u16, self.music_data[offset..][0..2], .little);
+}
+
+fn setDivisor(self: *PCSpeaker, value: u16) void {
+    self.divisor = if (value == 0) 65536 else value;
+    self.phase %= self.divisor;
+}
+
+fn stop(self: *PCSpeaker) void {
+    self.position = null;
+    self.current_song = null;
+    self.speaker_on = false;
+}
+
+fn playTrackNumber(self: *PCSpeaker, song_number: u8) void {
+    const pointer = self.getWord(self.tables.song_table + @as(usize, song_number) * 2);
+    if (pointer == 0) {
+        self.stop();
+        return;
     }
+    self.skip_reload = self.music_data[self.tables.skip_table + song_number];
+    self.skip_counter = self.skip_reload;
+    // NOTE: like in the original, the delay counter and registers carry over from the previous song
+    self.position = pointer;
+    self.current_song = song_number;
+    self.speaker_on = true;
 }
 
 fn playTrack(ctx: *anyopaque, track: ?AudioTrack) void {
-    _ = ctx;
-    _ = track;
+    const self: *PCSpeaker = @ptrCast(@alignCast(ctx));
+    const track_ = track orelse {
+        self.stop();
+        return;
+    };
+    self.playTrackNumber(dos_data.getTrackNumber(track_));
 }
 
 fn triggerEvent(ctx: *anyopaque, event: GameEvent) void {
-    _ = ctx;
-    _ = event;
+    const self: *PCSpeaker = @ptrCast(@alignCast(ctx));
+    switch (event) {
+        .PlayerCollectWaypoint => self.playTrackNumber(dos_data.SongCollectWaypoint),
+        .PlayerCollectBonus => self.playTrackNumber(dos_data.SongCollectBonus),
+        .PlayerCollectLamp => self.playTrackNumber(dos_data.SongCollectLamp),
+        else => {},
+    }
 }
 
 fn isPlayingATrack(ctx: *anyopaque) bool {
-    _ = ctx;
-    return false;
+    const self: *PCSpeaker = @ptrCast(@alignCast(ctx));
+    return self.position != null;
 }
 
-fn play_sfx(ctx: *anyopaque, fx_number: u8) void {
-    _ = ctx;
-    _ = fx_number;
+/// x86 `shr` of an 8-bit register: counts of 8 and more shift everything out
+fn shr8(value: u8, count: u8) u8 {
+    if (count >= 8) {
+        return 0;
+    }
+    return value >> @intCast(count);
+}
+
+/// One tick of the music driver
+fn tick(self: *PCSpeaker) void {
+    var position = self.position orelse return;
+    defer {
+        if (self.position != null) {
+            self.position = position;
+        }
+    }
+
+    self.skip_counter -%= 1;
+    if (self.skip_counter == 0) {
+        self.skip_counter = self.skip_reload;
+        return; // Skip (for modifying tempo)
+    }
+
+    if (self.delay_counter == 2 and self.registers[@intFromEnum(Register.Lie)] != 1) {
+        self.setDivisor(ArticulationDivisor);
+    }
+
+    const delay = self.delay_counter;
+    self.delay_counter = delay -% 1;
+    if (delay > 1) {
+        return;
+    }
+
+    var byte: u8 = undefined;
+    while (true) {
+        byte = self.music_data[position];
+        position += 1;
+        if (byte & 0x80 == 0) {
+            break;
+        }
+        const command: u3 = @truncate(byte >> 4);
+        const argument: u4 = @truncate(byte);
+        if (command != 7) {
+            self.registers[command] = argument;
+            continue;
+        }
+        switch (@as(SubCommand, @enumFromInt(argument))) {
+            .CallSub => {
+                self.return_offset = position + 2;
+                position = self.getWord(position);
+            },
+            .UpdateLoopCounter => {
+                self.loop_counter = self.music_data[position];
+                position += 1;
+            },
+            .Loop => {
+                self.loop_counter -%= 1;
+                if (self.loop_counter != 0) {
+                    position = self.getWord(position);
+                } else {
+                    position += 2;
+                }
+            },
+            .ReturnFromSub => {
+                position = self.return_offset;
+            },
+            .Jump => {
+                position = self.getWord(position);
+            },
+            .Finish => {
+                self.stop();
+                return;
+            },
+            _ => {
+                // The original would jump through garbage here. None of the songs do this.
+                std.log.warn("PC speaker: unknown music command {x:0>2}", .{byte});
+                self.stop();
+                return;
+            },
+        }
+    }
+
+    const note: u4 = @truncate(byte);
+    const octave: u3 = @truncate(byte >> 4);
+    self.setDivisor(self.getWord(self.tables.divisor_table + @as(usize, note) * 2) >> octave);
+
+    const duration = self.registers[@intFromEnum(Register.Duration)];
+    if (duration == 7) {
+        self.delay_counter = shr8(0x40, self.registers[@intFromEnum(Register.TripleDuration)]);
+    } else {
+        self.delay_counter = shr8(0x60, duration);
+    }
+}
+
+fn TimerCallback(callback_data: ?*anyopaque) void {
+    var self: *PCSpeaker = @ptrCast(@alignCast(callback_data));
+    self.mutex.lock(self.io) catch {
+        unreachable;
+    };
+    self.tick();
+    self.mutex.unlock(self.io);
+
+    self.engine.setNextCallback(TickMicroseconds, TimerCallback, callback_data);
+}
+
+fn setupFilter(self: *PCSpeaker) void {
+    const rate: f32 = @floatFromInt(self.sample_rate);
+    self.low_pass_coefficient = 1.0 - @exp(-2.0 * std.math.pi * LowPassHz / rate);
+    self.high_pass_coefficient = @exp(-2.0 * std.math.pi * HighPassHz / rate);
+}
+
+/// Two one-pole low-pass stages followed by a one-pole high-pass
+fn filter(self: *PCSpeaker, input: f32) f32 {
+    self.low_pass[0] += self.low_pass_coefficient * (input - self.low_pass[0]);
+    self.low_pass[1] += self.low_pass_coefficient * (self.low_pass[0] - self.low_pass[1]);
+    const low_passed = self.low_pass[1];
+    self.high_pass_output = self.high_pass_coefficient * (self.high_pass_output + low_passed - self.high_pass_input);
+    self.high_pass_input = low_passed;
+    return self.high_pass_output;
+}
+
+test "speaker filter removes DC and ultrasonic tones" {
+    var pc: PCSpeaker = .{ .sample_rate = 44100 };
+    pc.setupFilter();
+    // a held level (like a speaker that's switched on but not moving) fades away
+    var out: f32 = 0;
+    for (0..44100) |_| out = pc.filter(1.0);
+    try std.testing.expect(@abs(out) < 0.001);
+    // the 'rest' note (divisor 10, ~119 kHz) averages out to silence before filtering already
+    try std.testing.expectEqual(@as(u32, 5), highTicks(0, 10, 10));
+}
+
+/// Number of PIT ticks the square wave output is high within [start, start + count), with start inside one period
+fn highTicks(start: u32, count: u32, period: u32) u32 {
+    // In mode 3 the output is high for the first half of the period (the longer half for odd divisors)
+    const high = (period + 1) / 2;
+    const overlap = struct {
+        fn f(a: u32, b: u32, h: u32) u32 {
+            if (a >= h) return 0;
+            return @min(b, h) - a;
+        }
+    }.f;
+    var result = (count / period) * high;
+    const rest = count % period;
+    if (start + rest <= period) {
+        result += overlap(start, start + rest, high);
+    } else {
+        result += overlap(start, period, high) + overlap(0, start + rest - period, high);
+    }
+    return result;
+}
+
+test "highTicks" {
+    try std.testing.expectEqual(@as(u32, 5), highTicks(0, 10, 10));
+    try std.testing.expectEqual(@as(u32, 2), highTicks(3, 4, 10));
+    try std.testing.expectEqual(@as(u32, 2), highTicks(8, 4, 10));
+    try std.testing.expectEqual(@as(u32, 3), highTicks(0, 5, 5));
+    try std.testing.expectEqual(@as(u32, 9), highTicks(4, 19, 6));
+}
+
+fn fillBuffer(ctx: *anyopaque, buffer: []i16, nsamples: u32) void {
+    const self: *PCSpeaker = @ptrCast(@alignCast(ctx));
+    self.mutex.lock(self.io) catch {
+        unreachable;
+    };
+    defer self.mutex.unlock(self.io);
+
+    for (0..nsamples) |i| {
+        // Advance the PIT by however many clock ticks fit into this output sample
+        self.clock_remainder += PitClock;
+        const ticks = self.clock_remainder / self.sample_rate;
+        self.clock_remainder %= self.sample_rate;
+
+        var level: f32 = 0;
+        if (self.speaker_on and ticks > 0) {
+            // Average of the +1/-1 square wave over the sample
+            const high: f32 = @floatFromInt(highTicks(self.phase, ticks, self.divisor));
+            const total: f32 = @floatFromInt(ticks);
+            level = (2 * high - total) / total;
+        }
+        self.phase = (self.phase + ticks) % self.divisor;
+        const value: i16 = @intFromFloat(std.math.clamp(self.filter(level) * Amplitude, -32768, 32767));
+        buffer[i * 2] = value;
+        buffer[i * 2 + 1] = value;
+    }
 }

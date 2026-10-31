@@ -57,27 +57,6 @@ inline fn chomp_u16(bytes: *[]const u8) u16 {
     return _bytes.chompInt(u16, .little, bytes);
 }
 
-fn getTrackNumber(track_in: ?AudioTrack) ?u8 {
-    if (track_in == null) {
-        return null;
-    }
-    const track = track_in.?;
-    switch (track) {
-        .Play1 => return 3,
-        .Play2 => return 10,
-        .Play3 => return 11,
-        .Play4 => return 12,
-        .Play5 => return 13,
-        .Bonus => return 0,
-        .Credits => return 9,
-        .Death => return 1,
-        .GameOver => return 2,
-        .LevelEnd => return 4,
-        .MainTitle => return 15,
-        .Win => return 14,
-    }
-}
-
 const opera: []const u8 = &.{ 0, 0, 1, 2, 3, 4, 5, 8, 9, 0xA, 0xB, 0xC, 0xD, 0x10, 0x11, 0x12, 0x13, 0x14, 0x15 };
 const voxp: []const u8 = &.{ 1, 2, 3, 7, 8, 9, 13, 17, 15, 18, 14 };
 const gamme: []const c_uint = &.{ 343, 363, 385, 408, 432, 458, 485, 514, 544, 577, 611, 647, 0 };
@@ -396,14 +375,13 @@ fn playTrackNumber(self: *Adlib, song_number: u8) void {
 
 fn playTrack(ctx: *anyopaque, track: ?AudioTrack) void {
     const self: *Adlib = @ptrCast(@alignCast(ctx));
-    const song_number_ = getTrackNumber(track);
-    if (song_number_ == null) {
+    const track_ = track orelse {
         // stop playing... this is probably wrong
         self.active_channels = 0;
         self.current_track = null;
         return;
-    }
-    self.playTrackNumber(song_number_.?);
+    };
+    self.playTrackNumber(dos_data.getTrackNumber(track_));
 }
 
 fn triggerEvent(ctx: *anyopaque, event: GameEvent) void {
@@ -435,13 +413,13 @@ fn triggerEvent(ctx: *anyopaque, event: GameEvent) void {
             // The DOS version has no sound for this
         },
         .PlayerCollectWaypoint => {
-            self.playTrackNumber(5);
+            self.playTrackNumber(dos_data.SongCollectWaypoint);
         },
         .PlayerCollectBonus => {
-            self.playTrackNumber(6);
+            self.playTrackNumber(dos_data.SongCollectBonus);
         },
         .PlayerCollectLamp => {
-            self.playTrackNumber(7);
+            self.playTrackNumber(dos_data.SongCollectLamp);
         },
         .Options_TestRumble => {},
     }

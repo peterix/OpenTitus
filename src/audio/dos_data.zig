@@ -36,11 +36,47 @@ const Allocator = std.mem.Allocator;
 
 const sqz = @import("../sqz.zig");
 const data = @import("../data.zig");
+const AudioTrack = @import("audio.zig").AudioTrack;
 
 pub const Error = error{
     ExecutableNotFound,
     InvalidExecutable,
     DriverNotFound,
+};
+
+/// Song numbers used by the original music drivers
+pub fn getTrackNumber(track: AudioTrack) u8 {
+    return switch (track) {
+        .Play1 => 3,
+        .Play2 => 10,
+        .Play3 => 11,
+        .Play4 => 12,
+        .Play5 => 13,
+        .Bonus => 0,
+        .Credits => 9,
+        .Death => 1,
+        .GameOver => 2,
+        .LevelEnd => 4,
+        .MainTitle => 15,
+        .Win => 14,
+    };
+}
+
+/// Jingles played when collecting things. They interrupt the level music.
+pub const SongCollectWaypoint = 5;
+pub const SongCollectBonus = 6;
+pub const SongCollectLamp = 7;
+
+pub const SongCount = 16;
+
+/// Tables used by the PC speaker music driver
+pub const PCSpeakerData = struct {
+    /// Offset of the table of song data pointers (one word per song, 0 if the song doesn't exist)
+    song_table: u16,
+    /// Offset of the table of tempo skip values (one byte per song)
+    skip_table: u16,
+    /// Offset of the table of PIT divisors for each note of the lowest octave
+    divisor_table: u16,
 };
 
 pub const MusicData = struct {
@@ -54,6 +90,8 @@ pub const MusicData = struct {
     instrument_table: u16,
     /// Offset of the table of sound effect instrument pointers. Moktar has no AdLib sound effects.
     sfx_table: ?u16,
+    /// Data for the PC speaker music driver
+    pc_speaker: ?PCSpeakerData,
 
     pub fn deinit(self: *MusicData, allocator: Allocator) void {
         allocator.free(self.executable);
@@ -117,6 +155,14 @@ const pattern_tables = [_]?u8{
 // Part of the 'play sound effect' routine. Only in Titus the Fox.
 const pattern_sfx = [_]?u8{ 0xC7, 0x06, null, null, 0x0F, 0x00, 0x8A, 0xD8, 0x32, 0xFF, 0xD1, 0xE3, 0x8B, 0x9F, null, null };
 
+// mov bx, ax; mov al, [bx + SKIP_TABLE]; mov [skip], al; mov [skip_reload], al; shl bx, 1; mov ax, [bx + SONG_TABLE]
+// PC speaker part of the 'play song' routine.
+const pattern_pc_speaker_songs = [_]?u8{ 0x8B, 0xD8, 0x8A, 0x87, null, null, 0xA2, null, null, 0xA2, null, null, 0xD1, 0xE3, 0x8B, 0x87, null, null };
+
+// mov bl, [note]; xor bh, bh; shl bx, 1; mov ax, [bx + DIVISOR_TABLE]; mov cl, ...
+// Part of the PC speaker driver.
+const pattern_pc_speaker_divisors = [_]?u8{ 0x8A, 0x1E, null, null, 0x32, 0xFF, 0xD1, 0xE3, 0x8B, 0x87, null, null, 0x8A, 0x0E };
+
 /// Locate the music driver data inside an unpacked MZ executable.
 fn findMusicData(executable: []u8) Error!MusicData {
     if (executable.len < 0x1C or !std.mem.eql(u8, executable[0..2], "MZ")) {
@@ -150,12 +196,31 @@ fn findMusicData(executable: []u8) Error!MusicData {
         }
     }
 
+    var pc_speaker: ?PCSpeakerData = null;
+    if (findPattern(image, &pattern_pc_speaker_songs)) |songs_at| {
+        if (findPattern(image, &pattern_pc_speaker_divisors)) |divisors_at| {
+            const pcs: PCSpeakerData = .{
+                .skip_table = getWord(image, songs_at + 4),
+                .song_table = getWord(image, songs_at + 16),
+                .divisor_table = getWord(image, divisors_at + 10),
+            };
+            if (@as(usize, pcs.skip_table) + SongCount > data_segment.len or
+                @as(usize, pcs.song_table) + SongCount * 2 > data_segment.len or
+                @as(usize, pcs.divisor_table) + 16 * 2 > data_segment.len)
+            {
+                return Error.InvalidExecutable;
+            }
+            pc_speaker = pcs;
+        }
+    }
+
     return .{
         .executable = executable,
         .data_segment = data_segment,
         .music_table = music_table,
         .instrument_table = instrument_table,
         .sfx_table = sfx_table,
+        .pc_speaker = pc_speaker,
     };
 }
 
