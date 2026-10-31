@@ -40,6 +40,7 @@ const events = @import("../events.zig");
 const GameEvent = events.GameEvent;
 
 const _bytes = @import("../bytes.zig");
+const jingles = @import("jingles.zig");
 
 const OPL3 = @import("opl3/opl3.zig");
 const DBOPL = @cImport({
@@ -136,38 +137,513 @@ pub const Emulator = enum {
 
 io: std.Io = std.Io.failing,
 allocator: std.mem.Allocator = undefined,
-channels: [ChannelCount]Channel = [_]Channel{.{}} ** ChannelCount,
-active_channels: c_int = 0,
-perc_stat: u8 = 0,
-skip_delay: u8 = 0,
-skip_delay_counter: u8 = 0,
-current_track: ?u8 = null,
 mutex: Mutex = .init,
+
+music_player: Player = .{},
+jingle_player: Player = .{},
+mixer: jingles.Mixer = .{},
+/// The music player at the start of the current bar, the music resumes from there after a jingle
+bar_start: ?Player = null,
+music_paused: bool = false,
 
 sfx_on: bool = false,
 sfx_time: u16 = 0,
+/// The player the sound effect plays on
+sfx_player: *Player = undefined,
 
 sfx: [SfxCount]Instrument = [_]Instrument{.{}} ** SfxCount,
 sfx_count: usize = 0,
-instrument_data: [InstrumentCount]Instrument = [_]Instrument{.{}} ** InstrumentCount,
 music: ?dos_data.MusicData = null,
-/// The data segment of the original game. All pointers in the music data are offsets into it.
-music_data: []const u8 = "",
 engine: *AudioEngine = undefined,
 
 emulator: Emulator = .Nuked,
-
-// OPL software emulator structures.
-opl_chip: OPL3.opl3_chip = undefined,
-dbopl_chip: DBOPL.Chip = undefined,
 dbopl_tables_initialized: bool = false,
 
-inline fn writeRegister(self: *Adlib, reg_num: u16, value: u8) void {
-    switch (self.emulator) {
-        .Nuked => OPL3.OPL3_WriteRegBuffered(&self.opl_chip, reg_num, value),
-        .DBOPL => DBOPL.Chip__WriteReg(&self.dbopl_chip, reg_num, value),
+/// An OPL chip and the music driver playing a song on it.
+/// The backend has two, so the jingles for collecting things don't have to replace the music, see `jingles.zig`.
+const Player = struct {
+    channels: [ChannelCount]Channel = [_]Channel{.{}} ** ChannelCount,
+    active_channels: c_int = 0,
+    perc_stat: u8 = 0,
+    skip_delay: u8 = 0,
+    skip_delay_counter: u8 = 0,
+    current_track: ?u8 = null,
+    instrument_data: [InstrumentCount]Instrument = [_]Instrument{.{}} ** InstrumentCount,
+    /// Driver ticks (not counting the skipped ones) since the song started
+    song_ticks: u32 = 0,
+
+    /// The data segment of the original game. All pointers in the music data are offsets into it.
+    music_data: []const u8 = "",
+    instrument_table: u16 = 0,
+    music_table: u16 = 0,
+
+    emulator: Emulator = .Nuked,
+    sample_rate: u32 = 0,
+    /// Skip the write buffer of Nuked OPL3, when running the driver without rendering any sound in between
+    direct_writes: bool = false,
+
+    // OPL software emulator structures.
+    opl_chip: OPL3.opl3_chip = undefined,
+    dbopl_chip: DBOPL.Chip = undefined,
+
+    fn init(self: *Player, emulator: Emulator, music: *const dos_data.MusicData, sample_rate: u32) void {
+        self.* = .{
+            .music_data = music.data_segment,
+            .instrument_table = music.instrument_table,
+            .music_table = music.music_table,
+            .emulator = emulator,
+            .sample_rate = sample_rate,
+        };
+        self.resetChip();
     }
-}
+
+    fn resetChip(self: *Player) void {
+        switch (self.emulator) {
+            .Nuked => OPL3.OPL3_Reset(&self.opl_chip, self.sample_rate),
+            .DBOPL => {
+                DBOPL.Chip__Chip(&self.dbopl_chip);
+                DBOPL.Chip__Setup(&self.dbopl_chip, self.sample_rate);
+            },
+        }
+    }
+
+    inline fn writeRegister(self: *Player, reg_num: u16, value: u8) void {
+        switch (self.emulator) {
+            .Nuked => if (self.direct_writes)
+                OPL3.OPL3_WriteReg(&self.opl_chip, reg_num, value)
+            else
+                OPL3.OPL3_WriteRegBuffered(&self.opl_chip, reg_num, value),
+            .DBOPL => DBOPL.Chip__WriteReg(&self.dbopl_chip, reg_num, value),
+        }
+    }
+
+    fn isPlaying(self: *const Player) bool {
+        return self.active_channels != 0;
+    }
+
+    /// Whether the next tick starts a bar (or a skipped tick before it)
+    fn atBarLine(self: *const Player) bool {
+        return self.isPlaying() and self.song_ticks % Backend.TicksPerBar == 0;
+    }
+
+    /// Apply the register writes Nuked OPL3 still has queued, so direct writes don't get overwritten by older ones
+    fn flushWrites(self: *Player) void {
+        if (self.emulator != .Nuked) {
+            return;
+        }
+        const chip = &self.opl_chip;
+        while (true) {
+            const write = &chip.writebuf[chip.writebuf_cur];
+            if (write.reg & 0x200 == 0) {
+                break;
+            }
+            write.reg &= 0x1ff;
+            OPL3.OPL3_WriteReg(chip, write.reg, write.data);
+            chip.writebuf_cur = (chip.writebuf_cur + 1) % @as(u32, chip.writebuf.len);
+        }
+        // Writes queued from now on don't wait for the ones that were just applied
+        chip.writebuf_lasttime = chip.writebuf_samplecnt;
+    }
+
+    /// Run the driver without sound up to the start of a bar.
+    /// The notes in between never sound, the chip isn't running.
+    fn skipToBar(self: *Player, bar: u32) void {
+        self.flushWrites();
+        self.direct_writes = true;
+        defer self.direct_writes = false;
+        while (self.isPlaying() and self.song_ticks < bar * Backend.TicksPerBar) {
+            self.tick();
+        }
+    }
+
+    fn stop(self: *Player) void {
+        // stop playing... this is probably wrong
+        self.active_channels = 0;
+        self.current_track = null;
+    }
+
+    /// Render interleaved stereo samples
+    fn generate(self: *Player, buffer: []i16, nsamples: u32) void {
+        if (nsamples == 0) {
+            return;
+        }
+        switch (self.emulator) {
+            .Nuked => OPL3.OPL3_GenerateStream(&self.opl_chip, &buffer[0], nsamples),
+            .DBOPL => self.generateDBOPL(buffer, nsamples),
+        }
+    }
+
+    /// DBOPL renders mono 32-bit samples, we need interleaved stereo 16-bit ones
+    fn generateDBOPL(self: *Player, buffer: []i16, nsamples: u32) void {
+        var mono: [512]i32 = undefined;
+        var done: usize = 0;
+        while (done < nsamples) {
+            const count = @min(mono.len, nsamples - done);
+            DBOPL.Chip__GenerateBlock2(&self.dbopl_chip, count, &mono[0]);
+            for (mono[0..count], 0..) |sample, i| {
+                const clamped: i16 = @intCast(std.math.clamp(sample, std.math.minInt(i16), std.math.maxInt(i16)));
+                buffer[(done + i) * 2] = clamped;
+                buffer[(done + i) * 2 + 1] = clamped;
+            }
+            done += count;
+        }
+    }
+
+    fn playTrackNumber(self: *Player, song_number: u8) void {
+        self.current_track = song_number;
+        self.song_ticks = 0;
+
+        var raw_data = self.music_data;
+        self.perc_stat = 0x20;
+
+        //Load instruments
+        var instrument_buffer = raw_data[self.instrument_table..];
+
+        for (0..song_number) |_| {
+            while (true) {
+                const temp = chomp_u16(&instrument_buffer);
+                if (temp == 0xFFFF) {
+                    break;
+                }
+            }
+        }
+        all_vox_zero(self);
+
+        for (0..InstrumentCount) |i| {
+            //Init; instrument not in use
+            self.instrument_data[i].vox = 0xFF;
+        }
+
+        var previous: u16 = 0;
+        var current = chomp_u16(&instrument_buffer);
+        for (0..InstrumentCount) |i| {
+            previous = current;
+            current = chomp_u16(&instrument_buffer);
+
+            if (current == 0xFFFF) //Terminate for loop
+                break;
+
+            if (previous == 0) //Instrument not in use
+                continue;
+
+            var read_buffer = raw_data[previous..];
+
+            if (i > 14) {
+                //Perc instrument (15-18) have an extra byte, melodic (0-14) have not
+                self.instrument_data[i].vox = chomp_u8(&read_buffer);
+            } else {
+                self.instrument_data[i].vox = 0xFE;
+            }
+
+            for (0..5) |k| {
+                self.instrument_data[i].op[0][k] = chomp_u8(&read_buffer);
+            }
+
+            for (0..5) |k| {
+                self.instrument_data[i].op[1][k] = chomp_u8(&read_buffer);
+            }
+
+            self.instrument_data[i].fb_alg = chomp_u8(&read_buffer);
+        }
+
+        //Set skip delay
+        self.skip_delay = @truncate(previous);
+        self.skip_delay_counter = @truncate(previous);
+
+        //Load music
+        var mus_buffer = raw_data[self.music_table..];
+
+        for (0..song_number) |_| {
+            while (true) {
+                const offset = chomp_u16(&mus_buffer);
+                if (offset == 0xFFFF) {
+                    break;
+                }
+            }
+        }
+
+        self.active_channels = 0;
+        for (0..ChannelCount) |i| {
+            const offset = chomp_u16(&mus_buffer);
+            if (offset == 0xFFFF) {
+                break;
+            }
+            self.active_channels += 1;
+            self.channels[i] = .{
+                .offset = offset,
+                .vox = @truncate(i),
+            };
+        }
+    }
+
+    fn processInstruction(self: *Player, channel: *Channel, instruction: Instruction) void {
+        switch (instruction.mainCommand()) {
+            .Duration => {
+                channel.duration = instruction.freq;
+            },
+
+            .Volume => {
+                channel.volume = instruction.freq;
+                var tmpC = self.instrument_data[channel.instrument.?].op[0][2];
+                // What the F is going on here?
+                tmpC = @subWithOverflow(tmpC & 0x3F, 63)[0];
+
+                var tmp1 = (((256 - @as(u16, tmpC)) << 4) & 0x0FF0) * (@as(u8, instruction.freq) + 1);
+                tmp1 = 63 - ((tmp1 >> 8) & 0xFF);
+                var tmp2 = voxp[channel.vox];
+                if (tmp2 <= 13)
+                    tmp2 += 3;
+                tmp2 = opera[@intCast(tmp2)];
+                self.writeRegister(0x40 + tmp2, @truncate(tmp1));
+            },
+            .Tempo => {
+                channel.tempo = instruction.freq;
+            },
+            .TripleDuration => {
+                channel.triple_duration = instruction.freq;
+            },
+            .Lie => {
+                channel.lie = instruction.freq;
+            },
+            .Vox => {
+                channel.vox = instruction.freq;
+            },
+            .Instrument => {
+                if (instruction.freq == 1) {
+                    // Not melodic
+                    // Turn on a percussion instrument
+                    channel.instrument = channel.octave + 15; //(1st perc instrument is the 16th instrument)
+                    channel.vox = self.instrument_data[channel.instrument.?].vox;
+                    const percussion_bit = @as(c_int, channel.vox) - 6;
+                    self.perc_stat = self.perc_stat | (@as(u8, 0x10) >> @intCast(percussion_bit)); //set a bit in perc_stat
+                } else {
+                    // Melodic
+                    var freq = instruction.freq;
+                    if (freq > 1) {
+                        freq -= 1;
+                    }
+                    channel.instrument = freq;
+                    const percussion_bit = @as(c_int, channel.vox) - 6;
+                    if (percussion_bit >= 0) {
+                        // the channel is now melodic, turn off its percussion instrument
+                        self.perc_stat &= ~(@as(u8, 0x10) >> @intCast(percussion_bit));
+                        self.writeRegister(0xBD, self.perc_stat);
+                    }
+                }
+                var tmp2 = voxp[channel.vox];
+                if (channel.vox <= 6)
+                    tmp2 += 3;
+                tmp2 = opera[@intCast(tmp2)]; //Adlib channel
+                const instrument = &self.instrument_data[channel.instrument.?];
+                insmaker(self, &instrument.op[0], tmp2);
+                if (channel.vox < 7) {
+                    insmaker(self, &instrument.op[1], tmp2 - 3);
+                    self.writeRegister(0xC0 + channel.vox, instrument.fb_alg);
+                }
+            },
+            .SubCommand => {
+                switch (instruction.subCommand()) {
+                    .CallSub => {
+                        channel.return_offset = channel.offset.? + 2;
+                        var temp = (@as(c_uint, self.music_data[channel.offset.? + 1]) << 8) & 0xFF00;
+                        temp += @as(c_uint, self.music_data[channel.offset.?]) & 0xFF;
+                        channel.offset = temp;
+                    },
+
+                    .UpdateLoopCounter => {
+                        channel.loop_counter = self.music_data[channel.offset.?];
+                        channel.offset.? += 1;
+                    },
+
+                    .Loop => {
+                        if (channel.loop_counter > 1) {
+                            channel.loop_counter -= 1;
+                            var temp = (@as(c_uint, self.music_data[channel.offset.? + 1]) << 8);
+                            temp += @as(c_uint, self.music_data[channel.offset.?]);
+                            channel.offset = temp;
+                        } else {
+                            channel.offset.? += 2;
+                        }
+                    },
+
+                    .ReturnFromSub => {
+                        channel.offset = channel.return_offset;
+                        channel.return_offset = null;
+                    },
+
+                    .Jump => {
+                        var temp = (@as(c_uint, self.music_data[channel.offset.? + 1]) << 8);
+                        temp += @as(c_uint, self.music_data[channel.offset.?]);
+                        channel.offset = temp;
+                    },
+
+                    .Finish => {
+                        channel.offset = null;
+                        self.active_channels -= 1;
+                    },
+                }
+            },
+        }
+    }
+
+    fn fillchip_channel(self: *Player, i: usize) void {
+        var channel = &self.channels[i];
+        if (channel.offset == null) {
+            return;
+        }
+        if (channel.delay_counter > 1) {
+            channel.delay_counter -= 1;
+            return;
+        }
+        var instruction: Instruction = undefined;
+
+        // first, process any pending command instructions
+        while (true) {
+            instruction = @bitCast(self.music_data[channel.offset.?]);
+            channel.offset.? += 1;
+
+            //Escape the loop and play some notes based on oct and freq
+            if (!instruction.is_command) {
+                break;
+            }
+
+            self.processInstruction(channel, instruction);
+
+            // if we have no more data to read, stop processing the channel
+            if (channel.offset == null) {
+                return;
+            }
+        }
+
+        // if we didn't exit, we have some note(s) to play
+        channel.octave = instruction.oct;
+        channel.freq = instruction.freq;
+
+        //Play note
+        if (gamme[channel.freq] != 0) {
+            if (self.instrument_data[channel.instrument.?].vox == 0xFE) {
+                //Play a frequence
+                //Output lower 8 bits of frequence
+                self.writeRegister(0xA0 + channel.vox, @as(u8, @truncate(gamme[channel.freq] & 0xFF)));
+                if (channel.lie_late != 1) {
+                    self.writeRegister(0xB0 + channel.vox, 0); //Silence the channel
+                }
+                const tmp1 = (channel.octave + 2) & 0x07; //Octave (3 bits)
+                const tmp2 = @as(u8, @truncate((gamme[channel.freq] >> 8) & 0x03)); //Frequency (higher 2 bits)
+                self.writeRegister(0xB0 + channel.vox, 0x20 + (tmp1 << 2) + tmp2); //Voices the channel, and output octave and last bits of frequency
+                channel.lie_late = channel.lie;
+            } else {
+                //Play a perc instrument
+                if (channel.instrument != channel.octave + 15) {
+                    //New instrument
+                    //Similar to Instrument command, oct = 6
+                    channel.instrument = channel.octave + 15; //(1st perc instrument is the 16th instrument)
+                    const instrument = &(self.instrument_data[channel.instrument.?]);
+                    channel.vox = instrument.vox;
+                    const percussion_bit = @as(c_int, channel.vox) - 6;
+                    self.perc_stat = self.perc_stat | (@as(u8, 0x10) >> @intCast(percussion_bit)); //set a bit in perc_stat
+                    var tmp2 = voxp[channel.vox];
+                    if (channel.vox <= 6) {
+                        tmp2 += 3;
+                    }
+                    tmp2 = opera[@intCast(tmp2)]; //Adlib channel
+                    insmaker(self, &instrument.op[0], tmp2);
+                    if (channel.vox < 7) {
+                        insmaker(self, &instrument.op[1], tmp2 - 3);
+                        self.writeRegister(0xC0 + channel.vox, instrument.fb_alg);
+                    }
+
+                    //Similar to Volume command, oct = 1
+                    var tmpC = instrument.op[0][2];
+                    tmpC = @subWithOverflow(tmpC & 0x3F, 63)[0];
+                    var tmp1 = (((256 - @as(u16, tmpC)) << 4) & 0x0FF0) * (channel.volume + 1);
+                    tmp1 = 63 - ((tmp1 >> 8) & 0xFF);
+                    tmp2 = voxp[channel.vox];
+                    if (tmp2 <= 13) {
+                        tmp2 += 3;
+                    }
+                    tmp2 = opera[@intCast(tmp2)];
+                    self.writeRegister(0x40 + tmp2, @truncate(tmp1));
+                }
+                const percussion_bit = @as(c_int, channel.vox) - 6;
+                const tmpC = @as(u8, 0x10) >> @intCast(percussion_bit);
+                self.writeRegister(0xBD, self.perc_stat & ~tmpC); //Output perc_stat with one bit removed
+                if (channel.vox == 6) {
+                    self.writeRegister(0xA6, 0x57); //
+                    self.writeRegister(0xB6, 0); // Output the perc sound
+                    self.writeRegister(0xB6, 5); //
+                }
+                self.writeRegister(0xBD, self.perc_stat); //Output perc_stat
+            }
+        } else {
+            channel.lie_late = channel.lie;
+        }
+
+        if (channel.duration == 7) {
+            channel.delay_counter = @as(u8, 0x40) >> @truncate(channel.triple_duration);
+        } else {
+            channel.delay_counter = @as(u8, 0x60) >> @truncate(channel.duration);
+        }
+    }
+
+    /// One tick of the music driver
+    fn tick(self: *Player) void {
+        if (self.active_channels == 0) {
+            return;
+        }
+
+        // FIXME: what is the overflow for? or was it just a buggy C mess?
+        self.skip_delay_counter = @subWithOverflow(self.skip_delay_counter, 1)[0];
+
+        if (self.skip_delay_counter == 0) {
+            self.skip_delay_counter = self.skip_delay;
+            return; //Skip (for modifying tempo)
+        }
+        self.song_ticks += 1;
+        for (0..ChannelCount) |i| {
+            self.fillchip_channel(i);
+        }
+        if (self.active_channels == 0) {
+            self.current_track = null;
+        }
+    }
+
+    fn insmaker(self: *Player, insdata: []const u8, channel: u8) void {
+        self.writeRegister(0x60 + channel, insdata[0]); //Attack Rate / Decay Rate
+        self.writeRegister(0x80 + channel, insdata[1]); //Sustain Level / Release Rate
+        self.writeRegister(0x40 + channel, insdata[2]); //Key scaling level / Operator output level
+        self.writeRegister(0x20 + channel, insdata[3]); //Amp Mod / Vibrato / EG type / Key Scaling / Multiple
+        self.writeRegister(0xE0 + channel, insdata[4]); //Wave type
+    }
+
+    fn all_vox_zero(self: *Player) void {
+        for (0xB0..0xB9) |i|
+            self.writeRegister(@intCast(i), 0); //Clear voice, octave and upper bits of frequence
+        for (0xA0..0xB9) |i|
+            self.writeRegister(@intCast(i), 0); //Clear lower byte of frequence
+
+        self.writeRegister(0x08, 0x00);
+        self.writeRegister(0xBD, 0x00);
+        self.writeRegister(0x40, 0x3F);
+        self.writeRegister(0x41, 0x3F);
+        self.writeRegister(0x42, 0x3F);
+        self.writeRegister(0x43, 0x3F);
+        self.writeRegister(0x44, 0x3F);
+        self.writeRegister(0x45, 0x3F);
+        self.writeRegister(0x48, 0x3F);
+        self.writeRegister(0x49, 0x3F);
+        self.writeRegister(0x4A, 0x3F);
+        self.writeRegister(0x4B, 0x3F);
+        self.writeRegister(0x4C, 0x3F);
+        self.writeRegister(0x4D, 0x3F);
+        self.writeRegister(0x50, 0x3F);
+        self.writeRegister(0x51, 0x3F);
+        self.writeRegister(0x52, 0x3F);
+        self.writeRegister(0x53, 0x3F);
+        self.writeRegister(0x54, 0x3F);
+        self.writeRegister(0x55, 0x3F);
+    }
+};
 
 pub fn backend(self: *Adlib, emulator: Emulator) Backend {
     self.emulator = emulator;
@@ -188,6 +664,8 @@ pub fn backend(self: *Adlib, emulator: Emulator) Backend {
             .playTrack = playTrack,
             .triggerEvent = triggerEvent,
             .isPlayingATrack = isPlayingATrack,
+            .songPosition = songPosition,
+            .seekToBar = seekToBar,
             .lock = lock,
             .unlock = unlock,
         },
@@ -198,11 +676,6 @@ fn init(ctx: *anyopaque, io: std.Io, engine: *AudioEngine, allocator: std.mem.Al
     const self: *Adlib = @ptrCast(@alignCast(ctx));
     self.io = io;
     self.allocator = allocator;
-    self.active_channels = 0;
-    self.perc_stat = 0;
-    self.skip_delay = 0;
-    self.skip_delay_counter = 0;
-    self.current_track = null;
 
     self.sfx_on = false;
     self.sfx_time = 0;
@@ -214,20 +687,17 @@ fn init(ctx: *anyopaque, io: std.Io, engine: *AudioEngine, allocator: std.mem.Al
         std.log.err("Cannot load AdLib music from the game executable: {}", .{err});
         return Backend.Error.InvalidData;
     };
-    self.music_data = self.music.?.data_segment;
 
-    // Create the emulator structure:
-    switch (self.emulator) {
-        .Nuked => OPL3.OPL3_Reset(&self.opl_chip, sample_rate),
-        .DBOPL => {
-            if (!self.dbopl_tables_initialized) {
-                DBOPL.DBOPL_InitTables();
-                self.dbopl_tables_initialized = true;
-            }
-            DBOPL.Chip__Chip(&self.dbopl_chip);
-            DBOPL.Chip__Setup(&self.dbopl_chip, sample_rate);
-        },
+    if (self.emulator == .DBOPL and !self.dbopl_tables_initialized) {
+        DBOPL.DBOPL_InitTables();
+        self.dbopl_tables_initialized = true;
     }
+    self.music_player.init(self.emulator, &self.music.?, sample_rate);
+    self.jingle_player.init(self.emulator, &self.music.?, sample_rate);
+    self.mixer = jingles.Mixer.init(sample_rate);
+    self.bar_start = null;
+    self.music_paused = false;
+    self.sfx_player = &self.music_player;
 
     self.sfx_init();
 
@@ -241,7 +711,10 @@ fn deinit(ctx: *anyopaque) void {
         music.deinit(self.allocator);
     }
     self.music = null;
-    self.music_data = "";
+    self.music_player = .{};
+    self.jingle_player = .{};
+    self.bar_start = null;
+    self.music_paused = false;
 }
 
 fn lock(ctx: *anyopaque) void {
@@ -254,29 +727,63 @@ fn unlock(ctx: *anyopaque) void {
     self.mutex.unlock(self.io);
 }
 
+/// When the music stops being paused for a jingle, move it to the nearest bar line
+fn updatePause(self: *Adlib) void {
+    const paused = self.mixer.musicPaused(self.jingle_player.isPlaying());
+    if (self.music_paused and !paused) {
+        const bar = Backend.nearestBar(self.music_player.song_ticks);
+        if (bar * Backend.TicksPerBar > self.music_player.song_ticks) {
+            self.music_player.skipToBar(bar);
+        } else if (self.bar_start) |bar_start| {
+            // The sound effect may be on the music chip. Restoring the chip would leave it half done.
+            if (self.sfx_on and self.sfx_player == &self.music_player) {
+                self.sfx_on = false;
+            }
+            self.music_player = bar_start;
+        }
+    }
+    self.music_paused = paused;
+}
+
 fn fillBuffer(ctx: *anyopaque, buffer: []i16, nsamples: u32) void {
     const self: *Adlib = @ptrCast(@alignCast(ctx));
     self.mutex.lock(self.io) catch { unreachable; };
-    if (nsamples > 0) {
-        switch (self.emulator) {
-            .Nuked => OPL3.OPL3_GenerateStream(&self.opl_chip, &buffer[0], nsamples),
-            .DBOPL => self.generateDBOPL(buffer, nsamples),
-        }
-    }
-    self.mutex.unlock(self.io);
-}
+    defer self.mutex.unlock(self.io);
+    self.updatePause();
 
-/// DBOPL renders mono 32-bit samples, we need interleaved stereo 16-bit ones
-fn generateDBOPL(self: *Adlib, buffer: []i16, nsamples: u32) void {
-    var mono: [512]i32 = undefined;
-    var done: usize = 0;
+    const jingle_playing = self.jingle_player.isPlaying();
+    const render_music = self.mixer.musicAudible(jingle_playing);
+    const render_jingle = self.mixer.jingleAudible(jingle_playing);
+
+    // Most of the time, only the music plays
+    if (!render_jingle and self.mixer.music_gain == 1) {
+        self.music_player.generate(buffer, nsamples);
+        return;
+    }
+
+    var music: [2 * 512]i16 = undefined;
+    var jingle: [2 * 512]i16 = undefined;
+    var done: u32 = 0;
     while (done < nsamples) {
-        const count = @min(mono.len, nsamples - done);
-        DBOPL.Chip__GenerateBlock2(&self.dbopl_chip, count, &mono[0]);
-        for (mono[0..count], 0..) |sample, i| {
-            const clamped: i16 = @intCast(std.math.clamp(sample, std.math.minInt(i16), std.math.maxInt(i16)));
-            buffer[(done + i) * 2] = clamped;
-            buffer[(done + i) * 2 + 1] = clamped;
+        const count: u32 = @min(512, nsamples - done);
+        if (render_music) {
+            self.music_player.generate(&music, count);
+        } else {
+            @memset(music[0 .. count * 2], 0);
+        }
+        if (render_jingle) {
+            self.jingle_player.generate(&jingle, count);
+        } else {
+            @memset(jingle[0 .. count * 2], 0);
+        }
+        for (0..count) |i| {
+            for (0..2) |c| {
+                const music_sample: f32 = @floatFromInt(music[i * 2 + c]);
+                const jingle_sample: f32 = @floatFromInt(jingle[i * 2 + c]);
+                const mixed = music_sample * self.mixer.music_gain + jingle_sample * self.mixer.jingle_gain;
+                buffer[(done + i) * 2 + c] = @intFromFloat(std.math.clamp(mixed, -32768, 32767));
+            }
+            self.mixer.advance(jingle_playing);
         }
         done += count;
     }
@@ -284,104 +791,45 @@ fn generateDBOPL(self: *Adlib, buffer: []i16, nsamples: u32) void {
 
 fn isPlayingATrack(ctx: *anyopaque) bool {
     const self: *Adlib = @ptrCast(@alignCast(ctx));
-    return self.active_channels != 0;
+    return self.music_player.isPlaying();
 }
 
-fn playTrackNumber(self: *Adlib, song_number: u8) void {
-    self.current_track = song_number;
-
-    var raw_data = self.music_data;
-    self.perc_stat = 0x20;
-
-    //Load instruments
-    var instrument_buffer = raw_data[self.music.?.instrument_table..];
-
-    for (0..song_number) |_| {
-        while (true) {
-            const temp = chomp_u16(&instrument_buffer);
-            if (temp == 0xFFFF) {
-                break;
-            }
-        }
+fn songPosition(ctx: *anyopaque) ?u32 {
+    const self: *Adlib = @ptrCast(@alignCast(ctx));
+    if (!self.music_player.isPlaying()) {
+        return null;
     }
-    all_vox_zero(self);
+    return self.music_player.song_ticks;
+}
 
-    for (0..InstrumentCount) |i| {
-        //Init; instrument not in use
-        self.instrument_data[i].vox = 0xFF;
-    }
-
-    var previous: u16 = 0;
-    var current = chomp_u16(&instrument_buffer);
-    for (0..InstrumentCount) |i| {
-        previous = current;
-        current = chomp_u16(&instrument_buffer);
-
-        if (current == 0xFFFF) //Terminate for loop
-            break;
-
-        if (previous == 0) //Instrument not in use
-            continue;
-
-        var read_buffer = raw_data[previous..];
-
-        if (i > 14) {
-            //Perc instrument (15-18) have an extra byte, melodic (0-14) have not
-            self.instrument_data[i].vox = chomp_u8(&read_buffer);
-        } else {
-            self.instrument_data[i].vox = 0xFE;
-        }
-
-        for (0..5) |k| {
-            self.instrument_data[i].op[0][k] = chomp_u8(&read_buffer);
-        }
-
-        for (0..5) |k| {
-            self.instrument_data[i].op[1][k] = chomp_u8(&read_buffer);
-        }
-
-        self.instrument_data[i].fb_alg = chomp_u8(&read_buffer);
-    }
-
-    //Set skip delay
-    self.skip_delay = @truncate(previous);
-    self.skip_delay_counter = @truncate(previous);
-
-    //Load music
-    var mus_buffer = raw_data[self.music.?.music_table..];
-
-    for (0..song_number) |_| {
-        while (true) {
-            const offset = chomp_u16(&mus_buffer);
-            if (offset == 0xFFFF) {
-                break;
-            }
-        }
-    }
-
-    self.active_channels = 0;
-    for (0..ChannelCount) |i| {
-        const offset = chomp_u16(&mus_buffer);
-        if (offset == 0xFFFF) {
-            break;
-        }
-        self.active_channels += 1;
-        self.channels[i] = .{
-            .offset = offset,
-            .vox = @truncate(i),
-        };
-    }
+fn seekToBar(ctx: *anyopaque, bar: u32) void {
+    const self: *Adlib = @ptrCast(@alignCast(ctx));
+    self.music_player.skipToBar(bar);
+    self.bar_start = self.music_player;
 }
 
 fn playTrack(ctx: *anyopaque, track: ?AudioTrack) void {
     const self: *Adlib = @ptrCast(@alignCast(ctx));
+    // A new song replaces any jingle too
+    self.jingle_player.stop();
+    self.mixer.stopJingle();
+    self.bar_start = null;
     const track_ = track orelse {
-        // stop playing... this is probably wrong
-        self.active_channels = 0;
-        self.current_track = null;
+        self.music_player.stop();
         return;
     };
-    self.playTrackNumber(dos_data.getTrackNumber(track_));
+    self.music_player.playTrackNumber(dos_data.getTrackNumber(track_));
+    self.bar_start = self.music_player;
+}
+
+fn playJingle(self: *Adlib, song_number: u8) void {
+    // Start from a silent chip, the previous jingle may have left notes ringing
+    if (self.sfx_on and self.sfx_player == &self.jingle_player) {
+        self.sfx_on = false;
+    }
+    self.jingle_player.resetChip();
+    self.jingle_player.playTrackNumber(song_number);
+    self.mixer.startJingle();
 }
 
 fn triggerEvent(ctx: *anyopaque, event: GameEvent) void {
@@ -413,13 +861,13 @@ fn triggerEvent(ctx: *anyopaque, event: GameEvent) void {
             // The DOS version has no sound for this
         },
         .PlayerCollectWaypoint => {
-            self.playTrackNumber(dos_data.SongCollectWaypoint);
+            self.playJingle(dos_data.SongCollectWaypoint);
         },
         .PlayerCollectBonus => {
-            self.playTrackNumber(dos_data.SongCollectBonus);
+            self.playJingle(dos_data.SongCollectBonus);
         },
         .PlayerCollectLamp => {
-            self.playTrackNumber(dos_data.SongCollectLamp);
+            self.playJingle(dos_data.SongCollectLamp);
         },
         .Options_TestRumble => {},
     }
@@ -430,12 +878,18 @@ fn playSfx(self: *Adlib, fx_number: u8) void {
         // Moktar has no AdLib sound effects
         return;
     }
+    // While a jingle plays, the music is paused. The sound effect goes over the jingle instead.
+    const target = if (self.mixer.jingleAudible(self.jingle_player.isPlaying())) &self.jingle_player else &self.music_player;
+    if (self.sfx_on and self.sfx_player != target) {
+        self.sfx_stop();
+    }
+    self.sfx_player = target;
     self.sfx_time = 15;
     self.sfx_on = true;
     const index: usize = @intCast(fx_number);
-    Adlib.insmaker(self, &self.sfx[index].op[0], 0x13); //Channel 6 operator 1
-    Adlib.insmaker(self, &self.sfx[index].op[1], 0x10); //Channel 6 operator 2
-    self.writeRegister(0xC6, self.sfx[index].fb_alg); //Channel 6 (Feedback/Algorithm)
+    target.insmaker(&self.sfx[index].op[0], 0x13); //Channel 6 operator 1
+    target.insmaker(&self.sfx[index].op[1], 0x10); //Channel 6 operator 2
+    target.writeRegister(0xC6, self.sfx[index].fb_alg); //Channel 6 (Feedback/Algorithm)
 }
 
 fn sfx_init(self: *Adlib) void {
@@ -444,14 +898,14 @@ fn sfx_init(self: *Adlib) void {
 
     self.sfx_count = 0;
     const sfx_table = self.music.?.sfx_table orelse return;
-    var pointers = self.music_data[sfx_table..];
+    var pointers = self.music.?.data_segment[sfx_table..];
 
     for (0..SfxCount) |i| {
         const pointer = chomp_u16(&pointers);
         if (pointer == 0) {
             break;
         }
-        var raw_data = self.music_data[pointer..];
+        var raw_data = self.music.?.data_segment[pointer..];
         for (0..5) |k| {
             self.sfx[i].op[0][k] = chomp_u8(&raw_data);
         }
@@ -469,11 +923,12 @@ fn sfx_driver(self: *Adlib) void {
     if (!self.sfx_on) {
         return;
     }
-    self.writeRegister(0xBD, 0xEF & self.perc_stat);
-    self.writeRegister(0xA6, 0x57);
-    self.writeRegister(0xB6, 1);
-    self.writeRegister(0xB6, 5);
-    self.writeRegister(0xBD, 0x10 | self.perc_stat);
+    const player = self.sfx_player;
+    player.writeRegister(0xBD, 0xEF & player.perc_stat);
+    player.writeRegister(0xA6, 0x57);
+    player.writeRegister(0xB6, 1);
+    player.writeRegister(0xB6, 5);
+    player.writeRegister(0xBD, 0x10 | player.perc_stat);
     self.sfx_time -= 1;
     if (self.sfx_time == 0) {
         self.sfx_stop();
@@ -483,286 +938,27 @@ fn sfx_driver(self: *Adlib) void {
 fn sfx_stop(self: *Adlib) void {
     const tmpins1: []const u8 = &.{ 0xF5, 0x7F, 0x00, 0x11, 0x00 };
     const tmpins2: []const u8 = &.{ 0xF8, 0xFF, 0x04, 0x30, 0x00 };
-    self.writeRegister(0xB6, 32);
-    insmaker(self, tmpins1, 0x13); //Channel 6 operator 1
-    insmaker(self, tmpins2, 0x10); //Channel 6 operator 2
-    self.writeRegister(0xC6, 0x08); //Channel 6 (Feedback/Algorithm)
+    const player = self.sfx_player;
+    player.writeRegister(0xB6, 32);
+    player.insmaker(tmpins1, 0x13); //Channel 6 operator 1
+    player.insmaker(tmpins2, 0x10); //Channel 6 operator 2
+    player.writeRegister(0xC6, 0x08); //Channel 6 (Feedback/Algorithm)
     self.sfx_on = false;
-}
-
-fn processInstruction(self: *Adlib, channel: *Channel, instruction: Instruction) void {
-    switch (instruction.mainCommand()) {
-        .Duration => {
-            channel.duration = instruction.freq;
-        },
-
-        .Volume => {
-            channel.volume = instruction.freq;
-            var tmpC = self.instrument_data[channel.instrument.?].op[0][2];
-            // What the F is going on here?
-            tmpC = @subWithOverflow(tmpC & 0x3F, 63)[0];
-
-            var tmp1 = (((256 - @as(u16, tmpC)) << 4) & 0x0FF0) * (@as(u8, instruction.freq) + 1);
-            tmp1 = 63 - ((tmp1 >> 8) & 0xFF);
-            var tmp2 = voxp[channel.vox];
-            if (tmp2 <= 13)
-                tmp2 += 3;
-            tmp2 = opera[@intCast(tmp2)];
-            self.writeRegister(0x40 + tmp2, @truncate(tmp1));
-        },
-        .Tempo => {
-            channel.tempo = instruction.freq;
-        },
-        .TripleDuration => {
-            channel.triple_duration = instruction.freq;
-        },
-        .Lie => {
-            channel.lie = instruction.freq;
-        },
-        .Vox => {
-            channel.vox = instruction.freq;
-        },
-        .Instrument => {
-            if (instruction.freq == 1) {
-                // Not melodic
-                // Turn on a percussion instrument
-                channel.instrument = channel.octave + 15; //(1st perc instrument is the 16th instrument)
-                channel.vox = self.instrument_data[channel.instrument.?].vox;
-                const percussion_bit = @as(c_int, channel.vox) - 6;
-                self.perc_stat = self.perc_stat | (@as(u8, 0x10) >> @intCast(percussion_bit)); //set a bit in perc_stat
-            } else {
-                // Melodic
-                var freq = instruction.freq;
-                if (freq > 1) {
-                    freq -= 1;
-                }
-                channel.instrument = freq;
-                const percussion_bit = @as(c_int, channel.vox) - 6;
-                if (percussion_bit >= 0) {
-                    // the channel is now melodic, turn off its percussion instrument
-                    self.perc_stat &= ~(@as(u8, 0x10) >> @intCast(percussion_bit));
-                    self.writeRegister(0xBD, self.perc_stat);
-                }
-            }
-            var tmp2 = voxp[channel.vox];
-            if (channel.vox <= 6)
-                tmp2 += 3;
-            tmp2 = opera[@intCast(tmp2)]; //Adlib channel
-            const instrument = &self.instrument_data[channel.instrument.?];
-            insmaker(self, &instrument.op[0], tmp2);
-            if (channel.vox < 7) {
-                insmaker(self, &instrument.op[1], tmp2 - 3);
-                self.writeRegister(0xC0 + channel.vox, instrument.fb_alg);
-            }
-        },
-        .SubCommand => {
-            switch (instruction.subCommand()) {
-                .CallSub => {
-                    channel.return_offset = channel.offset.? + 2;
-                    var temp = (@as(c_uint, self.music_data[channel.offset.? + 1]) << 8) & 0xFF00;
-                    temp += @as(c_uint, self.music_data[channel.offset.?]) & 0xFF;
-                    channel.offset = temp;
-                },
-
-                .UpdateLoopCounter => {
-                    channel.loop_counter = self.music_data[channel.offset.?];
-                    channel.offset.? += 1;
-                },
-
-                .Loop => {
-                    if (channel.loop_counter > 1) {
-                        channel.loop_counter -= 1;
-                        var temp = (@as(c_uint, self.music_data[channel.offset.? + 1]) << 8);
-                        temp += @as(c_uint, self.music_data[channel.offset.?]);
-                        channel.offset = temp;
-                    } else {
-                        channel.offset.? += 2;
-                    }
-                },
-
-                .ReturnFromSub => {
-                    channel.offset = channel.return_offset;
-                    channel.return_offset = null;
-                },
-
-                .Jump => {
-                    var temp = (@as(c_uint, self.music_data[channel.offset.? + 1]) << 8);
-                    temp += @as(c_uint, self.music_data[channel.offset.?]);
-                    channel.offset = temp;
-                },
-
-                .Finish => {
-                    channel.offset = null;
-                    self.active_channels -= 1;
-                },
-            }
-        },
-    }
-}
-
-fn fillchip_channel(self: *Adlib, i: usize) void {
-    var channel = &self.channels[i];
-    if (channel.offset == null) {
-        return;
-    }
-    if (channel.delay_counter > 1) {
-        channel.delay_counter -= 1;
-        return;
-    }
-    var instruction: Instruction = undefined;
-
-    // first, process any pending command instructions
-    while (true) {
-        instruction = @bitCast(self.music_data[channel.offset.?]);
-        channel.offset.? += 1;
-
-        //Escape the loop and play some notes based on oct and freq
-        if (!instruction.is_command) {
-            break;
-        }
-
-        self.processInstruction(channel, instruction);
-
-        // if we have no more data to read, stop processing the channel
-        if (channel.offset == null) {
-            return;
-        }
-    }
-
-    // if we didn't exit, we have some note(s) to play
-    channel.octave = instruction.oct;
-    channel.freq = instruction.freq;
-
-    //Play note
-    if (gamme[channel.freq] != 0) {
-        if (self.instrument_data[channel.instrument.?].vox == 0xFE) {
-            //Play a frequence
-            //Output lower 8 bits of frequence
-            self.writeRegister(0xA0 + channel.vox, @as(u8, @truncate(gamme[channel.freq] & 0xFF)));
-            if (channel.lie_late != 1) {
-                self.writeRegister(0xB0 + channel.vox, 0); //Silence the channel
-            }
-            const tmp1 = (channel.octave + 2) & 0x07; //Octave (3 bits)
-            const tmp2 = @as(u8, @truncate((gamme[channel.freq] >> 8) & 0x03)); //Frequency (higher 2 bits)
-            self.writeRegister(0xB0 + channel.vox, 0x20 + (tmp1 << 2) + tmp2); //Voices the channel, and output octave and last bits of frequency
-            channel.lie_late = channel.lie;
-        } else {
-            //Play a perc instrument
-            if (channel.instrument != channel.octave + 15) {
-                //New instrument
-                //Similar to Instrument command, oct = 6
-                channel.instrument = channel.octave + 15; //(1st perc instrument is the 16th instrument)
-                const instrument = &(self.instrument_data[channel.instrument.?]);
-                channel.vox = instrument.vox;
-                const percussion_bit = @as(c_int, channel.vox) - 6;
-                self.perc_stat = self.perc_stat | (@as(u8, 0x10) >> @intCast(percussion_bit)); //set a bit in perc_stat
-                var tmp2 = voxp[channel.vox];
-                if (channel.vox <= 6) {
-                    tmp2 += 3;
-                }
-                tmp2 = opera[@intCast(tmp2)]; //Adlib channel
-                insmaker(self, &instrument.op[0], tmp2);
-                if (channel.vox < 7) {
-                    insmaker(self, &instrument.op[1], tmp2 - 3);
-                    self.writeRegister(0xC0 + channel.vox, instrument.fb_alg);
-                }
-
-                //Similar to Volume command, oct = 1
-                var tmpC = instrument.op[0][2];
-                tmpC = @subWithOverflow(tmpC & 0x3F, 63)[0];
-                var tmp1 = (((256 - @as(u16, tmpC)) << 4) & 0x0FF0) * (channel.volume + 1);
-                tmp1 = 63 - ((tmp1 >> 8) & 0xFF);
-                tmp2 = voxp[channel.vox];
-                if (tmp2 <= 13) {
-                    tmp2 += 3;
-                }
-                tmp2 = opera[@intCast(tmp2)];
-                self.writeRegister(0x40 + tmp2, @truncate(tmp1));
-            }
-            const percussion_bit = @as(c_int, channel.vox) - 6;
-            const tmpC = @as(u8, 0x10) >> @intCast(percussion_bit);
-            self.writeRegister(0xBD, self.perc_stat & ~tmpC); //Output perc_stat with one bit removed
-            if (channel.vox == 6) {
-                self.writeRegister(0xA6, 0x57); //
-                self.writeRegister(0xB6, 0); // Output the perc sound
-                self.writeRegister(0xB6, 5); //
-            }
-            self.writeRegister(0xBD, self.perc_stat); //Output perc_stat
-        }
-    } else {
-        channel.lie_late = channel.lie;
-    }
-
-    if (channel.duration == 7) {
-        channel.delay_counter = @as(u8, 0x40) >> @truncate(channel.triple_duration);
-    } else {
-        channel.delay_counter = @as(u8, 0x60) >> @truncate(channel.duration);
-    }
-}
-
-fn fillchip(self: *Adlib) void {
-    self.sfx_driver();
-
-    if (self.active_channels == 0) {
-        return;
-    }
-
-    // FIXME: what is the overflow for? or was it just a buggy C mess?
-    self.skip_delay_counter = @subWithOverflow(self.skip_delay_counter, 1)[0];
-
-    if (self.skip_delay_counter == 0) {
-        self.skip_delay_counter = self.skip_delay;
-        return; //Skip (for modifying tempo)
-    }
-    for (0..ChannelCount) |i| {
-        self.fillchip_channel(i);
-    }
-    if (self.active_channels == 0) {
-        self.current_track = null;
-    }
-}
-
-fn insmaker(self: *Adlib, insdata: []const u8, channel: u8) void {
-    self.writeRegister(0x60 + channel, insdata[0]); //Attack Rate / Decay Rate
-    self.writeRegister(0x80 + channel, insdata[1]); //Sustain Level / Release Rate
-    self.writeRegister(0x40 + channel, insdata[2]); //Key scaling level / Operator output level
-    self.writeRegister(0x20 + channel, insdata[3]); //Amp Mod / Vibrato / EG type / Key Scaling / Multiple
-    self.writeRegister(0xE0 + channel, insdata[4]); //Wave type
-}
-
-fn all_vox_zero(self: *Adlib) void {
-    for (0xB0..0xB9) |i|
-        self.writeRegister(@intCast(i), 0); //Clear voice, octave and upper bits of frequence
-    for (0xA0..0xB9) |i|
-        self.writeRegister(@intCast(i), 0); //Clear lower byte of frequence
-
-    self.writeRegister(0x08, 0x00);
-    self.writeRegister(0xBD, 0x00);
-    self.writeRegister(0x40, 0x3F);
-    self.writeRegister(0x41, 0x3F);
-    self.writeRegister(0x42, 0x3F);
-    self.writeRegister(0x43, 0x3F);
-    self.writeRegister(0x44, 0x3F);
-    self.writeRegister(0x45, 0x3F);
-    self.writeRegister(0x48, 0x3F);
-    self.writeRegister(0x49, 0x3F);
-    self.writeRegister(0x4A, 0x3F);
-    self.writeRegister(0x4B, 0x3F);
-    self.writeRegister(0x4C, 0x3F);
-    self.writeRegister(0x4D, 0x3F);
-    self.writeRegister(0x50, 0x3F);
-    self.writeRegister(0x51, 0x3F);
-    self.writeRegister(0x52, 0x3F);
-    self.writeRegister(0x53, 0x3F);
-    self.writeRegister(0x54, 0x3F);
-    self.writeRegister(0x55, 0x3F);
 }
 
 fn TimerCallback(callback_data: ?*anyopaque) void {
     var self: *Adlib = @alignCast(@ptrCast(callback_data));
     self.mutex.lock(self.io) catch { unreachable; };
     // Read data until we must make a delay.
-    self.fillchip();
+    self.updatePause();
+    self.sfx_driver();
+    if (!self.music_paused) {
+        if (self.music_player.atBarLine()) {
+            self.bar_start = self.music_player;
+        }
+        self.music_player.tick();
+    }
+    self.jingle_player.tick();
     self.mutex.unlock(self.io);
 
     // Schedule the next timer callback.

@@ -51,6 +51,22 @@ pub const BackendType = enum(u8) {
     }
 };
 
+/// Song positions are in ticks of the DOS music drivers.
+/// All the songs are in 4/4 with a whole note of 96 ticks, starting on a bar line.
+pub const TicksPerBar = 96;
+
+/// The bar line nearest to a song position: the start of its bar early in the bar, the next bar late in it.
+/// Music that has to continue from somewhere else starts there, so it doesn't start mid-phrase.
+pub fn nearestBar(song_ticks: u32) u32 {
+    return song_ticks / TicksPerBar + @intFromBool(song_ticks % TicksPerBar >= TicksPerBar / 2);
+}
+
+test "nearestBar" {
+    try std.testing.expectEqual(@as(u32, 2), nearestBar(2 * TicksPerBar + 6));
+    try std.testing.expectEqual(@as(u32, 3), nearestBar(2 * TicksPerBar + 71));
+    try std.testing.expectEqual(@as(u32, 0), nearestBar(0));
+}
+
 pub const Error = error{
     OutOfMemory,
     InvalidData,
@@ -69,6 +85,10 @@ pub const VTable = struct {
     playTrack: *const fn (ctx: *anyopaque, track: ?AudioTrack) void,
     triggerEvent: *const fn (ctx: *anyopaque, event: GameEvent) void,
     isPlayingATrack: *const fn (ctx: *anyopaque) bool,
+    /// How far the current song is, in DOS driver ticks. Null if it's not playing or the backend can't tell.
+    songPosition: *const fn (ctx: *anyopaque) ?u32,
+    /// Move the song started by `playTrack` to the start of a bar
+    seekToBar: *const fn (ctx: *anyopaque, bar: u32) void,
     lock: *const fn (ctx: *anyopaque) void,
     unlock: *const fn (ctx: *anyopaque) void,
 };
@@ -95,6 +115,14 @@ pub inline fn triggerEvent(self: Backend, event: GameEvent) void {
 
 pub inline fn isPlayingATrack(self: Backend) bool {
     return self.vtable.isPlayingATrack(self.ptr);
+}
+
+pub inline fn songPosition(self: Backend) ?u32 {
+    return self.vtable.songPosition(self.ptr);
+}
+
+pub inline fn seekToBar(self: Backend, bar: u32) void {
+    self.vtable.seekToBar(self.ptr, bar);
 }
 
 pub inline fn lock(self: Backend) void {

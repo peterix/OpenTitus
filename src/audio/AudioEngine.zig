@@ -306,7 +306,12 @@ pub fn setBackendType(self: *Self, backend_type: BackendType) void {
     };
     defer self.backend_mutex.unlock(self.io);
 
+    // The new backend continues the song from about where the old one was
+    var song_position: ?u32 = null;
     if (self.backend) |*backend| {
+        backend.lock();
+        song_position = backend.songPosition();
+        backend.unlock();
         backend.deinit();
     }
     self.backend = null;
@@ -338,6 +343,19 @@ pub fn setBackendType(self: *Self, backend_type: BackendType) void {
     }
 
     self.backend = backend;
+
+    if (self.backend) |*new_backend| {
+        if (song_position) |position| {
+            if (self.last_song) |song| {
+                if (game.settings.music) {
+                    new_backend.lock();
+                    new_backend.playTrack(song);
+                    new_backend.seekToBar(Backend.nearestBar(position));
+                    new_backend.unlock();
+                }
+            }
+        }
+    }
 }
 
 pub fn getBackendType(self: *Self) BackendType {

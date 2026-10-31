@@ -755,3 +755,19 @@ uint32_t pocketmod_loop_count(pocketmod_context *c)
 {
     return c->loop_count;
 }
+
+/* OpenTitus: advance the song by whole ticks without rendering anything.  */
+/* Notes started on the way only sound if they're still on when it ends.   */
+void pocketmod_skip_ticks(pocketmod_context *c, uint32_t ticks)
+{
+    while (ticks-- > 0) {
+        _pocketmod_next_tick(c);
+        /* Same loop detection as in pocketmod_render() */
+        if (c->line == 0 && c->tick == 0) {
+            if (c->visited[c->pattern >> 3] & (1 << (c->pattern & 7))) {
+                _pocketmod_zero(c->visited, sizeof(c->visited));
+                c->loop_count++;
+            }
+        }
+    }
+}

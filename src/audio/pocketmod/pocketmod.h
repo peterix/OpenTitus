@@ -11,6 +11,7 @@ typedef struct pocketmod_context pocketmod_context;
 bool pocketmod_init (pocketmod_context *c, const uint8_t *data, uint32_t size, uint32_t rate);
 uint32_t pocketmod_render (pocketmod_context *c, void *buffer, uint32_t size);
 uint32_t pocketmod_loop_count(pocketmod_context *c);
+void pocketmod_skip_ticks(pocketmod_context *c, uint32_t ticks);
 
 #ifndef POCKETMOD_MAX_CHANNELS
 #define POCKETMOD_MAX_CHANNELS 32

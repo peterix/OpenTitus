@@ -78,6 +78,25 @@ const SoundEffect = enum(u8) {
     }
 };
 const SoundEffectCount = @typeInfo(SoundEffect).@"enum".fields.len;
+
+/// How many module ticks make one bar of the DOS version of a song, so the music can continue from where another
+/// backend was. Measured by matching the notes of the two versions bar by bar. Songs that don't line up start over.
+fn ticksPerBar(track: AudioTrack) ?u32 {
+    // TODO: measure the Moktar songs too
+    if (data.game != .Titus) {
+        return null;
+    }
+    return switch (track) {
+        .Play1, .Play2 => 72,
+        .Play3 => 128,
+        .Play4 => 112,
+        .Play5 => 96,
+        .MainTitle => 64,
+        .Bonus => 84,
+        // The DOS credits have their own song, the Amiga version reuses the title music
+        .Credits, .Win, .LevelEnd, .GameOver, .Death => null,
+    };
+}
 const TrackCount = @typeInfo(AudioTrack).@"enum".fields.len;
 
 /// NTSC Paula clock the Amiga version uses to compute sample periods
@@ -105,6 +124,9 @@ mutex: Mutex = .init,
 io: std.Io = std.Io.failing,
 sample_rate: u32 = undefined,
 music_context: ?pocketmod.pocketmod_context = null,
+/// Module ticks skipped by `seekToBar`, and samples rendered since. Together they are the position in the song.
+skipped_ticks: u32 = 0,
+music_samples: u64 = 0,
 sound_context: ?Sound = null,
 samples: [SoundEffectCount]?[]u8 = @splat(null),
 /// Music, rebuilt from the original files as ProTracker modules
@@ -124,6 +146,8 @@ pub fn backend(self: *Amiga) Backend {
             .playTrack = playTrack,
             .triggerEvent = triggerEvent,
             .isPlayingATrack = isPlayingATrack,
+            .songPosition = songPosition,
+            .seekToBar = seekToBar,
             .lock = lock,
             .unlock = unlock,
         },
@@ -242,6 +266,7 @@ fn renderMusic(self: *Amiga, frames: [][2]f32) void {
             @intCast((frames.len - rendered) * frame_size),
         ), frame_size));
         rendered += rendered_now;
+        self.music_samples += rendered_now;
         // if we looped, stop playing
         if (pocketmod.pocketmod_loop_count(music_context) >= 1) {
             @memset(frames[rendered..], .{ 0, 0 });
@@ -293,6 +318,47 @@ fn playTrack(ctx: *anyopaque, track: ?AudioTrack) void {
     }
     self.music_context = music_context;
     self.current_track = track;
+    self.skipped_ticks = 0;
+    self.music_samples = 0;
+}
+
+fn songPosition(ctx: *anyopaque) ?u32 {
+    const self: *Amiga = @ptrCast(@alignCast(ctx));
+    const music_context = &(self.music_context orelse return null);
+    const ticks_per_bar = ticksPerBar(self.current_track orelse return null) orelse return null;
+    const rendered_ticks: u64 = @intFromFloat(@as(f64, @floatFromInt(self.music_samples)) / music_context.samples_per_tick);
+    const module_ticks = self.skipped_ticks + rendered_ticks;
+    return @intCast(module_ticks * Backend.TicksPerBar / ticks_per_bar);
+}
+
+fn seekToBar(ctx: *anyopaque, bar: u32) void {
+    const self: *Amiga = @ptrCast(@alignCast(ctx));
+    const music_context = &(self.music_context orelse return);
+    const ticks_per_bar = ticksPerBar(self.current_track orelse return) orelse return;
+    var target = bar * ticks_per_bar;
+    // The DOS songs loop forever, the module plays once and then the game starts it again
+    const length = moduleLength(music_context);
+    if (length > 0) {
+        target %= length;
+    }
+    pocketmod.pocketmod_skip_ticks(music_context, target);
+    self.skipped_ticks = target;
+    self.music_samples = 0;
+}
+
+/// Length of one pass through the module, in ticks
+fn moduleLength(music_context: *const pocketmod.pocketmod_context) u32 {
+    var scratch = music_context.*;
+    const loops = pocketmod.pocketmod_loop_count(&scratch);
+    var ticks: u32 = 0;
+    // Give up on anything longer than half an hour
+    while (ticks < 90_000) : (ticks += 1) {
+        pocketmod.pocketmod_skip_ticks(&scratch, 1);
+        if (pocketmod.pocketmod_loop_count(&scratch) != loops) {
+            return ticks + 1;
+        }
+    }
+    return 0;
 }
 
 fn triggerEvent(ctx: *anyopaque, event: GameEvent) void {
