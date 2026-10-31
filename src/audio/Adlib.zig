@@ -193,6 +193,8 @@ const Player = struct {
             .music_table = music.music_table,
             .emulator = emulator,
             .sample_rate = sample_rate,
+            // Rhythm mode, like after a song starts. The sound effects play as its bass drum, also when there's no music.
+            .perc_stat = 0x20,
         };
         self.resetChip();
     }
