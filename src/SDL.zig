@@ -197,6 +197,10 @@ pub fn getTicks() u64 {
     return This.SDL_GetTicks();
 }
 
+pub fn getTicksNS() u64 {
+    return This.SDL_GetTicksNS();
+}
+
 // Surfaces
 
 pub fn destroySurface(surface: [*c]Surface) void {

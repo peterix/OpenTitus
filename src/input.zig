@@ -264,6 +264,48 @@ fn getAxisValueWithDeadzone(value_in: i16, dead_zone: i16, gamepad_id: SDL.Joyst
     return value;
 }
 
+/// Holding a direction on the gamepad repeats the menu action, like holding a key does on the keyboard.
+/// SDL doesn't tell us the system's key repeat delay and rate. These are what a typical desktop keyboard does
+/// (measured 657 ms and 41 ms, the X11 defaults of 660 ms and 25 per second).
+const KeyRepeat = struct {
+    delay_ns: u64 = 660 * std.time.ns_per_ms,
+    interval_ns: u64 = 40 * std.time.ns_per_ms,
+
+    // The direction being held on the gamepad
+    action: InputAction = .None,
+    next_ns: u64 = 0,
+
+    /// Repeat the menu action of the held gamepad direction, if it is time to.
+    fn repeatGamepad(self: *KeyRepeat, held: InputAction) ?InputAction {
+        const now = SDL.getTicksNS();
+        if (held != self.action) {
+            // Newly pressed (the press itself was already reported) or released
+            self.action = held;
+            self.next_ns = now + self.delay_ns;
+            return null;
+        }
+        if (held == .None or now < self.next_ns) {
+            return null;
+        }
+        self.next_ns += self.interval_ns;
+        // Don't fire a burst of repeats to catch up after a long frame
+        if (self.next_ns < now) {
+            self.next_ns = now + self.interval_ns;
+        }
+        return held;
+    }
+};
+
+var key_repeat = KeyRepeat{};
+
+fn heldGamepadDirection(pad_state: *const GamepadState) InputAction {
+    if (pad_state.dpad_up_pressed or pad_state.left_stick_virtual_up_pressed) return .Up;
+    if (pad_state.dpad_down_pressed or pad_state.left_stick_virtual_down_pressed) return .Down;
+    if (pad_state.dpad_left_pressed or pad_state.left_stick_virtual_left_pressed) return .Left;
+    if (pad_state.dpad_right_pressed or pad_state.left_stick_virtual_right_pressed) return .Right;
+    return .None;
+}
+
 /// When set, the player's input comes from this instead of the keyboard and gamepads (used by the replay)
 pub var scripted_input: ?*const fn (state: *InputState) void = null;
 
@@ -640,6 +682,11 @@ pub fn processEvents() *InputState {
         .Gamepad => {
             if(g_input_state.gamepad_map.getPtr(g_input_state.current_gamepad)) |pad_state| {
                 handle_gamepad(pad_state);
+                if (key_repeat.repeatGamepad(heldGamepadDirection(pad_state))) |action| {
+                    if (g_input_state.action == .None) {
+                        g_input_state.action = action;
+                    }
+                }
             }
             else {
                 g_input_state.x_axis = 0;
@@ -651,7 +698,8 @@ pub fn processEvents() *InputState {
             }
         },
         .Keyboard => {
-            // We have a keyboard
+            // We have a keyboard. It repeats keys by itself.
+            key_repeat.action = .None;
             g_input_state.x_axis =
                 @as(i8, @intCast(keystate[SDL.SCANCODE_RIGHT] | keystate[SDL.SCANCODE_D])) -
                 @as(i8, @intCast(keystate[SDL.SCANCODE_LEFT]  | keystate[SDL.SCANCODE_A]));
