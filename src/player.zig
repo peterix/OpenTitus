@@ -148,6 +148,9 @@ pub const PlayerAction = enum(u8) {
     }
 };
 
+/// How long after kneeling a jump still counts as jumping from a kneel (about a quarter of a second)
+const KNEEL_GRACE_FRAMES = 8;
+
 pub fn move_player(io: std.Io, arg_context: *render.ScreenContext, arg_level: *lvl.Level) c_int {
     // Part 1: Gather input state
     // Part 2: Determine the player's action, and execute action dependent code
@@ -253,8 +256,11 @@ pub fn move_player(io: std.Io, arg_context: *render.ScreenContext, arg_level: *l
             action = .Climb;
         } else if (!globals.low_ceiling and player.jump_pressed and player.y_axis <= 0 and globals.jump_timer == 0) {
             action = .Jump;
-            if (globals.LAST_ORDER == .KneeStand) { // Test if last order was kneestanding
-                globals.FURTIF_FLAG = 100; // If jump after kneestanding, init silent walk timer
+            // Jumping right after kneeling makes the player sneak for a while (silent walk), unnoticed by some enemies.
+            // The original only checks the action in the previous frame. On a keyboard, crouch and jump share the
+            // up/down keys, so there's always a frame or two in between. The grace period makes it possible there too.
+            if (globals.LAST_ORDER == .KneeStand or player.kneel_grace != 0) {
+                globals.FURTIF_FLAG = 100; // init silent walk timer
             }
         } else if (globals.low_ceiling or (globals.jump_timer != 6 and player.crouch_pressed)) {
             if (player.x_axis != 0) { // Move left or right
@@ -281,6 +287,11 @@ pub fn move_player(io: std.Io, arg_context: *render.ScreenContext, arg_level: *l
             globals.DROPREADY_FLAG = true;
             globals.POSEREADY_FLAG = false;
         }
+    }
+    if (action == .KneeStand) {
+        player.kneel_grace = KNEEL_GRACE_FRAMES;
+    } else {
+        common.subto0(&player.kneel_grace);
     }
     if (globals.CARRY_FLAG) {
         action.addCarry();
@@ -326,10 +337,12 @@ pub fn move_player(io: std.Io, arg_context: *render.ScreenContext, arg_level: *l
     // Part 3: Move the player + collision detection
     // Move the player in X if the new position doesn't exceed 8 pixels from the
     // edges
+    player.moved_x = 0;
     if (((player.sprite.speed_x < 0) and ((player.sprite.x + (player.sprite.speed_x >> 4)) >= 8)) or // Going left
         ((player.sprite.speed_x > 0) and ((player.sprite.x + (player.sprite.speed_x >> 4)) <= (level.width << 4) - 8))) // Going right
     {
-        player.sprite.x += player.sprite.speed_x >> 4;
+        player.moved_x = player.sprite.speed_x >> 4;
+        player.sprite.x += player.moved_x;
     }
     // Move player in Y
     player.sprite.y += player.sprite.speed_y >> 4;
@@ -697,7 +710,11 @@ fn BLOCK_XXPRG(io: std.Io, level: *lvl.Level, hflag: lvl.WallType, tileY: i16, t
 fn player_block_x(level: *lvl.Level) void {
     const player = &level.player;
     // Horizontal hit (wall), stop the player
-    player.sprite.x -= player.sprite.speed_x >> 4;
+    // NOTE: undo the move that actually happened. The speed can change between the move and the collision test
+    // (falling accelerates the player), and undoing by the new speed pushes the player out of the wall too far.
+    // In the air, that made the player (and the screen) jiggle back and forth by a pixel against walls.
+    player.sprite.x -= player.moved_x;
+    player.moved_x = 0;
     player.sprite.speed_x = 0;
     if (globals.KICK_FLAG != 0 and globals.jump_timer != 6) {
         globals.CHOC_FLAG = 20;

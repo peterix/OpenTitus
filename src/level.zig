@@ -193,6 +193,12 @@ pub const Player = struct {
 
     /// Object the player is dropping down from (by kneeling on it). The player ignores it until they fall past it.
     dropping_through: ?*Object = null,
+
+    /// How far the player moved horizontally in this frame
+    moved_x: i16 = 0,
+
+    /// Frames left in which a jump still counts as jumping from a kneel
+    kneel_grace: u8 = 0,
 };
 
 pub const BONUS_CAPACITY = 100;
